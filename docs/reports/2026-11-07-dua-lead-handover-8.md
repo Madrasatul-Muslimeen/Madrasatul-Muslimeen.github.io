@@ -1,0 +1,24 @@
+# MSA-DUA Lead: session handover 8 (7 Nov 2026)
+
+From the session titled "📌 (03C) MSA - DUA Lead - 04.11.26 - 1.45 PM" to the next MSA-DUA Lead. Handovers 6 and 7 ("Read first", sandbox notes, who is who) still hold; this one adds what changed. Sonnet (use1102).
+
+## Done this session (all in J104)
+- **D23 builds 1+2 RELEASED as v13.43** (7 Nov 5:05 pm, PR #1499): one Vowels control; Dua Study's Home is a direct link to `./index.html`, with a 🔖 Bookmarks link (`bookmarks.html?back=1`) and a Menu button (My account) beside it; the Person box and "Signed in as" moved under My account (`movePerson:true`, a "For <person>" chip stays: the Owner's call, it reverses D10); every Dua card (Hadith, Hisn, Qur'anic) has a top bar (▶ dimmed, ‹ n of N ›, Menu, pop-up) and ONE Menu: selections, Listen (dimmed until D16/D17, the Owner chose placement B), Study, Share, Keep (My Notes, Bookmark). Demo v1.06/v1.07: https://claude.ai/artifact/BJ3qwHvskpMQNDPNGMsVWV (not carded: the Architect's session refuses send_card.py).
+- **D23 Full text** on `claude/dua-r10b` (ef7c303b): 📖 Full text in the Study group (`fullTextNodes` in `dua-poster.js`). Handed in, under the Architect's review.
+- **D23 movable window** on `claude/dua-r10c` (50a44219, stacked on r10b): `app/js/dua-card-window.js` on the shared `float-window.js` (read-only). Suite `dua-card-window-browser.mjs` 24/0, four mutations (bar, zab, min, off). Handed in. Real bugs fixed on the way: the shared `clampRect`'s `bar` must include the border AND the Zab bar (2.75rem) or the bar sinks under it; the card is moved onto `<body>` while floating.
+
+## Waiting on others
+- **Architect**: review/release of r10b and r10c. Their (a): the "dua" Note kind is built on `claude/note-dua-ref` (`note-ref-block.js` kind "dua", id `dua:<n>`; `note-opener.js` exports `duaRef({ n, label, ar, en, bn })`); NOT on main yet, the Architect will say when. Then build the 📝 Note entry from a Dua file: `import { openNewNote, duaRef } from "./note-opener.js"; openNewNote({ ref: duaRef({...}), unitKey: "dua:<n>", unitLabel, backLabel: t("Back to the dua"), onClosed })`. Hadith-book duas only (permanent key `dua:<n>`, decision 88); Hisn/Qur'anic cards have NO key: do not invent one. (b) File in folder(s): no Dua picker; the Architect adds an option to `openNewNote` to open on the Note window's folders; wait for it. J117 (old keyboard-suite failures: night ring 1.09:1, Tab to Copy at 200%) is the Architect's.
+- **Owner**: J104 line 16 (n104p), "Related duas": A same Hisn chapter / Dua group part (recommended), B same occasion/topic, C shared key phrase. Build nothing until ticked. Line 15 (demo v1.06) was answered in chat ("A, with Home direct and a menu button beside it", "B" for audio, "bookmark link on the Home bar").
+- The Architect's a11y/night/large-text runs of r10b/r10c are theirs; mine never printed output in this sandbox.
+
+## Next: D24 (R11), the Dua Word Card. NOT STARTED
+Already there: a tap on a dua word opens a panel (`showDuaWord` in `app/js/dua-browser.js`, ~l.290 `open`): Qur'an-matched words offer the QR Word Card via `wordCardHref(place, dua)` (`quranrevival.html?word=<place>&back=1&from=dua-<n>`), others show grammar/dictionaries. D24 = a fuller card with the levels that apply. Facts (handover 6, J104 line j104p8): dictionaries `tools/quran-data-pull/output/lemma-dictionary-{en,bn}.json` are keyed by Qur'an lemmas only (a dua word not in the Qur'an has no entry: say so, or a draft marked "to be checked"; credit Quraniyo Obhidhan on every use); reuse read-only `app/js/lemma-dictionary.js`, `quran-word-card.js` levels, `word-card-depth.js`; permanent key `buildUnitKey.duaWord(number, position)` → `duaword:<dua>:<position>`; per-level progress marks need the Rules answer (J104 tick 9): ASK the Architect before any Firestore write path. Suggested first slice: the card with levels, no marks. Demo v1.05 (https://claude.ai/artifact/9R9UYsxz5r7JoM38jF7PZ8) is the approved picture; demo again only if the build departs from it.
+
+## Sandbox notes added
+- Start the server and run suites in the same command; a suite over ~110 s must be started with `(nohup node tools/i18n-verify/<suite>.mjs > /tmp/x.out 2>&1 &)` then read the output after `sleep 100` (several suites print only at the end). Run mutations ONE per process (two at a time is fine).
+- Never stop `node serve.js` while a suite is running (it killed a night run). A second server: `PORT=8081`, suite `QR_BASE=http://localhost:8081`; `git worktree add` a base commit to compare.
+- The `hadith-dua-keyboard-browser` suite is 988/98 on base AND on this work (pre-existing).
+- PMS: read only `p/mmsa/jobs/J104` (`out_dir`, then python `-I`); `act` is pinned with `if_version`; ticks go into `needs` as `{at, by, cm:[], id, imp, text, tick:true}` via a JSON file.
+
+Next title: "📌 (03C) MSA - DUA Lead - 07.11.26 - h.mm PM" (use1102 A).

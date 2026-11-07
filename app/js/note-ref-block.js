@@ -8,16 +8,18 @@
 // attributes and REBUILDS it whole from cleanRefState(): so no markup somebody put inside a block can ever survive,
 // and a state that is not exactly one of these shapes removes the block.
 //
-//   { kind: "ayah" | "hadith", id: <permanent unit key>, label, text: { ar, en, bn }, flags: { on, ar, en, bn } }
+//   { kind: "ayah" | "hadith" | "dua", id: <permanent unit key>, label, text: { ar, en, bn }, flags: { on, ar, en, bn } }
 //
 // `flags.on` is the show/hide switch; `flags.ar|en|bn` each language's own button. Pure: no DOM, no i18n, no
 // Firebase -- testable in plain Node (tools/i18n-verify/note-ref-block.mjs).
 
-export const REF_KINDS = Object.freeze(["ayah", "hadith"]);
+export const REF_KINDS = Object.freeze(["ayah", "hadith", "dua"]);
 /** The permanent unit key a block may name: an āyah (study-note-binding.js's own shape), or a hadith. */
 export const REF_ID_SHAPES = Object.freeze({
   ayah: /^ayah:\d{1,3}:\d{1,3}$/,
   hadith: /^hadith:[A-Za-z0-9_-]{1,40}:\d{1,6}$/,
+  // MSA · Dua J104 D23 (7 Nov 2026): one dua, by its permanent number (unit-keys.js buildUnitKey.dua, decision 88).
+  dua: /^dua:\d{1,6}$/,
 });
 export const REF_LANGS = Object.freeze(["ar", "en", "bn"]);
 export const REF_LABEL_MAX = 160, REF_TEXT_MAX = 6000;
@@ -70,7 +72,7 @@ export const REF_LANG_TAGS = Object.freeze({ ar: "عربي", en: "EN", bn: "ব�
 export function refStaticHtml(state) {
   const s = cleanRefState(state);
   if (!s) return "";
-  const icon = s.kind === "ayah" ? "📖" : "📜";
+  const icon = s.kind === "ayah" ? "📖" : s.kind === "dua" ? "🤲" : "📜";
   let html = `<div class="mm-ref-head"><span class="mm-ref-icon" aria-hidden="true">${icon}</span> <b class="mm-ref-label">${esc(s.label)}</b>${s.flags.on ? "" : ` <span class="mm-ref-closed">▸</span>`}</div>`;
   if (!s.flags.on) return html;
   if (s.flags.ar && s.text.ar) html += `<p class="mm-ref-ar" lang="ar" dir="rtl">${esc(s.text.ar)}</p>`;

@@ -118,6 +118,22 @@ async function run(mutation) {
         if (menu.length !== 2 || !menu[0].t.includes(L("Poster")) || menu[1].t !== L("Copy / share") || menu.some((m) => m.h < 44)) throw new Error(JSON.stringify(menu));
       });
 
+      // D23 📖 Full text on a Qur'anic dua: its raw Arabic follows the Vowels selection (the card has no vowel switch of its own).
+      const ftMarks = async (on) => {
+        const pressed = await page.$eval('[data-dua-switch="vow"]', (b) => b.getAttribute("aria-pressed") === "true");
+        if (pressed !== on) await page.click('[data-dua-switch="vow"]');
+        await clickMenu(page, '[data-dua-menu="fulltext"]');
+        await page.waitForSelector('[data-dua-pop="fulltext"] .dua-ft-ar', { timeout: 8000 });
+        const n = await page.$eval('[data-dua-pop="fulltext"] .dua-ft-ar', (a) => (a.textContent.match(/[\u064B-\u0652\u0670]/g) || []).length);
+        await page.click("[data-dua-pop-close]");
+        await page.waitForSelector("[data-dua-pop]", { state: "detached", timeout: 5000 });
+        return n;
+      };
+      await check("D23 Full text of a Qur'anic dua keeps its vowel marks when Vowels is on, and drops them when it is off", async () => {
+        const on = await ftMarks(true), off = await ftMarks(false), back = await ftMarks(true);
+        if (!(on > 0 && off === 0 && back === on)) throw new Error(JSON.stringify({ on, off, back }));
+      });
+
       // D07 the poster.
       await clickMenu(page, '[data-dua-menu="poster"]');
       await settle();
