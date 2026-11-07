@@ -44,6 +44,8 @@ const recordWrites = (P, key) => P.evaluate((k) => (window.__stubWriteData || []
   return e ? { id: w.id, status: e.claimedStatus } : null;
 }).filter(Boolean), key);
 async function openWord(P, i) {
+  // 7 Nov 2026: a tapped word's card is now a pop-up (dua-word-popup.js); close one left open before tapping the next word.
+  await P.evaluate(() => document.querySelector(".dua-word-pop .dua-word-panel-close")?.click());
   await P.evaluate((w) => document.querySelector(`[data-dua-card="1"] [data-dua-word="${w}"]`).scrollIntoView({ block: "center" }), i);
   await P.click(`[data-dua-card="1"] [data-dua-word="${i}"]`);
   await P.waitForSelector('[data-dua-word-panel="1"] [data-dua-word-dua-state-now]', { timeout: 10000 }).catch(() => {});

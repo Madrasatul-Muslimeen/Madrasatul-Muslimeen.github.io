@@ -18,6 +18,8 @@ const BN = fs.readFileSync("app/js/i18n/bn.js", "utf8");
 const DATA = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/dua/groups.json", "utf8"));
 const BANNER = "app/img/dua-banner-bottom.webp";
 const MUTATIONS = {
+  // The Owner, 7 Nov: Share and Keep sit straight under the selections (Keep is put back at the foot).
+  order: ["    panel.insertBefore(keep, listen);\n", "    panel.appendChild(keep);\n"],
   // D22: the blocks stay on the card (nothing moves into the menu's stash).
   stash: ["      for (const n of s.nodes) stash.appendChild(n);\n", ""],
   // D22: ✕ loses the block (it is not put back, so it is gone from the card for good).
@@ -143,9 +145,9 @@ async function run(mutation) {
         if (!got.who || !/\S/.test(got.chip || "") || got.personInPage) throw new Error(JSON.stringify(got));
       });
       await page.click("[data-dua-menu-toggle]");
-      await check("build 2 the open Menu holds the selections, Listen (Owner chose B: audio lives in the Menu, dimmed until D16/D17), Study, Share and Keep (My Notes, Bookmark)", async () => {
+      await check("build 2 the open Menu holds the selections, then Share and Keep (My Notes, Bookmark) moved UP at the Owner's word 7 Nov, then Listen (Owner chose B: audio lives in the Menu, dimmed until D16/D17) and Study", async () => {
         const got = await page.$eval(".dua-menu-panel", (m) => ({ sel: !!m.querySelector("[data-dua-sel]"), groups: [...m.querySelectorAll("[data-dua-menu-group]")].map((g) => g.dataset.duaMenuGroup), keep: !!m.querySelector('[data-dua-menu-group="keep"] [data-dua-note-bookmark]'), listenOff: [...m.querySelectorAll("[data-dua-listen]")].length === 4 && [...m.querySelectorAll("[data-dua-listen]")].every((b) => b.disabled), exp: document.querySelector("[data-dua-menu-toggle]").getAttribute("aria-expanded") }));
-        if (!(got.sel && got.groups.join() === "listen,study,share,keep" && got.listenOff && got.keep && got.exp === "true")) throw new Error(JSON.stringify(got));
+        if (!(got.sel && got.groups.join() === "share,keep,listen,study" && got.listenOff && got.keep && got.exp === "true")) throw new Error(JSON.stringify(got));
       });
       const menu = await page.$$eval("[data-dua-menu]", (b) => b.map((x) => { const r = x.getBoundingClientRect(); return { k: x.dataset.duaMenu, label: x.textContent, h: r.height, l: r.left, r: r.right }; }));
       await check("D22 the card's menu offers Meaning, Source and The whole narration, in this language", () => {

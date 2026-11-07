@@ -15,10 +15,11 @@
 // Every decision is the pure model's (siyagah-sync-model.js).
 import {
   parseSyncState, emptySyncState, queueNote, settleWithCopy, planSync, afterStep, afterAnswer, syncMark, PRIMARY_ID,
+  TRANSIENT_REFUSAL, TRANSIENT_RETRY_MS,
 } from "./siyagah-sync-model.js";
 
 const IDB_NAME = "msa-siyagah-sync-v1";
-const RETRY_MS = 30000;
+const RETRY_MS = TRANSIENT_RETRY_MS + 500; // a refused-for-now request's hold has passed when this fires
 
 function withStore(mode, fn) {
   return new Promise((resolve, reject) => {
@@ -125,7 +126,9 @@ export function startSyncDrain({ sync, model, writer, from = "msa", host, setTim
         if (noteId === PRIMARY_ID) {
           await sync.update((s) => (s.primary?.reqId === reqId ? { ...s, primary: o.kind === "refused" ? { ...s.primary, refused: o.why || "" } : s.primary } : s));
         } else {
-          await sync.update((s) => (s.links[noteId]?.inflight?.reqId === reqId ? afterAnswer(s, noteId, o) : s));
+          await sync.update((s) => (s.links[noteId]?.inflight?.reqId === reqId ? afterAnswer(s, noteId, o, Date.now()) : s));
+          // "open in Siyagah -- try again" is not final (J112 D2 refusals A): it goes again after the hold.
+          if (o.kind === "refused" && TRANSIENT_REFUSAL.test(o.why || "")) scheduleRetry();
         }
         kick();
       });
@@ -213,7 +216,7 @@ export function startSyncDrain({ sync, model, writer, from = "msa", host, setTim
         }
         if (s.primary && !s.primary.reqId && !pass) s = await sync.update((x) => (x.primary && !x.primary.reqId ? { ...x, primary: null } : x));
         if (s.primary?.reqId && !s.primary.refused) follow(PRIMARY_ID, s.primary.reqId);
-        const steps = planSync(s, copy).filter((st) => !(st.kind === "primary" && s.primary));
+        const steps = planSync(s, copy, Date.now()).filter((st) => !(st.kind === "primary" && s.primary));
         if (!steps.length) break;
         let moved = false;
         for (const st of steps) {

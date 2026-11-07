@@ -8,6 +8,8 @@ import { TRANSLATED_BOOKS } from "./hadith-translations.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import { duaSel, DUA_VOW_EVENT } from "./dua-poster.js";
 import { loadOpenitiBookIndex, loadOpenitiConcordance, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar, loadDuaFit } from "./openiti-corpus.js";
+import { duaWordCardBody } from "./dua-word-card.js";
+import { bindDuaWordPopup } from "./dua-word-popup.js";
 import { buildCheckPanel, loadMemberTexts, applyMembers, checkChipText, checkState, duaSaveFailed } from "./dua-check.js";
 import { plainMessageFor } from "./errors.js";
 import { el, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
@@ -275,6 +277,13 @@ export function duaCard(c, summary, state, render, progressRows, wordLinks = nul
     };
     panel.addEventListener("keydown", escWord);
     words.addEventListener("keydown", escWord);
+    // The Owner, 7 Nov: the whole word card opens as a pop-up (dua-word-popup.js), closed by ×, Escape or a tap outside.
+    bindDuaWordPopup(panel, () => {
+      const opener = words.querySelector('.dua-word[aria-pressed="true"]');
+      opener?.setAttribute("aria-pressed", "false");
+      panel.hidden = true;
+      opener?.focus({ preventScroll: true });
+    });
     duaWordTokens(picked.words).forEach((tok, i) => {
       if (i) words.appendChild(document.createTextNode(" "));
       // Decision 96: a word fixed in a check shows its fixed vowels; "not this Qur'an word" shows it unlinked.
@@ -293,7 +302,7 @@ export function duaCard(c, summary, state, render, progressRows, wordLinks = nul
         span.tabIndex = 0;
         span.setAttribute("aria-pressed", "false");
         if (idx >= 0) span.classList.add("dua-word-linked");
-        const open = () => showDuaWord(panel, words, span, span.textContent, idx >= 0 ? wordLinks.entries[idx] : null, c.dua, page, links.x?.[i] ?? "", idx < 0 && gram?.f === links.f ? gram.g?.[i] ?? null : null, i);
+        const open = () => showDuaWord(panel, words, span, span.textContent, idx >= 0 ? wordLinks.entries[idx] : null, c.dua, page, links.x?.[i] ?? "", idx < 0 && gram?.f === links.f ? gram.g?.[i] ?? null : null, i, baseWords);
         span.addEventListener("click", open);
         span.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
       }
@@ -530,7 +539,7 @@ export function duaGrammarBlock([lemma, root, pos]) {
  * 2). Round 3: the card on this page -- meanings, root, dictionary word, dictionary links, its places in the Qur'an.
  * Round 4 (Q1 answered yes): "Achieved" here counts for the same Qur'an word. Tapping the same word again closes it.
  */
-export function showDuaWord(panel, words, span, tok, entry, dua, page, how = "", grammar = null, pos = null) {
+export function showDuaWord(panel, words, span, tok, entry, dua, page, how = "", grammar = null, pos = null, family = []) {
   const wasOpen = span.getAttribute("aria-pressed") === "true";
   words.querySelectorAll(".dua-word[aria-pressed]").forEach((s) => s.setAttribute("aria-pressed", "false"));
   panel.textContent = "";
@@ -548,7 +557,15 @@ export function showDuaWord(panel, words, span, tok, entry, dua, page, how = "",
   panel.appendChild(head);
   if (!entry) {
     panel.appendChild(el("p", "hadith-note", t("No word of the Qur'an is spelled this way, so it is not linked yet.")));
-    if (grammar) panel.appendChild(duaGrammarBlock(grammar));
+    if (grammar) {
+      // D24: the Dua Word Card, its levels over the same grammar and progress blocks.
+      const spans = [...words.querySelectorAll(".dua-word")];
+      panel.appendChild(duaWordCardBody({ grammar, grammarBlock: duaGrammarBlock(grammar), family, here: pos ?? 0,
+        progressBlock: pos != null ? duaWordProgressBlock({ dua, pos, page }) : null,
+        go: (i) => { if (i !== pos) spans[i]?.click(); },
+        back: () => { span.setAttribute("aria-pressed", "false"); panel.hidden = true; span.focus({ preventScroll: true }); } }));
+      return;
+    }
     if (pos != null) panel.appendChild(duaWordProgressBlock({ dua, pos, page }));
     return;
   }
@@ -716,6 +733,23 @@ export async function fillDuaProgress(rows) {
   }
 }
 
+/** The new Note on a dua of the Hadith books (permanent key dua:<n>, decision 88), through the shared opener (loaded on first press: I9). */
+async function openDuaNewNote(dua, name, link) {
+  let opener;
+  try { opener = await import("./note-opener.js"); }
+  catch { window.location.href = link.href; return; } // the module did not load: the old route (notes.html) still works
+  const card = document.querySelector(`[data-dua-card="${dua}"]`);
+  const ar = card?.querySelector("[data-dua-words]")?.textContent?.trim() ?? "";
+  const ref = opener.duaRef({ n: dua, label: name, ar });
+  try {
+    await opener.openNewNote({
+      ref, unitKey: `dua:${dua}`, unitLabel: name, title: `${name}:`, backLabel: t("Back to the dua"),
+      onOpenExisting: () => { window.location.href = link.href; },
+      onClosed: () => link.focus?.({ preventScroll: true }),
+    });
+  } catch { window.location.href = link.href; } // never a dead tap (I15): the opener failed, so take the old Notes route
+}
+
 /**
  * 9 Oct 2026: 📝 My Notes and 🔖 Bookmark on a dua card, the same pair (and look) a HadeethEnc hadith card has. Notes
  * open notes.html for dua:<n> with ← Back (this page's address is first set to reopen this card); the bookmark reopens
@@ -732,7 +766,13 @@ export function duaNoteBookmarkRow(actions, session, dua, page, isBookmarked) {
   note.dataset.duaNoteLink = String(dua);
   note.textContent = `📝 ${t("My Notes")}`;
   note.setAttribute("aria-disabled", session.isSelf ? "false" : "true");
-  note.addEventListener("click", (e) => { if (!session.isSelf) { e.preventDefault(); return; } rememberDuaPlace(page, dua); });
+  note.addEventListener("click", (e) => {
+    if (!session.isSelf) { e.preventDefault(); return; }
+    rememberDuaPlace(page, dua);
+    // Dua J104 (7 Nov): the shared Note opener, over the unmoved page; the old Notes route stays as the way if it cannot open.
+    e.preventDefault();
+    openDuaNewNote(dua, name, note);
+  });
   noteItem.appendChild(note);
   if (!session.isSelf) noteItem.appendChild(el("p", "hadeethenc-study-reason", t("Only your own record can create or file a Note.")));
   const markItem = el("div", "hadeethenc-study-item");

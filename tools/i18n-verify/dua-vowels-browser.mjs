@@ -45,7 +45,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   await P.waitForTimeout(300);
   const read = (n) => P.evaluate((d) => {
     const c = document.querySelector(`[data-dua-card="${d}"]`), note = c.querySelector("[data-dua-vowels]"), sw = c.querySelector("[data-dua-vowels-toggle]");
-    const bg = (e) => { for (; e; e = e.parentElement) { const b = getComputedStyle(e).backgroundColor; if (!/rgba\(0, 0, 0, 0\)|transparent/.test(b)) return b; } return "rgb(255,255,255)"; };
+    const gradLight = (cs) => { const g = cs.backgroundImage; if (!g || g === "none") return null; const cols = (g.match(/rgba?\([^)]*\)/g) || []).map((c) => c.match(/[\d.]+/g).map(Number)).filter((c) => c.length < 4 || c[3] > 0.5); if (!cols.length) return null; cols.sort((a, b) => (b[0] + b[1] + b[2]) - (a[0] + a[1] + a[2])); return `rgb(${cols[0][0]}, ${cols[0][1]}, ${cols[0][2]})`; }; const bg = (e) => { for (; e; e = e.parentElement) { const cs = getComputedStyle(e), gl = gradLight(cs); if (gl) return gl; const b = cs.backgroundColor; if (!/rgba\(0, 0, 0, 0\)|transparent/.test(b)) return b; } return "rgb(255,255,255)"; };
     return { words: c.querySelector("[data-dua-words]").textContent, note: note?.textContent ?? null, src: note?.dataset.duaVowels ?? null, sw: sw ? { text: sw.textContent, h: sw.getBoundingClientRect().height, pressed: sw.getAttribute("aria-pressed") } : null,
       fg: note ? getComputedStyle(note).color : null, bg: note ? bg(note) : null };
   }, n);

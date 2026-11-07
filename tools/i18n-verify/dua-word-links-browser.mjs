@@ -56,7 +56,8 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   const panel = await P.evaluate(() => {
     const p = document.querySelector('[data-dua-word-panel="1"]');
     if (!p || p.hidden) return null;
-    const q = p.querySelector(".dua-word-quran .dua-word-value"), bgOf = (e) => { for (; e; e = e.parentElement) { const b = getComputedStyle(e).backgroundColor; if (!/rgba\(0, 0, 0, 0\)|transparent/.test(b)) return b; } return "rgb(255,255,255)"; };
+    const q = p.querySelector(".dua-word-quran .dua-word-value");
+    const gradLight = (cs) => { const g = cs.backgroundImage; if (!g || g === "none") return null; const cols = (g.match(/rgba?\([^)]*\)/g) || []).map((c) => c.match(/[\d.]+/g).map(Number)).filter((c) => c.length < 4 || c[3] > 0.5); if (!cols.length) return null; cols.sort((a, b) => (b[0] + b[1] + b[2]) - (a[0] + a[1] + a[2])); return `rgb(${cols[0][0]}, ${cols[0][1]}, ${cols[0][2]})`; }; const bgOf = (e) => { for (; e; e = e.parentElement) { const cs = getComputedStyle(e), gl = gradLight(cs); if (gl) return gl; const b = cs.backgroundColor; if (!/rgba\(0, 0, 0, 0\)|transparent/.test(b)) return b; } return "rgb(255,255,255)"; };
     const r = p.getBoundingClientRect();
     return { text: p.innerText, quran: q?.textContent, qfont: q ? getComputedStyle(q).fontFamily : "", meanings: [...p.querySelectorAll("[class*=dua-word-meaning-]")].map((m) => m.className.match(/meaning-(\w+)/)[1]),
       href: p.querySelector("[data-dua-word-open]")?.getAttribute("href"), fg: getComputedStyle(p).color, bg: bgOf(p), inside: r.left >= 0 && r.right <= innerWidth + 0.5,
@@ -67,13 +68,16 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   check(`${tag} ...both meanings, ${lang === "bn" ? "Bangla" : "English"} first: "I (have) submitted (myself)", «আমি আত্মসমর্পণ করলাম»`, !!panel && panel.meanings.join() === (lang === "bn" ? "bn,en" : "en,bn") && panel.text.includes("I (have) submitted (myself)") && panel.text.includes("আমি আত্মসমর্পণ করলাম"), JSON.stringify(panel?.meanings));
   check(`${tag} ...says the computer linked it by spelling, to be checked`, !!panel && panel.text.includes(lang === "bn" ? "কম্পিউটার বানান মিলিয়ে যুক্ত করেছে" : "Linked by the computer by spelling"));
   check(`${tag} ...readable (contrast ${panel ? ratio(panel.fg, panel.bg).toFixed(1) : "-"} >= 4.5) and inside the screen`, !!panel && ratio(panel.fg, panel.bg) >= 4.5 && panel.inside, panel && `${panel.fg} on ${panel.bg}`);
+  // 7 Nov 2026: the word card is now a pop-up (dua-word-popup.js): close it before tapping the next word.
+  await P.click(".dua-word-pop .dua-word-panel-close");
   await P.click('[data-dua-card="1"] [data-dua-word="4"]');
   await P.waitForTimeout(150);
   const unl = await P.evaluate(() => document.querySelector('[data-dua-word-panel="1"]')?.innerText ?? "");
   check(`${tag} an unlinked word («وفوضت») says no Qur'an word is spelled that way`, unl.includes(lang === "bn" ? "কুরআনের কোনো শব্দের বানান এমন নয়" : "No word of the Qur'an is spelled this way"), unl.slice(0, 80));
-  await P.click('[data-dua-card="1"] [data-dua-word="4"]');
+  // (A pop-up covers the page, so "tap the same word again" became "tap outside it": the pop-up's own backdrop.)
+  await P.mouse.click(4, 4);
   await P.waitForTimeout(150);
-  check(`${tag} tapping the same word again closes the panel`, await P.evaluate(() => document.querySelector('[data-dua-word-panel="1"]').hidden));
+  check(`${tag} tapping outside the pop-up closes the panel`, await P.evaluate(() => document.querySelector('[data-dua-word-panel="1"]').hidden));
 
   await P.click('[data-dua-card="1"] [data-dua-word="1"]');
   await P.waitForTimeout(150);
