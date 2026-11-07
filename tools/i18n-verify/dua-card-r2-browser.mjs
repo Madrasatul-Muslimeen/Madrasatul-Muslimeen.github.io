@@ -122,19 +122,40 @@ async function run(mutation) {
         const n = await shown("[data-dua-card] .dua-also, [data-dua-card] .hadeethenc-explanation, [data-dua-card] details.dua-narration, [data-dua-card] .openiti-standard-number");
         if (n) throw new Error(`${n} shown`);
       });
+      // Build 2 (7 Nov 2026, demo v1.06): the menu now lives under the card's top bar; open it first.
+      await check("build 2 the card's top bar holds Play (not yet working), ‹ n of N ›, Menu and the pop-up button", async () => {
+        const got = await page.$eval("[data-dua-topbar]", (t) => ({ play: t.querySelector("[data-dua-play]")?.disabled, prev: !!t.querySelector("[data-dua-card-prev]"), next: !!t.querySelector("[data-dua-card-next]"), pos: !!t.querySelector("[data-dua-card-pos]"), menu: !!t.querySelector("[data-dua-menu-toggle]"), pop: !!t.querySelector("[data-dua-popout]") }));
+        if (!(got.play === true && got.prev && got.next && got.pos && got.menu && got.pop)) throw new Error(JSON.stringify(got));
+      });
+      await check("build 2 the Menu starts closed, and the progress stays open on the card", async () => {
+        if ((await shown(".dua-menu-panel")) !== 0 || (await shown("[data-dua-card] [data-dua-progress]")) < 1) throw new Error("menu open or progress hidden");
+      });
+      await check("build 1 Home is one tap to the MSA home, and a Menu button beside it holds My account", async () => {
+        const got = await page.evaluate(() => ({ href: document.querySelector("#duaHomeLink")?.getAttribute("href"), beside: document.querySelector(".dua-topnav #duaHomeLink + #accountHomeMenu summary")?.textContent, acct: !!document.querySelector("#accountHomeMenu [data-open-account-card]") }));
+        if (got.href !== "./index.html" || !/Menu|মেনু/.test(got.beside || "") || !got.acct) throw new Error(JSON.stringify(got));
+      });
+      await check("build 2 the Person box and 'Signed in as' are off the page (under My account); a 'For <person>' chip says who", async () => {
+        const got = await page.evaluate(() => ({ who: document.querySelector("#who")?.hidden, chip: document.querySelector("#forPersonChip")?.textContent, personInPage: !!document.querySelector("#contextBar #personSelect") }));
+        if (!got.who || !/\S/.test(got.chip || "") || got.personInPage) throw new Error(JSON.stringify(got));
+      });
+      await page.click("[data-dua-menu-toggle]");
+      await check("build 2 the open Menu holds the selections, Study, Share and Keep (My Notes, Bookmark)", async () => {
+        const got = await page.$eval(".dua-menu-panel", (m) => ({ sel: !!m.querySelector("[data-dua-sel]"), groups: [...m.querySelectorAll("[data-dua-menu-group]")].map((g) => g.dataset.duaMenuGroup), keep: !!m.querySelector('[data-dua-menu-group="keep"] [data-dua-note-bookmark]'), exp: document.querySelector("[data-dua-menu-toggle]").getAttribute("aria-expanded") }));
+        if (!(got.sel && got.groups.join() === "study,share,keep" && got.keep && got.exp === "true")) throw new Error(JSON.stringify(got));
+      });
       const menu = await page.$$eval("[data-dua-menu]", (b) => b.map((x) => { const r = x.getBoundingClientRect(); return { k: x.dataset.duaMenu, label: x.textContent, h: r.height, l: r.left, r: r.right }; }));
       await check("D22 the card's menu offers Meaning, Source and The whole narration, in this language", () => {
         const got = Object.fromEntries(menu.map((m) => [m.k, m.label]));
         if (got.meaning !== L("Meaning") || got.source !== L("Source") || got.narration !== L("The whole narration")) throw new Error(JSON.stringify(got));
       });
       await check("D22 each menu button is finger-sized (44px) and on screen", () => { if (!menu.length || menu.some((m) => m.h < 44 || m.l < 0 || m.r > width)) throw new Error(JSON.stringify(menu[0])); });
-      await check("D22 the menu sits between the Dua's words and its progress", async () => {
-        const [w, m, p] = [await box("[data-dua-card] .dua-words"), await box(".dua-card-menu"), await box("[data-dua-card] [data-dua-progress]")];
-        if (!w || !m || !p || !(w.b <= m.t && m.b <= p.t)) throw new Error(JSON.stringify({ w, m, p }));
+      await check("build 2 (was D22) the Menu panel sits under the top bar, above the Dua's words and its progress", async () => {
+        const [w, m, p, b] = [await box("[data-dua-card] .dua-words"), await box(".dua-menu-panel"), await box("[data-dua-card] [data-dua-progress]"), await box("[data-dua-topbar]")];
+        if (!w || !m || !p || !b || !(b.b <= m.t && m.b <= w.t && w.b <= p.t)) throw new Error(JSON.stringify({ b, m, w, p }));
       });
 
       // Source pop-up, ✕ back to the Dua.
-      await page.click('[data-dua-menu="source"]');
+      await clickMenu(page, '[data-dua-menu="source"]');
       const pop = await box('[data-dua-pop="source"] .dua-popcard');
       await check("D22 Source opens a pop-up card holding the narrations, inside the screen", async () => {
         if (!pop || pop.l < 0 || pop.r > width || (await shown('[data-dua-pop="source"] .dua-also')) < 1) throw new Error(JSON.stringify(pop));
@@ -150,15 +171,15 @@ async function run(mutation) {
         if ((await page.$$("[data-dua-card] .dua-also")).length !== 1 || (await shown("[data-dua-card] .dua-also"))) throw new Error("lost or open");
       });
       await check("✕ puts the reader's focus back on the menu button", async () => { const f = await page.evaluate(() => document.activeElement?.dataset?.duaMenu ?? null); if (f !== "source") throw new Error(f); });
-      await page.click('[data-dua-menu="source"]');
+      await clickMenu(page, '[data-dua-menu="source"]');
       await page.keyboard.press("Escape");
       await check("Esc closes the pop-up too", async () => { if (await page.$("[data-dua-pop]")) throw new Error("still open"); });
-      await page.click('[data-dua-menu="source"]');
+      await clickMenu(page, '[data-dua-menu="source"]');
       await page.mouse.click(4, 450);
       await check("a tap outside the pop-up card closes it", async () => { if (await page.$("[data-dua-pop]")) throw new Error("still open"); });
 
       // Meaning opens with its translation unfolded.
-      await page.click('[data-dua-menu="meaning"]');
+      await clickMenu(page, '[data-dua-menu="meaning"]');
       await check("D22 Meaning opens with its first translation already unfolded", async () => { const o = await page.$eval('[data-dua-pop="meaning"] details', (d) => d.open).catch(() => null); if (o !== true) throw new Error(String(o)); });
       await page.click("[data-dua-pop-close]");
       await check("nothing sticks out past the screen's right edge", async () => { const o = await overflow(); if (o > 0) throw new Error(`${o}px`); });
@@ -183,7 +204,7 @@ async function run(mutation) {
       await check("a Hisn dhikr sits in the same frame (top and bottom banners)", async () => { if (!(await page.$("[data-dua-hisn]")) || (await shown("[data-dua-top-banner], [data-dua-bottom-banner]")) !== 2) throw new Error("no frame"); });
       await check("D22 a Hisn dhikr's reference is in its Source pop-up, not open on the card", async () => {
         if (await shown("[data-dua-hisn] .dua-hisn-ref")) throw new Error("open on the card");
-        await page.click('[data-dua-menu="source"]');
+        await clickMenu(page, '[data-dua-menu="source"]');
         if ((await shown('[data-dua-pop="source"] .dua-hisn-ref')) !== 1) throw new Error("not in the pop-up");
         await page.click("[data-dua-pop-close]");
       });
@@ -195,7 +216,7 @@ async function run(mutation) {
       await check("D05 a Prophet's dua carries its title in this language", async () => { const t = await page.$eval("[data-dua-title]", (e) => e.textContent).catch(() => null); if (t !== p0.title[lang]) throw new Error(t); });
       await check("D22 its meaning opens from the menu, in this language", async () => {
         if (await shown("[data-dua-quran] .dua-quran-meaning")) throw new Error("open on the card");
-        await page.click('[data-dua-menu="meaning"]');
+        await clickMenu(page, '[data-dua-menu="meaning"]');
         const m = await page.$eval('[data-dua-pop="meaning"] .dua-quran-meaning', (e) => e.textContent).catch(() => null);
         if (m !== p0[lang]) throw new Error(m?.slice(0, 40));
         await page.click("[data-dua-pop-close]");
@@ -220,3 +241,10 @@ if (arg) {
 const r = await run(null);
 console.log(`\n==== Dua Card R2 (D22, D11, D12, D05): ${r.passed} passed, ${r.failed} failed ====`);
 process.exit(r.failed ? 1 : 0);
+
+/** Build 2 (7 Nov 2026): the card's menu sits under its Menu button; open it (when closed) and press the entry. */
+async function clickMenu(page, selector) {
+  const toggle = await page.$("[data-dua-menu-toggle]");
+  if (toggle && (await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  await page.click(selector);
+}
