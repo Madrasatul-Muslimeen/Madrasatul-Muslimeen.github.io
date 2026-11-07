@@ -139,9 +139,9 @@ async function run(mutation) {
         if (!got.who || !/\S/.test(got.chip || "") || got.personInPage) throw new Error(JSON.stringify(got));
       });
       await page.click("[data-dua-menu-toggle]");
-      await check("build 2 the open Menu holds the selections, Study, Share and Keep (My Notes, Bookmark)", async () => {
-        const got = await page.$eval(".dua-menu-panel", (m) => ({ sel: !!m.querySelector("[data-dua-sel]"), groups: [...m.querySelectorAll("[data-dua-menu-group]")].map((g) => g.dataset.duaMenuGroup), keep: !!m.querySelector('[data-dua-menu-group="keep"] [data-dua-note-bookmark]'), exp: document.querySelector("[data-dua-menu-toggle]").getAttribute("aria-expanded") }));
-        if (!(got.sel && got.groups.join() === "study,share,keep" && got.keep && got.exp === "true")) throw new Error(JSON.stringify(got));
+      await check("build 2 the open Menu holds the selections, Listen (Owner chose B: audio lives in the Menu, dimmed until D16/D17), Study, Share and Keep (My Notes, Bookmark)", async () => {
+        const got = await page.$eval(".dua-menu-panel", (m) => ({ sel: !!m.querySelector("[data-dua-sel]"), groups: [...m.querySelectorAll("[data-dua-menu-group]")].map((g) => g.dataset.duaMenuGroup), keep: !!m.querySelector('[data-dua-menu-group="keep"] [data-dua-note-bookmark]'), listenOff: [...m.querySelectorAll("[data-dua-listen]")].length === 4 && [...m.querySelectorAll("[data-dua-listen]")].every((b) => b.disabled), exp: document.querySelector("[data-dua-menu-toggle]").getAttribute("aria-expanded") }));
+        if (!(got.sel && got.groups.join() === "listen,study,share,keep" && got.listenOff && got.keep && got.exp === "true")) throw new Error(JSON.stringify(got));
       });
       const menu = await page.$$eval("[data-dua-menu]", (b) => b.map((x) => { const r = x.getBoundingClientRect(); return { k: x.dataset.duaMenu, label: x.textContent, h: r.height, l: r.left, r: r.right }; }));
       await check("D22 the card's menu offers Meaning, Source and The whole narration, in this language", () => {

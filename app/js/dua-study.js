@@ -596,6 +596,21 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     };
     const keys = sections.map((x) => x.key);
     menu.replaceWith(group("study", t("Study"), keys.filter((k) => k !== "poster" && k !== "share")), group("share", t("Share"), ["poster", "share"]));
+    // Audio (the Owner chose B, 7 Nov): everything about listening lives in the Menu; the bar keeps Play only. Not working
+    // until D16/D17, so the tiles are shown dimmed and say so.
+    const listen = el("div", "dua-menu-group");
+    listen.dataset.duaMenuGroup = "listen";
+    listen.appendChild(el("p", "dua-menu-label", t("Listen")));
+    const lnav = el("nav", "dua-card-menu");
+    lnav.setAttribute("aria-label", t("Listen"));
+    for (const [k, label] of [["reciter", t("Reciter")], ["speed", `${t("Speed")} 1×`], ["repeat", t("Repeat")], ["autoplay", t("Autoplay next")]]) {
+      const b = el("button", "dua-ref dua-menu-btn", label);
+      b.type = "button"; b.disabled = true; b.dataset.duaListen = k;
+      lnav.appendChild(b);
+    }
+    listen.appendChild(lnav);
+    listen.appendChild(el("p", "hadith-note", t("Audio is coming soon")));
+    panel.insertBefore(listen, panel.querySelector("[data-dua-menu-group=study]"));
     const keep = el("div", "dua-menu-group dua-keep-slot");
     keep.dataset.duaMenuGroup = "keep";
     keep.hidden = true;
