@@ -46,7 +46,7 @@ const MUTATIONS = {
   "no-mark": [[[J, ".concat(syncChips(note))", ".concat([])"]], "send: the Note says it is waiting to go to Siyagah"],
   "mark-english": [[["app/js/i18n/bn.js", '"In Siyagah ✓": "সিয়াগাহ-এ আছে ✓",', ""]], "bn: the mark is in Bangla"],
   "label-old": [[[J, '"journey-map": () => t("Primary"),', '"journey-map": () => t("Personal Journey Map"),']], "primary: the Map's folder for Notes not yet filed is called Primary"],
-  "no-pull": [[[M, 'if (siyChanged) steps.push({ kind: "pull", noteId, title: cn.title ?? "", bodyHtml: cn.content ?? "", base: cn.updatedAt });\n      continue;', "continue;"]], "pull: Siyagah's newer copy comes back as a new revision of the Note (siyagah-sync), with its title and text"],
+  "no-pull": [[[M, 'if (siyChanged) steps.push({ kind: "pull", noteId, title: titleBack(l, cn), bodyHtml: cn.content ?? "", base: cn.updatedAt });\n      continue;', "continue;"]], "pull: Siyagah's newer copy comes back as a new revision of the Note (siyagah-sync), with its title and text"],
   // The no-echo rule has two guards: the agreed text (`sent`) and the snapshot last seen (`seen`). Breaking `seen` alone was
   // measured to send nothing (the `sent` guard stops it), so the mutation that must go red breaks `sent`.
   "pull-loops": [[[M, 'case "pull": return l ? put({ ...l, base: step.base, sent: textHash(step.title, step.bodyHtml),', 'case "pull": return l ? put({ ...l, base: step.base, sent: l.sent,'], [J, "return { seen: syncSnapshotOf(note).hash };", "return {};"]], "pull: after a reload, still nothing is sent back"],
