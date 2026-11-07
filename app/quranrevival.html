@@ -21378,7 +21378,7 @@
     function meaningQuickMenuHtml(surahNum, ayahNum) {
       const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
       const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
-      return renderQuickMenu(unitKey, { hasNote: ayahHasAnyNote(unitKey), isBookmarked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide() });
+      return renderQuickMenu(unitKey, { hasNote: ayahHasAnyNote(unitKey), isBookmarked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt() });
     }
 
     async function meaningPageHtml(pageNum) {
@@ -21776,7 +21776,7 @@
           }));
           return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${beforeHtml}<div class="ayah-quick-header">${liftedFlow.badge}${renderQuickMenu(unitKey, {
             hasNote: ayahHasAnyNote(unitKey), isBookmarked,
-            sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(),
+            sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(),
             showTextTools: true,
             isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
           })}</div><div class="ayah-flow-body" data-ayah-collapsible-for="${unitKey}">${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${liftedFlow.parts}</div>${afterHtml}</div>`;
@@ -22514,7 +22514,9 @@
         },
         onTextMenuOpen: (unitKey) => { ensurePanePlainNotes(unitKey); },
         onPlay: quickPlayAyah,
-        onOpenNote: (unitKey) => openNotesPaneForKey(unitKey), // decision 95: the Notes pane, not the Note view
+        onOpenNote: (unitKey) => openLatestNoteFromMenu(unitKey), // J114: the latest Note in the Journey tray (it was the Notes pane, decision 95)
+        onUnitBookmark: () => { readBookmarkBtn.click(); },
+        onMenuOpen: (unitKey, wrap) => { syncMenuNoteState(unitKey, wrap); },
         onTakeNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { fromQuickMenu: true }); }, // the Owner, 3 Nov 2026: no Note yet, so a new Note
         onToggleBookmark: toggleAyahBookmark,
         // The Owner, 9 Oct 2026 (Read view): "there's no button for attaching this Ayah to QCR." The same route as the
@@ -22683,6 +22685,24 @@
       return panePlainNotes && panePlainNotes.key === `${activeTenantId}|${selectedPersonId}|${unitKey}` ? panePlainNotes : null;
     }
     /** "Has a note": the Notes pane's notes (this lookup, else its already-known count) or the retired Note-view store. */
+    /** J114 follow-up (the Owner, 7 Nov 2026, option C): the whole unit's bookmark as a row in the ⋮ sheet, beside the āyah's own tile.
+        Null for an āyah unit (the tile already is that bookmark). Its press runs the bar's retired 🔖 handler (the open unit). */
+    function unitBookmarkOpt() {
+      const info = currentUnitInfo();
+      if (!info || info.unitType === "ayah") return null;
+      return { label: info.label, on: !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: info.unitKey }) };
+    }
+    /** J114 follow-up (the Owner, 7 Nov 2026, F: "If an Ayah already has notes, it opens the old note as well as enable a new blank
+        note"): the Notes tile opens the LATEST Note on the āyah in the Journey tray (the Mapping My Journey Note, over the page; its list
+        holds the others), not the old Notes pane. "+ New Note" beside it opens a blank one through the shared Note opener. */
+    async function openLatestNoteFromMenu(unitKey) {
+      try {
+        const { rows } = await lookupAyahNotes(unitKey, { fresh: true }).promise;
+        if (!rows.length) { openNewNoteFromAyahCard(unitKey, { fromQuickMenu: true }); return; }
+        const tray = await import("./js/journey-tray.js");
+        tray.openJourneyTray({ noteId: rows[0].note.noteId });
+      } catch (error) { reportWriteFailure(error, { what: "open the Note", read: true }); } // I15
+    }
     function ayahHasAnyNote(unitKey) {
       if (ayahHasNote(ayahNotesDoc, unitKey)) return true;
       // The pane's own count is the freshest (it re-reports after every Save); else this session's lookup.
@@ -26444,7 +26464,7 @@
         // button of its own to mean one specific āyah.
         readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, {
           hasNote: ayahHasAnyNote(singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: true,
-          sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(),
+          sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(),
           // Text-tools round -- Word by Word / Root / Derivatives / Collapse,
           // the same group the Note view's own ⋮ carries. Not offered in
           // Mushaf mode, which replaces those choices rather than sharing
@@ -26660,6 +26680,33 @@
         and its ⋮ carries the has-note mark, with no wait for the app to recount. The Note window says "ready" the moment the
         Note exists (mmsa-new-note-ready, same origin); this brings the menus already on screen up to date in place, and keeps
         the count the later lookups (the pane, the Āyah card) will confirm. */
+    /** J114 follow-up: the ⋮ sheet's Notes tile and "+ New Note" row follow whether the āyah has Notes. The sheet is drawn before the lookup lands
+        (the Owner saw "Take Note" on an āyah that had a Note), so each ⋮ looks it up when it opens and corrects itself in place. */
+    function setMenuHasNote(wrap, has) {
+      const tile = wrap.querySelector("[data-qm-note]");
+      if (!tile) return;
+      wrap.querySelector(".ayah-quick-btn")?.classList.toggle("has-note", has);
+      if (!has) return;
+      tile.removeAttribute("data-qm-note-new");
+      const lab = tile.querySelector(".qm-label");
+      if (lab) lab.textContent = t("Notes"); else tile.textContent = `📝 ${t("Note & more…")}`;
+      const rows = wrap.querySelector(".qm-rows");
+      if (rows && !rows.querySelector("[data-qm-note-add]")) {
+        const add = document.createElement("button");
+        add.type = "button"; add.className = "qm-item"; add.setAttribute("data-qm-note-add", "");
+        add.innerHTML = `<span class="qm-rowglyph" aria-hidden="true">＋</span>${escapeHtml(t("New Note"))}`;
+        rows.insertBefore(add, rows.querySelector("[data-qm-unit-bookmark], [data-qm-writing], [data-qm-asma]"));
+      }
+    }
+    async function syncMenuNoteState(unitKey, wrap) {
+      if (!selectedPersonId) return;
+      try {
+        const { rows } = await lookupAyahNotes(unitKey).promise;
+        const live = rows.filter((row) => row.note.status !== NOTE_STATUS.RETIRED);
+        sheetNoteCounts.set(`${activeTenantId}|${selectedPersonId}|${unitKey}`, live.length);
+        setMenuHasNote(wrap, live.length > 0);
+      } catch { /* the tile keeps what it has; the Notes read reports its own failures */ }
+    }
     function noteMadeFromQuickMenu(unitKey) {
       const key = `${activeTenantId}|${selectedPersonId}|${unitKey}`;
       sheetNoteCounts.set(key, Math.max(1, (sheetNoteCounts.get(key) ?? 0) + 1));
@@ -26667,12 +26714,7 @@
       const has = true;
       document.querySelectorAll(`.ayah-quick-wrap[data-unit-key="${CSS.escape(unitKey)}"]`).forEach((wrap) => {
         wrap.querySelector(".ayah-quick-btn")?.classList.add("has-note");
-        const item = wrap.querySelector("[data-qm-note]");
-        if (item) {
-          item.removeAttribute("data-qm-note-new");
-          const lab = item.querySelector(".qm-label"); // J114 sheet menu: only the label changes, the tile's glyph stays
-          if (lab) lab.textContent = t("Note & more…"); else item.textContent = `📝 ${t("Note & more…")}`;
-        }
+        setMenuHasNote(wrap, true);
         wrap.querySelectorAll('.qm-sub input[data-lang="notes"]').forEach((cb) => { cb.disabled = !has; const sp = cb.parentElement?.querySelector("span"); if (sp) sp.textContent = t("My note"); });
       });
     }
@@ -26705,7 +26747,7 @@
       if (fromQuickMenu) window.addEventListener("message", onMade);
       await openNewNoteHere({ ref, unitKey, unitLabel: label, title: noteTitleFor(surah, label), backLabel: fromQuickMenu ? t("Back") : t("Back to Āyah card"),
         ...(reopen ? { onClosed: reopen } : fromQuickMenu ? { onClosed: () => { window.removeEventListener("message", onMade); paintReadNotesBtn(); document.querySelector(`.ayah-quick-wrap[data-unit-key="${CSS.escape(unitKey)}"] .ayah-quick-btn`)?.focus?.({ preventScroll: true }); } } : {}),
-        count: Number.isFinite(known) ? known : null, onOpenExisting: () => openNotesPaneFromAyahCard(unitKey) });
+        count: Number.isFinite(known) ? known : null, onOpenExisting: () => (fromQuickMenu ? openLatestNoteFromMenu(unitKey) : openNotesPaneFromAyahCard(unitKey)) });
     }
     /** The Āyah card's 📝 Note (decisions 94, 95): the Notes pane on that āyah, in the Read view, with "← Back to Āyah
         card". With no Note yet (`fresh`), ✚ New note is put in focus, ready to press. */
@@ -27252,7 +27294,7 @@
       if (!mushafToggle.checked || !currentSurahData) { return; }
       const key = ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf());
       const marked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: key });
-      readQuickMenuSlot.innerHTML = renderQuickMenu(key, { hasNote: ayahHasAnyNote(key), isBookmarked: marked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide() });
+      readQuickMenuSlot.innerHTML = renderQuickMenu(key, { hasNote: ayahHasAnyNote(key), isBookmarked: marked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt() });
       attachAyahQuickMenus(readQuickMenuSlot);
     }
     // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two stops: 6 then 7.
