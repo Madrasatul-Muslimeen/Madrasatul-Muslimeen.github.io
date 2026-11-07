@@ -3101,3 +3101,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.48** (2026-11-08): the Dua Word Card levels, the dua word pop-up and the Menu order.
 - **v13.49** (2026-11-08): the keyboard ring in the night look (MSA J117).
 - **v13.50** (2026-11-08): the four ruling questions on Approach 24 (QR J116).
+- **v13.51** (2026-11-08): Hadith Study card colours and the translation-terms fold.

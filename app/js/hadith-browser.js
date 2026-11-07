@@ -28,6 +28,8 @@ import { el, readFailedNote, langNameInProse, loadHadithStudyActions, openitiDis
 import { renderDua } from "./dua-browser.js";
 import { hadithWordsSection } from "./hadith-word-card.js";
 import { hadithMarksRow } from "./hadith-key-marks.js";
+import { termsFolder } from "./hadith-terms-ui.js";
+import { HADITH_COLOURS, getHadithColours, setHadithColours } from "./hadith-colours.js";
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 import { subjectAddRow, renderSubjectList } from "./hadith-subjects.js";
 
@@ -289,6 +291,16 @@ function controls(state, render) {
   sel.addEventListener("change", () => { state.contentLang = sel.value; render(); });
   langWrap.appendChild(sel);
   bar.appendChild(langWrap);
+  // Card colours (the Owner's choice, 8 Nov 2026): one of four sets, remembered on this device; changes the cards at once.
+  const colWrap = el("label", "hadith-lang-wrap hadith-colours-wrap");
+  colWrap.appendChild(el("span", "hadith-lang-label", t("Card colours")));
+  const colSel = el("select", "hadith-lang-select hadith-colours-select");
+  colSel.id = "hadithColours";
+  const nowColours = getHadithColours();
+  for (const c of HADITH_COLOURS) { const o = el("option", null, t(c.name)); o.value = c.id; if (c.id === nowColours) o.selected = true; colSel.appendChild(o); }
+  colSel.addEventListener("change", () => { setHadithColours(colSel.value); });
+  colWrap.appendChild(colSel);
+  bar.appendChild(colWrap);
   return bar;
 }
 
@@ -663,7 +675,8 @@ function hadeethEncCard(id, resolvedRecord, state, localRefresh) {
   back.addEventListener("click", () => { state.hc.hadithId = null; localRefresh(); });
   card.appendChild(back);
 
-  if (record.title) card.appendChild(el("h3", "hadith-row-name", record.title));
+  const tf = termsFolder(record, lang); // the Owner's translation-terms rule (8 Nov 2026): Rabb, Allah, Rasulullah Sallallahu A'laihi Wa Sallam, folded at display time
+  if (record.title) { const h3 = el("h3", "hadith-row-name"); tf.set(h3, record.title); card.appendChild(h3); }
 
   const ar = el("p", "hadith-arabic", hadithArabicText(record, lang) ?? "");
   ar.lang = "ar"; ar.dir = "rtl";
@@ -680,7 +693,7 @@ function hadeethEncCard(id, resolvedRecord, state, localRefresh) {
         { lang: langNameInProse(requestedLang), shown: langNameInProse(lang) });
       block.appendChild(warn);
     }
-    block.appendChild(el("p", "hadith-translation-text", record.hadeeth ?? ""));
+    const trText = el("p", "hadith-translation-text"); tf.set(trText, record.hadeeth ?? ""); block.appendChild(trText);
     card.appendChild(block);
   } else if (isFallback) {
     // Fell all the way back to Arabic -- requestedLang has no translation at
@@ -705,17 +718,18 @@ function hadeethEncCard(id, resolvedRecord, state, localRefresh) {
     summary.textContent = t("Show explanation");
     summary.dataset.hadeethencExplanationToggle = "true";
     details.appendChild(summary);
-    if (record.explanation) details.appendChild(el("p", null, record.explanation));
+    if (record.explanation) { const ex = el("p"); tf.set(ex, record.explanation); details.appendChild(ex); }
     if (record.hints && record.hints.length) {
       const ul = document.createElement("ul");
       ul.dataset.hadeethencHints = String(record.hints.length);
-      for (const hint of record.hints) ul.appendChild(el("li", null, hint));
+      for (const hint of record.hints) { const li = el("li"); tf.set(li, hint); ul.appendChild(li); }
       details.appendChild(ul);
     }
     if (record.words_meanings) details.appendChild(hadeethEncWordsMeanings(record.words_meanings));
     card.appendChild(details);
   }
 
+  { const sw = tf.switchEl(); if (sw) card.appendChild(sw); } // "As sourced": shown only when the terms fold changed this card
   // Keys to Understanding K1 Part A (PCF MSA J03): the hadith's words, each opening QR's Word card or the Hadith Word Card.
   card.appendChild(hadithMarksRow({ number: id })); // Part B: Difficult / Need practice / Done on this hadith
   const arabicText = hadithArabicText(record, lang) ?? record.hadeeth_ar ?? null;
