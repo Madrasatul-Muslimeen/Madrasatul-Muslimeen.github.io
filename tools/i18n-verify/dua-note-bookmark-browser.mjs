@@ -117,7 +117,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
       check(`${tag} ← Back lands on the Duas page again, with Dua 20's card on screen`, back && /view=dua/.test(there.url) && /dua=20\b/.test(there.url) && there.onScreen, JSON.stringify(there));
     }
   }
-  check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource|filing it in this folder failed/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
+  check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
 
   // The Bookmarks page's link (?resume=dua:45) reopens Dua 45 on its own page (page 2).

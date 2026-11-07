@@ -454,8 +454,9 @@ for (const lang of LANGS) for (const width of WIDTHS) {
       const there = await ev(page, () => { const r = document.querySelector('[data-dua-card="1"]')?.getBoundingClientRect(); return { card: !!r, on: !!r && r.bottom > 0 && r.top < innerHeight }; });
       check(`${t}: ← Back from Notes lands on Dua 1's card, on screen`, there.card && there.on, JSON.stringify(there));
     }
-    // The stub has no folders, so the new-Note window's own filing step reports this one known message; nothing else is excused.
-    const own = noErr(errors).filter((e) => !/filing it in this folder failed/i.test(e));
+    // Architect's review (7 Nov): no message is excused here -- the run is clean without one, and "filing it in this folder
+    // failed" is the Note window's own I15 sentence to a real reader, so it must fail this check if it ever appears.
+    const own = noErr(errors);
     check(`${t}: no page errors`, own.length === 0, own.slice(0, 2).join(" | "));
   });
 
