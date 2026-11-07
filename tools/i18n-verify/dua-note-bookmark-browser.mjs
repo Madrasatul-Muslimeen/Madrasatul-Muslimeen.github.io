@@ -5,6 +5,7 @@
 // Bookmarks page's ?resume=dua:<n> reopens that card on its own page. A failed save says so (I15).
 // Expected values written BY HAND: Dua 45 is on page 2 (40 cards a page, most narrated first).
 // Run from the repository root, serve.js on :8080.
+//   --mutate=nonote    the 📝 press does not open the shared window -> the window check fails
 //   --mutate=noback    the Notes link loses back=1          -> the Back checks fail
 //   --mutate=wrongkey  the bookmark is saved under hadith:… -> the key check fails
 //   --mutate=noresume  ?resume=dua:<n> is not read          -> the resume check fails
@@ -26,6 +27,7 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
+  nonote: ["js/dua-browser.js", "    openDuaNewNote(dua, name, note);\n", "    window.location.href = note.href;\n"],
   noback: ["js/hadith-study-actions.js", '  params.set("back", "1");\n', "\n"],
   wrongkey: ["js/hadith-study-actions.js", "    subjectId: DUA_BOOKMARK_SUBJECT_ID, name, position: unitKey, uid: session.uid,", "    subjectId: DUA_BOOKMARK_SUBJECT_ID, name, position: `hadith:${unitKey}`, uid: session.uid,"],
   noresume: ["hadith-study.html", '/^dua:(\\d{1,5})$/.exec(resumeParam ?? "")', "null"],
@@ -86,8 +88,15 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   check(`${tag} ...and the button then says ${bn ? "★ বুকমার্ক সরান" : "★ Remove bookmark"}`, markNow === (bn ? "★ বুকমার্ক সরান" : "★ Remove bookmark"), markNow);
 
   // My Notes and back: the Notes page for the dua, then ← Back to the same card.
+  // 7 Nov 2026 (Dua Lead, duaRef): pressing 📝 My Notes now opens the shared new-Note window over the unmoved page (note-opener.js),
+  // for dua:20, with the dua's block in it; the link's own address (notes.html) stays as the old route, which the checks below
+  // still walk (the press has already remembered this card's place, so Back lands here).
+  await P.click(`${ROW} [data-dua-note-link]`);
+  const frameSrc = await P.waitForFunction(() => document.querySelector('iframe[src*="journey-map.html"]')?.getAttribute("src") || null, null, { timeout: 15000 }).then((h) => h.jsonValue()).catch(() => null);
+  const fq = new URLSearchParams((frameSrc ?? "").split("?")[1] ?? "");
+  check(`${tag} 📝 opens the new-Note window for dua:20 (the shared opener), labelled ${bn ? "দুআ ২০" : "Dua 20"}`, !!frameSrc && fq.get("new") === "1" && fq.get("unit") === "dua:20" && fq.get("unitLabel") === (bn ? "দুআ ২০" : "Dua 20"), String(frameSrc));
   let went = true;
-  await Promise.all([P.waitForURL(/notes\.html\?/, { timeout: 15000 }), P.click(`${ROW} [data-dua-note-link]`)]).catch(() => { went = false; });
+  await Promise.all([P.waitForURL(/notes\.html\?/, { timeout: 15000 }), P.evaluate((sel) => { location.href = document.querySelector(sel).href; }, `${ROW} [data-dua-note-link]`)]).catch(() => { went = false; });
   check(`${tag} My Notes opens the Notes page`, went);
   if (went) {
     await P.waitForFunction(() => document.getElementById("unitBanner")?.textContent.trim().length > 0, null, { timeout: 15000 }).catch(() => {});

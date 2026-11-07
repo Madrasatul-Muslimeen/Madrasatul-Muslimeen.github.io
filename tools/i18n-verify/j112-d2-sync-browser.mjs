@@ -15,7 +15,9 @@
 //             Journey, then Connect"; the queue survives the page and goes from the full Map
 //   embedded  on a connected device, an embedded pane sends after a save by itself -- and loads nothing of Siyagah's before
 //   lock      one sender at a time across tabs (a Web Lock): held elsewhere -> nothing sent; free -> sent ONCE
-//   trash     MSA's Trash -> note.delete; restore -> note.add again (a fresh id if Siyagah still holds the old one)
+//   trash     MSA's Trash -> note.delete; restore -> note.add under a NEW id every time (.r1, .r2 ...: a deleted id is dead)
+//   untitled  an untitled Note goes with its first words as the title; that title never comes back as the Note's own
+//   open      "open in Siyagah -- try again" (the owner has it open in Siyagah's editor) is not final: it goes again later
 //   only      every write on a notebooks/ path is a setDoc (no merge) into notebooks/<nb>/mmjin
 //   layout    the mark at 390 / 768 / 1280, en and bn: inside the pane, no sideways scroll, the same height as the folder
 //             chips beside it (32px, the chips' own size), contrast >= 4.5
@@ -44,7 +46,7 @@ const MUTATIONS = {
   "no-mark": [[[J, ".concat(syncChips(note))", ".concat([])"]], "send: the Note says it is waiting to go to Siyagah"],
   "mark-english": [[["app/js/i18n/bn.js", '"In Siyagah ✓": "সিয়াগাহ-এ আছে ✓",', ""]], "bn: the mark is in Bangla"],
   "label-old": [[[J, '"journey-map": () => t("Primary"),', '"journey-map": () => t("Personal Journey Map"),']], "primary: the Map's folder for Notes not yet filed is called Primary"],
-  "no-pull": [[[M, 'if (siyChanged) steps.push({ kind: "pull", noteId, title: cn.title ?? "", bodyHtml: cn.content ?? "", base: cn.updatedAt });\n      continue;', "continue;"]], "pull: Siyagah's newer copy comes back as a new revision of the Note (siyagah-sync), with its title and text"],
+  "no-pull": [[[M, 'if (siyChanged) steps.push({ kind: "pull", noteId, title: titleBack(l, cn), bodyHtml: cn.content ?? "", base: cn.updatedAt });\n      continue;', "continue;"]], "pull: Siyagah's newer copy comes back as a new revision of the Note (siyagah-sync), with its title and text"],
   // The no-echo rule has two guards: the agreed text (`sent`) and the snapshot last seen (`seen`). Breaking `seen` alone was
   // measured to send nothing (the `sent` guard stops it), so the mutation that must go red breaks `sent`.
   "pull-loops": [[[M, 'case "pull": return l ? put({ ...l, base: step.base, sent: textHash(step.title, step.bodyHtml),', 'case "pull": return l ? put({ ...l, base: step.base, sent: l.sent,'], [J, "return { seen: syncSnapshotOf(note).hash };", "return {};"]], "pull: after a reload, still nothing is sent back"],
@@ -59,8 +61,13 @@ const MUTATIONS = {
   "flag-never-written": [[["app/js/siyagah-map-link.js", 'try { localStorage.setItem(SIYAGAH_CONNECTED_KEY, "1"); } catch { /* private mode: the panes just wait */ }', ""]], "send: connecting in the Map marks this device as connected (for the embedded panes)"],
   "no-lock": [[[S, "const locks = globalThis.navigator?.locks;", "const locks = null;"]], "lock: while another tab holds the sender's lock, this tab sends nothing"],
   "trash-not-sent": [[[J, "queueSyncTrash(note, true); // J112 D2 review: to Siyagah's Trash too", ""]], "trash: moving the Note to Trash here sends ONE note.delete {id, base} (to Siyagah's Trash, Undo there)"],
-  "restore-not-sent": [[[M, "if (l.base != null && !l.trashedHere) continue;", "if (l.base != null) continue;"]], "trash: restoring it here sends it back to Siyagah (note.add, the same id)"],
-  "restore-id-stuck": [[[M, "} else if (outcome.kind === \"refused\" && inf.restore && /id already used/.test(outcome.why || \"\")) {", "} else if (false) {"]], "trash: Siyagah still holding that id in its Trash -> added back under a fresh id (x-msa-n-<note>.r1)"],
+  "restore-not-sent": [[[M, "if (l.base != null && !l.trashedHere) continue;", "if (l.base != null) continue;"]], "trash: restoring it here sends it back to Siyagah (note.add, a NEW id x-msa-n-<note>.r1: a deleted id stays dead)"],
+  // J112 D2 refusals (Siyagah v05.72's real handler, tested by the Siyagah Architect).
+  "restore-id-reused": [[[M, "const id = restore ? nextRestoreId(l.mmjId) : l.mmjId;", "const id = l.mmjId;"]], "trash: restoring it here sends it back to Siyagah (note.add, a NEW id x-msa-n-<note>.r1: a deleted id stays dead)"],
+  "second-restore-reuses": [[[M, "if (inf.newId) n.mmjId = inf.newId;", ""]], "trash: a second restore after a second delete takes yet another id (.r2), never .r1 again"],
+  "open-is-final": [[[M, "} else if (outcome.kind === \"refused\" && TRANSIENT_REFUSAL.test(outcome.why || \"\")) {", "} else if (false) {"]], "open: \"open in Siyagah -- try again\" is not final: the same note.add goes again by itself after a while"],
+  "untitled-refused": [[[M, "const title = sentTitleOf(w);", "const title = w.title;"]], "untitled: an untitled Note goes with its first words as the title (never an empty title, which Siyagah refuses)"],
+  "title-pulled-back": [[[M, 'const titleBack = (l, cn) => (l.fbTitle != null && String(cn.title ?? "") === l.fbTitle ? "" : String(cn.title ?? ""));', 'const titleBack = (l, cn) => String(cn.title ?? "");']], "untitled: Siyagah's change comes back, but the made-up title does NOT become the Note's title"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`unknown mutation ${MUTATE}; known: ${Object.keys(MUTATIONS).join(", ")}`);
 const SERVED = {};
@@ -108,6 +115,8 @@ const seedJs = () => `
   N("n1", "Alpha note", "r1"); P("p1", "n1", "fA");
   N("n2", "Waiting note", "r2"); P("p2", "n2", "fSys");
   N("n3", "Untouched note", "r3"); P("p3", "n3", "fA");
+  N("n4", "", "r4"); P("p4", "n4", "fA");
+  DATA.notes[DATA.notes.length - 1].bodyHtml = "<p>Patience is half of faith, and gratitude the other half of it, said the scholars of old.</p>";
   DATA["${MMJ}"] = [{ _id: "t~0", v: 1, at: TS(1000), b: "v05.68", sec: { id: "mmj-sec", n: "Mapping My Journey" }, folders: ${JSON.stringify(TREE)} }];
   try { localStorage.setItem("msa-siyagah-mmj-open", "1"); localStorage.setItem("mmsa-journey-note-window.details", "1"); } catch (e) {}
   // A reload in this suite is a REAL reload: what the last page wrote is still there (the stub alone would forget it).
@@ -150,10 +159,14 @@ const revs = (page) => page.evaluate(() => (window.__stubWriteData || []).filter
 async function gather(page) { allWrites.push(...(await nbWrites(page))); }
 const emit = (page, col, row) => page.evaluate(([c, r]) => window.__stubEmit(c, r), [col, row]);
 const answer = (page, req, extra) => emit(page, MMJIN, { _id: req.id, ...req.data, at: null, ...extra });
-const emitNote = (page, note, atMs) => page.evaluate(([c, n, at]) => window.__stubEmit(c, { _id: "n~" + n.id, ...n, at: window.__TS(at) }), [MMJ, note, atMs]);
+// The note's document id exactly as Siyagah writes it (mmjNoteDocId: a "." is %2E -- a restored id x-msa-n-<n>.r1 has one).
+const docIdOf = (id) => "n~" + encodeURIComponent(String(id)).replace(/\./g, "%2E");
+const emitNote = (page, note, atMs) => page.evaluate(([c, n, at, d]) => window.__stubEmit(c, { _id: d, ...n, at: window.__TS(at) }), [MMJ, note, atMs, docIdOf(note.id)]);
 const emitTree = (page, folders, atMs) => page.evaluate(([c, f, at]) => window.__stubEmit(c, { _id: "t~0", v: 1, at: window.__TS(at), b: "v05.68", sec: { id: "mmj-sec", n: "Mapping My Journey" }, folders: f }), [MMJ, folders, atMs]);
 const waitFor = (page, fn, arg, t = 6000) => page.waitForFunction(fn, arg, { timeout: t }).then(() => true, () => false);
 const keys = (o) => Object.keys(o || {}).sort().join(",");
+/** The device's sync record for t1|p1 (failure details only). */
+const syncState = (page) => page.evaluate(() => new Promise((res) => { try { const rq = indexedDB.open("msa-siyagah-sync-v1", 1); rq.onsuccess = () => { try { const g = rq.result.transaction("kv").objectStore("kv").get("t1|p1"); g.onsuccess = () => res(g.result || null); g.onerror = () => res(null); } catch (e) { res(null); } }; rq.onerror = () => res(null); } catch (e) { res(null); } }));
 /** Keep what this page wrote (MSA's Notes and Siyagah's copy), close it, and open the Map again: a real reload. */
 async function reopen(ctx, page, opts = {}) {
   await gather(page);
@@ -419,11 +432,85 @@ try {
   await page.evaluate(() => document.querySelector('[data-trash-note-id="n1"] [data-trash-restore]').click());
   await waitFor(page, (c) => (window.__stubWriteData || []).filter((w) => w.col === c).length >= 3, MMJIN, 8000);
   r = await reqs(page);
-  check("trash: restoring it here sends it back to Siyagah (note.add, the same id)", r.length === 3 && r[2].data.op === "note.add" && r[2].data.id === "x-msa-n-n1" && /Before Trash\./.test(r[2].data.content || ""), JSON.stringify(r.map((x) => x.data)));
-  if (r[2]) await answer(page, r[2], { st: "refused", why: "id already used" });
-  await waitFor(page, (c) => (window.__stubWriteData || []).filter((w) => w.col === c).length >= 4, MMJIN, 8000);
+  check("trash: restoring it here sends it back to Siyagah (note.add, a NEW id x-msa-n-<note>.r1: a deleted id stays dead)", r.length === 3 && r[2].data.op === "note.add" && r[2].data.id === "x-msa-n-n1.r1" && /Before Trash\./.test(r[2].data.content || ""), JSON.stringify(r.map((x) => [x.data.op, x.data.id])));
+  // Done; then a second delete and a second restore.
+  if (r[2]) {
+    await answer(page, r[2], { st: "done", res: { id: r[2].data.id }, doneAt: 1 });
+    await emitNote(page, { id: r[2].data.id, title: r[2].data.title, content: r[2].data.content, folderIds: ["f-alpha"], updatedAt: "2026-11-07T05:00:00Z" }, 4000);
+  }
+  ({ page } = await reopen(ctx, page));
+  await openNote(page, "n1", "fA");
+  await page.click("#notePane [data-pane-menu-btn]");
+  await page.click("#notePane [data-pane-menu] [data-pane-delete]");
+  await page.waitForSelector("[data-note-delete-yes]", { state: "visible", timeout: 3000 });
+  await page.click("[data-note-delete-yes]");
+  await waitFor(page, (c) => (window.__stubWriteData || []).some((w) => w.col === c), MMJIN, 8000);
   r = await reqs(page);
-  check("trash: Siyagah still holding that id in its Trash -> added back under a fresh id (x-msa-n-<note>.r1)", r.length === 4 && r[3].data.op === "note.add" && r[3].data.id === "x-msa-n-n1.r1", JSON.stringify(r.map((x) => [x.data.op, x.data.id])));
+  check("trash: the second delete goes against the restored id", r.length === 1 && r[0].data.op === "note.delete" && r[0].data.id === "x-msa-n-n1.r1" && r[0].data.base === "2026-11-07T05:00:00Z", JSON.stringify(r.map((x) => x.data)) + " " + JSON.stringify((await syncState(page))?.links?.n1));
+  if (r[0]) {
+    await answer(page, r[0], { st: "done", res: { id: r[0].data.id }, doneAt: 1 });
+    await page.evaluate(([c, d]) => window.__stubEmit(c, { _id: d, id: "x-msa-n-n1.r1", gone: true, at: window.__TS(5000) }), [MMJ, docIdOf("x-msa-n-n1.r1")]);
+  }
+  await page.waitForTimeout(600);
+  await page.click("#openTrashBtn").catch(async () => { await page.evaluate(() => document.getElementById("openTrashBtn")?.click()); });
+  await page.waitForSelector('[data-trash-note-id="n1"] [data-trash-restore]', { state: "attached", timeout: 6000 });
+  await page.evaluate(() => document.querySelector('[data-trash-note-id="n1"] [data-trash-restore]').click());
+  await waitFor(page, (c) => (window.__stubWriteData || []).filter((w) => w.col === c).length >= 2, MMJIN, 8000);
+  r = await reqs(page);
+  check("trash: a second restore after a second delete takes yet another id (.r2), never .r1 again", r.length === 2 && r[1].data.op === "note.add" && r[1].data.id === "x-msa-n-n1.r2", JSON.stringify(r.map((x) => [x.data.op, x.data.id])));
+  await gather(page);
+  await ctx.close();
+} catch (err) { crashed(err); }
+
+// --- an untitled Note, and "open in Siyagah -- try again" ------------------------------------------------------------------
+console.log("\n=== untitled, open in Siyagah (en, 1280) ===");
+try {
+  const ctx = await newCtx();
+  let { page } = await openMap(ctx);
+  await openNote(page, "n4", "fA");
+  await editNote(page, " Truly.");
+  await waitFor(page, (c) => (window.__stubWriteData || []).some((w) => w.col === c), MMJIN);
+  let r = await reqs(page);
+  const add = r[0];
+  check("untitled: an untitled Note goes with its first words as the title (never an empty title, which Siyagah refuses)",
+    r.length === 1 && add.data.op === "note.add" && add.data.title === "Patience is half of faith, and gratitude the other half of…", JSON.stringify(r.map((x) => x.data)));
+  // Siyagah: the owner has it open in its editor.
+  await answer(page, add, { st: "refused", why: "open in Siyagah — try again" });
+  await page.waitForTimeout(1200);
+  check("open: \"open in Siyagah -- try again\": the Note still says waiting, never \"Not in Siyagah\"", /Waiting to go to Siyagah/.test(await markText(page)), await markText(page));
+  check("open: ...and it is not sent again at once (no tight loop)", (await reqs(page)).length === 1, JSON.stringify((await reqs(page)).map((x) => x.data.op)));
+  await waitFor(page, (c) => (window.__stubWriteData || []).filter((w) => w.col === c).length >= 2, MMJIN, 40000);
+  r = await reqs(page);
+  check("open: \"open in Siyagah -- try again\" is not final: the same note.add goes again by itself after a while",
+    r.length === 2 && r[1].data.op === "note.add" && r[1].data.id === "x-msa-n-n4" && r[1].data.title === add.data.title && r[1].data.content === add.data.content, JSON.stringify(r.map((x) => x.data)));
+  if (r[1]) {
+    await answer(page, r[1], { st: "done", res: { id: "x-msa-n-n4" }, doneAt: 1 });
+    await emitNote(page, { id: "x-msa-n-n4", title: r[1].data.title, content: r[1].data.content, folderIds: ["f-alpha"], updatedAt: "2026-11-07T01:00:00Z" }, 2000);
+  }
+  await waitFor(page, () => /In Siyagah ✓/.test(document.querySelector('#notePane [data-pane-chip="~siyagah"]')?.textContent || ""));
+  // A text edit of the still-untitled Note: never an empty title.
+  await editNote(page, " Again.");
+  await waitFor(page, (c) => (window.__stubWriteData || []).filter((w) => w.col === c).length >= 3, MMJIN);
+  r = await reqs(page);
+  const ed = r[2];
+  check("untitled: its note.edit never carries an empty title", !!ed && ed.data.op === "note.edit" && (!("title" in ed.data) || String(ed.data.title).trim() !== "") && /Again\./.test(ed.data.content || ""), JSON.stringify(ed?.data));
+  if (ed) {
+    await answer(page, ed, { st: "done", res: { id: "x-msa-n-n4" }, doneAt: 1 });
+    await emitNote(page, { id: "x-msa-n-n4", title: ed.data.title ?? r[1].data.title, content: ed.data.content, folderIds: ["f-alpha"], updatedAt: "2026-11-07T02:00:00Z" }, 2100);
+  }
+  await page.waitForTimeout(800);
+  // Siyagah changes its text, keeping the title this app made up: it comes back as text only.
+  const shownTitle = ed?.data.title ?? r[1]?.data.title;
+  const before = (await reqs(page)).length;
+  await emitNote(page, { id: "x-msa-n-n4", title: shownTitle, content: "<p>Changed in Siyagah, still untitled here.</p>", folderIds: ["f-alpha"], updatedAt: "2026-11-07T03:00:00Z" }, 2200);
+  await waitFor(page, () => (window.__stubWriteData || []).some((w) => w.col === "noteRevisions" && w.data?.revisionReason === "siyagah-sync"));
+  const back = (await revs(page)).filter((x) => x.reason === "siyagah-sync");
+  check("untitled: Siyagah's change comes back, but the made-up title does NOT become the Note's title",
+    back.length === 1 && back[0].title === "" && /Changed in Siyagah, still untitled here\./.test(back[0].body), JSON.stringify(back));
+  ({ page } = await reopen(ctx, page));
+  await page.waitForTimeout(1500);
+  check("untitled: ...and nothing is sent back for it, not even after a reload", (await reqs(page)).length === 0, JSON.stringify((await reqs(page)).map((x) => x.data)));
+  void before;
   await gather(page);
   await ctx.close();
 } catch (err) { crashed(err); }
