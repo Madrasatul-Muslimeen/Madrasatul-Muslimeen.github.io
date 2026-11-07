@@ -16,8 +16,9 @@ From session `session_01PL2xbLR47r6za77W9ZmqTx` ("📌 (03C) MSA - DUA Lead - 07
 Measured on the repository's own files (`tools/hadith-data-pull/output/dua/grammar-*.json`, built by `dua-word-grammar.py` with CAMeL Tools, calima-msa-r13 is GPL-2 at build time only):
 - 3,280 unlinked dua words carry a computer guess [lemma, root, pos, vowelled]; 2,577 have a root; 618 distinct roots, 380 of them in two or more duas, so a cross-dua **Family** needs no new data.
 - Against the Qur'an dictionaries (en, bn) the guessed lemma matches exactly (marks and all) for 708 words (en) / 589 (bn); matching on letters alone gives 1,827 / 1,574, but that can pair homographs, so it is only a suggestion. 638 of 1,201 distinct lemmas (1,423 words) have no entry in either.
-- A direct match of the dua lemmas against Wiktionary (kaikki.org, CC BY-SA 4.0) was run in the scratchpad: see the PCF options text for the number.
+- A direct match of the dua lemmas against Wiktionary (kaikki.org, CC BY-SA 4.0), run in the scratchpad only: 1,072 of 1,201 lemmas (3,030 of 3,280 words, 92%) have an entry by letters alone (wrong-sense risk). The Owner's two tick questions are PCF MSA J104 n104q (meanings: A Wiktionary as "suggested, to be checked" recommended, B Qur'an dictionaries only, C none) and n104r (other levels: A Family across duas now, B also verb tables after the Architect clears the tool, C nothing). Build nothing on either until ticked.
 - Verb tables (Taṣrīf) for dua words need a paradigm generator (CAMeL's generator is MIT code, its database GPL-2): a rights question for the Architect before any shipping.
+- The rights of the CURRENT grammar files is PCF MSA J118 (the Architect's): comment j118c1 records the build script `tools/hadith-data-pull/dua-word-grammar.py`, the stamp "camel-tools 1.6.0, calima-msa-r13" in all 79 `output/dua/grammar-<page>.json` files (merge 4a910ce, 2 Nov), and that only the analysis output ships.
 
 ## Sandbox notes added
 - `npm root -g` has playwright; ES modules ignore `NODE_PATH`, so `ln -s $(npm root -g) node_modules` at the repository root (it is git-ignored) lets the suites import it.
