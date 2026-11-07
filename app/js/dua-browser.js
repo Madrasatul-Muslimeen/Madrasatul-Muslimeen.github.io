@@ -8,6 +8,7 @@ import { TRANSLATED_BOOKS } from "./hadith-translations.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import { duaSel, DUA_VOW_EVENT } from "./dua-poster.js";
 import { loadOpenitiBookIndex, loadOpenitiConcordance, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar, loadDuaFit } from "./openiti-corpus.js";
+import { bindDuaWordPopup } from "./dua-word-popup.js";
 import { buildCheckPanel, loadMemberTexts, applyMembers, checkChipText, checkState, duaSaveFailed } from "./dua-check.js";
 import { plainMessageFor } from "./errors.js";
 import { el, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
@@ -275,6 +276,13 @@ export function duaCard(c, summary, state, render, progressRows, wordLinks = nul
     };
     panel.addEventListener("keydown", escWord);
     words.addEventListener("keydown", escWord);
+    // The Owner, 7 Nov: the whole word card opens as a pop-up (dua-word-popup.js), closed by ×, Escape or a tap outside.
+    bindDuaWordPopup(panel, () => {
+      const opener = words.querySelector('.dua-word[aria-pressed="true"]');
+      opener?.setAttribute("aria-pressed", "false");
+      panel.hidden = true;
+      opener?.focus({ preventScroll: true });
+    });
     duaWordTokens(picked.words).forEach((tok, i) => {
       if (i) words.appendChild(document.createTextNode(" "));
       // Decision 96: a word fixed in a check shows its fixed vowels; "not this Qur'an word" shows it unlinked.
