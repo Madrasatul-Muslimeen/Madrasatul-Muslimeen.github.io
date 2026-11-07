@@ -4536,7 +4536,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
   // 3 Nov 2026 (QR Lead): the stub applies what the app writes (opt-in, as read-note-pane-browser.mjs does), so the new Note
   // the ⋮ "Take Note" opens can write its Note and placement without the stub refusing it; real errors still count below.
-  const ctx = await ctxFor({ banner: false, extraSeedJs: "window.__stubApplyBatches = true; window.__stubRecordTxData = true;" });
+  const ctx = await ctxFor({ legacyTools: true /* drives the retired ⋯ path (J114 ONE menu) */, banner: false, extraSeedJs: "window.__stubApplyBatches = true; window.__stubRecordTxData = true;" });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400); // ensureAyahNoteDataLoaded() is fire-and-forget from this same click
@@ -5372,7 +5372,7 @@ console.log("\n=== 44. The Bookmark Manager (bookmarks.html) -- items 2/3/5 ==="
 
 console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/restore (item 4), and the READ screen's own star (item 3) ===");
 {
-  const ctx = await ctxFor({ banner: false });
+  const ctx = await ctxFor({ legacyTools: true /* drives the retired ⋯ path (J114 ONE menu) */, banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);

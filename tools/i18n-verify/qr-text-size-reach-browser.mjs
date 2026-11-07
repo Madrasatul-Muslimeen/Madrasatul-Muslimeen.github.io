@@ -41,7 +41,8 @@ const PLAIN = { "360x740": [19, 360], "390x844": [19, 360], "768x1024": [381, 32
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
 async function boot(lang, w, h, size) {
-  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width: w, height: h } });
+  // legacyTools: drives the retired ⋯ panel (PCF MSA J114 ONE menu)
+  const ctx = await newContext(browser, { legacyTools: true, appLang: lang, banner: false, viewport: { width: w, height: h } });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     const [from, to] = MUT[MUTATE];

@@ -50,7 +50,8 @@ const DATA_TEXT = /\bsurah_\d+\b|Try again/g;
 const englishLeft = (text) => (String(text).replace(DATA_TEXT, " ").replace(ALLOWED, " ").match(/[A-Za-z]{3,}/g) || []);
 
 async function open(lang, width, pagePath = "/app/quranrevival.html", timezoneId = null) {
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width > 600 ? 900 : 844 }, extraSeedJs: SEED, timezoneId });
+  // legacyTools: drives the retired ⋯ path (PCF MSA J114 ONE menu)
+  const ctx = await newContext(browser, { legacyTools: true, appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width > 600 ? 900 : 844 }, extraSeedJs: SEED, timezoneId });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     const [file, glob, from, to] = MUTATIONS[MUTATE];
