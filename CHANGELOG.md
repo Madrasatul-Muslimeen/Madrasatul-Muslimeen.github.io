@@ -23380,3 +23380,9 @@ The evening's third release, the follow-up to v13.26.
 - **Review:** sent back once by measurement: the account Menu dropdown ran 30px off a phone's right edge, and ▶ ⤢ were not centred in the top bar. Both fixed; dua-home-bar-browser 48/0 with its mutations red.
 - **Checks (on `bad4b5ff`):** dua-home-bar 48/0, dua-card-r2 158/0, dua-study-page 137/0, dua-poster-r3 126/0, way-back-hadith-dua 360/0, large-text-dua-study 1779/0, night-hadith-dua 6038/0, hadith-dua-a11y --page=dua 1423/0, apps-build-check 48/0; behaviour 974/1 (14a, the same as main). hadith-dua-keyboard 988 passed / 98 failed, identical on `main`: the night-look focus ring (rgb(16,16,16) on the night panel, 1.09:1) and Tab order to Copy in Share at 200%; old, recorded as PCF MSA J117.
 - Nothing deployed to Firestore.
+
+## v13.44 — 7 Nov 2026 — The ⋮ sheet: whole-unit bookmark, latest Note and New Note (QR J114 n114b)
+
+- **PCF MSA · QR J114 n114b (the Owner: "1(C).2.F"; QR Lead #1500, head `a97dd3b4`, reviewed by the Architect).** Quran Study → Read, the ⋮ sheet: (C) a "Bookmark · <unit>" row when the Study Unit is wider than one āyah, which bookmarks the whole unit; (F) when the āyah has Notes, the Notes tile opens the latest Note in the Journey tray (the page does not move), and a "＋ New Note" row opens a blank new version through the shared Note opener. Each ⋮ looks its Notes up when it opens. The rows wrap inside the sheet at 150/200% text and in Bangla.
+- **Checks:** Architect: ayah-notes-open-latest 39/0, ayah-menu-sheet 73/0, behaviour 974/1 (14a, the same as main). QR Lead: mutations pane, nounit, nosync, plain1fr, nowrap all red; ayah-step 32/0, qr-j110 78/0, read-note-pane 228/0, listen-bookmark 48/0, audit-part12-words 500/0, apps-build-check 48/0.
+- Nothing deployed to Firestore.

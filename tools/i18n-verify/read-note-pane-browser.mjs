@@ -272,11 +272,12 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.click());
   await P.waitForTimeout(200);
   await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-note]")?.click());
-  await P.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
-  await P.waitForTimeout(300);
-  const qm = await ev(() => ({ pane: !document.getElementById("readNotePane").hidden, title: document.querySelector("#readNotePane .rnp-title")?.textContent, note: !!document.getElementById("noteView") }));
-  check(`${tag} ⋮ Note & more opens the Notes pane on 2:256, not the Note view`, qm.pane && qm.title === W.title256 && !qm.note, JSON.stringify(qm));
-  await P.click("#readNotePane [data-rnp-back]");
+  // UPDATED IN PLACE for PCF MSA J114 follow-up (the Owner, 7 Nov 2026, "2.F"): on an āyah WITH Notes the ⋮ Notes tile opens the latest Note in the
+  // Journey tray (the Mapping My Journey Note), no longer the Notes pane, which the Owner called the wrong place.
+  await P.waitForFunction(() => { const t = document.getElementById("journeyTray"); return t && !t.hidden && (t.querySelector("iframe")?.getAttribute("src") ?? "").includes("note="); }, null, { timeout: 8000 }).catch(() => {});
+  const qm = await ev(() => ({ pane: !!document.getElementById("readNotePane") && !document.getElementById("readNotePane").hidden, tray: !!document.getElementById("journeyTray") && !document.getElementById("journeyTray").hidden, src: document.querySelector("#journeyTray iframe")?.getAttribute("src") ?? "", note: !!document.getElementById("noteView") }));
+  check(`${tag} ⋮ Notes tile (2:256 has Notes) opens the latest Note in the Journey tray, not the Notes pane and not the Note view`, qm.tray && /note=/.test(qm.src) && !qm.pane && !qm.note, JSON.stringify(qm));
+  await ev(() => { const t = document.getElementById("journeyTray"); if (t) t.hidden = true; });
   //   ADDED (the Owner, 3 Nov 2026: "A click on note from here was supposed to bring to the plain note page"): on an āyah with
   //   NO Note yet (2:258) the ⋮ menu's item is "Take Note" and opens a NEW Note at once (the shared Note window, the Āyah
   //   inside it), not the empty Notes pane. With Notes (2:256, above) it stays "Note & more…" and opens the pane.
@@ -294,15 +295,16 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   await P.waitForFunction(() => document.getElementById("noteOpener")?.hidden, null, { timeout: 8000 }).catch(() => {});
   //   ADDED (the Architect's follow-up, 3 Nov 2026): right after that Note is made, the same āyah's ⋮ shows the has-note mark and
   //   its Note item reads "Note & more…", with no wait for a recount.
-  await P.waitForFunction(() => /Note & more|আরও/.test(document.querySelector("#readQuickMenuSlot [data-qm-note]")?.textContent ?? ""), null, { timeout: 8000 }).catch(() => {});
+  await P.waitForFunction(() => /Notes|Note & more|নোট|আরও/.test(document.querySelector("#readQuickMenuSlot [data-qm-note]")?.textContent ?? ""), null, { timeout: 8000 }).catch(() => {});
   const afterMake = await ev(() => { const b = document.querySelector("#readQuickMenuSlot [data-qm-note]"); return { label: b?.textContent.trim(), isNew: b?.hasAttribute("data-qm-note-new"), mark: document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.classList.contains("has-note") }; });
-  check(`${tag} right after a Note is made from ⋮ on 2:258 the item reads "Note & more…" and the ⋮ shows the has-note mark`, afterMake.isNew === false && afterMake.mark === true && /Note & more|আরও/.test(afterMake.label ?? ""), JSON.stringify(afterMake));
+  check(`${tag} right after a Note is made from ⋮ on 2:258 the item reads "Note & more…" and the ⋮ shows the has-note mark`, afterMake.isNew === false && afterMake.mark === true && /Notes|Note & more|নোট|আরও/.test(afterMake.label ?? ""), JSON.stringify(afterMake));
   await ev(() => { const el = document.getElementById("ayahSelect"); el.value = "256"; el.dispatchEvent(new Event("change", { bubbles: true })); });
   await P.waitForTimeout(400);
   await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.click());
   await ev(() => document.querySelector("#readQuickMenuSlot [data-qm-note]")?.click());
-  await P.waitForFunction(() => !document.getElementById("readNotePane")?.hidden, null, { timeout: 8000 }).catch(() => {});
-  await P.click("#readNotePane [data-rnp-back]");
+  // UPDATED IN PLACE for PCF MSA J114 follow-up (7 Nov 2026): the ⋮ Notes tile on 2:256 (has Notes) opens the Journey tray now, not the pane.
+  await P.waitForFunction(() => { const t = document.getElementById("journeyTray"); return t && !t.hidden; }, null, { timeout: 8000 }).catch(() => {});
+  await ev(() => { const t = document.getElementById("journeyTray"); if (t) t.hidden = true; });
   //   a Unit card's 📝 Note on this Surah: the pane on surah:2, "← Back to the unit card" reopens the card.
   await ev(() => { const s = document.getElementById("unitTypeSelect"); s.value = "surah"; s.dispatchEvent(new Event("change", { bubbles: true })); });
   await P.waitForTimeout(800);
