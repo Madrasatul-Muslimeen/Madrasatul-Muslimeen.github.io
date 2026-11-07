@@ -97,7 +97,7 @@ for (const [lang, width, pct] of [["en", 390, 150], ["en", 390, 200], ["bn", 390
   await page.waitForTimeout(900);
   const g = await page.evaluate(() => {
     const m = document.querySelector("#readQuickMenuSlot .quick-menu.open"); if (!m) return null; const mb = m.getBoundingClientRect();
-    const rows = ["[data-qm-note-add]", "[data-qm-unit-bookmark]"].map((s) => { const e = m.querySelector(s); if (!e) return { s, missing: true }; const r = e.getBoundingClientRect(); return { s, inside: r.left >= mb.left - 0.5 && r.right <= mb.right + 0.5 && r.right <= innerWidth, noOverflow: e.scrollWidth <= e.clientWidth + 1, h: Math.round(r.height) }; });
+    const rows = ["[data-qm-note-add]", "[data-qm-unit-bookmark]"].map((s) => { const e = m.querySelector(s); if (!e) return { s, missing: true }; const r = e.getBoundingClientRect(); return { s, inside: r.left >= mb.left - 0.5 && r.right <= mb.right + 0.5 && r.right <= innerWidth, noOverflow: e.scrollWidth <= e.clientWidth + 1, h: Math.round(r.height), sw: e.scrollWidth, cw: e.clientWidth, tx: (e.querySelector(".qm-rowtext")||e).textContent.slice(0,60), tsw: (e.querySelector(".qm-rowtext")||e).scrollWidth, tcw: (e.querySelector(".qm-rowtext")||e).clientWidth }; });
     return { menu: [Math.round(mb.left), Math.round(mb.right)], vw: innerWidth, rows };
   });
   check(`${tag} the "+ New Note" and "Bookmark · unit" rows stay inside the sheet and the screen, their words wrapping`, !!g && g.menu[0] >= 0 && g.menu[1] <= g.vw && g.rows.every((r) => !r.missing && r.inside && r.noOverflow), JSON.stringify(g));

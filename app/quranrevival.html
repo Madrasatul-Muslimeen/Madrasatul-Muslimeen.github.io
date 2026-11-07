@@ -5506,6 +5506,8 @@
   .qm-sheet .qm-rows { margin-top: 0.45rem; border-top: 1px solid #eee; padding-top: 0.25rem; display: grid; }
   .qm-sheet .qm-rows .qm-item { min-height: 44px; font-size: 0.88rem; }
   .qm-sheet .qm-rowglyph { width: 1.4rem; text-align: center; }
+  .quick-menu.qm-sheet .qm-rowtext { min-width: 0; overflow-wrap: anywhere; } /* a long unit label wraps instead of widening its row */
+  #readBar .quick-menu.qm-sheet .qm-rows .qm-item { white-space: normal; } /* #readBar button is nowrap and an id outranks the class rule above: the bar ⋮ row text must wrap too */
   .qm-sheet .qm-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; padding-top: 0.5rem; border-top: 1px solid #eee; }
   .qm-sheet .qm-chip { border: 1px solid #d8d2c0; border-radius: 999px; background: #fff; color: #222; padding: 0.35rem 0.7rem; min-height: 36px; font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
   .qm-sheet .qm-chip.is-on { background: #1F3A6E; border-color: #1F3A6E; color: #fff; }
