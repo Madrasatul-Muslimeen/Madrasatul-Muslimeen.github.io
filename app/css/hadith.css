@@ -567,7 +567,9 @@ body.hadith-pane-dragging { user-select: none; }
    Dua frame's own orange (#e2662b): at least 3:1 on the night plate and navy AND on the surfaces that stay light in the night
    look (the Zab panel, white and cream boxes), where gold measured 1.4-1.7:1. A pressed control with a light fill gets a
    navy ring inside it instead. The groups list's focus tint is painted solid at what it already looked like (18% gold on
-   the list's navy), so what is measured is what is seen. */
-[data-card-look="night"] :is(button, a[href], summary, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }
-[data-card-look="night"] :is(.hkm-btn, .hwc-tab, .dua-wc-level, .dua-switch, .dua-status, .dua-word)[aria-pressed="true"]:focus-visible { outline-color: #1c2a46; outline-offset: -4px; }
+   the list's navy), so what is measured is what is seen. Both ring rules are wrapped in :where() so they weigh as little
+   as a rule can: a control that already draws its own ring keeps it (the night check found six whose own ring the first
+   cut overrode), while the browser's default ring still loses to them. */
+:where([data-card-look="night"]) :where(button, a[href], summary, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }
+:where([data-card-look="night"]) :where(.hkm-btn, .hwc-tab, .dua-wc-level, .dua-switch, .dua-status, .dua-word)[aria-pressed="true"]:focus-visible { outline-color: #1c2a46; outline-offset: -4px; }
 [data-card-look="night"] .dua-pull-item:is(:hover, :focus-visible) { background: #343230; }
