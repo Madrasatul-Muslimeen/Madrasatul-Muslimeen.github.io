@@ -21,7 +21,9 @@ const MUT = {
   nosplit: ["js/hadith-shared-ui.js", "splitChapterHeading(tr.edition, stdNo, tr.text)", "({ heading: null, text: tr.text })"],
   // The Owner's translation-terms rule (8 Nov 2026), extended to the Text pane's English fold.
   nofoldterms: ["js/hadith-shared-ui.js", "tf.set(text, body);", "text.textContent = body;"],
-  noswitchterms: ["js/hadith-shared-ui.js", "{ const sw = arabic ? tf.switchEl() : null; if (sw) details.appendChild(sw); }", ""],
+  noswitchterms: ["js/hadith-shared-ui.js", "{ const sw = tf ? tf.switchEl() : null; if (sw) details.appendChild(sw); }", ""],
+  // Review of #1519 (round 2): the Dua cards' HadeethEnc English goes through openitiTranslationFold WITHOUT the opt-in and must stay as sourced.
+  nooptin: ["js/hadith-shared-ui.js", "const tf = opts.terms ? termsFolder(r.record, r.lang) : null;", "const tf = termsFolder(r.record, r.lang);"],
   // Review of #1519: the Dua cards pass no Arabic, so the Dua Lead's English must stay as sourced.
   noguard: ["js/hadith-shared-ui.js", "const tf = arabic ? termsFolder({ hadeeth_ar: arabic }, lang) : null;", "const tf = termsFolder({ hadeeth_ar: arabic }, lang);"],
   noarabic: ["js/hadith-browser.js", "async () => std, h.text));", "async () => std));"],
@@ -121,6 +123,30 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   const wide = await P.evaluate(() => [...document.querySelectorAll("[data-standard-translation][open]")].filter((d) => d.scrollWidth > d.clientWidth + 1).length);
   check(`${tag} no open fold is wider than its card`, wide === 0, String(wide));
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
+  await ctx.close();
+}
+// Review of #1519 (round 2): a Dua card's HadeethEnc English (openitiTranslationFold, called by dua-browser.js without the opt-in)
+// is the record's own `hadeeth`, byte for byte, with no "As sourced" switch.
+{
+  const dir = "tools/hadith-data-pull/output/hadeethenc/en";
+  const shardText = (id) => { for (const f of fs.readdirSync(dir)) { const j = JSON.parse(fs.readFileSync(`${dir}/${f}`, "utf8")); const hs = j.hadiths; const h = Array.isArray(hs) ? hs.find((x) => String(x.id) === String(id)) : hs?.[id]; if (h) return h.hadeeth; } return null; };
+  const ctx = await newContext(browser, { appLang: "en", viewport: { width: 1280, height: 900 } });
+  if (MUTATE && MUT[MUTATE][0] === "js/hadith-shared-ui.js") {
+    const [file, a, b] = MUT[MUTATE];
+    await ctx.route(`**/app/${file}*`, async (r) => { const src = fs.readFileSync(`app/${file}`, "utf8"); if (!src.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`); await r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: src.split(a).join(b) }); });
+  }
+  for (const open of [2, 8]) {
+    const { page: P } = await openPage(ctx, `/app/dua-study.html?g=rasul&open=${open}`);
+    await P.waitForSelector("details.openiti-translation", { state: "attached" }).catch(() => {});
+    await P.evaluate(() => document.querySelectorAll("details.openiti-translation").forEach((d) => { d.open = true; d.dispatchEvent(new Event("toggle")); }));
+    await P.waitForFunction(() => { const ds = [...document.querySelectorAll("details.openiti-translation")]; return ds.length > 0 && ds.every((d) => d.querySelector("[data-openiti-translation-text]")); }, null, { timeout: 15000 }).catch(() => {});
+    const got = await P.$$eval("details.openiti-translation [data-openiti-translation-text]", (ns) => ns.map((n) => ({ id: n.dataset.openitiTranslationText, text: n.textContent, lang: n.lang })));
+    const sw = await P.$$("details.openiti-translation [data-hadith-terms-switch]");
+    check(`[dua-study open=${open}] HadeethEnc English was read (${got.length} fold text(s))`, got.length > 0, JSON.stringify(got).slice(0, 100));
+    check(`[dua-study open=${open}] each Dua HadeethEnc English is the record's own words, byte for byte`, got.length > 0 && got.every((g) => g.text === shardText(g.id)), JSON.stringify(got.map((g) => [g.id, g.text.slice(0, 40), (shardText(g.id) || "").slice(0, 40)])).slice(0, 300));
+    check(`[dua-study open=${open}] ...and no "As sourced" switch is offered there`, sw.length === 0, String(sw.length));
+    await P.close();
+  }
   await ctx.close();
 }
 await browser.close();

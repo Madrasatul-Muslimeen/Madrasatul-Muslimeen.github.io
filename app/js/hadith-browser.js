@@ -1528,7 +1528,7 @@ function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null, versi
   if (versionUri && (h.kind === "hadith" || h.kind === "passage")) card.appendChild(ayatQuotedSection(versionUri, h.n));
 
   const heIds = heLinks?.get(h.n);
-  if (heIds?.length) card.appendChild(openitiTranslationFold(heIds));
+  if (heIds?.length) card.appendChild(openitiTranslationFold(heIds, { terms: true }));
   const std = conc?.stdByN?.get(h.n);
   if (std) card.appendChild(standardTranslationFolds(conc.versionUri, async () => std, h.text));
   const group = duaCtx?.dua.groupOf.get(`${duaCtx.versionUri}:${h.n}`);

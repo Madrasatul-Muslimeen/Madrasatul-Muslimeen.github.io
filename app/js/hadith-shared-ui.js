@@ -147,7 +147,8 @@ export function standardTranslationFolds(versionUri, resolveStd, arabic = null) 
  * English), closed until opened and loaded only then. HadeethEnc's conditions (decision 7): its words unchanged,
  * named, linked. Its wording can follow another narration of the same hadith, and the fold says so.
  */
-export function openitiTranslationFold(ids) {
+// `opts.terms` opts a caller in to the translation-terms fold (the Owner's rule terms1108, Hadith Study). The Dua cards call without it and keep the source's words, no switch.
+export function openitiTranslationFold(ids, opts = {}) {
   const want = getAppLang() === "bn" ? "bn" : "en";
   const details = document.createElement("details");
   details.className = "hadeethenc-explanation openiti-translation";
@@ -173,12 +174,12 @@ export function openitiTranslationFold(ids) {
         } else {
           if (r.isFallback) box.appendChild(el("p", "hadith-fallback", t("No {lang} translation for this hadith. Showing {shown}.", { lang: langNameInProse(want), shown: langNameInProse(r.lang) })));
           const text = el("p", "hadith-translation-text");
-          const tf = termsFolder(r.record, r.lang);
-          tf.set(text, r.record.hadeeth ?? "");
+          const tf = opts.terms ? termsFolder(r.record, r.lang) : null;
+          if (tf) tf.set(text, r.record.hadeeth ?? ""); else text.textContent = r.record.hadeeth ?? "";
           text.lang = r.lang;
           text.dataset.openitiTranslationText = id;
           box.appendChild(text);
-          { const sw = tf.switchEl(); if (sw) box.appendChild(sw); }
+          { const sw = tf ? tf.switchEl() : null; if (sw) box.appendChild(sw); }
         }
         if (r.record.grade) box.appendChild(el("p", "hadith-attribution", t("Grade: {grade}", { grade: r.record.grade })));
         if (r.record.attribution) box.appendChild(el("p", "hadith-attribution", r.record.attribution));
