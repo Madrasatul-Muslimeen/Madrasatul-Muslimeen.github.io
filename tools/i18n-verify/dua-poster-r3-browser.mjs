@@ -112,13 +112,14 @@ async function run(mutation) {
       const parts = () => page.$$eval("[data-dua-a4] [data-dua-a4-part]", (x) => x.map((e) => e.dataset.duaA4Part));
       const settle = () => page.waitForFunction(() => document.querySelector("[data-dua-a4]")?.dataset.duaA4Scale, null, { timeout: 5000 }).catch(() => {});
 
+      await page.click("[data-dua-menu-toggle]"); // build 2: the menu lives under the card's Menu button
       const menu = await page.$$eval('[data-dua-menu="poster"], [data-dua-menu="share"]', (b) => b.map((x) => ({ t: x.textContent, h: x.getBoundingClientRect().height })));
       await check("the card's menu offers Poster and Copy / share, in this language, finger-sized", () => {
         if (menu.length !== 2 || !menu[0].t.includes(L("Poster")) || menu[1].t !== L("Copy / share") || menu.some((m) => m.h < 44)) throw new Error(JSON.stringify(menu));
       });
 
       // D07 the poster.
-      await page.click('[data-dua-menu="poster"]');
+      await clickMenu(page, '[data-dua-menu="poster"]');
       await settle();
       const f1 = await fits();
       await check("D07 the poster is an A4 page (210 × 297), inside the screen", () => { if (Math.abs(f1.h / f1.w - 297 / 210) > 0.02 || f1.l < 0 || f1.r > width) throw new Error(JSON.stringify(f1)); });
@@ -142,7 +143,7 @@ async function run(mutation) {
       await page.click("[data-dua-pop-close]");
       await page.click(`[data-dua-sel] [data-dua-switch="${other}"]`);
       await page.click('[data-dua-sel] [data-dua-switch="wbw"]');
-      await page.click('[data-dua-menu="poster"]');
+      await clickMenu(page, '[data-dua-menu="poster"]');
       await settle();
       await check("D26 the poster's pop-up says what it is showing, from the card's choices", async () => {
         const line = await page.$eval("[data-dua-showing]", (e) => e.textContent).catch(() => "");
@@ -175,19 +176,19 @@ async function run(mutation) {
       // D26: one set of choices for the poster and for sharing.
       await page.click('[data-dua-sel] [data-dua-switch="ar"]');
       await page.click('[data-dua-sel] [data-dua-switch="src"]');
-      await page.click('[data-dua-menu="poster"]');
+      await clickMenu(page, '[data-dua-menu="poster"]');
       await settle();
       const without = await page.$$eval("[data-dua-a4] [data-dua-a4-part]", (x) => x.map((e) => e.dataset.duaA4Part).sort().join());
       const hasRef = await page.$(".dua-a4-ref");
       await check("D26 turning Arabic and Source off on the card takes them off the poster", () => { if (without !== [lang, other, "wbw"].sort().join() || hasRef) throw new Error(`${without} ref:${!!hasRef}`); });
       await page.click("[data-dua-pop-close]");
-      await page.click('[data-dua-menu="share"]');
+      await clickMenu(page, '[data-dua-menu="share"]');
       const pvOff = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
       await check("D26 sharing uses the same choices: no Arabic, no source", () => { if (pvOff.includes(p0.ar) || pvOff.endsWith(ref0)) throw new Error(pvOff.slice(0, 80)); });
       await page.click("[data-dua-pop-close]");
       await page.click('[data-dua-sel] [data-dua-switch="ar"]');
       await page.click('[data-dua-sel] [data-dua-switch="vow"]');
-      await page.click('[data-dua-menu="poster"]');
+      await clickMenu(page, '[data-dua-menu="poster"]');
       await settle();
       const novow = await page.$eval(".dua-a4-ar", (e) => e.textContent).catch(() => "");
       await check("D26 Vowels off takes the vowel marks off the poster's Arabic", () => { if (!novow || /[\u064B-\u0652\u0670]/.test(novow)) throw new Error(novow.slice(0, 40)); });
@@ -197,18 +198,18 @@ async function run(mutation) {
       await page.waitForSelector("[data-dua-quran]", { timeout: 20000 }).catch(() => {});
 
       // D14 as text.
-      await page.click('[data-dua-menu="share"]');
+      await clickMenu(page, '[data-dua-menu="share"]');
       const ref = ref0;
       const pv = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => null);
       await check("D14 / D26 the text starts as title, Arabic, the reader's own language and source", () => { if (pv !== [p0.title[lang], p0.ar, p0[lang], ref].join("\n\n")) throw new Error(JSON.stringify(pv?.slice(0, 80))); });
       await page.click("[data-dua-pop-close]");
       await page.click(`[data-dua-sel] [data-dua-switch="${lang}"]`);
-      await page.click('[data-dua-menu="share"]');
+      await clickMenu(page, '[data-dua-menu="share"]');
       const pvNo = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
       await check("D14 taking this language off the card takes the dua's meaning off the text", () => { if (pvNo.includes(p0[lang])) throw new Error("still there"); });
       await page.click("[data-dua-pop-close]");
       await page.click(`[data-dua-sel] [data-dua-switch="${lang}"]`);
-      await page.click('[data-dua-menu="share"]');
+      await clickMenu(page, '[data-dua-menu="share"]');
       const pv2 = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
       await check("D14 putting it back on the card puts the meaning back", () => { if (!pv2.includes(p0[lang])) throw new Error("missing"); });
       await page.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (s) => { window.__copied = s; } } }); });
@@ -239,7 +240,7 @@ async function run(mutation) {
       // A long Hisn dhikr: shrinks to fit; English, Bangla and word by word say why they are off.
       await page.goto(new URL(`/app/dua-study.html?g=occasions&part=${LONG.part}&open=${LONG.i}`, page.url()).href);
       await page.waitForSelector("[data-dua-hisn]", { timeout: 20000 }).catch(() => {});
-      await page.click('[data-dua-menu="poster"]');
+      await clickMenu(page, '[data-dua-menu="poster"]');
       await settle();
       const f2 = await fits();
       const bodyOver = await page.$eval(".ahp-desc", (b) => b.scrollHeight - b.clientHeight);
@@ -256,12 +257,12 @@ async function run(mutation) {
       await page.waitForSelector("[data-dua-card] [data-dua-progress]", { timeout: 20000 }).catch(() => {});
       const words = await page.$$eval("[data-dua-card] .dua-words [data-dua-word]", (x) => x.map((s) => s.textContent).join(" "));
       const std = await page.$eval("[data-dua-card] .openiti-standard-number", (e) => e.textContent).catch(() => null);
-      await page.click('[data-dua-menu="share"]');
+      await clickMenu(page, '[data-dua-menu="share"]');
       const pv3 = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
       await check("D14 a Hadith dua's text holds its own words and its book and number", () => { if (!words || !pv3.includes(words) || !std || !pv3.endsWith(std)) throw new Error(pv3.slice(0, 60)); });
       await page.click("[data-dua-pop-close]");
       await page.click('[data-dua-sel] [data-dua-switch="wbw"]').catch(() => {});
-      await page.click('[data-dua-menu="share"]');
+      await clickMenu(page, '[data-dua-menu="share"]');
       const pv4 = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
       await check("D14 word by word gives the Qur'an's meaning of each matched word", () => { const lines = pv4.split("\n").filter((l) => / = /.test(l)); if (lines.length < 5 || !lines.some((l) => /[A-Za-zঀ-৿]/.test(l.split(" = ")[1]))) throw new Error(`${lines.length}`); });
       await page.click("[data-dua-pop-close]");
@@ -286,3 +287,10 @@ if (arg) {
 const r = await run(null);
 console.log(`\n==== Dua poster and share R3 (D07, D14): ${r.passed} passed, ${r.failed} failed ====`);
 process.exit(r.failed ? 1 : 0);
+
+/** Build 2 (7 Nov 2026): the card's menu sits under its Menu button; open it (when closed) and press the entry. */
+async function clickMenu(page, selector) {
+  const toggle = await page.$("[data-dua-menu-toggle]");
+  if (toggle && (await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  await page.click(selector);
+}

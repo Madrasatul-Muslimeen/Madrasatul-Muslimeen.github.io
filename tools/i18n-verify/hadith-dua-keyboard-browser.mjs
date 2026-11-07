@@ -32,7 +32,8 @@ const CAP = 10; // items walked per panel
 
 const PAGES = { dua: "/app/dua-study.html", hcol: "/app/hadith-collections.html", hstudy: "/app/hadith-study.html" };
 const ROOT = { dua: "#duaRoot", hcol: "#hadithRoot", hstudy: "#hadithCorpusRoot" };
-const openCard = async (P) => { await P.click('[data-dua-no="2"]'); await P.waitForSelector("[data-dua-menu]", { timeout: 8000 }); await P.waitForTimeout(500); };
+const openMenuIfClosed = async (P) => { const t = await P.$("[data-dua-menu-toggle]"); if (t && (await t.getAttribute("aria-expanded")) === "false") await t.click(); await P.waitForTimeout(200); }; // build 2: the card's menu sits under its Menu button
+const openCard = async (P) => { await P.click('[data-dua-no="2"]'); await P.waitForSelector("[data-dua-menu-toggle]", { timeout: 8000 }); await openMenuIfClosed(P); await P.waitForTimeout(500); };
 const hadithDua = async (P) => { await P.click('[data-hadith-tab="dua"]'); await P.waitForSelector("[data-dua-bookmark]", { timeout: 8000 }); await P.waitForTimeout(500); };
 const CONTROLS = [];
 const add = (page, c) => CONTROLS.push({ page, ...c });

@@ -22,6 +22,17 @@
   #contextBar select { box-sizing: border-box; min-height: 40px; padding: 0.3rem 0.4rem; border: 1px solid var(--hadith-field); border-radius: 0.35rem; }
   .hadith-back-btn { min-height: 40px; padding: 0 0.9rem; margin: 0.6rem 0 0; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
   .hadith-back-btn[hidden] { display: none; }
+  /* Build 1 (the Owner, 7 Nov): Home is one tap to the MSA home, with a Menu button beside it (My account lives there). */
+  .dua-topnav { display: flex; gap: 0.5rem; align-items: stretch; margin: 0.6rem 0; }
+  .dua-topnav > a, .dua-topnav > details { flex: 1 1 0; min-width: 0; }
+  .dua-home-link { box-sizing: border-box; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 0.4rem; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font-weight: 700; text-decoration: none; }
+  .dua-topnav > a.dua-bookmarks-link { box-sizing: border-box; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 0.3rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #fff8e6; color: #1F3A6E; font-weight: 700; text-decoration: none; }
+  .dua-topnav details { margin: 0 !important; position: relative; }
+  .dua-topnav details > .nav-cat-links { position: absolute; top: calc(100% + 0.3rem); right: 0; left: auto; z-index: 40; box-sizing: border-box; width: max-content; min-width: 12rem; max-width: calc(100vw - 2rem); padding: 0.4rem !important; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #fff; box-shadow: 0 8px 24px rgba(20, 27, 52, 0.18); }
+  .dua-topnav summary { box-sizing: border-box; min-height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid #1F3A6E; border-radius: 0.6rem; background: #fff; color: #1F3A6E; font-size: 1rem; font-weight: 700; cursor: pointer; list-style: none; }
+  .dua-topnav summary::-webkit-details-marker { display: none; }
+  .dua-for-chip { min-height: 40px; margin: 0 0 0.4rem; padding: 0 0.9rem; border: 1px solid #c9a24b; border-radius: 999px; background: #fff8e6; color: #1F3A6E; font: inherit; font-weight: 600; cursor: pointer; }
+  .dua-for-chip[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -32,6 +43,8 @@
   <!-- A minimal session, the same as hadith-collections.html's, just enough for a Dua card's progress, notes and
        bookmark to know who they act for. Its own script, so a Firebase failure never stops the duas from showing. -->
   <div id="who">Checking sign-in…</div>
+  <!-- Build 2 (the Owner, 7 Nov): the Person box lives under My account; this chip says who the page is recording for. -->
+  <button type="button" id="forPersonChip" class="dua-for-chip" data-open-account-card hidden></button>
   <div id="contextBar" style="display:none;">
     <label>Tenant
       <select id="tenantSelect" style="width:auto; max-width:100%; min-width:0;"></select>
@@ -90,6 +103,16 @@
         .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
         .join("");
       if (candidate) personSelect.value = candidate;
+      updateForChip();
+    }
+
+    // Build 2: who the page is recording for, since the Person box now lives under My account.
+    function updateForChip() {
+      const chip = document.getElementById("forPersonChip");
+      const name = personSelect.selectedOptions[0]?.textContent?.trim();
+      if (!chip || !name) return;
+      chip.textContent = t("For {name}", { name });
+      chip.hidden = false;
     }
 
     async function loadContextData(hydratedMembershipsPromise) {
@@ -112,6 +135,7 @@
     });
     personSelect.addEventListener("change", () => {
       setSelectedPersonId(personSelect.value);
+      updateForChip();
       refreshCorpusActions();
     });
 
@@ -125,7 +149,7 @@
         const context = pickContext(membershipRoles, null);
         if (!context) { whoEl.textContent = t("Not signed in."); return; }
         activeTenantId = context.tenantId;
-        whoEl.textContent = t("Signed in as {email}", { email: user.email });
+        whoEl.hidden = true; // the account card says who is signed in
         await loadContextData(hydrateMemberships(db, membershipRoles));
       } catch (err) {
         whoEl.textContent += ` — ${err.message}`;
@@ -166,8 +190,29 @@
   </script>
   <script type="module">
     import { auth } from "./js/firebase-init.js";
+    import { t } from "./js/i18n.js";
     import { mountPageAccountCard } from "./js/account-card.js";
-    mountPageAccountCard({ movePerson: false, getEmail: () => auth.currentUser?.email || "" });
+    mountPageAccountCard({ movePerson: true, getEmail: () => auth.currentUser?.email || "" });
+    // Build 1: Home goes straight to the MSA home (one tap); the old Home dropdown becomes a Menu button beside it.
+    const menu = document.getElementById("accountHomeMenu");
+    if (menu) {
+      menu.querySelector("summary").textContent = `☰ ${t("Menu")}`;
+      const home = document.createElement("a");
+      home.className = "dua-home-link";
+      home.id = "duaHomeLink";
+      home.href = "./index.html";
+      home.textContent = `🏠 ${t("Home")}`;
+      const row = document.createElement("div");
+      row.className = "dua-topnav";
+      menu.parentNode.insertBefore(row, menu);
+      // The Owner (7 Nov): the bookmark link sits on the Home bar too (the Bookmarks page serves every subject). ← Back returns here.
+      const bm = document.createElement("a");
+      bm.className = "dua-bookmarks-link";
+      bm.id = "duaBookmarksLink";
+      bm.href = "./bookmarks.html?back=1";
+      bm.textContent = `🔖 ${t("Bookmarks")}`;
+      row.append(home, bm, menu);
+    }
   </script>
   <script>
     // This page does not load nav.js, so the Home menu (account-card.js) gets nav.js's Esc here: Esc closes an open
