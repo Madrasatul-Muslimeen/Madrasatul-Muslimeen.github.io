@@ -36,36 +36,37 @@ button:focus-visible,input:focus-visible{outline:3px solid #c9a24b;outline-offse
 </style>
 <div class="wrap">
   <h1>Opening Recitation Demo</h1>
-  <p>The app's opening card, with the recitation playing. Each line appears when its recitation starts, and the next line comes in when the recitation ends. Nothing is timed by guess: the screen follows the audio.</p>
+  <p>The app's opening card, played with the Aʿūdhu and Bismillah from the start of your Sūrah al-Wāqiʿah recording. Choose your file below. It stays in your browser and nothing is uploaded; the page cuts the opening out of it by itself. Each line appears when its recitation starts, and the next line comes in when it ends.</p>
   <div class="stage" id="stage">
     <div class="slide" id="s1"><div class="ar" id="ar1" lang="ar"></div><div class="tr">A'udhu billahi min ash-shaytwaner Rajeem</div><div class="en">I seek refuge with Allah from shaitwan, the rejected, accursed.</div></div>
     <div class="slide" id="s2"><div class="ar" id="ar2" lang="ar"></div><div class="en">In the name of Allah, the Most Gracious, the Most Merciful.</div></div>
     <div class="hint" id="hint">Tap the card to skip</div>
-    <div class="go" id="go"><button class="main" id="start" type="button">▶ Open the app with sound</button></div>
+    <div class="go" id="go"><div style="display:flex;flex-direction:column;gap:10px;align-items:center;padding:0 16px;text-align:center"><label class="main" id="pickl" style="display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:8px;background:#c9a24b;color:#1b2433;font-weight:600;cursor:pointer">Choose the Wāqiʿah file<input id="file" type="file" accept="audio/*,video/webm,.webm" style="position:absolute;opacity:0;width:1px;height:1px"></label><span id="fs" style="color:#f2e8d5;font-size:13px">Pick Surah_Waqiah.webm, then press Open the app.</span><button class="main" id="start" type="button" disabled>▶ Open the app with sound</button></div></div>
   </div>
   <div class="bar">
     <button id="replay" type="button">↻ Play again</button>
     <button id="skip" type="button">Skip</button>
     <label class="opt"><input type="checkbox" id="words" checked> Light up each word with the voice</label>
+    <span class="opt" style="flex-wrap:wrap"><span style="flex-basis:100%">Cut between Aʿūdhu and Bismillah:</span> <button id="m5" type="button" disabled>−0.5</button><button id="m1" type="button" disabled>−0.1</button><button id="p1" type="button" disabled>+0.1</button><button id="p5" type="button" disabled>+0.5</button></span>
     <label class="opt"><input type="checkbox" id="mute"> Sound off (text only, same timing)</label>
   </div>
+  <div><canvas id="wf" width="720" height="90" style="width:100%;height:90px;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:crosshair" aria-label="Sound of the opening. Tap where Aʿūdhu ends and Bismillah begins."></canvas><p class="note" id="wfh">Tap the picture where Aʿūdhu ends and Bismillah starts (gold line).</p></div>
   <div class="read" aria-live="off">
     <b>Now</b><span id="now">Waiting</span>
     <b>Audio time</b><span id="tm">0.0 s</span>
-    <b>Whole opening</b><span id="tot">about 12 s (the old card used 6 s)</span>
+    <b>Found in your file</b><span id="tot">Not loaded yet</span>
     <div class="prog"><i id="pg"></i></div>
   </div>
-  <p class="note">Honest limits. The line-by-line timing is exact, because it comes from the audio itself. The word-by-word light is an estimate: each word gets time in proportion to its letters, between the first sound and the end of the line. Exact word times need a hand check, like the sūrah timing helper. The recitations in this demo are free files from everyayah.com, used here only to show the idea; for the app I would play them from that site, not copy them, and the Owner can choose another voice.</p>
+  <p class="note">Honest limits. The line-by-line timing is exact, because it comes from the audio itself. The word-by-word light is an estimate: each word gets time in proportion to its letters, between the first sound and the end of the line. Exact word times need a hand check, like the sūrah timing helper. The cut points are found from the quiet moments in your recording; if one is off, move it with the buttons and play again. The audio is not saved anywhere. For the app, the two short pieces would be saved as small files from your recording, which is your decision to make (hosting).</p>
 </div>
 <script>
-const A1="__A1__",A2="__A2__";
-const L=[{id:"ar1",src:A1,onset:0.53,txt:"أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ",slide:"s1",name:"Aʿūdhu"},
-         {id:"ar2",src:A2,onset:0.65,txt:"بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",slide:"s2",name:"Bismillah"}];
+const L=[{id:"ar1",src:null,onset:0,txt:"أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ",slide:"s1",name:"Aʿūdhu"},
+         {id:"ar2",src:null,onset:0,txt:"بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",slide:"s2",name:"Bismillah"}];
 const $=i=>document.getElementById(i);
 const weight=w=>Math.max(1,[...w].filter(c=>!/[ً-ْٰـ]/.test(c)).length);
 L.forEach(l=>{const el=$(l.id);l.words=l.txt.split(" ").map(w=>{const s=document.createElement("span");s.textContent=w;el.appendChild(s);return {s,w:weight(w)}});
   const tot=l.words.reduce((a,b)=>a+b.w,0);let c=0;l.words.forEach(x=>{x.a=c/tot;c+=x.w;x.b=c/tot});
-  l.au=new Audio(l.src);l.au.preload="auto"});
+  l.au=new Audio();l.au.preload="auto"});
 let cur=-1,timer=null,done=true,t0=0;
 function reset(){L.forEach(l=>{l.au.pause();l.au.currentTime=0;l.words.forEach(x=>x.s.className="");$(l.slide).classList.remove("on")});cur=-1;done=true;cancelAnimationFrame(timer)}
 function dur(l){return isFinite(l.au.duration)&&l.au.duration>0?l.au.duration:6}
@@ -96,4 +97,45 @@ function run(){reset();done=false;$("go").hidden=true;$("hint").textContent="Tap
 $("start").onclick=run;$("replay").onclick=run;
 $("skip").onclick=$("stage").onclick=e=>{if(e.target.id==="start")return;if(!done){reset();finish()}};
 $("mute").onchange=()=>{if(!done)run()};
+</script>
+
+<script>
+// Cut the opening out of the chosen recording: voice start, end of the opening (first long quiet), and the dip between the two prayers.
+let PCM=null,SR=0,cut={a:0,m:0,b:0};
+function rms(pcm,sr,from,to,step){const n=Math.floor(sr*step),o=[];for(let i=Math.floor(from*sr);i+n<=Math.min(pcm.length,to*sr);i+=n){let e=0;for(let k=0;k<n;k++)e+=pcm[i+k]*pcm[i+k];o.push(Math.sqrt(e/n))}return o}
+function analyse(pcm,sr){
+  const st=0.02,r=rms(pcm,sr,0,16,st),db=r.map(v=>20*Math.log10(v+1e-9));
+  const voiced=db.filter(v=>v>-60).sort((x,y)=>x-y),med=voiced[Math.floor(voiced.length/2)]||-30,thr=med-7;
+  let a=db.findIndex(v=>v>thr);a=Math.max(0,a-3);
+  let b=-1;for(let i=a+Math.floor(2/st);i<db.length;i++){if(db[i]<thr){let j=i;while(j<db.length&&db[j]<thr)j++;if((j-i)*st>=0.6){b=i;break}i=j}}
+  if(b<0)b=Math.min(db.length-1,Math.floor(8/st));
+  // every quiet stretch (0.1 s or longer) inside the opening; the LONGEST one is the gap between the two prayers
+  const gaps=[];for(let i=a+Math.floor(1/st);i<b-Math.floor(1/st);i++){if(db[i]<thr+3){let j=i;while(j<b&&db[j]<thr+3)j++;if((j-i)*st>=0.1)gaps.push({s:i*st,e:j*st,len:(j-i)*st});i=j}}
+  gaps.sort((x,y)=>y.len-x.len);
+  let m;if(gaps.length)m=(gaps[0].s+gaps[0].e)/2;else{let lo=a+Math.floor((b-a)*0.3),hi=a+Math.floor((b-a)*0.75),best=lo,bv=1e9;for(let i=lo;i<=hi;i++){const v=(db[i-1]||0)+db[i]+(db[i+1]||0);if(v<bv){bv=v;best=i}}m=best*st}
+  return {a:a*st,m,b:b*st,gaps:gaps.slice(0,4),env:db.map(v=>Math.max(0,(v+60)/60))};
+}
+function wav(pcm,sr,from,to){const s=Math.floor(from*sr),e=Math.floor(to*sr),n=e-s,buf=new ArrayBuffer(44+n*2),v=new DataView(buf);
+  const w=(o,t)=>[...t].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){const x=Math.max(-1,Math.min(1,pcm[s+i]));v.setInt16(44+i*2,x*32767,true)}return URL.createObjectURL(new Blob([buf],{type:"audio/wav"}))}
+function apply(){
+  const pad=0.12;L[0].au.src=wav(PCM,SR,Math.max(0,cut.a-pad),cut.m);L[1].au.src=wav(PCM,SR,cut.m,Math.min(PCM.length/SR,cut.b+0.15));
+  L[0].onset=pad;L[1].onset=0.1;
+  $("tot").textContent="Voice starts "+cut.a.toFixed(1)+" s · cut at "+cut.m.toFixed(2)+" s · opening ends "+cut.b.toFixed(1)+" s";
+  draw();
+}
+function draw(){const c=$("wf"),x=c.getContext("2d"),W=c.width,H=c.height,span=cut.b+1,sx=t=>t/span*W;
+  x.clearRect(0,0,W,H);const css=getComputedStyle(document.documentElement);x.fillStyle=css.getPropertyValue("--muted").trim()||"#888";
+  cut.env.forEach((v,i)=>{const t=i*0.02;if(t>span)return;const h=v*H*0.9;x.fillRect(sx(t),(H-h)/2,Math.max(1,W/span*0.02),h)});
+  const line=(t,col,lbl)=>{x.fillStyle=col;x.fillRect(sx(t)-1,0,3,H);x.font="12px Inter,sans-serif";x.fillText(lbl,Math.min(W-60,sx(t)+4),12)};
+  line(cut.a,"#1d7a4a","start");line(cut.m,"#c9a24b","cut");line(cut.b,"#c0392b","end");}
+$("file").onchange=async e=>{const f=e.target.files[0];if(!f)return;$("fs").textContent="Reading…";
+  try{const ac=new (window.AudioContext||window.webkitAudioContext)();const buf=await ac.decodeAudioData(await f.arrayBuffer());
+    PCM=buf.getChannelData(0);SR=buf.sampleRate;cut=analyse(PCM,SR);apply();
+    $("fs").textContent="Found the opening: "+cut.a.toFixed(1)+" to "+cut.b.toFixed(1)+" s. Press Open the app.";$("start").disabled=false;["m5","m1","p1","p5"].forEach(i=>$(i).disabled=false)}
+  catch(err){$("fs").textContent="This file could not be read. Try the .webm again."}};
+const nudge=d=>()=>{if(PCM){cut.m=Math.min(cut.b-0.5,Math.max(cut.a+0.5,cut.m+d));apply();run()}};
+$("m5").onclick=nudge(-0.5);$("m1").onclick=nudge(-0.1);$("p1").onclick=nudge(0.1);$("p5").onclick=nudge(0.5);
+$("wf").onclick=e=>{if(!PCM)return;const r=$("wf").getBoundingClientRect();cut.m=Math.min(cut.b-0.3,Math.max(cut.a+0.3,(e.clientX-r.left)/r.width*(cut.b+1)));apply();run()};
+$("replay").disabled=false;
 </script>
