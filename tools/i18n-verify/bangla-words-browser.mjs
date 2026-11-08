@@ -1,10 +1,11 @@
 // PCF MSA J119 -- the Word Card's "Also in Bangla" block, in the real page. Route: Read, 2:14:8 (خَلَوْا), its Word Card.
-//   node tools/i18n-verify/bangla-words-browser.mjs [--mutate=nosave|nocount]      (serve.js on :8080, or QR_BASE)
+//   node tools/i18n-verify/bangla-words-browser.mjs [--mutate=nosave|nocount|smallswitch]      (serve.js on :8080, or QR_BASE)
 // Fails unless: the block is in the Word Card; the blue button marks the word (and the tag shows); the mark survives a reload
 // (device storage); the list shows the word with its own switch; the heading-row switch turns the whole list off and the
 // button then marks nothing; "Mine" is a separate list; the count line says how many words and what share; the card still
 // fits the screen (no sideways overflow) at 390 and 1280 in English and Bangla; Learn next treats a marked word as known.
 //   --mutate=nosave  marks are not written to storage          -> the reload check FAILS
+//   --mutate=smallswitch the on/off switches are 26px tall again -> the touch-target check FAILS
 //   --mutate=nocount the count line is not drawn               -> the count check FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -16,6 +17,7 @@ const check = (name, ok, detail = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   nosave: ["try { storage.setItem(BANGLA_STORAGE_KEY, JSON.stringify(normaliseBanglaState(state))); return true; }", "try { return true; }", "app/js/bangla-words.js"],
+  smallswitch: [".bnw-sw{width:52px;height:40px;", ".bnw-sw{width:52px;height:26px;", "app/js/bangla-words-ui.js"],
   nocount: ["${count ? `<div class=\"bnw-count\" data-bangla-count>${count}</div>` : \"\"}", "", "app/js/bangla-words-ui.js"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -63,6 +65,10 @@ for (const [w, h, lang] of [[1280, 900, "en"], [390, 844, "en"], [390, 844, "bn"
   // the list and its switches
   await page.evaluate(() => { document.querySelector("#quranWordCardMount [data-bangla-details]").open = true; });
   check(`${tag} the list shows the word with a switch`, await page.evaluate((l) => !!document.querySelector(`#quranWordCardMount .bnw-body [data-bangla-word="${l}"]`), lemma));
+  // every pressable box in the block is at least 40px tall (the standing touch-target lesson); the two kinds of switch are named
+  const boxes = await page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount [data-bangla-block] button")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => [b.className, Math.round(b.getBoundingClientRect().height)]));
+  check(`${tag} (positive control) the block shows its switches`, boxes.filter(([c]) => c === "bnw-sw").length >= 2, JSON.stringify(boxes));
+  check(`${tag} every button in the block, the on/off switches included, is at least 40px tall`, boxes.every(([, h]) => h >= 40), JSON.stringify(boxes.filter(([, h]) => h < 40)));
   // the whole-list switch
   await page.locator("#quranWordCardMount [data-bangla-onoff]").click(); await page.waitForTimeout(300);
   check(`${tag} the heading switch turns the whole list off`, (await btn().getAttribute("aria-pressed")) === "false" && (await btn().isDisabled()));

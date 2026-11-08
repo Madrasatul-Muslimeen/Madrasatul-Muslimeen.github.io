@@ -94,8 +94,9 @@ export const BANGLA_CSS = `
 .bnw-ar{font-family:'Amiri','Scheherazade New','Noto Naskh Arabic',serif;font-size:1.1rem}
 .bnw-n{font-variant-numeric:tabular-nums;opacity:.85}
 .bnw-empty,.bnw-device{margin:0;padding:8px 12px}
-.bnw-sw{width:46px;height:26px;border-radius:999px;border:1px solid #5fb3ff;background:#10233a;position:relative;cursor:pointer;padding:0;flex:none}
-.bnw-sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#8fcaff;transition:left .15s}
-.bnw-sw[aria-pressed="true"]{background:#5fb3ff}
-.bnw-sw[aria-pressed="true"]::after{left:22px;background:#0b1826}
+.bnw-sw{width:52px;height:40px;border:0;background:transparent;position:relative;cursor:pointer;padding:0;flex:none}
+.bnw-sw::before{content:"";position:absolute;left:3px;top:7px;width:46px;height:26px;box-sizing:border-box;border-radius:999px;border:1px solid #5fb3ff;background:#10233a}
+.bnw-sw::after{content:"";position:absolute;top:10px;left:6px;width:20px;height:20px;border-radius:50%;background:#8fcaff;transition:left .15s}
+.bnw-sw[aria-pressed="true"]::before{background:#5fb3ff}
+.bnw-sw[aria-pressed="true"]::after{left:28px;background:#0b1826}
 `;

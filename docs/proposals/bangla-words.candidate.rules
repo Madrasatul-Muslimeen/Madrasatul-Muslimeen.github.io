@@ -59,8 +59,8 @@ service cloud.firestore {
 
       // The read-before-create probe: a nonexistent document has no data to expose.
       allow get: if signedIn() && !exists(/databases/$(database)/documents/banglaWords/$(listKey));
+      // No `allow list`: the app reads these by document id only, so the surface stays minimal (Architect review, 8 Nov).
       allow get: if banglaMayRead(resource.data.tenantId, resource.data.scope);
-      allow list: if banglaMayRead(resource.data.tenantId, resource.data.scope);
 
       allow create: if banglaShapeOk()
                     && banglaMayWrite(d().tenantId, d().scope)
