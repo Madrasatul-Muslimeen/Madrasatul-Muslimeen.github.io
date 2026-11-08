@@ -5,6 +5,7 @@
 //   ONE=1 ...           one pass only (English, 390px) -- what the mutations use
 //   MUT=noquran ...     mutation: the download skips the Qur'an files     -> the offline sūrah check fails
 //   MUT=noready ...     mutation: "Ready" is never written                 -> the Ready checks fail
+//   MUT=nobooks ...     mutation: the ticked books are not downloaded     -> the offline Hadith book check fails
 //   MUT=nomanifest ...  mutation: quranrevival.html loses its manifest link -> the manifest checks fail
 //
 // What it proves, each in rendered, measured terms (never "no error" alone):
@@ -57,6 +58,7 @@ process.on("exit", restoreAll);
 for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { restoreAll(); process.exit(1); });
 if (MUT === "noquran") mutate("app/js/offline-ready.js", /\.\.\.filesOf\(list\.parts\.quran\.dirs, list\.parts\.quran\.cache\),/g, "");
 else if (MUT === "noready") mutate("app/js/offline-ready.js", /store\.set\(READY_KEY, \{ at, version: APP_VERSION, books: ticked\(\) \}\);\n\s*state\.textContent = t\("Ready ✓ \(updated \{when\}\)", \{ when: whenText\(at\) \}\);/g, "/* mutated */");
+else if (MUT === "nobooks") mutate("app/js/offline-ready.js", /for \(const b of chosen\) items\.push\(\.\.\.filesOf\(b\.dirs, "hadith"\)\);/g, "");
 else if (MUT === "nomanifest") mutate("app/quranrevival.html", /<link rel="manifest" href="\.\/manifest\.webmanifest" \/>/g, "");
 else if (MUT) throw new Error(`unknown MUT=${MUT}`);
 
@@ -64,6 +66,11 @@ const msa = JSON.parse(fs.readFileSync(path.join(ROOT, "app/apps/msa.json"), "ut
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const MUWATTA = "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1";
 const SURAH77 = JSON.parse(fs.readFileSync(path.join(ROOT, "tools/quran-data-pull/output/surahs/surah_077.json"), "utf8")).ayahs[0].translations;
+// Opening words of al-Muwatta' chapter 3's narrations (after the chain, marked "*"), as the Hadith list shows them.
+const CH3_SNIPPETS = JSON.parse(fs.readFileSync(path.join(ROOT, "tools/hadith-data-pull/output/openiti-release/split", MUWATTA_URI(), "ch-3.json"), "utf8")).hadiths
+  .map((h) => { const s = String(h.text || ""); const c = s.indexOf("*"); return (c >= 0 && c < s.length - 20 ? s.slice(c + 1) : s).trim().split(/\s+/).slice(0, 4).join(" "); })
+  .filter((x) => x.length > 8);
+function MUWATTA_URI() { return "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1"; }
 const removeSplash = (page) => page.evaluate(() => document.querySelectorAll('[id*="splash"], .mm-splash-overlay, .app-splash-overlay').forEach((e) => e.remove()));
 const arabicChars = (s) => (s.match(/[؀-ۿ]/g) || []).length;
 async function waitFor(page, fn, arg, ms) {
@@ -136,7 +143,8 @@ async function openSurah77(page) {
   return waitFor(page, (tr) => document.body.innerText.includes(tr.en) || document.body.innerText.includes(tr.bn), SURAH77, 10000);
 }
 
-const PASSES = process.env.ONE ? [["en", 390]] : [["en", 390], ["bn", 390], ["en", 1280], ["bn", 1280]];
+const PASSES = process.env.PASS ? [[process.env.PASS.split(":")[0], Number(process.env.PASS.split(":")[1])]] // PASS=en:1280, one pass
+  : process.env.ONE ? [["en", 390]] : [["en", 390], ["bn", 390], ["en", 1280], ["bn", 1280]];
 for (const [lang, width] of PASSES) {
   const tag = `${lang} ${width}px`;
   console.log(`\n=== 2-3. Get ready, then offline -- ${tag} ===`);
@@ -200,7 +208,7 @@ for (const [lang, width] of PASSES) {
   const READY = lang === "bn" ? /^প্রস্তুত ✓ \(হালনাগাদ .*[০-৯].*\)$/ : /^Ready ✓ \(updated \d{1,2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2}\)$/;
   check(`${tag}: MUTATION TARGET (noready): it ends "Ready ✓ (updated <date, time>)"`, READY.test(after.state), after.state);
   check(`${tag}: MUTATION TARGET (noready): Ready is remembered on this device`, !!after.stamp && /"at":\d+/.test(after.stamp), String(after.stamp));
-  const [d, tot] = (after.prog.match(/^([\d,০-৯]+)\D+([\d,০-৯]+)/) || []).slice(1);
+  const [d, tot] = (after.prog.match(/^([\d০-৯]+)[^\d০-৯]+([\d০-৯]+)/) || []).slice(1);
   check(`${tag}: the progress reaches every file (N of N) and the bar is full`, !!d && d === tot && after.bar[0] === after.bar[1], `${after.prog} ${after.bar}`);
   check(`${tag}: storage.persist() was asked once, on the tap`, after.persist === 1, String(after.persist));
   check(`${tag}: the space used is reported after (storage.estimate)`, MB.test(after.space), after.space);
@@ -233,8 +241,11 @@ for (const [lang, width] of PASSES) {
   await ctx.setOffline(true);
   {
     const { page: p } = await openPage(ctx, "/app/index.html").catch(() => ({ page: null }));
-    const wheel = p ? await waitFor(p, () => location.pathname.endsWith("/quranrevival.html") && document.querySelectorAll("#wheelSection .wheel-seg").length > 0, null, 15000) : false;
-    check(`${tag}: OFFLINE index.html opens Quran Study and its Mastery Wheel renders`, wheel);
+    // The REAL app, not the early paint (decision 81 shows a kept copy of the wheel, inert, before the app boots).
+    const wheel = p ? await waitFor(p, () => location.pathname.endsWith("/quranrevival.html") && document.querySelectorAll("#wheelSection .wheel-seg").length > 0 &&
+      !document.getElementById("app").inert && document.getElementById("bootStatus").hidden, null, 20000) : false;
+    const boot = p ? await p.evaluate(() => [document.getElementById("bootStatus")?.hidden, document.getElementById("bootStatusText")?.textContent, document.getElementById("app")?.inert]) : null;
+    check(`${tag}: OFFLINE index.html opens Quran Study and the real app (not the early paint) shows its Mastery Wheel`, wheel, JSON.stringify(boot));
     const s77 = p ? await openSurah77(p).catch(() => false) : false;
     check(`${tag}: MUTATION TARGET (noquran): OFFLINE a sūrah never opened before (77) shows its first āyah's meaning`, s77);
     if (p) { await p.screenshot({ path: path.join(SHOTS, `offline-surah77-${lang}-${width}.png`) }); await p.close(); }
@@ -255,14 +266,18 @@ for (const [lang, width] of PASSES) {
       await p.locator('.hadith-row:has-text("الموطأ")').first().click({ timeout: 6000 }).catch(() => {});
       const chapters = await waitFor(p, () => /وقوت الصلاة/.test(document.body.innerText), null, 10000);
       await p.locator('.hadith-row:has-text("وقوت الصلاة")').first().click({ timeout: 6000 }).catch(() => {});
-      await p.waitForTimeout(2000);
+      await p.waitForTimeout(1500);
+      // The chapter's own file (ch-3.json) is what the book download adds: open its Hadith list and look for the
+      // opening words of one of its narrations, read straight from that file.
+      await p.locator("button", { hasText: /^(Hadith|হাদীস) · / }).first().click({ timeout: 6000 }).catch(() => {});
+      const shown = await waitFor(p, (snips) => { const t = document.body.innerText; return snips.some((x) => t.includes(x)); }, CH3_SNIPPETS, 10000);
       const body = await p.evaluate(() => (document.querySelector(".hadith-body") || document.body).innerText);
-      ok = chapters && arabicChars(body) > 800 && !/Could not load|আনা যায়নি/.test(body);
-      detail = `chapters=${chapters} arabic=${arabicChars(body)}`;
+      ok = chapters && shown && !/Could not load|আনা যায়নি/.test(body);
+      detail = `chapters=${chapters} narration words shown=${shown}`;
       await p.screenshot({ path: path.join(SHOTS, `offline-hadith-${lang}-${width}.png`) });
       await p.close();
     }
-    check(`${tag}: OFFLINE the ticked Hadith book (al-Muwatta') opens to a chapter's real Arabic text`, ok, detail);
+    check(`${tag}: MUTATION TARGET (nobooks): OFFLINE the ticked Hadith book (al-Muwatta') opens to a chapter's real Arabic text`, ok, detail);
   }
   await ctx.close();
 }
@@ -270,7 +285,7 @@ for (const [lang, width] of PASSES) {
 // =============================================================================
 // 4. Layout: the section at four widths, both languages
 // =============================================================================
-if (!process.env.ONE) {
+if (!process.env.ONE && !process.env.PASS) {
   console.log("\n=== 4. The section's layout ===");
   for (const lang of ["en", "bn"]) for (const width of [320, 390, 768, 1280]) {
     const tag = `${lang} ${width}px`;

@@ -40,6 +40,7 @@ const CSS = `
 .offline-ready label.offline-book { display: flex; align-items: center; gap: 0.5rem; min-height: 40px; font-size: 0.85rem; color: var(--card-text, #222); cursor: pointer; }
 .offline-ready label.offline-book input { width: 20px; height: 20px; flex: 0 0 auto; margin: 0; }
 .offline-ready .offline-book-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.offline-ready .offline-book-ar { display: block; text-align: start; font-size: 0.95em; color: var(--card-text-muted, #555); }
 .offline-ready .offline-book-size { flex: 0 0 auto; color: var(--card-text-muted, #555); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .offline-ready .offline-ready-btn { display: block; width: 100%; min-height: 44px; box-sizing: border-box; margin: 0.5rem 0 0.3rem; padding: 0.5rem 0.8rem;
   font: inherit; font-weight: 600; font-size: 0.95rem; border-radius: 0.5rem; cursor: pointer;
@@ -222,8 +223,8 @@ export function mountOfflineSection(host) {
       box.addEventListener("change", () => { store.set(BOOKS_KEY, ticked()); showNeed(); });
       const name = el("span", { class: "offline-book-name" }, bookName(b));
       if (b.title.ar && b.id !== "dua") {
-        const ar = el("span", { lang: "ar", dir: "rtl" }, ` · ${b.title.ar}`);
-        name.appendChild(ar);
+        // The Arabic title on its own line: inline beside the English, the right-to-left run swallowed the separator.
+        name.appendChild(el("span", { class: "offline-book-ar", lang: "ar", dir: "rtl" }, b.title.ar));
       }
       label.append(box, name, el("span", { class: "offline-book-size" }, mbText(bytesOf(filesOf(b.dirs, "hadith")))));
       books.appendChild(label);
