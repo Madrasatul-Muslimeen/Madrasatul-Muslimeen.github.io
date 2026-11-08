@@ -146,6 +146,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     article._duaPop?.();
   }
   function render() {
+    try { quranPlayer?.stop(); } catch { /* nothing was playing */ }
     closePop();
     dropPoppedCard();
     root.textContent = "";
@@ -670,7 +671,15 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       if (!c) { host.appendChild(el("p", "hadith-note", t("Dua {n} was not found.", { n: num(n) }))); return; }
       const rows = [];
       const article = duaCard(c, summary, state, cardRender, rows, links, page, vowels, grammar, checkEnv);
-      const keep = layoutHadithCard(article, () => hadithSheet(article, c, links, n), bar);
+      const hadithTr = { en: null, bn: null };
+      const keep = layoutHadithCard(article, () => hadithSheet(article, c, links, n, hadithTr), bar);
+      // 10 A (the Owner, 8 Nov): the poster and sharing carry HadeethEnc's translation of the hadith, labelled as such. It is
+      // read on the first press of the Menu, never when the card opens.
+      article.addEventListener("click", function once(ev) {
+        if (!ev.target.closest?.("[data-dua-menu-toggle]")) return;
+        article.removeEventListener("click", once);
+        loadHadithTranslations(c, hadithTr);
+      });
       host.appendChild(article);
       popIfCarried(article);
       // My Notes and Bookmark are written into the progress block as it fills: they move into the Menu's Keep group.
@@ -686,7 +695,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
    * respected). Word meanings come from the same Qur'an word links the card's word panel uses, only when those links
    * were made from these very words (their fingerprint).
    */
-  function hadithSheet(article, c, wordLinks, n) {
+  function hadithSheet(article, c, wordLinks, n, hadithTr = { en: null, bn: null }) {
     const spans = [...article.querySelectorAll(".dua-words [data-dua-word]")];
     const picked = duaWords(c.text);
     const links = wordLinks?.duas?.[c.dua];
@@ -698,10 +707,21 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     return {
       ...titled(titleOf(data, { kind: "dua", n })),
       ar: spans.length ? spans.map((s) => s.textContent).join(" ") : c.text,
-      words, en: null, bn: null, line: t("Dua {n}", { n: num(n) }),
+      words, en: hadithTr.en, bn: hadithTr.bn, trNote: hadithTr.en || hadithTr.bn ? t("translation of the hadith") : null, line: t("Dua {n}", { n: num(n) }),
       narration: picked ? { text: duaNarration(c.text), start: picked.start, end: picked.end } : { text: c.text, start: 0, end: 0 },
       ref: article.querySelector(".openiti-standard-number")?.textContent || t("Dua {n}", { n: num(n) }),
     };
+  }
+
+  /** 10 A: HadeethEnc's translation of the hadith in each language it really has (never another language's text). */
+  function loadHadithTranslations(c, into) {
+    const ids = (c.hadeethenc || []).map(String);
+    if (!ids.length) return Promise.resolve();
+    return import("./hadeethenc-corpus.js").then(({ loadHadithRecords }) => Promise.all(["en", "bn"].map((L) =>
+      loadHadithRecords(ids, L).then((recs) => {
+        const parts = ids.map((id) => recs.get(id)).filter((r) => r && r.lang === L && r.record?.hadeeth).map((r) => r.record.hadeeth);
+        into[L] = parts.length ? parts.join("\n\n") : null;
+      }).catch(() => {}))));
   }
 
   function arabicBlock(text) {
@@ -763,7 +783,38 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: e.words ?? null, en: e.en, bn: e.bn, line: e.who[L], quran: e.ref,
         ref: `${t("Qur'an {ref}", { ref: num(e.ref) })} · ${e.surah?.en ?? ""}` })),
     ], bar).remove();
+    wireQuranPlay(card, e.ref);
     return card;
+  }
+  /**
+   * 7 C (the Owner, 8 Nov): a Qur'anic dua plays the recitation Quran Study already plays (its default reciter, one āyah),
+   * so the ▶ in the bar works on these cards; the other duas stay dimmed until the madrasah has its own recordings (7 A/B).
+   * The player is loaded on the first press, never at startup (the load-speed contract).
+   */
+  let quranPlayer = null; // stopped whenever the card changes, so a recitation never plays under another dua
+  function wireQuranPlay(card, ref) {
+    const play = card.querySelector("[data-dua-play]");
+    const m = /^(\d+):(\d+)$/.exec(String(ref || ""));
+    if (!play || !m) return;
+    const [s, a] = [Number(m[1]), Number(m[2])];
+    play.disabled = false;
+    play.title = t("Play");
+    let player = null;
+    const sync = () => { const on = !!player?.isPlaying(); play.textContent = on ? "⏸" : "▶"; play.setAttribute("aria-label", on ? t("Pause") : t("Play")); play.dataset.duaPlaying = on ? "1" : "0"; };
+    play.addEventListener("click", async () => {
+      try {
+        player = player || (quranPlayer = await import("./audio-player.js"));
+        if (player.isPlaying()) { player.pause(); sync(); return; }
+        if (player.isPaused()) { player.resume(); sync(); return; }
+        player.unlockAudio();
+        player.setPlaybackStateHandler(sync);
+        player.playAyah(s, a, "ar");
+        sync();
+      } catch (err) {
+        play.title = t("Audio could not be played");
+        console.error(err);
+      }
+    });
   }
 
   render();
