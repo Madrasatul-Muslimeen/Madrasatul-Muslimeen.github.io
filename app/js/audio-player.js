@@ -162,7 +162,7 @@ const BANGLA_TIMESTAMPS_URL =
 
 const WAQIAH_AUDIO_URL = "/tools/quran-data-pull/output/audio/waqiah.webm";
 const WAQIAH_TIMESTAMPS_URL = "/tools/quran-data-pull/output/waqiah-timestamps.json";
-const WAQIAH_READY = false; // flip to true in the commit that adds the audio file (needs the Owner's n121i)
+const WAQIAH_READY = true; // the Owner chose A (this repository) for MSA · QR J121; the file is tools/quran-data-pull/output/audio/waqiah.webm
 
 export const RECITERS = {
   ar: {
