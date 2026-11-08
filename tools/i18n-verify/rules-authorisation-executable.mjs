@@ -718,5 +718,56 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   });
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// DUA KEYS FOR HISN AL-MUSLIM AND QUR'ANIC DUAS (PCF MSA J104 line 23, the Owner 9 Nov 2026: Part 1 = A, Part 2 = D, option
+// B): docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules is today's firestore.rules with the duaKey pattern
+// widened in duaEdits and duaShares ONLY (plus one comment line). A CANDIDATE, NOT PUBLISHED. These checks pin that it is
+// exactly that and nothing more. The day the Owner publishes it and firestore.rules is made that file, the PENDING check
+// fails by name: update it in place to assert what production carries (as the Dua saving checks above were on 8 Nov).
+{
+  const KEYS = "docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules";
+  const OLD = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40})$')";
+  const NEW = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40}|hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?)$')";
+  const live = read("firestore.rules");
+  const cand = read(KEYS);
+  check("DUA KEYS: the candidate is firestore.rules with exactly the two duaKey pattern lines changed and one comment line added", () => {
+    const a = live.split("\n"), b = cand.split("\n");
+    assert.equal(b.length, a.length + 1, `line count: firestore.rules ${a.length}, candidate ${b.length}`);
+    const added = b.findIndex((l, i) => l !== a[i]);
+    assert.ok(added > 0 && b[added].startsWith("    //") && /hisn-<chapter>-<entry>/.test(b[added]), `the first differing line is not the added comment: ${b[added]}`);
+    const rest = b.slice(0, added).concat(b.slice(added + 1));
+    const changed = rest.map((l, i) => [i, a[i], l]).filter(([, x, y]) => x !== y);
+    assert.equal(changed.length, 2, `expected 2 changed lines, saw ${changed.length}`);
+    for (const [, x, y] of changed) {
+      assert.equal(x.trim(), `&& d().duaKey is string && ${OLD}`);
+      assert.equal(y.trim(), `&& d().duaKey is string && ${NEW}`);
+    }
+  });
+  check("DUA KEYS: the widened pattern sits in duaEdits and duaShares and nowhere else; duaPlans and every other block are unchanged", () => {
+    assert.equal(cand.split(NEW).length - 1, 2, "the widened pattern must occur exactly twice");
+    assert.equal(cand.split(OLD).length - 1, 0, "the old pattern survives somewhere in the candidate");
+    assert.equal(live.split(OLD).length - 1, 2, "POSITIVE CONTROL: firestore.rules carries the published pattern twice");
+    assert.ok(matchBlock(cand, "duaEdits/").includes(NEW) && matchBlock(cand, "duaShares/").includes(NEW));
+    assert.equal(matchBlock(cand, "duaPlans/"), matchBlock(live, "duaPlans/"));
+  });
+  check("DUA KEYS: a hisn- / quran- dua is not \"added\" -- the `added` rule is the published one, unchanged", () => {
+    const rule = "&& (('added' in d()) == d().duaKey.matches('^new-.*$'))";
+    assert.ok(matchBlock(cand, "duaEdits/").includes(rule) && matchBlock(live, "duaEdits/").includes(rule));
+  });
+  check("DUA KEYS: the candidate's new forms are the app's DUA_PLAN_KEY_FORMS (when dua-saving-data.js declares them)", () => {
+    const p = "app/js/dua-saving-data.js";
+    if (!fs.existsSync(path.join(root, p))) return;   // not on this tree yet (it lives on claude/dua-d10-plan-keys)
+    const src = read(p);
+    const m = src.match(/const PLAN_KEY_EXTRA = \/\^\((.*)\)\$\/;/);
+    if (!m && !/DUA_PLAN_KEY_FORMS/.test(src)) return;
+    assert.ok(m, "dua-saving-data.js names DUA_PLAN_KEY_FORMS but its PLAN_KEY_EXTRA pattern was not found");
+    assert.equal(m[1], "hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?", "the app's extra key forms differ from the candidate's");
+  });
+  check("DUA KEYS PENDING: the candidate is NOT published -- firestore.rules still refuses hisn- / quran- keys", () => {
+    assert.ok(!/hisn-\[0-9\]/.test(live), "firestore.rules now carries the hisn-/quran- forms: the Owner published, update these checks in place");
+    assert.notEqual(live, cand);
+  });
+}
+
 console.log(`\n==== Rules authorisation executable: ${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);
