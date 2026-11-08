@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dua wheel demo v1.08</title>
+<style>
+:root{--bg:#f6f1e4;--card:#fffdf7;--ink:#1d2a22;--mut:#5d6b61;--line:#d9cfb6;--acc:#0b5a3a;
+ --s0:#cfcfc6;--s1:#e8b84a;--s2:#4aa3c7;--s3:#59b36b;--s4:#0b5a3a}
+@media (prefers-color-scheme:dark){:root{--bg:#0c1a13;--card:#12261b;--ink:#f2ead2;--mut:#b9c4b4;--line:#2d4a3a;--acc:#7fd6a0;--s0:#5c665e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,sans-serif;padding:0 16px 48px}
+h1{font-size:1.35rem;margin:18px 0 4px}h2{font-size:1.1rem;margin:0 0 6px}p{margin:.3rem 0}.mut{color:var(--mut);font-size:.92rem}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:14px auto;max-width:980px}
+.tag{display:inline-block;background:var(--acc);color:#fff;border-radius:99px;padding:2px 10px;font-size:.8rem}
+.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+svg{max-width:100%;height:auto}
+button,select{font:inherit;min-height:40px;min-width:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:4px 12px;cursor:pointer}
+button[aria-pressed=true]{background:var(--acc);color:#fff;border-color:var(--acc)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.88rem;margin:6px 0}.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:4px}
+table{border-collapse:collapse;width:100%;font-size:.95rem}td,th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
+.bar{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--s0);min-width:120px}.bar span{display:block}
+.pop{position:fixed;inset:auto 0 0 0;background:var(--card);border-top:2px solid var(--acc);padding:14px 16px 22px;z-index:9;box-shadow:0 -6px 20px #0004}
+.pop[hidden]{display:none}.pop .chips button{flex:1 1 40%}
+.note{background:#fff3c9;color:#4a3b00;border-radius:8px;padding:6px 10px;font-size:.9rem}
+@media (prefers-color-scheme:dark){.note{background:#3b3412;color:#f6e7b6}}
+.ar{font-family:'Amiri','Scheherazade New',serif;font-size:1.35rem;direction:rtl}
+.wcell{cursor:pointer}
+</style></head><body>
+<h1>Dua wheel — DEMO v1.08 <span class="tag">sample data</span></h1>
+<p class="mut">For the Owner's tick (PCF MSA J104 item 19). Nothing here is saved; the numbers are invented to show the shapes. Four things: <b>1</b> the Dua wheel with its layers, <b>2</b> marking a dua like a bookmark, <b>3</b> the Dua Word Card's level wheel (same as the Qur'an Word Card), <b>4</b> a wheel for one whole dua, one segment per word.</p>
+
+<section id="s1"><h2>1 · The Dua wheel <span class="mut">(each slice of the circle is one dua; each ring groups the same slices a different way)</span></h2>
+<div class="row"><div><svg id="wheel" viewBox="-250 -250 500 500" width="420" role="img" aria-label="Dua wheel"></svg></div>
+<div style="flex:1 1 260px">
+ <div class="legend" id="rings"></div>
+ <div class="chips" id="lens" role="group" aria-label="Show status by"></div>
+ <div id="lensOut"></div>
+ <p class="mut">Tap a coloured arc on any ring (or a row below) to see its status: how many duas Not started, Learning, Practising, Achieved, Mastered.</p>
+</div></div>
+<div class="legend" id="statusLegend"></div>
+<div style="overflow-x:auto"><table id="tbl"></table></div>
+</section>
+
+<section id="s2"><h2>2 · Marking a dua, like making a bookmark</h2>
+<p class="mut">Press the ribbon on a dua. You choose its <b>status</b> and its <b>own category</b>. A category I placed for you carries a small “placed by Claude” mark; change it any time as you study, and it becomes yours.</p>
+<div id="rows"></div></section>
+
+<section id="s3"><h2>3 · Dua Word Card — the levels wheel <span class="mut">(same as the Qur'an Word Card)</span></h2>
+<div class="row"><div><svg id="wl" viewBox="-130 -130 260 260" width="260" role="img" aria-label="Word levels wheel"></svg></div>
+<div style="flex:1 1 240px"><p class="ar" id="wlWord">بِاسْمِكَ</p><p class="mut" id="wlHint">Tap a level to mark it. WbW · Root · Family · Taṣrīf · Depth.</p>
+<div class="note">A word that is also in the Qur'an goes to the <b>Qur'an wheel</b> as well (the same word, one record). Words found only in duas fill this wheel only.</div></div></div></section>
+
+<section id="s4"><h2>4 · One dua as a wheel — one segment per word</h2>
+<div class="row"><div><svg id="dw" viewBox="-130 -130 260 260" width="260" role="img" aria-label="Dua words wheel"></svg></div>
+<div style="flex:1 1 240px"><p class="ar" id="dwText"></p><p class="mut">Each segment is a word, coloured by how well you know it. Tap a word to cycle its status.</p><div class="legend" id="dwLegend"></div></div></div></section>
+
+<div class="pop" id="pop" hidden role="dialog" aria-label="Mark this dua"><b id="popT"></b>
+<p class="mut">Status</p><div class="chips" id="popS"></div><p class="mut">My category</p><div class="chips" id="popC"></div>
+<button id="popX">Done</button></div>
+
+<script>
+const ST=['Not started','Learning','Practising','Achieved','Mastered'],SC=['var(--s0)','var(--s1)','var(--s2)','var(--s3)','var(--s4)'];
+const OCC=[['Waking & sleeping','#7b5ea7'],['Morning & evening','#d98c3a'],['Food','#c2563f'],['Travel','#3f8fb0'],['Worry & fear','#6b7f3c'],['Family','#b04a7c']];
+const BK=[['Bukhari','#2f6f4f'],['Muslim','#8a5a2b'],['Tirmidhi','#3a5f9a'],['Abu Dawud','#9a3a5f'],['Ibn Majah','#5f7a3a']];
+const MY=[['Memorise now','#e05a4f'],['For the children','#e0a43a'],['Salah','#4a9bd0'],['Daily','#5aa86a'],['Later','#9a8fb8']];
+const D=[ // [title, occasion, book, myCat, claudePlaced, status]
+['On waking',0,0,3,1,4],['Before sleep',0,1,3,0,3],['If I wake at night',0,2,1,1,0],['Bad dream',0,1,4,1,0],
+['Morning: Ayat al-Kursi',1,2,0,0,2],['Morning protection',1,3,0,1,1],['Evening protection',1,3,0,1,1],['Sayyid al-Istighfar',1,0,0,0,3],
+['Before eating',2,2,1,1,4],['After eating',2,3,1,0,3],['Eating at another home',2,1,4,1,0],['Breaking the fast',2,3,3,0,2],
+['Leaving the house',3,3,3,0,4],['Riding / travel',3,1,4,0,2],['Entering a town',3,2,4,1,0],['Returning',3,4,4,1,0],
+['Worry and grief',4,0,0,0,2],['Debt',4,2,0,1,1],['Anxiety',4,3,2,1,1],['Fear of a people',4,3,4,1,0],
+['For parents',5,1,1,0,3],['For children',5,0,1,0,2],['For spouse',5,4,1,1,0],['Guidance for family',5,2,1,1,1]];
+const N=D.length,TAU=Math.PI*2,ns='http://www.w3.org/2000/svg';
+const mk=(t,a,p)=>{const e=document.createElementNS(ns,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
+function arc(r0,r1,a0,a1){const c=Math.cos,s=Math.sin,L=a1-a0>Math.PI?1:0;return`M${r1*c(a0)},${r1*s(a0)}A${r1},${r1} 0 ${L} 1 ${r1*c(a1)},${r1*s(a1)}L${r0*c(a1)},${r0*s(a1)}A${r0},${r0} 0 ${L} 0 ${r0*c(a0)},${r0*s(a0)}Z`}
+const rings=[['On-the-go',i=>OCC[D[i][1]][1],i=>D[i][1],OCC],['Hadith book',i=>BK[D[i][2]][1],i=>D[i][2],BK],['My category',i=>MY[D[i][3]][1],i=>D[i][3],MY],['Status of study',i=>SC[D[i][5]],null,null]];
+let lens=0,sel=null;
+function drawWheel(){const w=document.getElementById('wheel');w.innerHTML='';
+ rings.forEach((R,ri)=>{const r0=70+ri*42,r1=r0+38;
+  for(let i=0;i<N;i++){const a0=-Math.PI/2+i*TAU/N+.004,a1=-Math.PI/2+(i+1)*TAU/N-.004;
+   const p=mk('path',{d:arc(r0,r1,a0,a1),fill:R[1](i),stroke:'var(--card)','stroke-width':1,tabindex:0,role:'button','aria-label':`${D[i][0]} · ${R[0]}`},w);
+   p.style.cursor='pointer';const go=()=>{sel={ring:ri,group:R[2]?R[2](i):D[i][5],i};out()};p.onclick=go;p.onkeydown=e=>{if(e.key==='Enter')go()};}});
+ const t=mk('text',{'text-anchor':'middle',y:6,'font-size':20,fill:'var(--ink)'},w);t.textContent=`${D.filter(d=>d[5]>=3).length}/${N}`;
+ const t2=mk('text',{'text-anchor':'middle',y:26,'font-size':11,fill:'var(--mut)'},w);t2.textContent='achieved or mastered'}
+function counts(ix){const c=[0,0,0,0,0];ix.forEach(i=>c[D[i][5]]++);return c}
+const bar=c=>{const n=c.reduce((a,b)=>a+b,0)||1;return`<div class="bar" title="${c.map((v,k)=>ST[k]+' '+v).join(', ')}">${c.map((v,k)=>`<span style="width:${100*v/n}%;background:${SC[k]}"></span>`).join('')}</div>`};
+function out(){const el=document.getElementById('lensOut');let ix,name;
+ if(!sel){ix=[...Array(N).keys()];name='All duas'}
+ else{const R=rings[sel.ring];if(R[2]){ix=[...Array(N).keys()].filter(i=>R[2](i)===sel.group);name=`${R[0]}: ${R[3][sel.group][0]}`}else{ix=[sel.i];name='Dua: '+D[sel.i][0]}}
+ el.innerHTML=`<p><b>${name}</b> — ${ix.length} dua${ix.length>1?'s':''}</p>${bar(counts(ix))}<p class="mut">${counts(ix).map((v,k)=>ST[k]+' '+v).join(' · ')}</p>`}
+function lensChips(){const c=document.getElementById('lens');c.innerHTML='';
+ [['All',null],['Per occasion',0],['Per hadith book',1],['Per my category',2]].forEach(([l,r],k)=>{const b=document.createElement('button');b.textContent=l;b.setAttribute('aria-pressed',String(k===lens));b.onclick=()=>{lens=k;sel=r==null?null:{ring:r,group:0};lensChips();out();table()};c.appendChild(b)});}
+function table(){const t=document.getElementById('tbl');
+ if(lens===0){t.innerHTML='<tr><th>Dua</th><th>Status</th></tr>'+D.map((d,i)=>`<tr><td>${d[0]}</td><td>${bar([0,0,0,0,0].map((_,k)=>k===d[5]?1:0))}</td></tr>`).join('');return}
+ const R=rings[lens-1];t.innerHTML=`<tr><th>${R[0]}</th><th>Duas</th><th>Status</th></tr>`+R[3].map((g,gi)=>{const ix=[...Array(N).keys()].filter(i=>R[2](i)===gi);return`<tr data-g="${gi}" style="cursor:pointer"><td><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${g[1]}"></i> ${g[0]}</td><td>${ix.length}</td><td>${bar(counts(ix))}</td></tr>`}).join('');
+ t.querySelectorAll('tr[data-g]').forEach(r=>r.onclick=()=>{sel={ring:lens-1,group:+r.dataset.g};out()})}
+document.getElementById('rings').innerHTML=rings.map((r,i)=>`<span><b>${i+1}.</b> ${r[0]}</span>`).join(' · ')+' <span class="mut">(inner → outer)</span>';
+document.getElementById('statusLegend').innerHTML=ST.map((s,k)=>`<span><i style="background:${SC[k]}"></i>${s}</span>`).join('');
+function rowsDraw(){const r=document.getElementById('rows');r.innerHTML=D.slice(0,6).map((d,i)=>`<div style="display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding:6px 0"><button data-i="${i}" aria-label="Mark ${d[0]}" style="font-size:1.2rem">🔖</button><div style="flex:1"><b>${d[0]}</b><br><span class="mut">${OCC[d[1]][0]} · ${BK[d[2]][0]} · <i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${MY[d[3]][1]}"></i> ${MY[d[3]][0]}${d[4]?' <em>(placed by Claude)</em>':''}</span></div><span style="min-width:110px">${bar([0,0,0,0,0].map((_,k)=>k===d[5]?1:0))}<span class="mut">${ST[d[5]]}</span></span></div>`).join('');
+ r.querySelectorAll('button').forEach(b=>b.onclick=()=>pop(+b.dataset.i))}
+let cur=0;function pop(i){cur=i;const p=document.getElementById('pop');p.hidden=false;document.getElementById('popT').textContent=D[i][0];
+ const s=document.getElementById('popS'),c=document.getElementById('popC');s.innerHTML='';c.innerHTML='';
+ ST.forEach((n,k)=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',String(D[i][5]===k));b.onclick=()=>{D[i][5]=k;redraw();pop(i)};s.appendChild(b)});
+ MY.forEach((n,k)=>{const b=document.createElement('button');b.textContent=n[0];b.setAttribute('aria-pressed',String(D[i][3]===k));b.onclick=()=>{D[i][3]=k;D[i][4]=0;redraw();pop(i)};c.appendChild(b)})}
+document.getElementById('popX').onclick=()=>document.getElementById('pop').hidden=true;
+function redraw(){drawWheel();out();table();rowsDraw()}
+// 3 word levels
+const LV=['WbW','Root','Family','Taṣrīf','Depth'],lv=[2,1,0,0,0];
+function drawLv(){const w=document.getElementById('wl');w.innerHTML='';LV.forEach((n,i)=>{const a0=-Math.PI/2+i*TAU/5+.03,a1=-Math.PI/2+(i+1)*TAU/5-.03;
+ const p=mk('path',{d:arc(48,115,a0,a1),fill:SC[lv[i]],stroke:'var(--card)',class:'wcell',tabindex:0,role:'button','aria-label':`${n}: ${ST[lv[i]]}`},w);const m=(a0+a1)/2;
+ const t=mk('text',{x:82*Math.cos(m),y:82*Math.sin(m)+4,'text-anchor':'middle','font-size':12,'font-weight':700,fill:lv[i]>=2?'#fff':'#222','pointer-events':'none'},w);t.textContent=n;
+ const go=()=>{lv[i]=(lv[i]+1)%5;drawLv()};p.onclick=go;p.onkeydown=e=>{if(e.key==='Enter')go()}});
+ const c=mk('text',{'text-anchor':'middle',y:5,'font-size':13,fill:'var(--ink)'},w);c.textContent='Word'}
+// 4 dua words
+const WS=['بِاسْمِكَ','رَبِّي','وَضَعْتُ','جَنْبِي','وَبِكَ','أَرْفَعُهُ','إِنْ','أَمْسَكْتَ','نَفْسِي','فَارْحَمْهَا','وَإِنْ','أَرْسَلْتَهَا','فَاحْفَظْهَا'],ws=[4,3,3,2,2,1,0,1,3,2,0,1,2];
+function drawDw(){document.getElementById('dwText').textContent=WS.join(' ');const w=document.getElementById('dw');w.innerHTML='';
+ WS.forEach((x,i)=>{const n=WS.length,a0=-Math.PI/2+i*TAU/n+.02,a1=-Math.PI/2+(i+1)*TAU/n-.02;
+  const p=mk('path',{d:arc(55,118,a0,a1),fill:SC[ws[i]],stroke:'var(--card)',tabindex:0,role:'button','aria-label':`${x}: ${ST[ws[i]]}`},w);p.style.cursor='pointer';
+  const go=()=>{ws[i]=(ws[i]+1)%5;drawDw()};p.onclick=go;p.onkeydown=e=>{if(e.key==='Enter')go()}});
+ const c=mk('text',{'text-anchor':'middle',y:5,'font-size':16,fill:'var(--ink)'},w);c.textContent=Math.round(100*ws.filter(v=>v>=3).length/WS.length)+'%'}
+document.getElementById('dwLegend').innerHTML=ST.map((s,k)=>`<span><i style="background:${SC[k]}"></i>${s}</span>`).join('');
+lensChips();redraw();drawLv();drawDw();
+</script></body></html>
