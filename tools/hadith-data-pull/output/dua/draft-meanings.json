@@ -1,0 +1,22 @@
+{
+  "note": "DRAFT meanings of Hisn al-Muslim duas, written by Claude for the Dua module (PCF MSA J104 tick 10 B, 8 Nov 2026). Every one is a DRAFT TO BE CHECKED by a person of knowledge and is shown as such. Keyed by the Hisn number (chapter:entry). First batch: the short, most-used ones.",
+  "status": "draft, to be checked",
+  "meanings": {
+    "1:1": { "en": "All praise is for Allah, who gave us life after having caused us to die, and to Him is the resurrection.", "bn": "সমস্ত প্রশংসা আল্লাহর, যিনি আমাদের মৃত্যু (ঘুম) দেওয়ার পর জীবিত করেছেন, আর তাঁরই কাছে পুনরুত্থান।" },
+    "1:2": { "en": "All praise is for Allah, who gave me well-being in my body, returned my soul to me, and allowed me to remember Him.", "bn": "সমস্ত প্রশংসা আল্লাহর, যিনি আমার শরীরে সুস্থতা দিয়েছেন, আমার রূহ ফিরিয়ে দিয়েছেন এবং তাঁর যিকির করার অনুমতি দিয়েছেন।" },
+    "29:7": { "en": "In Your name, O Allah, I die and I live.", "bn": "হে আল্লাহ, আপনার নামেই আমি মৃত্যুবরণ করি (ঘুমাই) এবং জীবিত হই (জাগি)।" },
+    "29:6": { "en": "O Allah, protect me from Your punishment on the day You raise Your servants.", "bn": "হে আল্লাহ, যেদিন আপনি আপনার বান্দাদের পুনরুত্থিত করবেন সেদিন আমাকে আপনার আযাব থেকে রক্ষা করুন।" },
+    "29:12": { "en": "All praise is for Allah, who fed us, gave us drink, sufficed us and gave us shelter; how many there are with no one to suffice them or give them shelter.", "bn": "সমস্ত প্রশংসা আল্লাহর, যিনি আমাদের খাইয়েছেন, পান করিয়েছেন, আমাদের প্রয়োজন মিটিয়েছেন ও আশ্রয় দিয়েছেন; কত মানুষ আছে যাদের প্রয়োজন মেটানোর বা আশ্রয় দেওয়ার কেউ নেই।" },
+    "6:1": { "en": "In the name of Allah. O Allah, I seek refuge in You from the male and female devils (and from evil and harmful things).", "bn": "আল্লাহর নামে। হে আল্লাহ, আমি আপনার কাছে পুরুষ ও নারী শয়তানদের (অনিষ্ট) থেকে আশ্রয় চাই।" },
+    "7:1": { "en": "I ask for Your forgiveness.", "bn": "আমি আপনার ক্ষমা প্রার্থনা করি।" },
+    "8:1": { "en": "In the name of Allah.", "bn": "আল্লাহর নামে।" },
+    "2:1": { "en": "All praise is for Allah, who clothed me with this and provided it for me, with no power or might from me.", "bn": "সমস্ত প্রশংসা আল্লাহর, যিনি আমাকে এটি পরিয়েছেন এবং আমার কোনো সামর্থ্য ও শক্তি ছাড়াই এটি আমাকে দান করেছেন।" },
+    "71:1": { "en": "All praise is for Allah, who fed me this and provided it for me, with no power or might from me.", "bn": "সমস্ত প্রশংসা আল্লাহর, যিনি আমাকে এটি খাইয়েছেন এবং আমার কোনো সামর্থ্য ও শক্তি ছাড়াই এটি আমাকে দান করেছেন।" },
+    "11:1": { "en": "In the name of Allah we enter, in the name of Allah we leave, and upon Allah our Lord we rely. (Then greet your family.)", "bn": "আল্লাহর নামে আমরা প্রবেশ করলাম, আল্লাহর নামে বের হলাম, এবং আমাদের রব আল্লাহর উপরই ভরসা করলাম। (তারপর পরিবারের লোকদের সালাম দিন।)" },
+    "10:2": { "en": "In the name of Allah; I rely on Allah; there is no power and no might except with Allah.", "bn": "আল্লাহর নামে; আমি আল্লাহর উপর ভরসা করলাম; আল্লাহর সাহায্য ছাড়া কোনো উপায় ও কোনো শক্তি নেই।" },
+    "101:1": { "en": "I entrust you to Allah, whose trusts are never lost.", "bn": "আমি তোমাদের সেই আল্লাহর কাছে আমানত রাখছি, যাঁর কাছে রাখা আমানত কখনো নষ্ট হয় না।" },
+    "105:1": { "en": "I seek refuge in the perfect words of Allah from the evil of what He has created.", "bn": "আমি আল্লাহর পরিপূর্ণ বাণীসমূহের মাধ্যমে তাঁর সৃষ্ট সবকিছুর অনিষ্ট থেকে আশ্রয় চাই।" },
+    "73:1": { "en": "O Allah, feed the one who fed me, and give drink to the one who gave me drink.", "bn": "হে আল্লাহ, যে আমাকে খাইয়েছে তাকে আপনি খাওয়ান, আর যে আমাকে পান করিয়েছে তাকে আপনি পান করান।" },
+    "74:1": { "en": "The fasting have broken their fast with you, the righteous have eaten your food, and the angels have prayed for you.", "bn": "রোযাদাররা আপনাদের কাছে ইফতার করেছে, নেককাররা আপনাদের খাবার খেয়েছে, আর ফেরেশতারা আপনাদের জন্য দু'আ করেছে।" }
+  }
+}

@@ -1098,3 +1098,4 @@ total). Allocated by the MMSA Architect.
 13.55: the Tafsīr books grouped by century (QR J115 Slice B). Allocated by the MMSA Architect.
 13.56: the Eras names linked to the Scholars Database (QR J115 follow-up). Allocated by the MMSA Architect.
 13.57: Qur'anic duas play and the hadith translation on the Dua poster (Dua J104 r14a). Allocated by the MMSA Architect.
+13.58: the draft Hisn meanings and the r14a follow-ups (Dua J104 r14b). Allocated by the MMSA Architect.
