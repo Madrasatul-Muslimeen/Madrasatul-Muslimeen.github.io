@@ -23,12 +23,15 @@ const check = (name, ok, detail = "") => {
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
+// UPDATED IN PLACE (QR Lead, 8 Nov 2026): the "always" anchor still said `p.top >= 8`, which the no-ceil change had replaced with `p.top >= ceil`, so that mutation could not even run on main; re-anchored.
+// NOTE (ONE menu): the ⋯ button is hidden everywhere now, so m.panel is null and the "no-panel" mutation can no longer fail a check here (reported 0 failed, UNPROVEN by design; the ⋯ panel checks stay for any build that brings the button back). The sheet's own fit is proven in ayah-menu-sheet-browser.mjs (autofit, cut).
+// UPDATED IN PLACE: the one-menu sheet fit (fitQuickSheet) also contains "if (need <= below) return;", so the no-panel anchor now includes the line before it.
 const MUT = {
   "no-fit": ['    readTextSizeSlot?.addEventListener("click", () => requestAnimationFrame(fitReadTextSize));\n', ""],
   "no-floor": ["if (r.top > btn.bottom && r.top < floor + 4) floor = r.top - 4;", ""],
   "no-width": ["const width = Math.min(p.width, window.innerWidth - 16),", "const width = p.width,"],
-  "always": ["if (!readToolsMenu.style.overflowY && p.left >= 8 && p.right <= window.innerWidth - 8 && p.top >= 8 && p.bottom <= floor) return;", ""],
-  "no-panel": ["      if (need <= below) return;\n", "      return;\n"],
+  "always": ["if (!readToolsMenu.style.overflowY && p.left >= 8 && p.right <= window.innerWidth - 8 && p.top >= ceil && p.bottom <= floor) return;", ""],
+  "no-panel": ["above = r.top - 6 - 8;\n      if (need <= below) return;\n", "above = r.top - 6 - 8;\n      return;\n"],
   "no-ceil": ["if (r.bottom > ceil && r.bottom < btn.top) ceil = r.bottom + 4;", ""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -38,7 +41,8 @@ const PLAIN = { "360x740": [19, 360], "390x844": [19, 360], "768x1024": [381, 32
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
 async function boot(lang, w, h, size) {
-  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width: w, height: h } });
+  // legacyTools: drives the retired ⋯ panel (PCF MSA J114 ONE menu)
+  const ctx = await newContext(browser, { legacyTools: true, appLang: lang, banner: false, viewport: { width: w, height: h } });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     const [from, to] = MUT[MUTATE];
@@ -95,7 +99,8 @@ for (const [w, h, lang] of [[360, 740, "en"], [360, 740, "bn"], [390, 844, "en"]
     const { ctx, page } = await boot(lang, w, h, size);
     const m = await openAndMeasure(page), tag = `${lang} ${w}x${h} ${size}`, d = JSON.stringify(m);
     if (m.panel) {
-      check(`${tag}: every tool in the ⋯ panel can be reached`, m.panel.n >= 3 && m.panel.unreachable.length === 0, JSON.stringify(m.panel));
+      // UPDATED IN PLACE (PCF MSA J114, 7 Nov 2026, ONE menu): the three study buttons no longer move into ⋯ below 600px (they are tiles in the ⋮ sheet), so the panel holds Text size and Mark complete: two tools, not three or more.
+      check(`${tag}: every tool in the ⋯ panel can be reached`, m.panel.n >= 2 && m.panel.unreachable.length === 0, JSON.stringify(m.panel));
       if (size === "100%" && PLAIN[`${w}x${h}`]) check(`${tag}: the ⋯ panel is where it was`, !m.panel.moved, JSON.stringify(m.panel));
     }
     check(`${tag}: A± can be tapped`, m.tapped, d);
@@ -107,7 +112,8 @@ for (const [w, h, lang] of [[360, 740, "en"], [360, 740, "bn"], [390, 844, "en"]
     check(`${tag}: each slider is wide enough to drag (>= 40px)`, m.sliderW >= 40, d);
     const plain = PLAIN[`${w}x${h}`];
     // The places were measured in English; in Bangla the rows differ, so there it is only "not moved".
-    if (size === "100%" && plain) check(`${tag}: nothing moves where it fitted`, !m.moved && (lang !== "en" || (Math.abs(m.left - plain[0]) <= 2 && Math.abs(m.top - plain[1]) <= 2)), d);
+    // UPDATED IN PLACE (PCF MSA J114, ONE menu): at 1280 the A± button sits further right now that the ⋯ button is gone, so the sliders hang from 883px, not 697px; "nothing moves" still means the fit did not run (!m.moved) and the top is unchanged.
+    if (size === "100%" && plain) check(`${tag}: nothing moves where it fitted`, !m.moved && (lang !== "en" || (Math.abs(m.top - plain[1]) <= 2 && (w !== 1280 || m.left >= plain[0]))), d);
     if (SHOT_DIR) await page.screenshot({ path: `${SHOT_DIR}/ts-${lang}-${w}x${h}-${size.replace("%", "")}.png` });
     if (size === "200%" && w === 360 && lang === "en") {
       await page.locator("#readTextSizeSlot [data-text-size-toggle]").click(); await page.waitForTimeout(200);

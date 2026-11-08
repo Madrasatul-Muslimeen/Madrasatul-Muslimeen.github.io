@@ -29,7 +29,8 @@ const BN = /[ঀ-৿]/;
 const browser = await chromium.launch();
 
 async function start(lang, width, height) {
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height } });
+  // legacyTools: drives the retired ⋯ path (PCF MSA J114 ONE menu; measured against main: loses checks without it)
+  const ctx = await newContext(browser, { legacyTools: true, appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height } });
   await ctx.route("**/gtaf_bangla_timestamps.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {

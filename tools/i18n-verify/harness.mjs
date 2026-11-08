@@ -14,7 +14,7 @@ export const BASE = process.env.QR_BASE || "http://localhost:8080"; // QR_BASE=h
 // appLang seeds THIS DEVICE (localStorage); accountLang seeds the ACCOUNT
 // (userIndex/{uid}.appLang) -- v07.37. Setting them differently is what
 // exercises the sync: the account's value should win and reload the page.
-export async function newContext(browser, { banner = true, appLang = null, accountLang = null, viewport, latencyMs = 0, emptyTenant = false, seedTemplates = null, taglines = null, extraSeedJs = null, allowServiceWorker = false, allowScreensaver = false, timezoneId = null } = {}) {
+export async function newContext(browser, { banner = true, appLang = null, accountLang = null, viewport, latencyMs = 0, emptyTenant = false, seedTemplates = null, taglines = null, extraSeedJs = null, allowServiceWorker = false, allowScreensaver = false, timezoneId = null, legacyTools = false } = {}) {
   const ctx = await browser.newContext({ viewport, ...(timezoneId ? { timezoneId } : {}) }); // timezoneId: an IANA zone for the page's clock (default: the machine's)
   const stub = stubFor({ banner, accountLang, latencyMs, emptyTenant, seedTemplates, taglines, extraSeedJs });
   await ctx.route("https://www.gstatic.com/firebasejs/**", (route) =>
@@ -70,6 +70,18 @@ export async function newContext(browser, { banner = true, appLang = null, accou
       if (lang && !localStorage.getItem("mm_app_lang")) localStorage.setItem("mm_app_lang", lang);
     } catch {}
   }, { lang: appLang, allowServiceWorker, allowScreensaver });
+  // PCF MSA J114 (7 Nov 2026, ONE menu): the Read bar's ⋯ (More tools) is retired from sight, its two tools and the study buttons being tiles
+  // in the ⋮ sheet. THE DEFAULT IS THE REAL PAGE: no style is injected, so every suite sees what a reader sees. A suite that still has to drive
+  // the retired ⋯ path (its code is all still there) opts in with `legacyTools: true` and a one-line reason at its call site.
+  if (legacyTools) {
+    await ctx.addInitScript(() => {
+      document.addEventListener("DOMContentLoaded", () => {
+        const st = document.createElement("style"); st.id = "zzToolsBack";
+        st.textContent = "@media (max-width: 899.98px) { #readBar #readToolsBtn { display: inline-flex !important; } #readToolsMenu.open { display: grid !important; } } @media (min-width: 900px) { #readToolsMenu { display: contents !important; } } @media (max-width: 599.98px) { #readBar #readApproachBar { display: flex !important; } }";
+        document.head.append(st);
+      });
+    });
+  }
   return ctx;
 }
 

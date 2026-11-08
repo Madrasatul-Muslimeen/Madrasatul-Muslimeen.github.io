@@ -17,7 +17,8 @@ const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (f
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
 async function start({ lang = "en", width = 390, height = 844, requests = null } = {}) {
-  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height } });
+  // legacyTools: drives the retired ⋯ path (PCF MSA J114 ONE menu; measured against main: loses checks without it)
+  const ctx = await newContext(browser, { legacyTools: true, appLang: lang, banner: false, viewport: { width, height } });
   await ctx.addInitScript(() => {
     try { localStorage.setItem("mm_card_look", "night"); } catch (e) {}
     window.__printed = 0;

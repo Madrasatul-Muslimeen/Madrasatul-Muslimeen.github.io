@@ -535,7 +535,8 @@ const NOTES_SEED = (owner = "p1") => `
 const vis = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); if (!e) return false; const r = e.getBoundingClientRect(); return getComputedStyle(e).display !== "none" && getComputedStyle(e).visibility !== "hidden" && r.width > 0 && r.height > 0; }, sel);
 const count = (page, sel) => page.evaluate((s) => document.querySelectorAll(s).length, sel);
 const jmOpen = async (path, w, h, seed = NOTES_SEED(), extra = {}) => {
-  const ctx = await newContext(browser, { banner: false, appLang: null, viewport: { width: w, height: h }, extraSeedJs: seed, ...extra });
+  // legacyTools: the Notes-pane-in-the-Read-view claims describe the retired bar (📝 on the bar; PCF MSA J114 ONE menu)
+  const ctx = await newContext(browser, { legacyTools: true, banner: false, appLang: null, viewport: { width: w, height: h }, extraSeedJs: seed, ...extra });
   await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA", "fB"])); } catch {} });
   const { page, errors } = await openPage(ctx, path);
   await page.waitForTimeout(1200);
