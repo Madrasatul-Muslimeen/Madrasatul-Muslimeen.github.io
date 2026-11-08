@@ -44,6 +44,10 @@ export function wiktionaryGlosses(data, lemma, pos) {
   const g = (want && byPos[want]) || byPos[Object.keys(byPos)[0]];
   return g?.length ? g.join("; ") : null;
 }
+/** Pure: tick 17 A is for words with NO English dictionary meaning; beside one, the suggestion is not shown (never two English meanings, one unchecked). */
+export function suggestedToShow(en, wik) {
+  return en ? null : (wik || null);
+}
 /** The suggested English meaning for a dictionary form, or null. Never throws. */
 export async function duaWordSuggested(lemma, pos) {
   if (!lemma) return null;
@@ -99,11 +103,12 @@ export function duaWordCardBody({ grammar, grammarBlock, progressBlock, family =
           mean.appendChild(p);
         }
         if (any) mean.appendChild(el("p", "dua-words-note", [en ? t("English: Wiktionary (CC BY-SA 4.0)") : "", bn ? t("Bangla: Quraniyo Obhidhan") : ""].filter(Boolean).join(" · ")));
-        if (wik) {
+        const sug = suggestedToShow(en, wik);
+        if (sug) {
           any = true;
           const p = el("p", "dua-word-line dua-word-meaning-suggested");
           p.appendChild(el("span", "dua-word-label", t("Suggested meaning (English)")));
-          const v = el("span", "dua-word-value", wik);
+          const v = el("span", "dua-word-value", sug);
           v.lang = "en";
           p.appendChild(v);
           mean.appendChild(p);

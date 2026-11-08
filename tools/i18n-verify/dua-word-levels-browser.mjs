@@ -4,6 +4,7 @@
 // here -> "No dictionary entry yet"); word 7 a noun of the SAME root; word 8 the particle «مِن» (a real entry in the
 // English dictionary -> its meaning and the Wiktionary credit).
 // Run from the repository root, serve.js on :8080.
+//   --mutate=suggestalways the suggestion is shown even beside an English dictionary meaning -> the no-suggestion-beside-a-meaning check fails
 //   --mutate=nosuggest the suggested Wiktionary meaning is not shown -> the suggested-meaning check fails
 //   --mutate=nolevels  the level bar is not built       -> the five-levels / level-switch checks fail
 //   --mutate=nokin     Family lists nothing             -> the Family checks fail
@@ -19,7 +20,8 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  nosuggest: ["js/dua-word-card.js", "        if (wik) {", "        if (false) {"],
+  nosuggest: ["js/dua-word-card.js", "        if (sug) {", "        if (false) {"],
+  suggestalways: ["js/dua-word-card.js", "  return en ? null : (wik || null);", "  return wik || null;"],
   nolevels: ["js/dua-word-card.js", "  for (const id of DUA_WORD_LEVELS) {", "  for (const id of []) {"],
   nokin: ["js/dua-word-card.js", "family.filter((w) => w.i !== here && w.grammar?.[1] === root)", "[]"],
   nostep: ["js/dua-word-card.js", 'b.addEventListener("click", () => go?.((here + d + family.length) % Math.max(1, family.length)));', ""],
@@ -87,6 +89,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await P.waitForSelector(`${P1} .dua-word-meaning-en`, { timeout: 8000 }).catch(() => {});
   const m = await text(P);
   check(`${tag} a word whose dictionary form is in the dictionary shows its meaning and the Wiktionary credit`, /partitive|of, some of/.test(m) && /Wiktionary|উইকশনারি/.test(m), m.slice(0, 160));
+  check(`${tag} a word WITH an English dictionary meaning shows NO "Suggested meaning" line (the suggestion is only for words with none)`, await P.evaluate((q) => !!document.querySelector(`${q} .dua-word-meaning-en`) && !document.querySelector(`${q} .dua-word-meaning-suggested`) && !document.querySelector(`${q} .dua-wc-suggested-note`), P1));
   if (lang === "bn") check(`${tag} the card is in Bangla (Back to the dua / level names)`, /দুআয় ফিরুন/.test(await P.evaluate((s) => document.querySelector(s).innerText, P1)));
   const g = await P.evaluate((s) => { const p = document.querySelector(s); return { wide: p.scrollWidth > p.clientWidth + 1 }; }, P1);
   check(`${tag} nothing is wider than the card`, !g.wide);
@@ -97,10 +100,24 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
 }
 await browser.close();
 // Pure (tick 17 A): the Wiktionary lookup picks by part of speech, ignores vowel marks, and says nothing for a form it lacks.
-const { wiktionaryGlosses } = await import("../../app/js/dua-word-card.js");
+// --mutate=suggestalways is applied to a throw-away copy beside the module (relative imports must still resolve); removed after.
+let cardModule = "../../app/js/dua-word-card.js", mutCopy = null;
+if (MUTATE === "suggestalways") {
+  const [, a, b] = MUT.suggestalways, src = fs.readFileSync("app/js/dua-word-card.js", "utf8");
+  if (!src.includes(a)) throw new Error("mutation anchor missing: suggestalways");
+  mutCopy = "app/js/_mut-dua-word-card.js"; fs.writeFileSync(mutCopy, src.replace(a, b)); cardModule = "../../" + mutCopy;
+}
+const { wiktionaryGlosses, suggestedToShow } = await import(cardModule);
+if (mutCopy) fs.unlinkSync(mutCopy);
 const wd = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/dua/wiktionary-meanings.json", "utf8"));
 check("a verb form gets a verb gloss (فَوَّض, verb)", /^to /.test(wiktionaryGlosses(wd, "فَوَّض", "verb") ?? ""), String(wiktionaryGlosses(wd, "فَوَّض", "verb")));
 check("the same letters get the noun gloss for a noun, and it differs from the verb's (بُخْل)", !!wiktionaryGlosses(wd, "بُخْل", "noun") && wiktionaryGlosses(wd, "بُخْل", "noun") !== wiktionaryGlosses(wd, "بُخْل", "verb"));
+// NOTE: this suite's check() takes a VALUE, not a function (a function would always pass), so the facts are computed first.
+const dictLemma = "رَفِيق"; // 694 dua words have a lemma in BOTH the Qur'an dictionary and Wiktionary (measured 9 Nov 2026)
+const control = wiktionaryGlosses(wd, dictLemma, "noun");
+check("the control word has a Wiktionary entry", !!control, String(control));
+check("a word WITH an English dictionary meaning gets NO suggestion (suggestedToShow)", suggestedToShow("a companion", control) === null, String(suggestedToShow("a companion", control)));
+check("a word with NO English dictionary meaning gets the suggestion, and nothing when it has none", suggestedToShow(null, "to delegate") === "to delegate" && suggestedToShow("", null) === null);
 check("a form Wiktionary lacks gives null, never a made-up meaning", wiktionaryGlosses(wd, "ءءءءء", "noun") === null && wiktionaryGlosses(null, "بخل", "noun") === null);
 console.log(`\n==== Dua Word Card levels: ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
