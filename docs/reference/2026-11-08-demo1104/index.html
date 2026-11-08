@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayah Times Demo</title>
+<style>
+:root{--bg:#f7f4ec;--card:#fff;--ink:#1b2a41;--mut:#5b6678;--line:#d9d2bd;--acc:#1F3A6E;--gold:#c9a24b;--ok:#1f7a4d;--bad:#b3261e;--sel:#eef2fa}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a2b;--card:#1a2540;--ink:#eef1f8;--mut:#a9b3c8;--line:#34425f;--acc:#8fb0ff;--gold:#d8b45a;--ok:#5fd39a;--bad:#ff8a80;--sel:#22305a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:1.35rem;margin:.2rem 0}h2{font-size:1.05rem;margin:0 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+.mut{color:var(--mut);font-size:.9rem}
+button,.btn,select{min-height:44px;padding:0 14px;border:1px solid var(--acc);border-radius:10px;background:var(--card);color:var(--acc);font:inherit;font-weight:600;cursor:pointer}
+button.pri{background:var(--acc);color:var(--card)}button:disabled{opacity:.45;cursor:default}
+input[type=file]{width:100%;min-height:44px;padding:8px 0;color:var(--ink);font:inherit}
+label.row{display:flex;gap:10px;align-items:center;min-height:44px}input[type=checkbox]{width:22px;height:22px;flex:none}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.status{padding:10px 12px;border-radius:10px;border:1px solid var(--line);margin-top:8px}.status.ok{border-color:var(--ok);color:var(--ok)}.status.bad{border-color:var(--bad);color:var(--bad)}
+.ay{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--line)}
+.ay.now{background:var(--sel);box-shadow:inset 3px 0 0 var(--gold)}
+.ay .n{font-weight:700;min-width:3.2ch}.ay .t{font-variant-numeric:tabular-nums;font-size:.9rem;color:var(--mut);min-width:0;overflow-wrap:anywhere}
+.ay .ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.ay .tick{display:flex;align-items:center;min-height:44px;min-width:44px;justify-content:center}
+.ay.join{box-shadow:inset 3px 0 0 var(--gold)}.joinnote{grid-column:1/-1;font-size:.85rem;color:var(--mut)}
+.nudge{min-width:44px;padding:0}
+.ay .t{white-space:nowrap}@media (max-width:560px){.ay{grid-template-columns:auto 1fr}.ay .ctl{grid-column:1/-1;justify-content:flex-start}}
+.lang{float:right}.priv{font-size:.88rem}
+</style>
+</head>
+<body>
+<main>
+<button class="lang" id="lang" type="button">বাংলা</button>
+<h1 data-i="title">Ayah times from a whole-sūrah recording</h1>
+<p class="mut" data-i="sub">Demo (not part of the app). Sūrah al-Wāqiʿah, 96 āyāt. The helper finds each āyah's start from the pauses; you listen and tick.</p>
+<p class="priv card" data-i="priv">Your file stays in this browser tab. Nothing is uploaded, copied or kept. Only the times are saved.</p>
+
+<section class="card">
+<h2 data-i="s1">1. Choose your recording</h2>
+<input id="file" type="file" accept="audio/*,video/webm,.webm,.mp3,.m4a,.wav,.ogg" aria-label="recording">
+<div id="env" class="mut"></div>
+<div id="status" class="status" hidden></div>
+</section>
+
+<section class="card">
+<h2 data-i="s2">2. Audio settings</h2>
+<label class="row"><input type="checkbox" id="optOpen" checked><span data-i="optOpen">Play Aʿūdhu and Bismillah first (before āyah 1)</span></label>
+<label class="row"><input type="checkbox" id="optJoin"><span data-i="optJoin">Joined āyāt (22 and 23): play the pair twice, once for each, in "Play all"</span></label>
+<label class="row"><input type="checkbox" id="joined" checked><span data-i="joined">Āyāt 22 and 23 are recited together with no pause</span></label>
+<p class="mut" data-i="joinNote">There is no pause between 22 and 23, so cutting there would clip a word. Both share one stretch of sound. Picking either plays the pair.</p>
+</section>
+
+<section class="card">
+<h2 data-i="s3">3. Listen and tick</h2>
+<div class="bar">
+<button id="open" type="button" class="pri" disabled data-i="playOpen">▶ Aʿūdhu + Bismillah</button>
+<button id="all" type="button" class="pri" disabled data-i="playAll">▶ Play all</button>
+<button id="stop" type="button" disabled data-i="stop">■ Stop</button>
+<button id="dl" type="button" disabled data-i="dl">Save the times</button>
+</div>
+<div class="mut" id="ticks"></div>
+<div id="list" role="list"></div>
+</section>
+<audio id="au" preload="auto"></audio>
+</main>
+<script>
+// PCF MSA J121 demo1104 (QR Lead, 8 Nov 2026) -- finds where each āyah starts in ONE sūrah's recording from its pauses.
+// PURE: numbers in, numbers out. No audio is stored, fetched or sent anywhere; only the TIMES (seconds) come out.
+// loudnessFrames(samples, rate)  -> dB per 20 ms frame
+// findPauses(db, opts)           -> [{from, to, mid}] seconds: stretches clearly quieter than the speech, long enough to be a pause
+// layOut(pauses, total, {ayat, joined}) -> the opening, each āyah's [from,to], and plain-words issues (count check)
+
+const FRAME_MS = 20;
+
+/** Loudness (dB, RMS) of each 20 ms frame of mono samples (-1..1). */
+function loudnessFrames(samples, rate, frameMs = FRAME_MS) {
+  const len = Math.max(1, Math.round(rate * frameMs / 1000)), n = Math.floor(samples.length / len), db = new Float64Array(n);
+  for (let f = 0; f < n; f++) { let s = 0; for (let i = f * len; i < (f + 1) * len; i++) s += samples[i] * samples[i]; db[f] = 20 * Math.log10(Math.sqrt(s / len) + 1e-9); }
+  return db;
+}
+
+const median = (a) => { const b = Array.from(a).sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+
+/**
+ * A pause = a run quieter than (the median loudness - dropDb), at least minPause seconds long. Runs closer than mergeGap are
+ * ONE pause (a blip inside a pause must not split it into two). `mid` is the middle of the pause: an āyah starts there, so a
+ * few hundred ms of timing error can never cut a word.
+ */
+function findPauses(db, { frameMs = FRAME_MS, dropDb = 7, minPause = 0.6, mergeGap = 0.2, smooth = 3 } = {}) {
+  const n = db.length; if (!n) return [];
+  const s = new Float64Array(n), h = Math.floor(smooth / 2);
+  for (let i = 0; i < n; i++) { let a = 0, c = 0; for (let k = i - h; k <= i + h; k++) if (k >= 0 && k < n) { a += db[k]; c++; } s[i] = a / c; }
+  const thr = median(db) - dropDb, dt = frameMs / 1000, runs = [];
+  for (let i = 0; i < n;) {
+    if (s[i] < thr) { let j = i; while (j < n && s[j] < thr) j++; if ((j - i) * dt >= minPause) runs.push([i * dt, j * dt]); i = j; } else i++;
+  }
+  const merged = [];
+  for (const r of runs) { const last = merged[merged.length - 1]; if (last && r[0] - last[1] < mergeGap) last[1] = r[1]; else merged.push([r[0], r[1]]); }
+  return merged.map(([from, to]) => ({ from, to, mid: (from + to) / 2 }));
+}
+
+/**
+ * Lay the pauses onto a sūrah of `ayat` āyāt. `joined` = [[22,23]]: āyāt the reciter says with NO pause between them; they
+ * share one [from,to] and play together. A sound file usually starts with the opening (Aʿūdhu + Bismillah) and ends with
+ * silence: the FIRST pause closes the opening (opening=true) and a LAST pause that reaches the end of the file is only the
+ * ending. Boundaries needed = ayat - 1 - (number of joined pairs). Anything else is reported, never hidden.
+ */
+function layOut(pauses, total, { ayat, joined = [], hasOpening = true } = {}) {
+  const issues = [], p = pauses.slice();
+  let tail = null; if (p.length && total - p[p.length - 1].to < 0.3) tail = p.pop();
+  let openEnd = 0; if (hasOpening) { if (!p.length) issues.push("no-opening"); else openEnd = p.shift().mid; }
+  const need = ayat - 1 - joined.length;
+  if (p.length !== need) issues.push(p.length < need ? "missing" : "surplus");
+  const bounds = p.map((x) => x.mid), skip = new Set(joined.map(([a, b]) => b)); // b starts where a starts: no boundary between them
+  const ayahs = []; let bi = 0, from = openEnd;
+  for (let a = 1; a <= ayat; a++) {
+    if (skip.has(a)) { ayahs.push({ n: a, from: ayahs[ayahs.length - 1]?.from ?? from, to: ayahs[ayahs.length - 1]?.to ?? from }); continue; }
+    const to = a === ayat ? (tail ? tail.from + Math.min(0.5, (tail.to - tail.from) / 2) : total) : (bounds[bi++] ?? null);
+    ayahs.push({ n: a, from, to }); from = to;
+  }
+  return { opening: hasOpening ? { from: 0, to: openEnd } : null, ayahs, found: p.length, need, issues, ok: issues.length === 0 };
+}
+
+const FOUND = {"total":776.85,"pauses":[[7.64,9.5],[15.52,17.52],[21.1,22.88],[26.52,28.28],[30.98,32.7],[36.32,37.94],[41.7,43.14],[50.28,52.24],[58.58,60.14],[67,69.16],[76.22,78.9],[85.06,85.9],[93.1,95.32],[100.46,102],[106.74,108.1],[112.7,114.26],[117.36,118.88],[124.34,126.66],[133.72,135.38],[143.5,144.92],[151.24,152.9],[160.14,161.28],[169.66,170.28],[179.14,181.04],[187.64,188.58],[195.14,196.34],[202.16,203.68],[211.82,212.44],[221.44,223.26],[230.96,232.6],[235.74,236.84],[242.04,243.62],[247.04,248.64],[257.88,259.62],[263.68,264.62],[267.12,268.74],[272.1,273.22],[277.76,279.24],[284.7,285.54],[294.28,296.36],[300.78,302.18],[308.06,309.1],[313.84,315.62],[322.32,323.68],[331,332.58],[339.92,341.46],[350.3,351.86],[358.08,358.7],[365.96,366.96],[374.6,376.82],[386.1,387.7],[394.52,395.86],[400.36,401.8],[407.62,408.6],[412.6,413.74],[418.36,419.5],[425.62,427],[431.32,433.2],[441.88,443.26],[452.7,453.66],[462.4,463.98],[469.98,471.42],[479.7,481.38],[486.46,487.66],[495.84,497.22],[507.14,508.48],[512.88,514.08],[518.78,519.76],[527.46,529.22],[538.72,540.52],[549.98,552.2],[557.68,559.44],[570.06,571.82],[580.16,582.02],[586.88,588.4],[594.26,595.76],[602.74,604.2],[610,611.36],[616.08,617.3],[625.44,627.32],[633.46,634.9],[641.86,642.76],[649.98,651.68],[657.82,659.12],[665.92,667.54],[676.58,678.66],[686.04,687.62],[694.58,696.02],[702.52,703.84],[711.24,712.56],[720.3,721.92],[727.46,729.12],[737.98,739.92],[746.52,748.3],[753.36,755.2],[760,776.84]]};
+const AYAT = 96, SURAH = 56;
+const T = {
+ en:{title:"Ayah times from a whole-sūrah recording",sub:"Demo (not part of the app). Sūrah al-Wāqiʿah, 96 āyāt. The helper finds each āyah's start from the pauses; you listen and tick.",priv:"Your file stays in this browser tab. Nothing is uploaded, copied or kept. Only the times are saved.",s1:"1. Choose your recording",s2:"2. Audio settings",s3:"3. Listen and tick",optOpen:"Play Aʿūdhu and Bismillah first (before āyah 1)",optJoin:"Joined āyāt (22 and 23): play the pair twice, once for each, in \"Play all\"",joined:"Āyāt 22 and 23 are recited together with no pause",joinNote:"There is no pause between 22 and 23, so cutting there would clip a word. Both share one stretch of sound. Picking either plays the pair.",playOpen:"▶ Aʿūdhu + Bismillah",playAll:"▶ Play all",stop:"■ Stop",dl:"Save the times",play:"▶ Play",ayah:"Āyah",pair:"recited together with the next/previous one: both play",checked:"checked",wait:"Listening for the pauses…",nofile:"Choose your recording above.",loaded:"Loaded",found:"Found {f} pauses between āyāt; {n} are needed.",ok:"The count matches.",missing:"One or more pauses are missing: tick \"recited together\" if two āyāt have no pause, or move a start by hand.",surplus:"There are more pauses than āyāt: a long breath may count as a pause. Move or ignore the extras.",noopen:"No opening found.",saved:"Saved times used (this tab cannot decode the file).",env:"Listening needs a computer (Chrome or Edge). Playing works on any device.",ticks:"{t} of {n} ticked",wrongdur:"This file is {d} s; the saved times were made for about {e} s."},
+ bn:{title:"পুরো সূরার রেকর্ডিং থেকে আয়াতের সময়",sub:"ডেমো (অ্যাপের অংশ নয়)। সূরা আল-ওয়াকিয়া, ৯৬ আয়াত। সহায়ক বিরতি দেখে প্রতিটি আয়াতের শুরু খোঁজে; আপনি শুনে টিক দেন।",priv:"আপনার ফাইল এই ব্রাউজার ট্যাবেই থাকে। কিছু আপলোড, কপি বা জমা হয় না। শুধু সময়গুলো সংরক্ষণ হয়।",s1:"১. আপনার রেকর্ডিং বেছে নিন",s2:"২. অডিও সেটিং",s3:"৩. শুনুন ও টিক দিন",optOpen:"আয়াত ১-এর আগে আউযু ও বিসমিল্লাহ বাজান",optJoin:"যুক্ত আয়াত (২২ ও ২৩): \"সব বাজান\"-এ জোড়াটি দুইবার বাজান",joined:"২২ ও ২৩ আয়াত বিরতি ছাড়া একসাথে পড়া হয়েছে",joinNote:"২২ ও ২৩-এর মাঝে বিরতি নেই, তাই কাটলে শব্দ কেটে যাবে। দুটি একই অংশ ভাগ করে। যেকোনোটি বাছলে জোড়া বাজবে।",playOpen:"▶ আউযু + বিসমিল্লাহ",playAll:"▶ সব বাজান",stop:"■ থামান",dl:"সময়গুলো সংরক্ষণ",play:"▶ বাজান",ayah:"আয়াত",pair:"আগের/পরেরটির সাথে একসাথে পড়া: দুটিই বাজে",checked:"যাচাইকৃত",wait:"বিরতি খোঁজা হচ্ছে…",nofile:"উপরে রেকর্ডিং বেছে নিন।",loaded:"লোড হয়েছে",found:"আয়াতের মাঝে {f}টি বিরতি পাওয়া গেছে; দরকার {n}টি।",ok:"সংখ্যা মিলেছে।",missing:"এক বা একাধিক বিরতি নেই: দুই আয়াতে বিরতি না থাকলে \"একসাথে পড়া\" টিক দিন, অথবা শুরু হাতে সরান।",surplus:"আয়াতের চেয়ে বিরতি বেশি: লম্বা শ্বাসও বিরতি গণ্য হতে পারে। বাড়তিগুলো সরান বা বাদ দিন।",noopen:"শুরুর অংশ পাওয়া যায়নি।",saved:"সংরক্ষিত সময় ব্যবহার হয়েছে (এই ট্যাব ফাইলটি পড়তে পারেনি)।",env:"শোনার কাজে কম্পিউটার (Chrome বা Edge) লাগে। বাজানো সব ডিভাইসে চলে।",ticks:"{n}টির মধ্যে {t}টিতে টিক",wrongdur:"এই ফাইল {d} সেকেন্ডের; সংরক্ষিত সময় প্রায় {e} সেকেন্ডের জন্য।"}
+};
+let lang = "en"; const $ = (id) => document.getElementById(id), tr = (k, v = {}) => (T[lang][k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x]);
+const num = (x) => lang === "bn" ? String(x).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]) : String(x);
+const au = $("au"); let layout = null, ticked = new Set(), playing = null, queue = [], url = null, state = "none";
+const fmt = (s) => { const m = Math.floor(s / 60), r = (s % 60).toFixed(1).padStart(4, "0"); return `${m}:${r}`; };
+function joinedPairs() { return $("joined").checked ? [[22, 23]] : []; }
+function relayout(pauses, total) { layout = layOut(pauses, total, { ayat: AYAT, joined: joinedPairs() }); render(); }
+let rawPauses = null, rawTotal = 0;
+function status() {
+  const s = $("status"); if (!layout) { s.hidden = true; return; } s.hidden = false;
+  const msg = tr("found", { f: num(layout.found), n: num(layout.need) }) + " " + (layout.ok ? tr("ok") : layout.issues.includes("surplus") ? tr("surplus") : layout.issues.includes("missing") ? tr("missing") : tr("noopen"));
+  s.className = "status " + (layout.ok ? "ok" : "bad"); s.textContent = (state === "saved" ? tr("saved") + " " : "") + msg;
+}
+function render() {
+  status(); const list = $("list"); list.replaceChildren(); if (!layout) return;
+  $("ticks").textContent = tr("ticks", { t: num(ticked.size), n: num(AYAT) });
+  for (const a of layout.ayahs) {
+    const pair = joinedPairs().find(([x, y]) => a.n === x || a.n === y);
+    const row = document.createElement("div"); row.className = "ay" + (pair ? " join" : ""); row.dataset.ayah = a.n; row.setAttribute("role", "listitem");
+    const n = document.createElement("span"); n.className = "n"; n.textContent = num(a.n);
+    const t = document.createElement("span"); t.className = "t"; t.textContent = `${fmt(a.from)} → ${fmt(a.to)}`;
+    const ctl = document.createElement("span"); ctl.className = "ctl";
+    const pb = document.createElement("button"); pb.type = "button"; pb.textContent = tr("play"); pb.setAttribute("aria-label", `${tr("play")} ${tr("ayah")} ${num(a.n)}`); pb.disabled = state === "none"; pb.addEventListener("click", () => playAyah(a.n));
+    const sub = document.createElement("button"); sub.type = "button"; sub.className = "nudge"; sub.textContent = "−0.2"; sub.title = "start −0.2 s"; sub.addEventListener("click", () => nudge(a.n, -0.2));
+    const add = document.createElement("button"); add.type = "button"; add.className = "nudge"; add.textContent = "+0.2"; add.title = "start +0.2 s"; add.addEventListener("click", () => nudge(a.n, 0.2));
+    const tk = document.createElement("label"); tk.className = "tick"; const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = ticked.has(a.n); cb.setAttribute("aria-label", `${tr("checked")} ${num(a.n)}`);
+    cb.addEventListener("change", () => { cb.checked ? ticked.add(a.n) : ticked.delete(a.n); $("ticks").textContent = tr("ticks", { t: num(ticked.size), n: num(AYAT) }); }); tk.append(cb);
+    if (!pair || a.n === pair[0]) ctl.append(sub, add); ctl.append(pb, tk); row.append(n, t, ctl);
+    if (pair) { const note = document.createElement("span"); note.className = "joinnote"; note.textContent = tr("pair"); row.append(note); }
+    list.append(row);
+  }
+}
+function nudge(n, d) { // move the START of āyah n (and the END of the one before it); never past its neighbours
+  const A = layout.ayahs, i = A.findIndex((a) => a.n === n); if (i < 0) return; const a = A[i], prev = A[i - 1], v = Math.max(0, a.from + d);
+  if (prev && v <= prev.from + 0.3) return; if (v >= a.to - 0.3 && a.to !== a.from) return;
+  const group = A.filter((x) => x.from === a.from && x.to === a.to); for (const g of group) g.from = v; if (prev) { for (const p of A.filter((x) => x.from === prev.from && x.to === prev.to)) p.to = v; }
+  else layout.opening.to = v; render();
+}
+function stopAll() { playing = null; queue = []; au.pause(); document.querySelectorAll(".ay.now").forEach((r) => r.classList.remove("now")); }
+function seg(from, to, ayah) { return { from, to, ayah }; }
+function runQueue() {
+  const next = queue.shift(); if (!next) { stopAll(); return; } playing = next;
+  document.querySelectorAll(".ay.now").forEach((r) => r.classList.remove("now")); if (next.ayah) { const r = document.querySelector(`.ay[data-ayah="${next.ayah}"]`); r?.classList.add("now"); r?.scrollIntoView({ block: "nearest" }); }
+  au.currentTime = next.from; au.play().catch(() => stopAll());
+  const tick = () => { if (playing !== next) return; if (au.currentTime >= next.to || au.ended) { au.pause(); runQueue(); } else requestAnimationFrame(tick); }; requestAnimationFrame(tick);
+}
+function playAyah(n) { stopAll(); const a = layout.ayahs[n - 1]; if (n === 1 && $("optOpen").checked && layout.opening) queue.push(seg(0, layout.opening.to)); queue.push(seg(a.from, a.to, n)); runQueue(); }
+function playAll() {
+  stopAll(); if ($("optOpen").checked && layout.opening) queue.push(seg(0, layout.opening.to));
+  const pairs = joinedPairs(), twice = $("optJoin").checked;
+  for (const a of layout.ayahs) { const second = pairs.some(([x, y]) => a.n === y); if (second && !twice) continue; queue.push(seg(a.from, a.to, a.n)); } runQueue();
+}
+function save() {
+  const out = { source: "local-file", surah: SURAH, checked: ticked.size === AYAT, joined: joinedPairs(), opening: layout.opening ? { timestamp_from: 0, timestamp_to: Math.round(layout.opening.to * 1000) } : null,
+    ayahs: layout.ayahs.map((a) => ({ verse_key: `${SURAH}:${a.n}`, timestamp_from: Math.round(a.from * 1000), timestamp_to: Math.round(a.to * 1000), checked: ticked.has(a.n) })) };
+  const b = new Blob([JSON.stringify(out, null, 1)], { type: "application/json" }), l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = "surah-56-times.json"; l.click(); setTimeout(() => URL.revokeObjectURL(l.href), 2000);
+}
+async function analyse(file) {
+  state = "wait"; $("status").hidden = false; $("status").className = "status"; $("status").textContent = tr("wait");
+  if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(file); au.src = url;
+  let pauses = null, total = 0;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext, ctx = new Ctx({ sampleRate: 16000 });
+    const buf = await ctx.decodeAudioData(await file.arrayBuffer()); total = buf.duration;
+    const ch = buf.getChannelData(0), mono = buf.numberOfChannels > 1 ? Float32Array.from(ch, (v, i) => (v + buf.getChannelData(1)[i]) / 2) : ch;
+    pauses = findPauses(loudnessFrames(mono, buf.sampleRate)); state = "live"; ctx.close?.();
+  } catch (e) { pauses = FOUND.pauses.map(([f, t]) => ({ from: f, to: t, mid: (f + t) / 2 })); total = FOUND.total; state = "saved"; }
+  rawPauses = pauses; rawTotal = total;
+  for (const id of ["open", "all", "stop", "dl"]) $(id).disabled = false;
+  relayout(pauses, total); $("env").textContent = `${tr("loaded")}: ${file.name} · ${fmt(total)}`;
+}
+$("file").addEventListener("change", (e) => { const f = e.target.files[0]; if (f) analyse(f); });
+$("joined").addEventListener("change", () => { if (rawPauses) relayout(rawPauses, rawTotal); });
+$("open").addEventListener("click", () => { stopAll(); if (layout.opening) { queue.push(seg(0, layout.opening.to)); runQueue(); } });
+$("all").addEventListener("click", playAll); $("stop").addEventListener("click", stopAll); $("dl").addEventListener("click", save);
+$("lang").addEventListener("click", () => { lang = lang === "en" ? "bn" : "en"; document.documentElement.lang = lang; $("lang").textContent = lang === "en" ? "বাংলা" : "English";
+  document.querySelectorAll("[data-i]").forEach((e) => { e.textContent = tr(e.dataset.i); }); $("env").textContent = tr("env"); render(); });
+$("env").textContent = tr("env"); $("status").textContent = tr("nofile");
+</script>
+</body>
+</html>
