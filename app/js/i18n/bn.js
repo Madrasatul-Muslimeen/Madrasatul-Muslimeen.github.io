@@ -4150,6 +4150,8 @@ export const BN = {
   "English: Wiktionary (CC BY-SA 4.0)": "ইংরেজি: উইকশনারি (CC BY-SA 4.0)", // ?
   "Bangla: Quraniyo Obhidhan": "বাংলা: কুরআনীয় অভিধান", // ?
   "No dictionary entry yet for this word.": "এই শব্দের জন্য অভিধানে এখনো কোনো এন্ট্রি নেই।", // ?
+  "Suggested meaning (English)": "প্রস্তাবিত অর্থ (ইংরেজি)",
+  "Suggested, to be checked: Wiktionary (CC BY-SA 4.0), matched by the word's letters, so it may be the wrong sense.": "প্রস্তাবিত, যাচাই করা হবে: উইকশনারি (CC BY-SA 4.0), শব্দের অক্ষর মিলিয়ে নেওয়া, তাই অর্থটি ভুল হতে পারে।",
   "No root is suggested for this word yet.": "এই শব্দের জন্য এখনো কোনো মূল (রুট) প্রস্তাব করা হয়নি।", // ?
   "Root meanings and other words of the root are in the dictionaries linked under WbW.": "মূলের অর্থ ও একই মূলের অন্য শব্দ WbW-এর নিচের অভিধান-লিংকে আছে।", // ?
   "Other words of this dua from the same root": "এই দুআর একই মূলের অন্য শব্দ", // ?
