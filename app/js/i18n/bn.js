@@ -3328,6 +3328,8 @@ export const BN = {
   "Close pop-up": "পপ-আপ বন্ধ করুন",
   "Dua Card": "দুআ কার্ড",
   "Audio is coming soon": "অডিও শীঘ্রই আসছে",
+  "translation of the hadith": "হাদীসের অনুবাদ",
+  "Audio could not be played": "অডিও চালানো গেল না",
   "Reciter": "ক্বারী",
   "Speed": "গতি",
   "Autoplay next": "পরেরটি নিজে চলবে",

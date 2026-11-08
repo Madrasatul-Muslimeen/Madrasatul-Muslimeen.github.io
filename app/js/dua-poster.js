@@ -33,14 +33,16 @@ const shareOpt = duaSel;
 const arText = (s, opt) => (opt.vow === false ? String(s).replace(/[\u064B-\u0652\u0670]/g, "") : s);
 const wordMeaning = (w, l) => (l === "bn" ? w[2] || w[1] : w[1] || w[2]) || "";
 
+/** 10 A: a Hadith dua's English / Bangla is HadeethEnc's translation of the hadith, and says so wherever it is shown. */
+const trText = (sheet, k) => (sheet.trNote ? `${sheet[k]}\n(${sheet.trNote})` : sheet[k]);
 /** Pure (D14): the text to copy or share, in the order the poster shows it. */
 export function shareText(sheet, opt, l = lang()) {
   const can = available(sheet);
   const out = [sheet.title || sheet.titleAr || ""];
   if (opt.ar && can.ar) out.push(arText(sheet.ar, opt));
   if (opt.wbw && can.wbw) out.push(sheet.words.map((w) => `${arText(w[0], opt)} = ${wordMeaning(w, l) || "·"}`).join("\n"));
-  if (opt.en && can.en) out.push(sheet.en);
-  if (opt.bn && can.bn) out.push(sheet.bn);
+  if (opt.en && can.en) out.push(trText(sheet, "en"));
+  if (opt.bn && can.bn) out.push(trText(sheet, "bn"));
   if (opt.src && can.src) out.push(sheet.ref);
   return out.filter(Boolean).join("\n\n");
 }
@@ -100,7 +102,7 @@ export function posterPage(sheet, opt, { interactive = true } = {}) {
   }
   for (const k of ["en", "bn"]) {
     if (!opt[k] || !can[k]) continue;
-    const x = el("p", `dua-a4-tx dua-a4-${k}`, sheet[k]);
+    const x = el("p", `dua-a4-tx dua-a4-${k}`, trText(sheet, k));
     x.lang = k; x.dataset.duaA4Part = k;
     body.appendChild(x);
   }
@@ -228,7 +230,8 @@ export function fullTextNodes(sheet) {
     d.appendChild(p);
     wrap.appendChild(d);
   }
-  const tr = [["en", t("English"), sheet.en], ["bn", t("Bangla"), sheet.bn]].filter((x) => x[2]);
+  const tn = sheet.trNote ? ` · ${sheet.trNote}` : "";
+  const tr = [["en", t("English") + tn, sheet.en], ["bn", t("Bangla") + tn, sheet.bn]].filter((x) => x[2]);
   if (tr.length) {
     const d = el("details", "dua-ft-sec"); d.open = true; d.dataset.duaFtSec = "tr";
     d.appendChild(el("summary", null, t("Translations")));
@@ -357,7 +360,7 @@ export async function drawPoster(sheet, opt) {
   const blocks = [];
   if (opt.ar && can.ar) blocks.push({ text: arText(sheet.ar, opt), font: quranFontStack(), m: 1.5, color: "#0d3b29", rtl: true, lh: 1.9 });
   if (opt.wbw && can.wbw) blocks.push({ text: sheet.words.map((w) => `${arText(w[0], opt)} = ${wordMeaning(w, lang()) || "·"}`).join("   ·   "), font: serif, m: 0.6, color: "#3b3426", rtl: false, lh: 1.5 });
-  for (const k of ["en", "bn"]) if (opt[k] && can[k]) blocks.push({ text: sheet[k], font: k === "bn" ? "'Hind Siliguri', system-ui, sans-serif" : serif, m: 1, color: "#111", rtl: false, lh: 1.4 });
+  for (const k of ["en", "bn"]) if (opt[k] && can[k]) blocks.push({ text: trText(sheet, k), font: k === "bn" ? "'Hind Siliguri', system-ui, sans-serif" : serif, m: 1, color: "#111", rtl: false, lh: 1.4 });
   const bx = W * 0.212, bw = W * 0.579, top = H * 0.4695, room = H * 0.27;
   let k = MAX_SCALE, laid, end;
   for (;;) {
