@@ -120,15 +120,17 @@ function rules(base, s) {
 
   // Exact counts: each cache's name, its clean-up test, and (for the fonts) one comment.
   // A cache renamed or added in sw.js must be counted here, or an app would keep MSA's name.
-  const CACHES = { '"': { app: 2, "qf-fonts": 3, ext: 2, mushaf: 2, hadith: 2 }, "`": { app: 1, "qf-fonts": 0, ext: 0, mushaf: 0, hadith: 0 } };
+  const CACHES = { '"': { app: 2, "qf-fonts": 3, ext: 2, mushaf: 2, hadith: 2, quran: 2 }, "`": { app: 1, "qf-fonts": 0, ext: 0, mushaf: 0, hadith: 0, quran: 0 } };
+  // msa.json's "caches" names every cache sw.js keeps (PCF MSA J120 O2 added "quran"); the counts here must cover exactly those.
+  if (JSON.stringify(Object.keys(CACHES['"'])) !== JSON.stringify(base.caches)) throw new Error(`app/apps/msa.json "caches" (${JSON.stringify(base.caches)}) is not the list build-app.mjs counts (${JSON.stringify(Object.keys(CACHES['"']))})`);
   for (const [q, names] of Object.entries(CACHES)) {
     for (const [name, n] of Object.entries(names)) {
       add((p) => p === "app/sw.js", `${q}${base.cachePrefix}-${name}-`, `${q}${s.cachePrefix}-${name}-`, { exact: n }, `offline cache "${name}"`);
     }
   }
 
-  // PCF MSA J120 O2: "Get ready for offline" (offline-ready.js) writes into the worker's own caches, so it names three of them.
-  for (const [q, name] of [["`", "app"], ['"', "ext"], ['"', "hadith"]]) {
+  // PCF MSA J120 O2: "Get ready for offline" (offline-ready.js) writes into the worker's own caches, so it names four of them.
+  for (const [q, name] of [["`", "app"], ['"', "ext"], ['"', "hadith"], ['"', "quran"]]) {
     add((p) => p === "app/js/offline-ready.js", `${q}${base.cachePrefix}-${name}-`, `${q}${s.cachePrefix}-${name}-`, { exact: 1 }, `offline cache "${name}" in offline-ready.js`);
   }
 
@@ -150,7 +152,7 @@ function rules(base, s) {
 function msaOnlyValues(base, s) {
   const v = [];
   if (s.name.full.en !== base.name.full.en) v.push(base.name.full.en);
-  if (s.cachePrefix !== base.cachePrefix) for (const n of ["app", "qf-fonts", "ext", "mushaf", "hadith"]) v.push(`${base.cachePrefix}-${n}-`);
+  if (s.cachePrefix !== base.cachePrefix) for (const n of base.caches) v.push(`${base.cachePrefix}-${n}-`);
   if (s.titlePrefix !== base.titlePrefix) v.push(`${base.titlePrefix}${DASH}`);
   return v;
 }

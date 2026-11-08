@@ -20,6 +20,7 @@
   },
   "installHead": "<link rel=\"manifest\" href=\"./manifest.webmanifest\" /><link rel=\"apple-touch-icon\" href=\"./img/icons/msa-192.png\" /><meta name=\"theme-color\" content=\"#1B2A41\" />",
   "cachePrefix": "mm",
+  "caches": ["app", "qf-fonts", "ext", "mushaf", "hadith", "quran"],
   "hiddenModules": ["general", "naturelife", "lifeskill", "health"],
   "site": [
     "index.html",

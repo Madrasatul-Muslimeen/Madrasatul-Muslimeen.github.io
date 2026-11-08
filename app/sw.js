@@ -38,7 +38,12 @@ const CACHEABLE_PATH_PREFIXES = [
   // gives the Firebase SDK itself (www.gstatic.com) its own handling the
   // same way. None of the three join this same-origin list, because none of
   // them are same-origin.
-  "/tools/quran-data-pull/output/",
+  //
+  // PCF MSA J120 O2: the Qur'an data (/tools/quran-data-pull/output/) is no
+  // longer on this list. It has its own long-lived cache, QURAN_CACHE_NAME
+  // below, because this list feeds the per-version app cache: a release
+  // replaced that cache and carryOverPreviousCache() fetched all ~56 MB of
+  // Qur'an data again for every reader who had it, at every release.
 ];
 
 function isCacheable(request) {
@@ -284,6 +289,33 @@ function handleHadithData(event) {
 // copy: the new cache is all of the new version (no mixing), and it is full
 // before the reader taps "Updated". Best effort: a file that fails is simply
 // fetched when it is next asked for, as before.
+// PCF MSA J120 O2 -- the Qur'an data (/tools/quran-data-pull/output/: sūrah
+// text, meanings, indexes, word data) in its OWN cache, named without the app
+// version, so a release never empties it: "Get ready for offline" (My
+// account, js/offline-ready.js) keeps all ~56 MB here once, and it stays.
+// Cache-first, the same shape as the Hadith data above, refreshed in the
+// background at most DAILY, file by file, only for the files a reader opens.
+// Daily rather than weekly: these files change with app rounds (a new word
+// field, a corrected meaning) far more often than the Hadith books do, and a
+// day bounds how long a page can read yesterday's data after a release,
+// while a reader who opens nothing costs nothing. Kept out of
+// carryOverPreviousCache() (isCacheable() no longer lists this path) and out
+// of the activate clean-up, except for an older mm-quran-* name.
+const QURAN_CACHE_NAME = "mm-quran-v1";
+const QURAN_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 1 day
+const QURAN_DATA_PREFIX = "/tools/quran-data-pull/output/";
+
+function isQuranData(request) {
+  if (request.method !== "GET") return false;
+  let url;
+  try { url = new URL(request.url); } catch { return false; }
+  return url.origin === self.location.origin && url.pathname.startsWith(QURAN_DATA_PREFIX) && /\.json$/i.test(url.pathname);
+}
+
+function handleQuranData(event) {
+  return cacheFirstWithBackgroundRefresh(event, QURAN_CACHE_NAME, QURAN_MAX_AGE_MS);
+}
+
 const CARRY_CONCURRENCY = 6;
 async function carryOverPreviousCache() {
   const names = (await caches.keys()).filter((n) => n.startsWith("mm-app-") && n !== CACHE_NAME);
@@ -374,7 +406,8 @@ self.addEventListener("activate", (event) => {
             // of one of THESE, never on an ordinary app update.
             (n.startsWith("mm-ext-") && n !== EXT_SDK_CACHE_NAME) ||
             (n.startsWith("mm-mushaf-") && n !== MUSHAF_CACHE_NAME) ||
-            (n.startsWith("mm-hadith-") && n !== HADITH_CACHE_NAME)
+            (n.startsWith("mm-hadith-") && n !== HADITH_CACHE_NAME) ||
+            (n.startsWith("mm-quran-") && n !== QURAN_CACHE_NAME)
           )
           .map((n) => caches.delete(n))
       );
@@ -446,6 +479,11 @@ self.addEventListener("fetch", (event) => {
 
   if (isHadithData(request)) {
     event.respondWith(handleHadithData(event));
+    return;
+  }
+
+  if (isQuranData(request)) {
+    event.respondWith(handleQuranData(event));
     return;
   }
 

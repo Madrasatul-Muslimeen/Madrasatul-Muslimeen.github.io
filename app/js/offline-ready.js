@@ -4,10 +4,11 @@
 // never at startup: the load-speed contract keeps the startup path unchanged, I9), then downloads into the
 // service worker's OWN caches everything the app needs with no internet:
 //   - the app's pages, scripts, styles, fonts and pictures   -> mm-app-<version> (app/sw.js CACHE_NAME)
-//   - the Qur'an data (/tools/quran-data-pull/output/)        -> mm-app-<version> (sw.js isCacheable() keeps it there)
+//   - the Qur'an data (/tools/quran-data-pull/output/)        -> mm-quran-v1      (sw.js handleQuranData: named with no
+//                                                                                 version, so a release never empties it)
 //   - the Firebase scripts every page imports                 -> mm-ext-v1        (sw.js handleFirebaseSdk)
-//   - the Hadith and Dua books the reader ticks               -> mm-hadith-v1     (sw.js handleHadithData, stamped
-//                                                                                 x-mm-cached-at like the worker does)
+//   - the Hadith and Dua books the reader ticks               -> mm-hadith-v1     (sw.js handleHadithData)
+// Qur'an and Hadith files are stamped x-mm-cached-at exactly as the worker stamps them, so its own age checks read them.
 // The list of files and their sizes is app/offline-files.json (tools/offline/build-offline-files.mjs), read when
 // My account first opens, never at startup.
 //
@@ -24,7 +25,7 @@ import { APP_VERSION } from "./version.js";
 const LIST_URL = "./offline-files.json";
 const BOOKS_KEY = "mm_offline_books";
 const READY_KEY = "mm_offline_ready";
-const CACHES = { app: `mm-app-${APP_VERSION}`, hadith: "mm-hadith-v1", ext: "mm-ext-v1" };
+const CACHES = { app: `mm-app-${APP_VERSION}`, quran: "mm-quran-v1", hadith: "mm-hadith-v1", ext: "mm-ext-v1" };
 const HADITH_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // sw.js HADITH_MAX_AGE_MS: an older copy is "stale" and fetched again
 const STAMP = "x-mm-cached-at"; // sw.js QF_CACHED_AT_HEADER
 const CONCURRENCY = 6;
@@ -96,7 +97,9 @@ export function planFor(list, bookIds) {
   return { items: unique, bytes: bytesOf(unique) };
 }
 
-/** Is this file already kept (and, for Hadith data, kept within the worker's week)? */
+/** Is this file already kept (and, for Hadith data, kept within the worker's week)? A kept Qur'an file counts as kept
+ *  whatever its age: the worker refreshes each one in the background, at most daily, when a reader opens it, so a
+ *  second tap never downloads the whole Qur'an again. */
 async function isKept(cache, item) {
   const hit = await cache.match(item.url);
   if (!hit) return false;
@@ -109,7 +112,7 @@ async function fetchAndKeep(cache, item) {
   const crossOrigin = !item.url.startsWith(location.origin);
   const res = await fetch(item.url, crossOrigin ? { mode: "cors", credentials: "omit", cache: "no-cache" } : { cache: "no-cache" });
   if (!res || !res.ok) throw new Error(`HTTP ${res ? res.status : "?"}`);
-  if (item.cache === "hadith") {
+  if (item.cache === "hadith" || item.cache === "quran") {
     const headers = new Headers(res.headers);
     headers.set(STAMP, String(Date.now()));
     const body = await res.arrayBuffer();

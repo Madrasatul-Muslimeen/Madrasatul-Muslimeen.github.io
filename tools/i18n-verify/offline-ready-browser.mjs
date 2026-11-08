@@ -6,6 +6,7 @@
 //   MUT=noquran ...     mutation: the download skips the Qur'an files     -> the offline sūrah check fails
 //   MUT=noready ...     mutation: "Ready" is never written                 -> the Ready checks fail
 //   MUT=nobooks ...     mutation: the ticked books are not downloaded     -> the offline Hadith book check fails
+//   MUT=quranlost ...   mutation: a release's clean-up deletes mm-quran-v1 -> the release-bump checks fail
 //   MUT=nomanifest ...  mutation: quranrevival.html loses its manifest link -> the manifest checks fail
 //
 // What it proves, each in rendered, measured terms (never "no error" alone):
@@ -59,6 +60,7 @@ for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { restoreAll(); proce
 if (MUT === "noquran") mutate("app/js/offline-ready.js", /\.\.\.filesOf\(list\.parts\.quran\.dirs, list\.parts\.quran\.cache\),/g, "");
 else if (MUT === "noready") mutate("app/js/offline-ready.js", /store\.set\(READY_KEY, \{ at, version: APP_VERSION, books: ticked\(\) \}\);\n\s*state\.textContent = t\("Ready ✓ \(updated \{when\}\)", \{ when: whenText\(at\) \}\);/g, "/* mutated */");
 else if (MUT === "nobooks") mutate("app/js/offline-ready.js", /for \(const b of chosen\) items\.push\(\.\.\.filesOf\(b\.dirs, "hadith"\)\);/g, "");
+else if (MUT === "quranlost") mutate("app/sw.js", /\(n\.startsWith\("mm-quran-"\) && n !== QURAN_CACHE_NAME\)/g, 'n.startsWith("mm-quran-")');
 else if (MUT === "nomanifest") mutate("app/quranrevival.html", /<link rel="manifest" href="\.\/manifest\.webmanifest" \/>/g, "");
 else if (MUT) throw new Error(`unknown MUT=${MUT}`);
 
@@ -73,6 +75,13 @@ const CH3_SNIPPETS = JSON.parse(fs.readFileSync(path.join(ROOT, "tools/hadith-da
 function MUWATTA_URI() { return "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1"; }
 const removeSplash = (page) => page.evaluate(() => document.querySelectorAll('[id*="splash"], .mm-splash-overlay, .app-splash-overlay').forEach((e) => e.remove()));
 const arabicChars = (s) => (s.match(/[؀-ۿ]/g) || []).length;
+/** No internet: the context goes offline AND every request to the app's server that still reaches the network is
+ *  refused. Offline emulation alone did not cover a service worker installed after the context started (measured:
+ *  after a worker update, the new worker fetched a sura from the server while navigator.onLine was false). */
+async function goOffline(ctx) {
+  await ctx.setOffline(true);
+  await ctx.route(`${BASE}/**`, (route) => route.abort("internetdisconnected"));
+}
 async function waitFor(page, fn, arg, ms) {
   return page.waitForFunction(fn, arg, { timeout: ms }).then(() => true).catch(() => false);
 }
@@ -219,8 +228,10 @@ for (const [lang, width] of PASSES) {
     return out;
   });
   const appCache = Object.keys(kept).find((n) => n.startsWith("mm-app-"));
-  check(`${tag}: the files are in the worker's own caches (mm-app-<version>, mm-hadith-v1, mm-ext-v1)`,
-    !!appCache && kept[appCache] > 700 && kept["mm-hadith-v1"] > 500 && kept["mm-ext-v1"] >= 3, JSON.stringify(kept));
+  check(`${tag}: the files are in the worker's own caches (mm-app-<version>, mm-quran-v1, mm-hadith-v1, mm-ext-v1)`,
+    !!appCache && kept[appCache] > 300 && kept["mm-quran-v1"] >= 470 && kept["mm-hadith-v1"] > 500 && kept["mm-ext-v1"] >= 3, JSON.stringify(kept));
+  check(`${tag}: no Qur'an file sits in the per-version app cache (a release would drop it)`,
+    !(await page.evaluate(async (n) => (await (await caches.open(n)).keys()).some((r) => r.url.includes("/tools/quran-data-pull/output/")), appCache)));
   await page.screenshot({ path: path.join(SHOTS, `ready-${lang}-${width}.png`) });
 
   // A second tap fetches only what is missing: count requests that reach the server.
@@ -236,10 +247,13 @@ for (const [lang, width] of PASSES) {
   await openMyAccount(page);
   const st = await page.evaluate(() => document.getElementById("offlineReadyState").textContent);
   check(`${tag}: after a reload My account still says Ready ✓`, READY.test(st), st);
+  // Empty the browser's own HTTP cache first, so offline only the worker's caches can answer (a file the download
+  // fetched also sits in the HTTP cache, and Chromium answers from it offline, which would hide a lost cache).
+  { const cdp = await ctx.newCDPSession(page); await cdp.send("Network.clearBrowserCache"); await cdp.detach(); }
   await page.close();
 
   // ---- Offline ----
-  await ctx.setOffline(true);
+  await goOffline(ctx);
   {
     const { page: p } = await openPage(ctx, "/app/index.html").catch(() => ({ page: null }));
     // The REAL app, not the early paint (decision 81 shows a kept copy of the wheel, inert, before the app boots).
@@ -281,6 +295,61 @@ for (const [lang, width] of PASSES) {
     check(`${tag}: MUTATION TARGET (nobooks): OFFLINE the ticked Hadith book (al-Muwatta') opens to a chapter's real Arabic text`, ok, detail);
   }
   await ctx.close();
+}
+
+// =============================================================================
+// 3b. A release (APP_VERSION bump) must not empty the Qur'an cache
+// =============================================================================
+// version.js is rewritten on disk (restored on exit), the worker updates and takes over, its activate step deletes
+// the old mm-app-<version>, and mm-quran-v1 must still hold every Qur'an file -- then, offline, a sūrah opens.
+if (!process.env.PASS || process.env.MUT === "quranlost") {
+  console.log("\n=== 3b. A release keeps the Qur'an cache ===");
+  const ctx = await newContext(browser, { allowServiceWorker: true, viewport: { width: 390, height: 900 }, appLang: "en" });
+  await ctx.addInitScript(() => { try { localStorage.setItem("mm_offline_books", "[]"); } catch {} }); // app + Qur'an only
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await waitFor(page, () => !!navigator.serviceWorker?.controller, null, 15000);
+  const ok0 = await openMyAccount(page);
+  if (ok0) await page.click("#offlineReadyBtn");
+  const done0 = ok0 && await waitFor(page, () => !document.getElementById("offlineReadyBtn").disabled, null, 600000);
+  const count = (pg) => pg.evaluate(async () => { const o = {}; for (const n of await caches.keys()) o[n] = (await (await caches.open(n)).keys()).length; return o; });
+  const before = await count(page);
+  const oldApp = Object.keys(before).find((n) => n.startsWith("mm-app-"));
+  check("release: got ready (app + Qur'an), the Qur'an cache holds every file", done0 && (before["mm-quran-v1"] || 0) >= 470, JSON.stringify(before));
+  const vf = path.join(ROOT, "app/js/version.js"), keep = fs.readFileSync(vf, "utf8");
+  const bumped = keep.replace(/APP_VERSION = "[\d.]+"/, 'APP_VERSION = "99.99"');
+  fs.writeFileSync(vf, bumped);
+  restores.push(() => fs.writeFileSync(vf, keep));
+  // The worker checks for an update, installs the new version (carrying the app files over), and is told to take over.
+  const tookOver = await page.evaluate(async (oldApp) => {
+    const reg = await navigator.serviceWorker.getRegistration("/app/");
+    await reg.update();
+    const end = Date.now() + 60000;
+    while (!reg.waiting && Date.now() < end) await new Promise((r) => setTimeout(r, 250));
+    if (!reg.waiting) return "no new worker";
+    const changed = new Promise((r) => navigator.serviceWorker.addEventListener("controllerchange", r, { once: true }));
+    reg.waiting.postMessage({ type: "skipWaiting" });
+    await Promise.race([changed, new Promise((r) => setTimeout(r, 30000))]);
+    for (let i = 0; i < 40 && (await caches.keys()).includes(oldApp); i++) await new Promise((r) => setTimeout(r, 250));
+    return "ok";
+  }, oldApp).catch((e) => String(e));
+  const after = await count(page);
+  check("release: the new worker (v99.99) took over and dropped the old app cache", tookOver === "ok" && !!after["mm-app-99.99"] && !after[oldApp], `${tookOver} ${JSON.stringify(after)}`);
+  check("MUTATION TARGET (quranlost): release: mm-quran-v1 still holds every Qur'an file", (after["mm-quran-v1"] || 0) === before["mm-quran-v1"], `${before["mm-quran-v1"]} -> ${after["mm-quran-v1"]}`);
+  check("release: the Qur'an cache's name carries no version number", !Object.keys(after).some((n) => /^mm-quran-.*\d+\.\d+/.test(n)));
+  // Empty the browser's own HTTP cache first, so offline only the worker's caches can answer (a file the download
+  // fetched also sits in the HTTP cache, and Chromium answers from it offline, which would hide a lost cache).
+  { const cdp = await ctx.newCDPSession(page); await cdp.send("Network.clearBrowserCache"); await cdp.detach(); }
+  await page.close();
+  await goOffline(ctx);
+  const { page: p } = await openPage(ctx, "/app/quranrevival.html").catch(() => ({ page: null }));
+  const booted = p ? await waitFor(p, () => !document.getElementById("app").inert && document.getElementById("bootStatus").hidden && document.querySelectorAll("#wheelSection .wheel-seg").length > 0, null, 20000) : false;
+  const s77 = booted ? await openSurah77(p).catch(() => false) : false;
+  const diag = p ? await p.evaluate(async () => { const o = {}; for (const n of await caches.keys()) o[n] = (await (await caches.open(n)).keys()).filter((r) => r.url.includes("surah_077")).length; return { o, online: navigator.onLine }; }) : null;
+  check("MUTATION TARGET (quranlost): release, then OFFLINE: sūrah 77 still opens with its meaning", s77, `booted=${booted} ${JSON.stringify(diag)}`);
+  if (process.env.DIAG) console.log("DIAG", JSON.stringify(diag));
+  if (p) await p.screenshot({ path: path.join(SHOTS, "release-offline-surah77.png") });
+  await ctx.close();
+  fs.writeFileSync(vf, keep);
 }
 
 // =============================================================================
