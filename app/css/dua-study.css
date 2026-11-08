@@ -200,8 +200,8 @@ body.dua-has-popped::before { content: ""; position: fixed; inset: 0; z-index: 5
   .dua-topbar > .dua-tile-play, .dua-topbar > .dua-tile-pop { width: 40px; }
   .dua-topbar { padding: 0.3rem; }
 }
-/* Under 396px even that is too wide (measured: Play over ‹ at 320px; and at 361 to 385px, Bangla needs the bar 292px wide, the card leaves 94px less than the screen): ‹ n of N › takes its own second row. */
-@media (max-width: 395px) {
+/* Under 390px even that is too wide (measured: Play over ‹ at 320px; Bangla overlaps up to 384px; the MSA Architect's probe keeps 390px, the common iPhone width, on ONE bar with gaps of at least 2.3px): ‹ n of N › takes its own second row. */
+@media (max-width: 389px) {
   .dua-topbar { flex-wrap: wrap; }
   .dua-tile-play { margin-inline-end: auto; }
   .dua-topbar-mid { order: 3; flex: 1 1 100%; }

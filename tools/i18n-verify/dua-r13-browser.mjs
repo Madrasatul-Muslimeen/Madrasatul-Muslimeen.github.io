@@ -24,7 +24,7 @@ const MUT = {
   nocarry: ["js/dua-study.js", "carryPop = !!document.querySelector(\"[data-dua-window], .dua-card-popped\"); where.open = i + 1;", "carryPop = false; where.open = i + 1;"],
   bigchip: ["css/dua-study.css", "grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.3rem; padding: 0.3rem; }", "grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.3rem; padding: 0.3rem; }"],
   nonarr: ["js/dua-poster.js", "if (sheet.narration?.text) {", "if (false) {"],
-  oldbp: ["css/dua-study.css", "@media (max-width: 395px) {", "@media (max-width: 360px) {"],
+  oldbp: ["css/dua-study.css", "@media (max-width: 389px) {", "@media (max-width: 360px) {"],
   noword: ["js/dua-browser.js", "if (want != null) setTimeout(", "if (false) setTimeout("],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -40,7 +40,7 @@ async function context(width, lang = "en") {
 }
 const pos = (P) => P.evaluate(() => document.querySelector("[data-dua-card-pos]")?.textContent?.trim());
 
-for (const width of [1280, 414]) {
+for (const width of [1280, 390]) {
   const tag = `[${width}]`;
   const ctx = await context(width);
   const { page: P } = await openPage(ctx, "/app/dua-study.html?g=rasul&open=8");
