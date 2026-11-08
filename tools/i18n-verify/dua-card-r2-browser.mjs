@@ -140,9 +140,9 @@ async function run(mutation) {
         const got = await page.evaluate(() => ({ href: document.querySelector(".dua-topnav #duaHomeLink + #duaBookmarksLink + #accountHomeMenu") ? document.querySelector("#duaBookmarksLink").getAttribute("href") : null }));
         if (got.href !== "./bookmarks.html?back=1") throw new Error(JSON.stringify(got));
       });
-      await check("build 2 the Person box and 'Signed in as' are off the page (under My account); a 'For <person>' chip says who", async () => {
-        const got = await page.evaluate(() => ({ who: document.querySelector("#who")?.hidden, chip: document.querySelector("#forPersonChip")?.textContent, personInPage: !!document.querySelector("#contextBar #personSelect") }));
-        if (!got.who || !/\S/.test(got.chip || "") || got.personInPage) throw new Error(JSON.stringify(got));
+      await check("build 2 the Person box and 'Signed in as' are off the page (under My account); the 'For <person>' chip is gone too (the Owner, 7 Nov)", async () => {
+        const got = await page.evaluate(() => ({ who: document.querySelector("#who")?.hidden, chip: !!document.querySelector("#forPersonChip"), personInPage: !!document.querySelector("#contextBar #personSelect") }));
+        if (!got.who || got.chip || got.personInPage) throw new Error(JSON.stringify(got));
       });
       await page.click("[data-dua-menu-toggle]");
       await check("build 2 the open Menu holds the selections, then Share and Keep (My Notes, Bookmark) moved UP at the Owner's word 7 Nov, then Listen (Owner chose B: audio lives in the Menu, dimmed until D16/D17) and Study", async () => {
@@ -150,11 +150,11 @@ async function run(mutation) {
         if (!(got.sel && got.groups.join() === "share,keep,listen,study" && got.listenOff && got.keep && got.exp === "true")) throw new Error(JSON.stringify(got));
       });
       const menu = await page.$$eval("[data-dua-menu]", (b) => b.map((x) => { const r = x.getBoundingClientRect(); return { k: x.dataset.duaMenu, label: x.textContent, h: r.height, l: r.left, r: r.right }; }));
-      await check("D22 the card's menu offers Meaning, Source and The whole narration, in this language", () => {
+      await check("D22 the card's menu offers Meaning and Source, in this language; The whole narration now lives inside Full text (the Owner, 7 Nov)", () => {
         const got = Object.fromEntries(menu.map((m) => [m.k, m.label]));
-        if (got.meaning !== L("Meaning") || got.source !== L("Source") || got.narration !== L("The whole narration")) throw new Error(JSON.stringify(got));
+        if (got.meaning !== L("Meaning") || got.source !== L("Source") || "narration" in got || !got.fulltext) throw new Error(JSON.stringify(got));
       });
-      await check("D22 each menu button is finger-sized (44px) and on screen", () => { if (!menu.length || menu.some((m) => m.h < 44 || m.l < 0 || m.r > width)) throw new Error(JSON.stringify(menu[0])); });
+      await check("D22 each menu chip is small but still pressable (40px or more; the Owner, 7 Nov) and on screen", () => { if (!menu.length || menu.some((m) => m.h < 40 || m.l < 0 || m.r > width)) throw new Error(JSON.stringify(menu[0])); });
       await check("build 2 (was D22) the Menu panel sits under the top bar, above the Dua's words and its progress", async () => {
         const [w, m, p, b] = [await box("[data-dua-card] .dua-words"), await box(".dua-menu-panel"), await box("[data-dua-card] [data-dua-progress]"), await box("[data-dua-topbar]")];
         if (!w || !m || !p || !b || !(b.b <= m.t && m.b <= w.t && w.b <= p.t)) throw new Error(JSON.stringify({ b, m, w, p }));

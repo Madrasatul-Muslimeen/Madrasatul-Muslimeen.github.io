@@ -280,7 +280,7 @@ const DUA_VIEWS = [
   { id: "card", label: "A Dua Card open", url: RASUL, go: dCardReady },
   { id: "pop-meaning", label: "Pop-up: Meaning", url: RASUL, go: dPop("meaning") },
   { id: "pop-source", label: "Pop-up: Source", url: RASUL, go: dPop("source") },
-  { id: "pop-narration", label: "Pop-up: The whole narration", url: RASUL, go: async (P) => { await dPop("narration")(P); await P.evaluate(() => { const d = document.querySelector("[data-dua-pop] details"); if (d) d.open = true; }); await P.waitForTimeout(300); } },
+  { id: "pop-narration", label: "Pop-up: Full text (holds the whole narration)", url: RASUL, go: async (P) => { await dPop("fulltext")(P); await P.evaluate(() => { const d = document.querySelector("[data-dua-pop] details"); if (d) d.open = true; }); await P.waitForTimeout(300); } },
   { id: "pop-check", label: "Pop-up: ✓ Check", url: RASUL, go: dPop("check") },
   { id: "check-panel", label: "✓ Check panel opened", url: RASUL, go: async (P) => { await dPop("check")(P); await P.click("[data-dua-pop] [data-dua-check-open]"); await wait(P, "[data-dua-check-panel]", 15000); await P.waitForTimeout(500); } },
   { id: "pop-poster", label: "The 🖼 Poster", url: RASUL, go: dPop("poster") },
@@ -292,7 +292,7 @@ const DUA_VIEWS = [
 const DUA_SURFACES = [
   { id: "groups-pull", url: "", setup: dListReady, opener: '[data-dua-pd="groups"]', surface: ".dua-pull" },
   { id: "parts-pull", url: "?g=occasions&part=wake", setup: dListReady, opener: '[data-dua-pd="parts"]', surface: ".dua-pull" },
-  ...["meaning", "source", "narration", "check", "poster", "share"].map((k) => ({ id: "pop-" + k, url: RASUL, setup: dCardReady, opener: `[data-dua-menu="${k}"]`, surface: `[data-dua-pop="${k}"]` })),
+  ...["meaning", "source", "fulltext", "check", "poster", "share"].map((k) => ({ id: "pop-" + k, url: RASUL, setup: dCardReady, opener: `[data-dua-menu="${k}"]`, surface: `[data-dua-pop="${k}"]` })),
   // The panel's opener sits in the ✓ Check pop-up, which closes as the panel opens (by design): Escape returns focus to the card
   // menu's ✓ Check (`returnTo`), and the pop-up is opened again before Space (`reopen`), as a reader would.
   { id: "check-panel", url: RASUL, setup: dPop("check"), opener: "[data-dua-pop] [data-dua-check-open]", surface: "[data-dua-check-panel]",

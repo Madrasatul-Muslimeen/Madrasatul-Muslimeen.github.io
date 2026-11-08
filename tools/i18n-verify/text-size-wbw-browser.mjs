@@ -20,7 +20,8 @@ const MUT = process.argv.includes("--mutate-no-css");
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
 async function open(lang, width, view) {
-  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 } });
+  // legacyTools: drives the retired ⋯ path (PCF MSA J114 ONE menu)
+  const ctx = await newContext(browser, { legacyTools: true, appLang: lang, banner: false, viewport: { width, height: 900 } });
   if (MUT) {
     let src = readFileSync("app/quranrevival.html", "utf8");
     const n = (src.match(/ \* var\(--qr-wbw-scale, 1\)/g) || []).length;

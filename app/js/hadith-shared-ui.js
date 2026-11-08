@@ -6,6 +6,7 @@ import { plainMessageFor } from "./errors.js";
 import { getAppLang } from "./prefs.js";
 import { loadHadithTranslation, splitChapterHeading } from "./hadith-translations.js";
 import { loadHadithRecords, hadeethEncSourceUrl } from "./hadeethenc-corpus.js";
+import { termsFolder } from "./hadith-terms-ui.js"; // the Owner's translation-terms rule (8 Nov 2026)
 
 export const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -85,7 +86,7 @@ export function duaRefLabel(dua, versionUri, std, n, number = null) {
 const STANDARD_TRANSLATION_LABELS = { en: "English", bn: "বাংলা" };
 // "English" goes through t() so a Bangla reader sees ইংরেজি, not a Latin word in the middle of a Bangla label.
 const standardLangLabel = (lang) => (lang === "en" ? t("English") : STANDARD_TRANSLATION_LABELS[lang]);
-export function standardTranslationFolds(versionUri, resolveStd) {
+export function standardTranslationFolds(versionUri, resolveStd, arabic = null) {
   const frag = document.createDocumentFragment();
   const langs = getAppLang() === "bn" ? ["bn", "en"] : ["en", "bn"];
   for (const lang of langs) {
@@ -116,10 +117,15 @@ export function standardTranslationFolds(versionUri, resolveStd) {
           head.appendChild(document.createTextNode(heading));
           details.appendChild(head);
         }
-        const text = el("p", "hadith-translation-text standard-translation-text", body);
+        const text = el("p", "hadith-translation-text standard-translation-text");
+        // The Owner's rule (8 Nov 2026): Rabb, Allah, Rasulullah Sallallahu A'laihi Wa Sallam, in English, where the narration's own Arabic permits; "As sourced" shows the words as the source wrote them.
+        // Folded ONLY when the narration's Arabic is given: a caller with none (the Dua cards, a Dua Lead file) keeps the source's words, no switch.
+        const tf = arabic ? termsFolder({ hadeeth_ar: arabic }, lang) : null;
+        if (tf) tf.set(text, body); else text.textContent = body;
         text.lang = lang;
         text.dataset.standardTranslationText = lang;
         details.appendChild(text);
+        { const sw = tf ? tf.switchEl() : null; if (sw) details.appendChild(sw); }
         const credit = document.createElement("a");
         credit.className = "hadith-view-source standard-translation-credit";
         credit.href = tr.sourceUrl;
@@ -141,7 +147,8 @@ export function standardTranslationFolds(versionUri, resolveStd) {
  * English), closed until opened and loaded only then. HadeethEnc's conditions (decision 7): its words unchanged,
  * named, linked. Its wording can follow another narration of the same hadith, and the fold says so.
  */
-export function openitiTranslationFold(ids) {
+// `opts.terms` opts a caller in to the translation-terms fold (the Owner's rule terms1108, Hadith Study). The Dua cards call without it and keep the source's words, no switch.
+export function openitiTranslationFold(ids, opts = {}) {
   const want = getAppLang() === "bn" ? "bn" : "en";
   const details = document.createElement("details");
   details.className = "hadeethenc-explanation openiti-translation";
@@ -166,10 +173,13 @@ export function openitiTranslationFold(ids) {
           box.appendChild(el("p", "hadith-fallback", t("No {lang} translation for this hadith. Showing the Arabic source only.", { lang: langNameInProse(want) })));
         } else {
           if (r.isFallback) box.appendChild(el("p", "hadith-fallback", t("No {lang} translation for this hadith. Showing {shown}.", { lang: langNameInProse(want), shown: langNameInProse(r.lang) })));
-          const text = el("p", "hadith-translation-text", r.record.hadeeth ?? "");
+          const text = el("p", "hadith-translation-text");
+          const tf = opts.terms ? termsFolder(r.record, r.lang) : null;
+          if (tf) tf.set(text, r.record.hadeeth ?? ""); else text.textContent = r.record.hadeeth ?? "";
           text.lang = r.lang;
           text.dataset.openitiTranslationText = id;
           box.appendChild(text);
+          { const sw = tf ? tf.switchEl() : null; if (sw) box.appendChild(sw); }
         }
         if (r.record.grade) box.appendChild(el("p", "hadith-attribution", t("Grade: {grade}", { grade: r.record.grade })));
         if (r.record.attribution) box.appendChild(el("p", "hadith-attribution", r.record.attribution));

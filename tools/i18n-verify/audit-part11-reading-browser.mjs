@@ -39,7 +39,8 @@ const SURAH_HEADER_FONT_URL = "https://raw.githubusercontent.com/Madrasatul-Musl
 const browser = await chromium.launch();
 
 async function open(lang, width, { seed = null, mushaf = false } = {}) {
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width, height: 844 }, extraSeedJs: seed });
+  // legacyTools: drives the retired ⋯ path (PCF MSA J114 ONE menu)
+  const ctx = await newContext(browser, { legacyTools: true, appLang: lang === "bn" ? "bn" : null, viewport: { width, height: 844 }, extraSeedJs: seed });
   await ctx.route("**/gtaf_bangla_timestamps.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
   await ctx.route("**/archive.org/**", (r) => (r.request().resourceType() === "media" ? r.fulfill({ status: 200, contentType: "audio/wav", body: WAV }) : r.abort()));
   if (mushaf) {
