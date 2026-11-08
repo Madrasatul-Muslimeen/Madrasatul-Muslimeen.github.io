@@ -7833,6 +7833,9 @@
     import { QUESTION_CARD_CSS, getQuestionCardMode, setQuestionCardMode, questionCardSettingHtml } from "./js/critical-reasoning-guides.js";
     // PCF MSA J03 K2 -- the three marks (Difficult / Need practice / Done) on the Āyah card, the Word card and the Marks wheel.
     import { loadSurahKeys, loadPersonSurahKeys, setAyahKey, setWordKey } from "./js/ayah-keys-data.js";
+    // PCF MSA J119 -- words the Qur'an shares with Bangla (Word Card button + list; marks stay on this device until the Rules are published).
+    import { loadBanglaState, saveBanglaState, setBanglaWord, activeBanglaSet, banglaFigures, banglaTagText } from "./js/bangla-words.js";
+    import { banglaBlockHtml, wireBanglaBlock, BANGLA_CSS } from "./js/bangla-words-ui.js";
     import { marksRowHtml, wireMarksRow, wheelPieces, marksWheelHtml, wireMarksWheel, marksLegendHtml, MARKS_CSS, MARKS_WHEEL_VIEWS } from "./js/marks-ui.js";
     import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
     import { renderReadNext } from "./js/read-next-ui.js"; // J03 K3 "Study Next" (was "Read next") on the Āyah card and the Word card
@@ -19951,11 +19954,13 @@
       else if (quranWordCardState.level === "tasrif") ensureNounData(word);
       // Round 4 -- an accordion the reader opened or closed stays that way: read the open state off the DOM before it is replaced.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => { wordCardDepthOpen[d.dataset.wordCardSec] = d.open; });
+      { const bd = content.querySelector("[data-bangla-details]"); if (bd) banglaListOpen = bd.open; } // PCF MSA J119
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: marksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Marks for this word")), search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: marksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Marks for this word")), banglaHtml: banglaHtmlFor(word), search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       wireMarksRow(content, onMarkToggle); // PCF MSA J03 K2
+      wireBanglaFor(content); // PCF MSA J119
       // J03 K3 "Study Next" (was "Read next"): Qur'an (this word's places), Dictionary, Scholars and Tafsīr under the card. The box is kept per
       // word, so the card's many redraws (data arriving) do not close a tab the reader opened. Wired AFTER the innerHTML above.
       {
@@ -20370,6 +20375,7 @@
     }
     function learnNextIsKnown(row) {
       const c = learnNextCtx;
+      if (activeBanglaSet(banglaState).has(row.l)) return true; // PCF MSA J119 (n119b = E): a word shared with Bangla counts as known
       return !!lemmaViewWithGroup({ tenantId: c.tenantId, personId: c.personId, lemmaId: row.l, confirmationRequired: c.confirmationRequired }).countsAsKnown;
     }
     function learnNextMeaning(row, other = false) {
@@ -23651,6 +23657,46 @@
     document.getElementById("tabStudyOptionsBtn")?.addEventListener("click", paintQuestionCardSetting);
     paintQuestionCardSetting();
     // ===== PCF MSA J03 K2: the three marks. One read per sūrah, when a card or the Marks wheel first shows (I9); never at start-up. =====
+    // PCF MSA J119 -- the Bangla word list. The state lives in bangla-words.js; this page only reads learn-next.json on first use
+    // (I9: when a Word Card first shows a word with a lemma, never at start-up) and repaints.
+    const banglaStyleEl = document.createElement("style"); banglaStyleEl.textContent = BANGLA_CSS; document.head.appendChild(banglaStyleEl);
+    let banglaState = loadBanglaState(), banglaData = null, banglaByLemma = null, banglaLoad = null, banglaListOpen = false;
+    function banglaEnsureRows() {
+      if (banglaData || banglaLoad) return;
+      banglaLoad = loadLearnNext().then((d) => { banglaData = d; banglaByLemma = new Map((d.rows ?? []).map((r) => [r.l, r])); })
+        .catch((error) => console.warn("Bangla words: learn-next not loaded", error))
+        .finally(() => { banglaLoad = null; if (quranWordCardState?.open) renderPersistentWordCard(); });
+    }
+    function banglaHtmlFor(word) {
+      const lemma = word?.morphology?.lemma;
+      if (!lemma) return "";
+      banglaEnsureRows();
+      const set = activeBanglaSet(banglaState), rows = banglaData ? [...set].map((l) => banglaByLemma.get(l)).filter(Boolean).sort((x, y) => y.n - x.n) : [];
+      const figures = banglaData ? banglaFigures(banglaData.rows, banglaData.total, set) : null;
+      const inList = set.has(lemma);
+      const bn = banglaByLemma?.get(lemma)?.b ?? "";
+      return banglaBlockHtml({
+        state: banglaState, lemma, canAdmin: canAdminCatalogueClientSide(), figures, rows, open: banglaListOpen,
+        tag: inList ? banglaTagText(bn, getAppLang() === "bn" ? "bn" : "en") : "",
+        text: {
+          mark: t("Also in Bangla"), marked: t("In Bangla"), heading: t("Bangla list"), admin: t("Admin's"), mine: t("Mine"),
+          adminNote: t("admin marks"), readOnly: t("read only"), yours: t("yours"), listHeading: t("Words also in Bangla ({n})"),
+          listSwitch: t("Use the Bangla word list"), wordSwitch: t("{word} in the list"), deviceOnly: t("Saved on this device only for now."),
+          count: t("{words} words, {percent}% of the Qur'an's words"), empty: t("No words in this list yet."),
+        },
+      });
+    }
+    function banglaChanged(next) {
+      banglaState = next; saveBanglaState(banglaState);
+      if (quranWordCardState?.open) renderPersistentWordCard();
+    }
+    function wireBanglaFor(content) {
+      wireBanglaBlock(content, {
+        onWord: (lemma, on) => banglaChanged(setBanglaWord(banglaState, lemma, on, { canAdmin: canAdminCatalogueClientSide() })),
+        onList: (id) => banglaChanged({ ...banglaState, list: id }),
+        onOnOff: (on) => banglaChanged({ ...banglaState, on }),
+      });
+    }
     const marksStyleEl = document.createElement("style"); marksStyleEl.textContent = MARKS_CSS; document.head.appendChild(marksStyleEl);
     let marksStore = { id: "", mine: {}, state: "idle" }, marksBusy = new Set(), marksWheelView = "ayat";
     // J03 (the Owner, 5 Nov 2026): Monitor's "Show on wheel" opens Quran Study with ?surah=&keysFor=<personId>&back=1: the Marks wheel
