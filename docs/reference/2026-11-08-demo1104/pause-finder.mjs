@@ -35,11 +35,12 @@ export function findPauses(db, { frameMs = FRAME_MS, dropDb = 7, minPause = 0.6,
 
 /**
  * Lay the pauses onto a sūrah of `ayat` āyāt. `joined` = [[22,23]]: āyāt the reciter says with NO pause between them; they
- * share one [from,to] and play together. A sound file usually starts with the opening (Aʿūdhu + Bismillah) and ends with
+ * share one [from,to] and play together. `together` = [[28,29],…]: āyāt that DO have a pause between them (it is counted
+ * as a boundary) but the Owner wants them played as one stretch, so both get [start of the first, end of the second]. A sound file usually starts with the opening (Aʿūdhu + Bismillah) and ends with
  * silence: the FIRST pause closes the opening (opening=true) and a LAST pause that reaches the end of the file is only the
  * ending. Boundaries needed = ayat - 1 - (number of joined pairs). Anything else is reported, never hidden.
  */
-export function layOut(pauses, total, { ayat, joined = [], hasOpening = true } = {}) {
+export function layOut(pauses, total, { ayat, joined = [], together = [], hasOpening = true } = {}) {
   const issues = [], p = pauses.slice();
   let tail = null; if (p.length && total - p[p.length - 1].to < 0.3) tail = p.pop();
   let openEnd = 0; if (hasOpening) { if (!p.length) issues.push("no-opening"); else openEnd = p.shift().mid; }
@@ -52,5 +53,7 @@ export function layOut(pauses, total, { ayat, joined = [], hasOpening = true } =
     const to = a === ayat ? (tail ? tail.from + Math.min(0.5, (tail.to - tail.from) / 2) : total) : (bounds[bi++] ?? null);
     ayahs.push({ n: a, from, to }); from = to;
   }
+  for (const [a, b] of together) { const x = ayahs[a - 1], y = ayahs[b - 1]; if (x && y && y.to !== null) { x.to = y.to; y.from = x.from; } }
+  for (const a of ayahs) a.pair = [...joined, ...together].find(([x, y]) => a.n === x || a.n === y) ?? null;
   return { opening: hasOpening ? { from: 0, to: openEnd } : null, ayahs, found: p.length, need, issues, ok: issues.length === 0 };
 }
