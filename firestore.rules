@@ -3068,5 +3068,180 @@ service cloud.firestore {
 
       allow delete: if false; // I4/D6 -- a shorter list, never a deleted document.
     }
+
+    // =====================================================================
+    // PCF MSA J104 (Dua module) -- SAVING FOR D03, D05, D10 AND D15 -- CANDIDATE, NOT PUBLISHED, NOT IN firestore.rules.
+    //
+    // Prepared by the MSA Architect, 8 Nov 2026, on the Owner's tick J104 item 9 = A ("prepare the Rules change") and
+    // item 8 = A (each person marks their own; a teacher or guardian may mark for a student, like progress with 👥).
+    // firestore.rules is UNTOUCHED: Rules are an Owner Control Gate, and nothing here is live until the Owner publishes it.
+    // Nothing in the app writes these collections yet; the Dua Lead's round R6 builds the writers AFTER publishing.
+    //
+    // THREE COLLECTIONS
+    //
+    //  1. duaPlans/{tenantId}__{personId}       D10 memorising-plan marks, ONE document per person.
+    //       marks     map  dua key -> one mark: "today" | "next" | "urgent" | "revising" | "memorised"
+    //       important list of dua keys marked ★ Important
+    //     Read and written by exactly canRecordFor(): the person themself, their guardian, a co-enrolled teacher, an
+    //     owner/prime (the same people who record progress with 👥). The person must belong to the tenant.
+    //
+    //  2. duaEdits/{tenantId}__{duaKey}         D03 add / move / several groups / hide, and D05 titles (I11), ONE document
+    //                                           per dua the madrasah has changed or added.
+    //       duaKey     an existing dua's number ("123"), or "new-<id>" for a dua the madrasah ADDS
+    //       title      { en?, bn? }  each at most 300 characters
+    //       placements list (at most 50) of { group, part?, order } -- the dua may sit in several groups (D03)
+    //       hidden     bool: "delete" is HIDE (I4); it is kept and can be brought back by writing false
+    //       added      map, ONLY on a "new-" dua (its Arabic, source, ...; at most 20 fields)
+    //     Every member of the madrasah reads (get by id, or list filtered on tenantId == their own); owner and prime write
+    //     (the Catalogue's own gate, canAdminCatalogue() == canAdminIdentity()).
+    //
+    //  3. duaShares/{autoId}                    D15 one record per share, append-only.
+    //       where   "whatsapp" | "facebook" | "email" | "print" | "masjidBoard" | "other"
+    //       whoFor  "family" | "students" | "teachers" | "masjidCommunity" | "public" | "other"
+    //       occasion  string, at most 300 characters (may be empty)    sharedAt  timestamp
+    //     "Seen by Owner and Prime only" (D15): owner and prime READ; any member of the madrasah RECORDS their own share
+    //     (createdBy == their uid; the Dua Lead, 8 Nov 2026); nobody updates; nobody deletes.
+    //
+    // EVERYWHERE: no delete, ever (I4, D6); every document carries schemaVersion, createdAt, updatedAt, createdBy (I17);
+    // createdBy is the writer on create and write-once after; tenantId and the key are pinned on update.
+    // Rules cannot inspect each key of a map or each element of a list, so the client validates them; the sizes are capped
+    // so no document grows without limit. Queries are equality-only (tenantId ==), so NO composite index is needed.
+    //
+    // THIS FILE is the whole live firestore.rules with these three blocks added at the end (nothing above changed):
+    // the file the Owner pastes into the Firebase Console (docs/governance/2026-11-08-dua-saving-rules-publish-guide.md).
+    // =====================================================================
+
+    match /duaPlans/{planKey} {
+
+      function planShapeOk() {
+        return d().keys().hasOnly([
+                 'tenantId', 'personId', 'marks', 'important',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'tenantId', 'personId', 'marks', 'important',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().personId is string && d().personId.size() > 0
+            && planKey == d().tenantId + '__' + d().personId
+            && d().marks is map && d().marks.size() <= 5000
+            && d().important is list && d().important.size() <= 5000
+            && d().schemaVersion is number
+            && d().createdAt is timestamp && d().updatedAt is timestamp
+            && d().createdBy is string && d().createdBy.size() > 0;
+      }
+
+      function planMay(tenantId, personId) {
+        return personInTenant(tenantId, personId) && canRecordFor(tenantId, personId);
+      }
+
+      // The read-before-create probe: a nonexistent document has no data to expose.
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/duaPlans/$(planKey));
+      // No `allow list`: a plan is read by document id only.
+      allow get: if planMay(resource.data.tenantId, resource.data.personId);
+
+      allow create: if planShapeOk()
+                    && planMay(d().tenantId, d().personId)
+                    && d().createdBy == myUid();
+
+      allow update: if resource != null
+                    && planShapeOk()
+                    && planMay(resource.data.tenantId, resource.data.personId)
+                    && d().tenantId == resource.data.tenantId
+                    && d().personId == resource.data.personId
+                    && d().createdBy == resource.data.createdBy;
+
+      allow delete: if false; // I4/D6 -- clearing a mark writes the map without it.
+    }
+
+    match /duaEdits/{editKey} {
+
+      function editTitleOk(t) {
+        return t is map && t.keys().hasOnly(['en', 'bn'])
+            && (!('en' in t) || (t.en is string && t.en.size() <= 300))
+            && (!('bn' in t) || (t.bn is string && t.bn.size() <= 300));
+      }
+
+      function editShapeOk() {
+        return d().keys().hasOnly([
+                 'tenantId', 'duaKey', 'title', 'placements', 'hidden', 'added',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'tenantId', 'duaKey', 'title', 'placements', 'hidden',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().duaKey is string && d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40})$')
+            && editKey == d().tenantId + '__' + d().duaKey
+            && editTitleOk(d().title)
+            && d().placements is list && d().placements.size() <= 50
+            && d().hidden is bool
+            // `added` (the dua's own text) exists exactly on a dua the madrasah added
+            && (('added' in d()) == d().duaKey.matches('^new-.*$'))
+            && (!('added' in d()) || (d().added is map && d().added.size() <= 20))
+            && d().schemaVersion is number
+            && d().createdAt is timestamp && d().updatedAt is timestamp
+            && d().createdBy is string && d().createdBy.size() > 0;
+      }
+
+      function editMayRead(tenantId) {
+        return signedIn() && myRolesIn(tenantId).size() > 0;
+      }
+
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/duaEdits/$(editKey));
+      allow get: if editMayRead(resource.data.tenantId);
+      // The Dua page lists its madrasah's edits once: where('tenantId', '==', <own tenant>). Equality only: no index.
+      allow list: if editMayRead(resource.data.tenantId);
+
+      allow create: if editShapeOk()
+                    && canAdminIdentity(d().tenantId)
+                    && d().createdBy == myUid();
+
+      allow update: if resource != null
+                    && editShapeOk()
+                    && canAdminIdentity(resource.data.tenantId)
+                    && d().tenantId == resource.data.tenantId
+                    && d().duaKey == resource.data.duaKey
+                    && d().createdBy == resource.data.createdBy;
+
+      allow delete: if false; // I4/D6 -- "delete" is hidden: true, and can be undone.
+    }
+
+    match /duaShares/{shareId} {
+
+      function shareShapeOk() {
+        return d().keys().hasOnly([
+                 'tenantId', 'duaKey', 'where', 'whoFor', 'occasion', 'sharedAt',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'tenantId', 'duaKey', 'where', 'whoFor', 'occasion', 'sharedAt',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().duaKey is string && d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40})$')
+            && d().where in ['whatsapp', 'facebook', 'email', 'print', 'masjidBoard', 'other']
+            && d().whoFor in ['family', 'students', 'teachers', 'masjidCommunity', 'public', 'other']
+            && d().occasion is string && d().occasion.size() <= 300
+            && d().sharedAt is timestamp
+            && d().schemaVersion is number
+            && d().createdAt is timestamp && d().updatedAt is timestamp
+            && d().createdBy is string && d().createdBy.size() > 0;
+      }
+
+      // D15: "Seen by Owner and Prime only". The report lists where('tenantId', '==', <own tenant>): no index.
+      allow get, list: if canAdminIdentity(resource.data.tenantId);
+
+      // Any member of the madrasah RECORDS their own share (the Dua Lead, 8 Nov 2026: teachers and students share most);
+      // only owner and prime SEE the records (above).
+      allow create: if shareShapeOk()
+                    && (canAdminIdentity(d().tenantId) || myRolesIn(d().tenantId).size() > 0)
+                    && d().createdBy == myUid();
+
+      allow update: if false; // a record of something that happened is not edited
+      allow delete: if false; // I4/D6
+    }
   }
 }
