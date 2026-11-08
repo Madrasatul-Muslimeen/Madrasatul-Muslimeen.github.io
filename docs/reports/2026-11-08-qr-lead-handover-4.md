@@ -1,4 +1,14 @@
-# QR Lead handover 4, 8 Nov 2026 (about 11:55 AM Sydney), short
+# QR Lead handover 4, 8 Nov 2026 (updated about 12:40 PM Sydney), short
+
+## UPDATE 12:40 PM — READ THIS FIRST (supersedes the older lines below where they differ)
+- **IDs now:** MSA Architect `session_01PL2xbJGgHfh7dkdbyoCQjC`; PCA `session_01PL2xbKVuJXGYDw1vo7D1pn`; this QR Lead (34) hands over from `session_01PL2xbNSZE2rQMWXva3FeCZ`. Send with the claude-code-remote `send_message`, never `SendMessage`.
+- **#1521 (J119) and #1523 (J115 r1) are RELEASED in v13.53** (PR #1525, merge 18804d07). Nothing of them is in flight.
+- **Small PR #1526** (branch `claude/qr-lead-nits`, head b980272 + this doc) = two Architect nits: the stray Odia regex in `era-approaches.js` removed; `bangla-words-browser.mjs` `state()` never null so `--mutate=nosave` fails cleanly. With the Architect.
+- **Nit (c)** for J115's PCF text (the Architect writes it): the one-tap Tābiʿūn button is gated owner OR prime (the Add Approach gate), accepted as "the catalogue manager".
+- **Next, in this order:** (1) the EMULATOR SUITE for `docs/proposals/bangla-words.candidate.rules` (follow-up PR from main; member reads madrasah doc, non-member denied; teacher/owner write madrasah, student denied; a reader writes own list not another's, isolating case = pX for themselves under ANOTHER tenant's path denied by `personInTenant` alone; words > 5000 denied; delete denied; createdBy/tenantId/scope immutable; mutation-prove each helper). (2) J115 round 2: era view per āyah + Scholars labels (below). (3) J121 when the Owner ticks n121e. (4) J119 later round (Architect's call): Monitor `vocab-known.js` and the Learn next badge segment.
+- **PCF:** J119/J115 PCF jobs were stamped at hand-in (11:50 AM); not updated for the v13.53 release (the Architect writes the release lines). The session title form is "📌 (03A) MSA - QR Lead (34) - DD.MM.YY - h.mm AM/PM".
+
+# (older text, 11:55 AM)
 
 Read `2026-11-08-qr-lead-handover.md`, `-handover-2.md`, `-handover-3.md` first (rules, gotchas, test setup); this adds only what changed.
 This session: `session_01PL2xbNSZE2rQMWXva3FeCZ` (03A, took over 11:22 AM). Architect `session_01PL2xbJJrkv8JuD1FEhog98`; PCA `session_01PL2xbNATLmmCFj3TFkvWfR`. Send with the claude-code-remote `send_message` (session_id), NOT `SendMessage`.

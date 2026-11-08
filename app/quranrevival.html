@@ -23893,7 +23893,7 @@
             const host = document.createElement("div");
             const ayahObj = surah === currentSurahNum ? currentSurahData?.ayahs?.find((x) => x.ayah === ayahNum) : null;
             const lemmas = [...new Set((ayahObj?.words ?? []).map((w) => w.morphology?.lemma).filter(Boolean))];
-            renderReadNext(host, { lemmas, scholars: "tafsir", tafsir: { ayat: [`${surah}:${ayahNum}`] }, backTo: "ayah" });
+            renderReadNext(host, { lemmas, scholars: "tafsir", tafsir: { ayat: [`${surah}:${ayahNum}`] }, eras: () => ({ ref: `${surah}:${ayahNum}`, rows: quranTrackables }), backTo: "ayah" });
             ayahReadNext = { key: ayahSheetUnitKey, box: host.firstElementChild };
           }
           if (ayahReadNext.box) infoEl.appendChild(ayahReadNext.box);

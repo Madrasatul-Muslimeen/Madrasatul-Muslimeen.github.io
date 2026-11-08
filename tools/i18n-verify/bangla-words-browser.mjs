@@ -34,7 +34,7 @@ async function openCard(ctx) {
   await page.waitForFunction(() => !!document.querySelector("#quranWordCardMount [data-bangla-block]"), null, { timeout: 15000 }).catch(() => {});
   return page;
 }
-const state = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("mm_bangla_words.v1") || "null"));
+const state = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("mm_bangla_words.v1") || "null") ?? { admin: [], on: null, list: null, mine: [] }); // never null: a mutation that stops saving must FAIL a check, not crash the run
 
 for (const [w, h, lang] of [[1280, 900, "en"], [390, 844, "en"], [390, 844, "bn"]]) {
   const tag = `[${lang} ${w}]`;

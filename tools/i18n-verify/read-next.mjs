@@ -11,7 +11,7 @@
 //     when the box is drawn (the UI fetches only inside a tab's panel).
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { buildTafsirScholars, serialise, matchBooks, deathYearAH, OUTPUT, SOURCE } from "../scholars/build-tafsir-scholars.mjs";
+import { buildTafsirScholars, serialise, matchBooks, deathYearAH, relabelApproach, OUTPUT, SOURCE } from "../scholars/build-tafsir-scholars.mjs";
 import * as RN from "../../app/js/read-next.js";
 
 let pass = 0, fail = 0;
@@ -54,8 +54,10 @@ check("every kept value is the database's own: en, ar, lifeAH, lifeCE, Approache
     assert.ok(r, s.id);
     assert.equal(s.en, r.en, s.id); assert.equal(s.ar, r.ar ?? null, s.id);
     assert.equal(s.lifeAH, r.lifeAH ?? null, s.id); assert.equal(s.lifeCE, r.lifeCE ?? null, s.id);
-    assert.equal(s.approachesText, r.approaches ?? "", s.id);
-    assert.equal(s.approaches.join(" · "), r.approaches, s.id);
+    // display labels only: the database's text with each numbered tag relabelled by relabelApproach (J115 labels)
+    const shown = String(r.approaches ?? "").split(" · ").map((x) => x.trim()).filter(Boolean).map(relabelApproach);
+    assert.equal(s.approachesText, shown.join(" · "), s.id);
+    assert.deepEqual(s.approaches, shown, s.id);
     assert.ok(String(r.quranWorks).startsWith(s.quranWork), s.id);
   }
 });
@@ -138,7 +140,7 @@ check("groupByApproach: each tafsīr scholar exactly once, under their first App
   for (const g of groups) for (const s of g.scholars) assert.equal(s.approaches[0] ?? "", g.approach);
   const nums = groups.map((g) => RN.approachNumber(g.approach));
   assert.deepEqual(nums, [...nums].sort((a, b) => a - b));
-  assert.equal(groups.find((g) => g.approach === "30 Gen1").scholars[0].id, "s021"); // al-Ṭabarī, in the database's order
+  assert.equal(groups.find((g) => g.approach === "31 Gen1").scholars[0].id, "s021"); // al-Ṭabarī, in the database's order
 });
 check("compilerOf / scholarName / lifeLine: Bukhārī's book -> s008 with its Bangla name in Bangla, English otherwise", () => {
   const c = RN.compilerOf(data, "0256Bukhari.Sahih.JK000110-ara1");
@@ -168,10 +170,11 @@ check("read-next.js is pure: no document, window, fetch; it imports only lemma-d
 });
 const ui = strip(fs.readFileSync("app/js/read-next-ui.js", "utf8"));
 // UPDATED IN PLACE for K3b (5 Nov 2026): a second fetch, loadTafsirLinks (the tafsīr books' sites), first use only.
-check("read-next-ui.js fetches only inside loadTafsirScholars and loadTafsirLinks (first use), never at import or on drawing the box", () => {
-  assert.equal((ui.match(/\bfetch\(/g) ?? []).length, 2);
-  for (const fn of ["loadTafsirScholars", "loadTafsirLinks"]) {
-    const body = ui.slice(ui.indexOf(`export function ${fn}`), ui.indexOf("\n}\n", ui.indexOf(`export function ${fn}`)));
+check("read-next-ui.js fetches only inside loadTafsirScholars, loadTafsirLinks and loadEraSpeakers (first use), never at import or on drawing the box", () => {
+  assert.equal((ui.match(/\bfetch\(/g) ?? []).length, 3);
+  for (const fn of ["loadTafsirScholars", "loadTafsirLinks", "loadEraSpeakers"]) {
+    const at = ui.indexOf(`function ${fn}`);
+    const body = ui.slice(at, ui.indexOf("\n}\n", at));
     assert.equal((body.match(/\bfetch\(/g) ?? []).length, 1, `${fn} holds one fetch`);
   }
   const render = ui.slice(ui.indexOf("export function renderReadNext"), ui.indexOf("function fillPanel"));
@@ -243,6 +246,18 @@ check("K3b: every tafsīr row's scholar and every scholar row is a link (new tab
   assert.match(ui, /go\.target = "_blank"; go\.rel = "noopener";/);
   const qr = fs.readFileSync("app/quranrevival.html", "utf8");
   assert.match(qr, /scholars: "tafsir", tafsir: \{ ayat: \[`\$\{currentSurahData\.surahNumber\}:\$\{ayah\.ayah\}`\] \}, backTo: "word"/);
+});
+check("labels: each era's display number is bound to the era BY NAME, not by number (Ṣaḥābah 28, Tābiʿūn 29, Tābiʿ al-Tābiʿīn 30, then +1)", () => {
+  assert.equal(relabelApproach("28 Sahaba"), "28 Sahaba");
+  assert.equal(relabelApproach("29 Tābiʿīn"), "29 Tābiʿīn");
+  assert.equal(relabelApproach("29 Tābiʿ al-Tābiʿīn"), "30 Tābiʿ al-Tābiʿīn");
+  assert.equal(relabelApproach("30 Gen1"), "31 Gen1");
+  assert.equal(relabelApproach("36 Groups (Sufi)"), "37 Groups (Sufi)");
+  assert.equal(relabelApproach("Gen3"), "Gen3");
+  const tags = new Set(data.scholars.flatMap((s) => s.approaches));
+  const num = (re) => [...tags].filter((t) => re.test(t)).map((t) => Number(t.match(/^\d+/)?.[0]));
+  assert.deepEqual(num(/Sahaba/), [28]); assert.deepEqual(num(/^\d+ Tābiʿīn$/), [29]); assert.deepEqual(num(/Tābiʿ al-Tābiʿīn/), [30]);
+  assert.ok(![...tags].some((t) => /^(29 Tābiʿ al|30 Gen1|31 Gen2|32 Maliki|33 Hanbali|34 Hanafi|35 Shafiʿi|36 Groups)/.test(t)), "an old number is left");
 });
 const hb = fs.readFileSync("app/js/hadith-browser.js", "utf8");
 check("hadith-browser.js places the box with ONE call, inside the passage card", () => {

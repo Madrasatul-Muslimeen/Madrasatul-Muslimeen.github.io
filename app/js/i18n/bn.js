@@ -4738,6 +4738,16 @@ export const BN = {
   // J03 K3 "Study Next" (read-next-ui.js, hadith-read-next.js), 4 Nov 2026; renamed from "Read next" in K3b (the Owner,
   // 5 Nov 2026: "Study Next", Bangla "পরবর্তী অধ্যয়ন").
   "Study Next": "পরবর্তী অধ্যয়ন",
+  // J115 round 2, the Eras tab
+  "Eras": "যুগ",
+  "d. {year} AH": "মৃত্যু {year} হি.",
+  "No reports by era are in the app for this āyah yet.": "এই আয়াতের জন্য যুগ অনুযায়ী বর্ণনা এখনো অ্যাপে নেই।",
+  "The era reports are not available just now.": "যুগ অনুযায়ী বর্ণনা এখন পাওয়া যাচ্ছে না।",
+  "Not yet checked by a scholar.": "এখনো কোনো আলিম যাচাই করেননি।",
+  "The {era} Approach is not in your catalogue yet.": "আপনার ক্যাটালগে {era} অ্যাপ্রোচ এখনো নেই।",
+  "To about {year} AH": "প্রায় {year} হিজরি পর্যন্ত",
+  "No one recorded in this era.": "এই যুগে কেউ নথিভুক্ত নেই।",
+  "Just after this era": "এই যুগের ঠিক পরে",
   // Retired keys, kept (a key is never removed, bn-duplicate-keys.mjs): "Read next" (renamed "Study Next", K3b) and the
   // pre-J112-R1 Siyagah bar sentence (replaced in #1468). Nothing reads them now.
   "Read next": "পরে পড়ুন",
