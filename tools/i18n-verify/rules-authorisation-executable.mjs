@@ -635,10 +635,13 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   // UPDATED IN PLACE 5 Nov 2026: the Owner PUBLISHED this candidate in study-monitoring (~6:20 am Sydney, PCF MSA J03
   // k4rules1104), so the repository's firestore.rules was made the same file. This check used to assert the opposite
   // ("the candidate is NOT published"); it now asserts what production carries, byte for byte.
-  check("AYAH KEYS: firestore.rules IS the published candidate, byte for byte (the Owner published it 5 Nov 2026)", () => {
+  // UPDATED IN PLACE again 8 Nov 2026: the Owner then published the Dua saving Rules (PCF MSA J104 line 20), whose
+  // deployment file is the Keys file plus three Dua blocks, so firestore.rules is no longer the Keys file byte for byte.
+  // What production carries of the Keys rules is now asserted block by block: both Keys blocks are the published ones.
+  check("AYAH KEYS: firestore.rules carries the published ayahKeyMarks block, unchanged (the Owner published it 5 Nov 2026)", () => {
     const live = read("firestore.rules");
     assert.ok(/match \/ayahKeyMarks\//.test(live), "firestore.rules does not carry ayahKeyMarks");
-    assert.equal(live, akRules, "firestore.rules differs from docs/governance/2026-10-15-ayah-keys-candidate.rules, which is what production carries");
+    assert.equal(matchBlock(live, "ayahKeyMarks/"), matchBlock(akRules, "ayahKeyMarks/"), "firestore.rules' ayahKeyMarks block differs from docs/governance/2026-10-15-ayah-keys-candidate.rules, which is what production carries");
   });
 
   // K0 (4 Nov 2026): the same marks on a hadith and its words, hadithKeyMarks, in the SAME candidate file.
@@ -692,19 +695,18 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     assert.match(matchBlock(dua, "duaEdits/"), /d\(\)\.duaKey == resource\.data\.duaKey/);
     assert.match(matchBlock(dua, "duaShares/"), /allow update: if false;/);
   });
-  check("DUA SAVING DEPLOYMENT FILE: it is firestore.rules with exactly the candidate's three blocks added, nothing above changed", () => {
+  // UPDATED IN PLACE 8 Nov 2026 (Architect 88L): the Owner PUBLISHED the deployment file in study-monitoring (PCF MSA
+  // J104 line 20, n104pub) and firestore.rules was made that file byte for byte, as 25b30cdc did for the Keys rules.
+  // These two checks used to assert "the deployment file is firestore.rules + three blocks" and "DUA SAVING PENDING:
+  // not published"; they now assert what production carries. The no-writer half stays until the Dua Lead's round R6.
+  check("DUA SAVING: firestore.rules IS the published deployment file, byte for byte, and carries the candidate's three blocks unchanged", () => {
     const dep = read("docs/proposals/dua-saving.DEPLOYMENT-candidate.rules");
-    for (const c of DUA) assert.equal(matchBlock(dep, `${c}/`), matchBlock(dua, `${c}/`), `${c} differs between the deployment file and the candidate`);
     const live = read("firestore.rules");
-    const cut = dep.indexOf("    // =====================================================================\n    // PCF MSA J104 (Dua module)");
-    assert.ok(cut > 0, "the deployment file's Dua section header is missing");
-    const tailAt = live.trimEnd().lastIndexOf("  }\n}");
-    assert.equal(dep.slice(0, cut).trimEnd(), live.slice(0, tailAt).trimEnd(), "the deployment file no longer starts with the whole of firestore.rules");
-    assert.equal(dep.trimEnd().slice(-5), "  }\n}");
+    assert.equal(live, dep, "firestore.rules differs from docs/proposals/dua-saving.DEPLOYMENT-candidate.rules, which is what production carries");
+    for (const c of DUA) assert.equal(matchBlock(live, `${c}/`), matchBlock(dua, `${c}/`), `firestore.rules' ${c} block differs from the candidate`);
+    assert.ok(live.includes("    // PCF MSA J104 (Dua module)"), "the Dua section header is missing");
   });
-  check("DUA SAVING PENDING: not published in firestore.rules, and no app code writes these collections yet (add forward/backward checks when either changes)", () => {
-    const live = read("firestore.rules");
-    for (const c of DUA) assert.ok(!live.includes(`match /${c}/`), `firestore.rules now carries ${c}: add the forward/backward checks`);
+  check("DUA SAVING NO WRITER YET: no app code names a Dua collection (round R6 adds the writers AND the forward/backward checks)", () => {
     const writers = [];
     const walk = (dir) => { for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
       const p = `${dir}/${e.name}`;

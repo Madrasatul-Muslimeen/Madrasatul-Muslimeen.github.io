@@ -26,11 +26,24 @@ const live = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
 // UPDATED IN PLACE 5 Nov 2026: the Owner PUBLISHED this candidate in study-monitoring (PCF MSA J03 k4rules1104), and the
 // repository's firestore.rules was made the same file. This test used to assert "firestore.rules plus the block, and the
 // live Rules do NOT carry it yet"; it now asserts that firestore.rules IS the published candidate, byte for byte.
-test("firestore.rules is the published candidate, byte for byte, and carries the hadithKeyMarks block", () => {
+// UPDATED IN PLACE again 8 Nov 2026: the Owner then published the Dua saving Rules (PCF MSA J104 line 20), whose deployment
+// file is this candidate plus three Dua blocks, so firestore.rules is no longer this file byte for byte; production's
+// hadithKeyMarks block is asserted to be the published one, unchanged (the whole file is pinned by rules-authorisation-executable).
+const ruleBlock = (text, name) => {
+  const start = text.indexOf(`match /${name}/`);
+  assert.notEqual(start, -1, `no ${name} block`);
+  let depth = 0;
+  for (let i = text.indexOf("{", start); i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return text.slice(start, i + 1);
+  }
+  throw new Error(`unterminated ${name} block`);
+};
+test("firestore.rules carries the published hadithKeyMarks block, unchanged", () => {
   assert.ok(/match \/hadithKeyMarks\//.test(candidate));
   assert.ok(/match \/hadithKeyMarks\//.test(live), "firestore.rules does not carry hadithKeyMarks: the repository no longer matches production");
-  assert.equal(live, fs.readFileSync(path.join(root, "docs/governance/2026-10-15-ayah-keys-candidate.rules"), "utf8"),
-    "firestore.rules differs from the published candidate");
+  assert.equal(ruleBlock(live, "hadithKeyMarks"), ruleBlock(fs.readFileSync(path.join(root, "docs/governance/2026-10-15-ayah-keys-candidate.rules"), "utf8"), "hadithKeyMarks"),
+    "firestore.rules' hadithKeyMarks block differs from the published candidate");
 });
 
 const T = "t1";
