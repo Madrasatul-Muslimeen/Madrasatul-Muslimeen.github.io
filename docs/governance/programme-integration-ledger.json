@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.52",
+    "version": "13.53",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6569,8 +6569,20 @@
     {
       "version": "13.52",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v13.52: QR Lead #1516 (MSA J114 one menu), Hadith Lead #1519 (Text-pane terms fold), Dua Lead #1514 (r13a), combined and reviewed by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-11-08",
+        "integratedOn": "2026-11-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.53",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QR Lead rounds #1521 (MSA · QR J119 Bangla words, device-only) and #1523 (MSA · QR J115 round 1, one tap adds the Tābiʿūn Approach after Ṣaḥābah), reviewed by measurement against main.",
       "integration": {
         "authorizedOn": "2026-11-08",
         "integratedOn": "2026-11-08",
@@ -6579,8 +6591,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.53",
+  "nextUnallocated": "13.54",
   "nextUnallocatedNote": [
+    "v13.53 was allocated to Bangla words (QR J119) and the Tābiʿūn Approach tap (QR J115 r1), 2026-11-08.",
     "v13.52 was allocated to ONE ⋮ menu (QR J114), the Hadith Text-pane terms fold, Dua J104 r13a, 2026-11-08.",
     "v13.51 was allocated to Hadith Study card colours and the translation-terms fold, 2026-11-08.",
     "v13.50 was allocated to the four ruling questions on Approach 24 (QR J116), 2026-11-08.",

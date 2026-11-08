@@ -3153,3 +3153,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.50** (2026-11-08): the four ruling questions on Approach 24 (QR J116).
 - **v13.51** (2026-11-08): Hadith Study card colours and the translation-terms fold.
 - **v13.52** (2026-11-08): ONE ⋮ menu (QR J114), the Hadith Text-pane terms fold, Dua J104 r13a.
+- **v13.53** (2026-11-08): Bangla words (QR J119) and the Tābiʿūn Approach tap (QR J115 r1).
