@@ -134,8 +134,10 @@ function authorisedUpdate(source, collectionPath, identityFn) {
  */
 function authorisedCreate(source, collectionPath) {
   const block = matchBlock(source, collectionPath);
-  const only = block.match(/keys\(\)\.hasOnly\(\[([\s\S]*?)\]\)/);
-  const all = block.match(/keys\(\)\.hasAll\(\[([\s\S]*?)\]\)/);
+  // 9 Nov 2026 (R6): prefer the DOCUMENT's key list, `d().keys()`, because a helper earlier in a block (duaEdits' title check,
+  // `t.keys().hasOnly(['en', 'bn'])`) can carry a hasOnly of its own. The size assertions below still catch a wrong pick.
+  const only = block.match(/\bd\(\)\.keys\(\)\.hasOnly\(\[([\s\S]*?)\]\)/) || block.match(/keys\(\)\.hasOnly\(\[([\s\S]*?)\]\)/);
+  const all = block.match(/\bd\(\)\.keys\(\)\.hasAll\(\[([\s\S]*?)\]\)/) || block.match(/keys\(\)\.hasAll\(\[([\s\S]*?)\]\)/);
   assert.ok(only, `${collectionPath}: no hasOnly list found`);
   assert.ok(all, `${collectionPath}: no hasAll list found`);
   const permitted = new Set(idsIn(only[1]));
@@ -706,15 +708,54 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     for (const c of DUA) assert.equal(matchBlock(live, `${c}/`), matchBlock(dua, `${c}/`), `firestore.rules' ${c} block differs from the candidate`);
     assert.ok(live.includes("    // PCF MSA J104 (Dua module)"), "the Dua section header is missing");
   });
-  check("DUA SAVING NO WRITER YET: no app code names a Dua collection (round R6 adds the writers AND the forward/backward checks)", () => {
-    const writers = [];
+  // UPDATED IN PLACE 9 Nov 2026 (Dua Lead, round R6): the writers exist now (app/js/dua-saving-data.js), so "NO WRITER YET"
+  // is replaced by the forward/backward comparison, as for ayahKeyMarks / hadithKeyMarks above. The data layer DECLARES
+  // every field it writes (DUA_*_WRITES; dua-saving-data.mjs proves the declaration by running every writer); the
+  // published block's create lists are DERIVED from the Rules text in firestore.rules.
+  const duaSrc = read("app/js/dua-saving-data.js");
+  const live = read("firestore.rules");
+  const declared = (name) => {
+    const m = duaSrc.match(new RegExp(`export const ${name} = Object\\.freeze\\(\\[([\\s\\S]*?)\\]\\)`));
+    assert.ok(m, `${name} not found in dua-saving-data.js`);
+    return new Set(idsIn(m[1].replace(/"/g, "'")));
+  };
+  const ownOf = (set) => [...set].filter((f) => !ENVELOPE.has(f));
+  for (const [coll, writesName, optional] of [["duaPlans/", "DUA_PLAN_WRITES", []], ["duaEdits/", "DUA_EDIT_WRITES", ["added"]], ["duaShares/", "DUA_SHARE_WRITES", []]]) {
+    const writes = declared(writesName);
+    const { permitted, required } = authorisedCreate(live, coll);
+    check(`DUA SAVING POSITIVE CONTROL (${coll}): the parsers read the published block and the declared writes`, () => {
+      assert.ok(writes.size >= 4 && permitted.has("tenantId") && required.has("tenantId") && writes.has("tenantId"),
+        `parsed writes=${[...writes]} permitted=${[...permitted]} required=${[...required]}`);
+    });
+    check(`DUA SAVING BACKWARD (${coll}): every field the data layer can write is one the published Rules allow`, () => {
+      assert.deepEqual([...writes].filter((f) => !permitted.has(f)), [], "denied in production");
+    });
+    check(`DUA SAVING FORWARD (${coll}): every field the published Rules allow is written by the data layer`, () => {
+      assert.deepEqual(ownOf(permitted).filter((f) => !writes.has(f)), [], "an authorised field no code can perform");
+    });
+    check(`DUA SAVING REQUIRED (${coll}): every required field is one the data layer writes (or the envelope stamps)`, () => {
+      assert.deepEqual(ownOf(required).filter((f) => !writes.has(f)), []);
+    });
+    check(`DUA SAVING REQUIRED BOTH WAYS (${coll}): every field the data layer creates with is REQUIRED, bar the optional ${optional.join(", ") || "(none)"}`, () => {
+      assert.deepEqual([...writes].filter((f) => !required.has(f) && !optional.includes(f)), [], "a create could omit an identity field");
+    });
+  }
+  check("DUA SAVING UPDATE/DELETE: the data layer never deletes, and the published blocks have no delete", () => {
+    assert.ok(!/\bdeleteDoc\b|\.delete\(|deleteField/.test(duaSrc), "dua-saving-data.js must never delete");
+    for (const c of DUA) assert.match(matchBlock(live, `${c}/`), /allow delete: if false;/, `${c} may delete`);
+    assert.match(matchBlock(live, "duaShares/"), /allow update: if false;/, "a share record must not be editable");
+    assert.ok(/updateDocument\(db, TENANT\.DUA_PLANS/.test(duaSrc) && /updateDocument\(db, TENANT\.DUA_EDITS/.test(duaSrc), "expected updates of plans and edits");
+    assert.ok(!/updateDocument\(db, TENANT\.DUA_SHARES/.test(duaSrc), "a share must never be updated");
+  });
+  check("DUA SAVING: the only app code naming a Dua collection is the data layer and collections.js", () => {
+    const names = [];
     const walk = (dir) => { for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
       const p = `${dir}/${e.name}`;
       if (e.isDirectory()) walk(p);
-      else if (/\.(js|html)$/.test(e.name) && DUA.some((c) => new RegExp(`["'\`]${c}["'\`]`).test(read(p)))) writers.push(p);
+      else if (/\.(js|html)$/.test(e.name) && DUA.some((c) => new RegExp(`["'\`]${c}["'\`]`).test(read(p)))) names.push(p);
     } };
     walk("app");
-    assert.deepEqual(writers, [], `app code now names a Dua collection (${writers.join(", ")}): add the forward/backward checks`);
+    assert.deepEqual(names.sort(), ["app/js/collections.js"], `unexpected files name a Dua collection: ${names.join(", ")}`);
   });
 }
 
