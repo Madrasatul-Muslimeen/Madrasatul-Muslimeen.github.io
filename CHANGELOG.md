@@ -23479,3 +23479,10 @@ The evening's third release, the follow-up to v13.26.
 - **Also on `main` since v13.55 (no version of its own):** the J104 Dua-saving candidate Rules, `docs/proposals/dua-saving.candidate.rules` with its emulator suite (#1536), not published.
 - **Checks:** behaviour 974/1 (14a, the same as main), run alone on the combined tree; era-view 22/0 (main 17/0; the QR Lead's 9 mutations); eras-tab-browser 88/0 (main 72/0) at 320/390/768/1280 in en and bn; read-next 37/0, read-next-browser 250/0, read-next-qr-cards-browser 78/0, identical to main; the ids and death years checked against Scholars Database v1.2–v1.6; 8 governance suites green; apps-build-check.
 - Nothing deployed to Firestore.
+
+## v13.57 — 8 Nov 2026 — Qur'anic duas play; a Hadith dua's poster and sharing carry the hadith's translation
+
+- **PCF MSA · Dua J104 r14a (the Dua Lead, #1534).** Tick 7 C: on a Qur'anic dua's card, ▶ plays the recitation Quran Study already plays (one āyah, the default reciter), loaded on the first press and stopped when the card changes; other duas stay dimmed until the madrasah's own recordings exist. Tick 10 A: a Hadith dua's poster, A4 page, Full text and share carry HadeethEnc's translation of the whole hadith, labelled "translation of the hadith", loaded on the first press of the card's Menu. Docs only: Ṣaḥābah / Salaf / Ulama proposals (6 A) and draft audio permission letters (7 B), nothing sent.
+- **Also on `main` since v13.56 (no version of their own):** the J104 Dua-saving candidate Rules, with any member recording a share and only owner/prime reading (#1538), and the deployment file plus the Owner's publish guide (#1539), not published.
+- **Checks:** behaviour 974/1 (14a, the same as main), run alone on the combined tree; night-hadith-dua 6038/0; dua-quran-play 5/0, dua-hadith-translation 4/0; 24 other Dua suites identical to main (dua-check 47/2 on both sides, the same two checks); large-text-dua-study 1779/0 and hadith-dua-a11y (Dua page) 1423/0, identical to main; 8 governance suites green; apps-build-check.
+- Nothing deployed to Firestore.

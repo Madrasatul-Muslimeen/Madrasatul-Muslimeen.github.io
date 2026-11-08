@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.56",
+    "version": "13.57",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6617,8 +6617,20 @@
     {
       "version": "13.56",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "MSA · QR J115 follow-up (#1535): the five imams' names in the Eras tab open their Scholars Database rows, reviewed by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-11-08",
+        "integratedOn": "2026-11-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.57",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "PCF MSA · Dua J104 r14a (#1534): Qur'anic duas play the Quran Study recitation; a Hadith dua's poster and sharing carry HadeethEnc's translation of the hadith, reviewed by the Architect.",
       "integration": {
         "authorizedOn": "2026-11-08",
         "integratedOn": "2026-11-08",
@@ -6627,8 +6639,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.57",
+  "nextUnallocated": "13.58",
   "nextUnallocatedNote": [
+    "v13.57 was allocated to Qur'anic duas play and the hadith translation on the Dua poster (Dua J104 r14a), 2026-11-08.",
     "v13.56 was allocated to the Eras names linked to the Scholars Database (QR J115 follow-up), 2026-11-08.",
     "v13.55 was allocated to the Tafsīr books grouped by century (QR J115 Slice B), 2026-11-08.",
     "v13.54 was allocated to the Eras tab and Scholars label shift (QR J115 r2) with the QR nits, 2026-11-08.",
