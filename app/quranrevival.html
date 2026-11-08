@@ -7925,7 +7925,7 @@
       renderAssignDropdown, wireAssignDropdown, checkedAssignees, buildClaimResultMessage,
     } from "./js/way-modal.js";
     import {
-      RECITERS, reciterIsReady, reciterSupportsSingleAyah, playSurah,
+      RECITERS, reciterIsReady, reciterSupportsSingleAyah, reciterOffersSurah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
       warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, isRunContinuing, unlockAudio,
       setPlaybackStateHandler, playOneAndWait, setTimingNoteHandler,
@@ -26935,7 +26935,7 @@
     // Stop: Stop lives on the reading screen, where the listener actually is.
     // -----------------------------------------------------------------------
     function renderListeningControls() {
-      const reciters = Object.values(RECITERS).filter((r) => reciterIsReady(r.id));
+      const reciters = Object.values(RECITERS).filter((r) => reciterIsReady(r.id) && reciterOffersSurah(r.id, currentSurahNum)); // a one-sūrah recording is offered only on its own sūrah (MSA · QR J121)
       if (drillSelectedReciterIds === null) drillSelectedReciterIds = [currentReciterId].filter((id) => reciterSupportsSingleAyah(id));
 
       // Shell round 26 -- this whole block used to be rebuilt on EVERY render,
@@ -26945,7 +26945,7 @@
       // ("uncheck and recheck an option" behaving oddly). The markup only
       // changes when a choice changes, so it is only rebuilt when it changes.
       const signature = JSON.stringify([
-        drillSelectedReciterIds, drillRepeatCount, drillMode, loopIsOn, getAppLang(),
+        drillSelectedReciterIds, drillRepeatCount, drillMode, loopIsOn, getAppLang(), currentSurahNum,
       ]);
       if (signature === lastListeningSignature) { setLoop(loopIsOn); return; }
       lastListeningSignature = signature;
@@ -27021,7 +27021,7 @@
         whole-surah branch in playCurrentSelection() below. */
     function playbackReciterIds() {
       const ticked = (drillSelectedReciterIds ?? []).filter((id) => RECITERS[id]);
-      return ticked.filter((id) => reciterSupportsSingleAyah(id));
+      return ticked.filter((id) => reciterSupportsSingleAyah(id) && reciterOffersSurah(id, currentSurahNum));
     }
 
     /** A failure the audio layer has already put on screen must not be shown a
@@ -27102,7 +27102,9 @@
         reciter, and the card now offers a list. First ticked wins; an empty
         list leaves the last choice alone rather than silently muting Play. */
     function adoptFirstTickedReciter() {
-      const first = (drillSelectedReciterIds ?? []).find((id) => reciterSupportsSingleAyah(id));
+      const first = (drillSelectedReciterIds ?? []).find((id) => reciterSupportsSingleAyah(id) && reciterOffersSurah(id, currentSurahNum));
+      // MSA · QR J121: a one-sūrah recording left chosen must not play on another sūrah
+      if (!first && !reciterOffersSurah(currentReciterId, currentSurahNum)) currentReciterId = "ar";
       if (first && first !== currentReciterId) {
         currentReciterId = first;
         warmSegmentedTimestamps(); // idempotent; a second chance to have the timing map ready before Play

@@ -160,6 +160,10 @@ const BANGLA_BYTES_URL = "/tools/quran-data-pull/output/bn-audio-bytes.json";
 const BANGLA_TIMESTAMPS_URL =
   "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/refs/heads/main/gtaf_bangla_timestamps.json";
 
+const WAQIAH_AUDIO_URL = "/tools/quran-data-pull/output/audio/waqiah.webm";
+const WAQIAH_TIMESTAMPS_URL = "/tools/quran-data-pull/output/waqiah-timestamps.json";
+const WAQIAH_READY = false; // flip to true in the commit that adds the audio file (needs the Owner's n121i)
+
 export const RECITERS = {
   ar: {
     id: "ar",
@@ -218,12 +222,32 @@ export const RECITERS = {
     // its own clip instead of by seeking the whole-surah VBR file, which the browser can only place by estimate.
     byteMapUrl: BANGLA_BYTES_URL,
   },
+  // MSA · QR J121: the Owner's own recording of Sūrah al-Wāqiʿah (56), one file, played āyah by āyah from the times found
+  // in its pauses (tools/quran-data-pull/output/waqiah-timestamps.json). It covers sūrah 56 ONLY, so every place that
+  // offers a reciter asks reciterOffersSurah() first. No byteMapUrl: it plays by seek + boundary, like a whole-surah file.
+  // `ready` stays false until the audio file itself is in place (MSA · QR J121 n121i), so nothing offers a dead reciter.
+  waqiah: {
+    id: "waqiah",
+    label: "Owner's recording (Sūrah al-Wāqiʿah only)",
+    kind: "segmented",
+    onlySurahs: [56],
+    ready: WAQIAH_READY,
+    surahUrl: (surah) => (surah === 56 ? WAQIAH_AUDIO_URL : null),
+    timestampsUrl: WAQIAH_TIMESTAMPS_URL,
+  },
 };
+
+/** False when a reciter covers only some sūrahs and this is not one of them. Every reciter picker must ask. */
+export function reciterOffersSurah(reciterId, surahNum) {
+  const r = RECITERS[reciterId];
+  if (!r) return false;
+  return !r.onlySurahs || r.onlySurahs.includes(Number(surahNum));
+}
 
 /** True once a reciter's real audio source has actually been filled in above. */
 export function reciterIsReady(reciterId) {
   const r = RECITERS[reciterId];
-  if (!r) return false;
+  if (!r || r.ready === false) return false;
   if (r.kind === "direct") return !!(r.perAyahUrl || r.surahUrl);
   if (r.kind === "segmented") return !!(r.surahUrl && r.timestampsUrl);
   return false;
@@ -232,7 +256,7 @@ export function reciterIsReady(reciterId) {
 /** True if this reciter can play a single ayah in isolation (vs. whole-surah only). */
 export function reciterSupportsSingleAyah(reciterId) {
   const r = RECITERS[reciterId];
-  if (!r) return false;
+  if (!r || r.ready === false) return false;
   return r.kind === "segmented" ? !!(r.surahUrl && r.timestampsUrl) : !!r.perAyahUrl;
 }
 
@@ -252,7 +276,7 @@ let loopEnabled = false;
 let currentPlaylist = null; // legacy single-shot playlist shape, kept only so playAyah()/playSurah() have something to null out -- currentRange below is what actually drives auto-advance now
 let currentRange = null; // { surahNum, ayahs: [...], index, reciterId } -- drives ayah-by-ayah auto-advance for BOTH direct (one file per ayah) and segmented (seek+boundary) reciters
 let currentBoundaryListener = null; // the one active timeupdate listener for segmented playback, tracked so switching ayah/reciter never leaves a stale one (with a stale endMs) attached alongside a new one
-let timestampsCache = null; // Promise<raw Bangla timestamp map> -- same shape for every segmented reciter for now
+const timestampsCache = new Map(); // reciterId -> Promise<raw timestamp map>; one entry per segmented reciter, so a second reciter never reads the first one's times
 let byteMapCache = null; // J95: Promise<the āyah byte map, or null when it could not be read (the seek path is used then)>
 const clipCache = new Map(); // J95: "surah:ayah" -> Promise<blob: URL of that āyah's own bytes>, the last few only
 let segToken = 0; // J95: bumped by every new play or stop, so a clip that arrives late never starts over a newer request
@@ -656,13 +680,13 @@ export function playSurah(surahNum, reciterId, ayahCount) {
 async function getTimestamps(reciterId) {
   const reciter = RECITERS[reciterId];
   if (!reciter?.timestampsUrl) throw new Error(`"${reciterId}" has no ayah-timing data configured yet.`);
-  if (!timestampsCache) {
-    timestampsCache = fetch(reciter.timestampsUrl).then((res) => {
+  if (!timestampsCache.has(reciterId)) {
+    timestampsCache.set(reciterId, fetch(reciter.timestampsUrl).then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status} loading timestamps for "${reciterId}".`);
       return res.json();
-    }).catch((err) => { timestampsCache = null; throw err; });
+    }).catch((err) => { timestampsCache.delete(reciterId); throw err; }));
   }
-  return timestampsCache;
+  return timestampsCache.get(reciterId);
 }
 
 /**
