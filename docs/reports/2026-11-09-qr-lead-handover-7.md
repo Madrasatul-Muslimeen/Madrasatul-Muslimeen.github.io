@@ -17,6 +17,8 @@ Read `2026-11-08-qr-lead-handover-4.md` for rules and the test setup (still hold
 3. If the Owner sends another recording: analyse without asking (standing rule), keep only the times, delete the file; use the demo to check by ear. The pauses are found with the relative threshold (median loudness minus 7 dB, at least 0.6 s, merge runs closer than 0.2 s); a long breath may need a hand nudge.
 4. J115 follow-ups only if the Architect says so (Scholars-row links are done: #1535, v13.56). J119 only if told.
 
+4b. **Library rule card1104 (PCA 26L, from BwN, owner request 8 Nov):** every new QR demo or demo version needs a card in the Owner's BwN Library, sent in the same step as the demo (`library/send_card.py` in the BwN repo; pid `qr`, wf `qr`; same pid+cid updates the same card). The BwN repo is NOT in a QR Lead session, so send the card details (title, link, repo path, what to tick) to the PCA to relay. Cards still owed: the J115 v01 era demo (7 Nov; its artifact link is not in the repo: ask the Architect) and the keys demo v2 (4 Nov). Sent to the PCA on 8 Nov: demo1104 (https://claude.ai/artifact/3ea1KQMy9aKBLSGrV2puPm) and the mock Timing helper (https://claude.ai/artifact/J8RhE8ZwRe7rQXdfUqKcYk).
+
 ## Lessons this session
 - A PR can be merged while you are still pushing to its branch: after a merge notice, check `git merge-base --is-ancestor <my head> origin/main` and carry the rest in a new branch from main.
 - The Owner hears "merged" āyāt where the finder finds a short pause: count the finder's boundaries against 95 minus ONLY the no-pause pairs, and let the Owner's pairs share a stretch regardless.
