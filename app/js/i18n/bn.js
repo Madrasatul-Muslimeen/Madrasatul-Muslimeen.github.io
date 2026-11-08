@@ -3294,6 +3294,12 @@ export const BN = {
   "Dua chapters": "দুআর অধ্যায়", // ?
   "Duas {from}–{to} of {total}, most narrated first. Each dua's narrations were found by matching words and are still to be checked.": "দুআ {from}–{to}, মোট {total}টির মধ্যে, সবচেয়ে বেশি বর্ণিতগুলো আগে। প্রতিটি দুআর বর্ণনাগুলো শব্দ মিলিয়ে পাওয়া, যাচাই এখনও বাকি।", // ?
   "Dua {n}": "দুআ {n}", // ?
+  "Words of the same root in other duas need a root, and this word has none yet.": "অন্য দুআর একই মূলের শব্দ দেখাতে মূল লাগে, আর এই শব্দের এখনো কোনো মূল নেই।",
+  "The same root in other duas": "অন্য দুআয় একই মূল",
+  "No other dua has a word of this root.": "অন্য কোনো দুআয় এই মূলের শব্দ নেই।",
+  "{n} more not shown.": "আরও {n}টি দেখানো হয়নি।",
+  "Could not load the other duas just now.": "এই মুহূর্তে অন্য দুআগুলো লোড করা গেল না।",
+  "Roots are a computer's guess, to be checked.": "মূলগুলো কম্পিউটারের অনুমান, যাচাই করা হবে।",
   "Narrated in {n} places": "{n}টি স্থানে বর্ণিত", // ?
   "Words picked out by the computer · a person checks them": "কম্পিউটার দোয়ার শব্দগুলো বেছে নিয়েছে · একজন মানুষ তা যাচাই করবেন",
   "The whole narration": "পুরো বর্ণনা",
