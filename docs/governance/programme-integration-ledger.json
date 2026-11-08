@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.53",
+    "version": "13.54",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6581,8 +6581,20 @@
     {
       "version": "13.53",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "QR Lead rounds #1521 (MSA · QR J119 Bangla words, device-only) and #1523 (MSA · QR J115 round 1, one tap adds the Tābiʿūn Approach after Ṣaḥābah), reviewed by measurement against main.",
+      "integration": {
+        "authorizedOn": "2026-11-08",
+        "integratedOn": "2026-11-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.54",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "MSA · QR J115 round 2 (#1528: the Eras tab on the Āyah card, the Scholars display labels shift) and the QR nits (#1526), reviewed by the Architect.",
       "integration": {
         "authorizedOn": "2026-11-08",
         "integratedOn": "2026-11-08",
@@ -6591,8 +6603,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.54",
+  "nextUnallocated": "13.55",
   "nextUnallocatedNote": [
+    "v13.54 was allocated to the Eras tab and Scholars label shift (QR J115 r2) with the QR nits, 2026-11-08.",
     "v13.53 was allocated to Bangla words (QR J119) and the Tābiʿūn Approach tap (QR J115 r1), 2026-11-08.",
     "v13.52 was allocated to ONE ⋮ menu (QR J114), the Hadith Text-pane terms fold, Dua J104 r13a, 2026-11-08.",
     "v13.51 was allocated to Hadith Study card colours and the translation-terms fold, 2026-11-08.",
