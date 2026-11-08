@@ -32,8 +32,8 @@ service cloud.firestore {
     //       where   "whatsapp" | "facebook" | "email" | "print" | "masjidBoard" | "other"
     //       whoFor  "family" | "students" | "teachers" | "masjidCommunity" | "public" | "other"
     //       occasion  string, at most 300 characters (may be empty)    sharedAt  timestamp
-    //     "Seen by Owner and Prime only" (D15): owner and prime create and read; nobody updates; nobody deletes.
-    //     (Letting every member RECORD a share while only owner/prime READ is a one-line change if the Owner wants it.)
+    //     "Seen by Owner and Prime only" (D15): owner and prime READ; any member of the madrasah RECORDS their own share
+    //     (createdBy == their uid; the Dua Lead, 8 Nov 2026); nobody updates; nobody deletes.
     //
     // EVERYWHERE: no delete, ever (I4, D6); every document carries schemaVersion, createdAt, updatedAt, createdBy (I17);
     // createdBy is the writer on create and write-once after; tenantId and the key are pinned on update.
@@ -169,8 +169,10 @@ service cloud.firestore {
       // D15: "Seen by Owner and Prime only". The report lists where('tenantId', '==', <own tenant>): no index.
       allow get, list: if canAdminIdentity(resource.data.tenantId);
 
+      // Any member of the madrasah RECORDS their own share (the Dua Lead, 8 Nov 2026: teachers and students share most);
+      // only owner and prime SEE the records (above).
       allow create: if shareShapeOk()
-                    && canAdminIdentity(d().tenantId)
+                    && (canAdminIdentity(d().tenantId) || myRolesIn(d().tenantId).size() > 0)
                     && d().createdBy == myUid();
 
       allow update: if false; // a record of something that happened is not edited

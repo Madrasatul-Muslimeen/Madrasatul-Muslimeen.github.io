@@ -80,8 +80,9 @@ const M = [
   ["share-occasion-uncapped", "duaShares", "&& d().occasion.size() <= 300", ""],
   ["share-sharedAt-free", "duaShares", "&& d().sharedAt is timestamp", ""],
   ["share-read-any-member", "duaShares", "allow get, list: if canAdminIdentity(resource.data.tenantId);", "allow get, list: if myRolesIn(resource.data.tenantId).size() > 0;"],
-  ["share-create-any-member", "duaShares", "&& canAdminIdentity(d().tenantId)", "&& myRolesIn(d().tenantId).size() > 0"],
-  ["share-create-createdBy-free", "duaShares", "&& canAdminIdentity(d().tenantId)\n                    && d().createdBy == myUid();", "&& canAdminIdentity(d().tenantId);"],
+  ["share-create-any-signed-in", "duaShares", "&& (canAdminIdentity(d().tenantId) || myRolesIn(d().tenantId).size() > 0)", "&& signedIn()"],
+  ["share-create-admins-only", "duaShares", "&& (canAdminIdentity(d().tenantId) || myRolesIn(d().tenantId).size() > 0)", "&& canAdminIdentity(d().tenantId)"],
+  ["share-create-createdBy-free", "duaShares", "&& (canAdminIdentity(d().tenantId) || myRolesIn(d().tenantId).size() > 0)\n                    && d().createdBy == myUid();", "&& (canAdminIdentity(d().tenantId) || myRolesIn(d().tenantId).size() > 0);"],
   ["share-update-allowed", "duaShares", "allow update: if false;", "allow update: if canAdminIdentity(resource.data.tenantId);"],
 ];
 let caught = 0;
