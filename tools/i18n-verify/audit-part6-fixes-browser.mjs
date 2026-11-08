@@ -32,7 +32,8 @@ if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
 
 async function open(url, lang, width) {
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width, height: 844 } });
+  // legacyTools: drives the retired ⋯ path (PCF MSA J114 ONE menu; measured against main: loses checks without it)
+  const ctx = await newContext(browser, { legacyTools: true, appLang: lang === "bn" ? "bn" : null, viewport: { width, height: 844 } });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     const [file, glob, from, to] = MUTATIONS[MUTATE];

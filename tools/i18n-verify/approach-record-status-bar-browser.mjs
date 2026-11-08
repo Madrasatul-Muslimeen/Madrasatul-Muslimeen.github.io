@@ -29,7 +29,8 @@ const LABELS = {
 const WIDTHS = [320, 340, 360, 390, 412, 768, 1280];
 
 async function start(lang, width) {
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width >= 768 ? 1024 : 844 }, extraSeedJs: SEED });
+  // legacyTools: drives the retired ⋯ path (PCF MSA J114 ONE menu)
+  const ctx = await newContext(browser, { legacyTools: true, appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width >= 768 ? 1024 : 844 }, extraSeedJs: SEED });
   await ctx.route(MUSHAF_JSON_URL, (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MUSHAF) }));
   await ctx.route(`${MUSHAF_FONT_BASE}**`, (r) => r.abort("failed"));
   await ctx.route(SURAH_HEADER_FONT_URL, (r) => r.abort("failed"));

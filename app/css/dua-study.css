@@ -179,14 +179,29 @@
 .dua-menu-group { padding-top: 0.7rem; border-top: 1px solid #2a3358; }
 .dua-menu-panel > .dua-sel + .dua-menu-group { margin-top: 0; }
 .dua-menu-label { margin: 0 0 0.45rem; color: #e0b95c; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-.dua-menu-panel .dua-card-menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
-.dua-menu-panel .dua-card-menu .dua-menu-btn, .dua-menu-panel .dua-note-bookmark .hadeethenc-study-btn { min-height: 48px; }
-.dua-menu-panel .dua-note-bookmark { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+.dua-menu-panel .dua-card-menu { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.3rem; padding: 0.3rem; }
+/* The Owner, 7 Nov: smaller chips, 4-5 in a row (5 on a computer, 4 on a phone); the label may wrap to two short lines. */
+.dua-menu-panel .dua-card-menu .dua-menu-btn, .dua-menu-panel .dua-note-bookmark .hadeethenc-study-btn { min-height: 40px; padding: 0.2rem 0.3rem; font-size: 0.74rem; line-height: 1.15; overflow-wrap: anywhere; }
+.dua-menu-panel .dua-note-bookmark { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.3rem; }
+@media (max-width: 520px) {
+  .dua-menu-panel .dua-card-menu, .dua-menu-panel .dua-note-bookmark { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 /* The pop-up: the same card, raised over the page; ✕ (or Escape) puts it back where it was. */
 .dua-card-popped { position: fixed; inset: 3vh 3vw; z-index: 60; overflow: auto; margin: 0; box-shadow: 0 12px 48px rgba(0, 0, 0, 0.55); }
 body.dua-has-popped::before { content: ""; position: fixed; inset: 0; z-index: 59; background: rgba(8, 12, 28, 0.6); }
 /* On a phone the card is narrow: Play, Menu and the pop-up share the first row; ‹ n of N › takes the second. */
 @media (max-width: 560px) {
+  /* The Owner, 7 Nov: with Menu a three-line icon, Play, ‹ n of N ›, Menu and the pop-up fit ONE bar on a phone. */
+  .dua-topbar { flex-wrap: nowrap; gap: 0.25rem; }
+  .dua-topbar .dua-card-steps .dua-ref { min-width: 40px; }
+  .dua-topbar .dua-card-pos { min-width: 0; font-size: 0.78rem; }
+  /* Bangla numerals and words are wider: the three side tiles give back 4px each so nothing overlaps at 390px. */
+  .dua-topbar > .dua-tile { min-width: 40px; min-height: 44px; }
+  .dua-topbar > .dua-tile-play, .dua-topbar > .dua-tile-pop { width: 40px; }
+  .dua-topbar { padding: 0.3rem; }
+}
+/* Under 390px even that is too wide (measured: Play over ‹ at 320px; Bangla overlaps up to 384px; the MSA Architect's probe keeps 390px, the common iPhone width, on ONE bar with gaps of at least 2.3px): ‹ n of N › takes its own second row. */
+@media (max-width: 389px) {
   .dua-topbar { flex-wrap: wrap; }
   .dua-tile-play { margin-inline-end: auto; }
   .dua-topbar-mid { order: 3; flex: 1 1 100%; }

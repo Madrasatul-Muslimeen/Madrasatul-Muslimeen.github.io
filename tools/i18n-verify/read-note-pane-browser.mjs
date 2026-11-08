@@ -56,7 +56,8 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 // no longer docks the pane under the reading at about half the height; it fills the screen, as on a phone.
 for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844, "phone"], [820, 1100, "phone"], [1280, 800, "side"]]) {
   const tag = `[${lang} ${width}]`, W = L[lang];
-  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height }, extraSeedJs: SEED });
+  // legacyTools: drives the retired ⋯ path (PCF MSA J114 ONE menu)
+  const ctx = await newContext(browser, { legacyTools: true, appLang: lang, banner: false, viewport: { width, height }, extraSeedJs: SEED });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     const [file, a, b] = MUT[MUTATE];

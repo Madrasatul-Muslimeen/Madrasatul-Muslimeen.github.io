@@ -5490,27 +5490,36 @@
      called the wrong place), ✍, 🔗 and 📚 are retired from sight: their code stays (every id and handler), the ⋮ carries them. */
   #readBar #readBookmarkBtn, #readBar #readBarBookmarkBtn, #readBar #readNotesBtn, #readBar #readWritingBtn,
   #readBar #readAttachAsmaBtn, #readBar #readAttachQcrBtn { display: none !important; }
-  .quick-menu.qm-sheet { box-sizing: border-box; width: min(19rem, calc(100vw - 3rem)); padding: 0.6rem; border-radius: 1rem; z-index: 60; }
+  .quick-menu.qm-sheet { box-sizing: border-box; width: min(21rem, calc(100vw - 2rem)); padding: 0.6rem; border-radius: 1rem; z-index: 60; }
   .qm-sheet .qm-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; }
   /* Exactly four across, or exactly two by two (never 3+1, never one column): below 15.5rem of room four 3.6rem tiles no longer fit
      (found at 360px with 200% text; the sheet is the container, so the rule follows the text size, not the screen). */
   .quick-menu.qm-sheet { container-type: inline-size; }
   @container (max-width: 15.5rem) { .qm-sheet .qm-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .qm-sheet .qm-tile { flex-direction: column; justify-content: center; gap: 0.15rem; padding: 0.5rem 0.15rem 0.4rem; min-height: 4rem; text-align: center; border: 1px solid #e3d6b0; border-radius: 0.8rem; background: #f6f1e2; color: #1F3A6E; font-size: 0.68rem; font-weight: 600; line-height: 1.15; }
+  .qm-sheet .qm-tile { flex-direction: column; justify-content: center; gap: 0.15rem; padding: 0.5rem 0.1rem 0.4rem; min-height: 4rem; text-align: center; border: 1px solid #e3d6b0; border-radius: 0.8rem; background: #f6f1e2; color: #1F3A6E; font-size: 0.66rem; font-weight: 600; line-height: 1.15; }
   .qm-sheet .qm-tile:hover { background: #efe6cc; }
   .qm-sheet .qm-tile.is-on { background: #1F3A6E; border-color: #1F3A6E; color: #fff; }
   .qm-sheet .qm-glyph { font-size: 1.25rem; line-height: 1.2; }
-  .quick-menu.qm-sheet .qm-tile, .quick-menu.qm-sheet .qm-tile .qm-label, .quick-menu.qm-sheet .qm-rows .qm-item, .quick-menu.qm-sheet .qm-chip { white-space: normal; }
-  .quick-menu.qm-sheet .qm-rows, .quick-menu.qm-sheet .qm-rows .qm-item { min-width: 0; max-width: 100%; box-sizing: border-box; } /* rows wrap inside the sheet; they were 382px wide in a 294px sheet at 200% text (found by the J114 follow-up check) */ /* the bar's buttons are nowrap (#readBar button): a tile's label must wrap */
-  .qm-sheet .qm-label { overflow-wrap: anywhere; }
-  .qm-sheet .qm-rows { margin-top: 0.45rem; border-top: 1px solid #eee; padding-top: 0.25rem; display: grid; }
-  .qm-sheet .qm-rows .qm-item { min-height: 44px; font-size: 0.88rem; }
-  .qm-sheet .qm-rowglyph { width: 1.4rem; text-align: center; }
-  .quick-menu.qm-sheet .qm-rowtext { min-width: 0; overflow-wrap: anywhere; } /* a long unit label wraps instead of widening its row */
-  #readBar .quick-menu.qm-sheet .qm-rows .qm-item { white-space: normal; } /* #readBar button is nowrap and an id outranks the class rule above: the bar ⋮ row text must wrap too */
-  .qm-sheet .qm-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; padding-top: 0.5rem; border-top: 1px solid #eee; }
-  .qm-sheet .qm-chip { border: 1px solid #d8d2c0; border-radius: 999px; background: #fff; color: #222; padding: 0.35rem 0.7rem; min-height: 36px; font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
-  .qm-sheet .qm-chip.is-on { background: #1F3A6E; border-color: #1F3A6E; color: #fff; }
+  /* PCF MSA J114 (the Owner, 7 Nov 2026: "combine both under one menu button ... make all buttons like the 4 top buttons"): the
+     sheet is ONE grid of the same round tiles (Play ... Text size, Mark complete); the bar's ⋯ is retired from sight (its code stays). */
+  .quick-menu.qm-sheet .qm-tile .qm-label, .quick-menu.qm-sheet .qm-tile .qm-glyph { white-space: normal; } /* the bar's buttons are nowrap (#readBar button): the words wrap in their own span */
+  .qm-sheet .qm-label { overflow-wrap: break-word; hyphens: none; min-width: 0; max-width: 100%; font-size: 0.66rem; font-weight: 600; line-height: 1.15; } /* on the span: #readBar button's own size cannot reach it, so "Bookmark" is one line */
+  .qm-sheet .qm-tile { min-width: 0; box-sizing: border-box; }
+  #readBar .quick-menu.qm-sheet .qm-tile { padding: 0.5rem 0.1rem 0.4rem; } /* #readBar button's own padding (an id rule) was eating 20px of a 62px tile: "Bookmark" broke in two */
+  .quick-menu.qm-sheet { max-height: calc(100vh - 8rem); max-height: calc(100dvh - 8rem); overflow-y: auto; overscroll-behavior: contain; }
+  .qm-sheet .qm-subs { display: block; }
+  .qm-sheet .qm-subs .qm-sub { padding: 0.4rem 0.4rem 0.2rem; margin-top: 0.45rem; border-top: 1px solid #eee; }
+  .qm-sheet .qm-subs .qm-sub label { min-height: 36px; }
+  .qm-sheet .text-size-wrap { display: contents; }
+  .quick-menu.qm-sheet .text-size-wrap > .qm-tile[data-text-size-toggle] { width: 100%; box-sizing: border-box; min-height: 4rem; text-align: center; background: #f6f1e2; border: 1px solid #e3d6b0; padding: 0.5rem 0.1rem 0.4rem; font-size: 0.66rem; color: #1F3A6E; }
+  .quick-menu.qm-sheet .text-size-popover { grid-column: 1 / -1; position: static; width: auto; box-shadow: none; border: 1px solid #e3d6b0; border-radius: 0.7rem; padding: 0.4rem 0.6rem; }
+  @media (max-width: 359.98px) { .qm-sheet .qm-label { font-size: 0.6rem; } }
+  .qm-sheet .qm-phone-only { display: none; }
+  @media (max-width: 599.98px) { .qm-sheet .qm-phone-only { display: flex; } }
+  /* One menu: ⋯ (More tools) is retired from sight at every width. Mark complete and Text size are tiles in the ⋮ sheet; below 600px the
+     three study buttons are too, so the bar's own row for them is hidden there. Every id and handler stays. */
+  #readBar #readToolsBtn, #readToolsMenu { display: none !important; }
+  @media (max-width: 599.98px) { #readBar #readApproachBar { display: none !important; } }
   .qm-sheet button:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
   .ayah-note-flash { color: #2e6b4f; font-weight: 700; }
 
@@ -21332,8 +21341,8 @@
     const readPhoneMQ = window.matchMedia("(max-width: 599.98px)");
     function placeReadApproachBar() {
       if (!readApproachBarEl || !readToolsMenu) return;
-      if (readPhoneMQ.matches) { if (readApproachBarEl.parentElement !== readToolsMenu) readToolsMenu.appendChild(readApproachBarEl); }
-      else if (readApproachBarEl.parentElement !== readApproachHome.parent) readApproachHome.parent.insertBefore(readApproachBarEl, readApproachHome.next);
+      // One menu (7 Nov 2026): below 600px the three study buttons are tiles in the ⋮ sheet, so the bar itself never moves into ⋯ now.
+      if (readApproachBarEl.parentElement !== readApproachHome.parent) readApproachHome.parent.insertBefore(readApproachBarEl, readApproachHome.next);
       placeReadTools();
     }
     readPhoneMQ.addEventListener("change", placeReadApproachBar);
@@ -22547,7 +22556,14 @@
         onPlay: quickPlayAyah,
         onOpenNote: (unitKey) => openLatestNoteFromMenu(unitKey), // J114: the latest Note in the Journey tray (it was the Notes pane, decision 95)
         onUnitBookmark: () => { readBookmarkBtn.click(); },
-        onMenuOpen: (unitKey, wrap) => { syncMenuNoteState(unitKey, wrap); },
+        onMenuOpen: (unitKey, wrap) => {
+          syncMenuNoteState(unitKey, wrap);
+          fitQuickSheet(wrap);
+          const done = wrap.querySelector('[data-qm-act="complete"]'); // the bar's ✓ may be unavailable (no saving here): its tile follows it
+          if (done) { done.disabled = readCompleteBtn.disabled; done.title = readCompleteBtn.title || ""; }
+        },
+        // The tiles the page adds to the bar's ⋮ (barUnitTilesHtml): each presses the bar button it stands for.
+        onExtra: (key) => { document.getElementById({ complete: "readCompleteBtn", approach: "readBarTakeBtn", record: "readBarRecordBtn", status: "readBarStatusBtn" }[key])?.click(); },
         onTakeNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { fromQuickMenu: true }); }, // the Owner, 3 Nov 2026: no Note yet, so a new Note
         onToggleBookmark: toggleAyahBookmark,
         // The Owner, 9 Oct 2026 (Read view): "there's no button for attaching this Ayah to QCR." The same route as the
@@ -22718,6 +22734,27 @@
     /** "Has a note": the Notes pane's notes (this lookup, else its already-known count) or the retired Note-view store. */
     /** J114 follow-up (the Owner, 7 Nov 2026, option C): the whole unit's bookmark as a row in the ⋮ sheet, beside the āyah's own tile.
         Null for an āyah unit (the tile already is that bookmark). Its press runs the bar's retired 🔖 handler (the open unit). */
+    /** The ⋮ sheet's own tiles for the BAR menu (not the per-āyah ones): Text size (its sliders open inside the sheet), Mark this
+        reading complete, and, on a phone only, the three study buttons. Each runs the bar button it stands for, so nothing else changed. */
+    function barUnitTilesHtml() {
+      const tileHtml = (act, glyph, label, full, cls = "") => `<button type="button" class="qm-item qm-tile${cls}" data-qm-act="${act}" title="${escapeHtml(full)}" aria-label="${escapeHtml(full)}"><span class="qm-glyph" aria-hidden="true">${glyph}</span><span class="qm-label">${escapeHtml(label)}</span></button>`;
+      const textSize = renderTextSizeButtonHtml("readsheet", { btnClass: "qm-item qm-tile" })
+        .replace(/>A±<\/button>/, ` aria-label="${escapeHtml(t("Text size"))}"><span class="qm-glyph" aria-hidden="true">A±</span><span class="qm-label">${escapeHtml(t("Text size"))}</span></button>`);
+      return textSize + tileHtml("complete", "✓", t("Mark complete"), t("Mark this reading complete"))
+        + tileHtml("approach", "🎯", t("Approach"), t("Take an Approach"), " qm-phone-only") + tileHtml("record", "✅", t("Record"), t("Record Your Progress"), " qm-phone-only") + tileHtml("status", "📊", t("Status"), t("Know Your Status"), " qm-phone-only");
+    }
+    /** An open ⋮ sheet is taller now (every button is a tile). Held on screen: it opens on the side of ⋮ with more room, above the tabs and
+        the Zab bar, and scrolls inside itself when that side is still short (the same rule ⋯ More tools had, placeReadTools). */
+    function fitQuickSheet(wrap) {
+      const m = wrap.querySelector(".quick-menu.qm-sheet"), btn = wrap.querySelector(".ayah-quick-btn"); if (!m || !btn) return;
+      m.style.maxHeight = m.style.top = m.style.bottom = "";
+      const b = btn.getBoundingClientRect(); let floor = window.innerHeight - 8;
+      for (const id of ["dock", "zabBar"]) { const el = document.getElementById(id); if (!el || !el.getClientRects().length) continue; const d = el.getBoundingClientRect(); if (d.top > b.bottom && d.top < floor + 4) floor = d.top - 4; }
+      const below = floor - (b.bottom + 6), above = b.top - 6 - 8, need = m.scrollHeight + 2;
+      if (need <= below) return;
+      if (below >= above) { m.style.maxHeight = `${Math.max(120, Math.round(below))}px`; return; }
+      m.style.top = "auto"; m.style.bottom = `${Math.round(btn.offsetHeight + 6)}px`; m.style.maxHeight = `${Math.max(120, Math.round(Math.min(need, above)))}px`;
+    }
     function unitBookmarkOpt() {
       const info = currentUnitInfo();
       if (!info || info.unitType === "ayah") return null;
@@ -26535,7 +26572,7 @@
         // button of its own to mean one specific āyah.
         readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, {
           hasNote: ayahHasAnyNote(singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: true,
-          sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(),
+          sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(), extraTiles: barUnitTilesHtml(),
           // Text-tools round -- Word by Word / Root / Derivatives / Collapse,
           // the same group the Note view's own ⋮ carries. Not offered in
           // Mushaf mode, which replaces those choices rather than sharing
@@ -26761,12 +26798,12 @@
       tile.removeAttribute("data-qm-note-new");
       const lab = tile.querySelector(".qm-label");
       if (lab) lab.textContent = t("Notes"); else tile.textContent = `📝 ${t("Note & more…")}`;
-      const rows = wrap.querySelector(".qm-rows");
-      if (rows && !rows.querySelector("[data-qm-note-add]")) {
+      const tiles = wrap.querySelector(".qm-tiles");
+      if (tiles && !tiles.querySelector("[data-qm-note-add]")) {
         const add = document.createElement("button");
-        add.type = "button"; add.className = "qm-item"; add.setAttribute("data-qm-note-add", "");
-        add.innerHTML = `<span class="qm-rowglyph" aria-hidden="true">＋</span>${escapeHtml(t("New Note"))}`;
-        rows.insertBefore(add, rows.querySelector("[data-qm-unit-bookmark], [data-qm-writing], [data-qm-asma]"));
+        add.type = "button"; add.className = "qm-item qm-tile"; add.setAttribute("data-qm-note-add", "");
+        add.innerHTML = `<span class="qm-glyph" aria-hidden="true">＋</span><span class="qm-label">${escapeHtml(t("New Note"))}</span>`;
+        tile.insertAdjacentElement("afterend", add);
       }
     }
     async function syncMenuNoteState(unitKey, wrap) {
@@ -27365,7 +27402,7 @@
       if (!mushafToggle.checked || !currentSurahData) { return; }
       const key = ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf());
       const marked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: key });
-      readQuickMenuSlot.innerHTML = renderQuickMenu(key, { hasNote: ayahHasAnyNote(key), isBookmarked: marked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt() });
+      readQuickMenuSlot.innerHTML = renderQuickMenu(key, { hasNote: ayahHasAnyNote(key), isBookmarked: marked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(), extraTiles: barUnitTilesHtml() });
       attachAyahQuickMenus(readQuickMenuSlot);
     }
     // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two stops: 6 then 7.

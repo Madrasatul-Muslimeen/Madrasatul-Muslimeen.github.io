@@ -667,6 +667,7 @@ export const BN = {
   // own accessible name and all three of its status messages are user-visible
   // text and are translated like any other. Additive only -- none of these
   // keys existed before, and none belongs to another module.
+  "Mark complete": "সম্পন্ন করুন",
   "Mark this reading complete": "এই তিলাওয়াত সম্পন্ন হিসেবে চিহ্নিত করুন",
   "Reading recorded.": "তিলাওয়াত রেকর্ড করা হয়েছে।",
   "Already recorded for today.": "আজকের জন্য ইতিমধ্যে রেকর্ড করা হয়েছে।",

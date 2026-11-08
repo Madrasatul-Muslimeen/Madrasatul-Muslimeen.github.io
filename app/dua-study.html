@@ -43,8 +43,7 @@
   <!-- A minimal session, the same as hadith-collections.html's, just enough for a Dua card's progress, notes and
        bookmark to know who they act for. Its own script, so a Firebase failure never stops the duas from showing. -->
   <div id="who">Checking sign-in…</div>
-  <!-- Build 2 (the Owner, 7 Nov): the Person box lives under My account; this chip says who the page is recording for. -->
-  <button type="button" id="forPersonChip" class="dua-for-chip" data-open-account-card hidden></button>
+  <!-- The Owner, 7 Nov: the person's name no longer sits on the page (it saved a row); the Person box and the name live under My account. -->
   <div id="contextBar" style="display:none;">
     <label>Tenant
       <select id="tenantSelect" style="width:auto; max-width:100%; min-width:0;"></select>
@@ -106,14 +105,8 @@
       updateForChip();
     }
 
-    // Build 2: who the page is recording for, since the Person box now lives under My account.
-    function updateForChip() {
-      const chip = document.getElementById("forPersonChip");
-      const name = personSelect.selectedOptions[0]?.textContent?.trim();
-      if (!chip || !name) return;
-      chip.textContent = t("For {name}", { name });
-      chip.hidden = false;
-    }
+    // (The "For <name>" chip is gone: the Person box and the name live under My account.)
+    function updateForChip() {}
 
     async function loadContextData(hydratedMembershipsPromise) {
       myMemberships = await (hydratedMembershipsPromise ?? Promise.resolve(myMemberships));

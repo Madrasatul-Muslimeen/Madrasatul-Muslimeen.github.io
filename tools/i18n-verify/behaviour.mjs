@@ -2604,12 +2604,13 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // inside it (behind ⋯ below 900px); the ⋮ slot moved into the group so it wraps with ⋯ instead of taking a line of
   // its own. The list reads into both groups, in document order. Updated in place, reason recorded.
   // v10.27 (the Owner, 12 Oct 2026: "Move those buttons up" and "Add bookmark button on the top of the Mushaf page") -- #readMeaningLayersSlot (the Meaning switches, on the bar while 📖 is on) joined before #readBackSlot, and #readBarBookmarkBtn (🔖 on the Mushaf bar) before 📖; in Mushaf view ⋯'s #readBookmarkBtn steps aside so 🔖 is shown once. Updated in place, reason recorded.
+// UPDATED IN PLACE (PCF MSA J114, 7 Nov 2026, ONE menu): #readApproachBar no longer sits in the ⋯ card; it stays on the bar right after #mushafPageRef, and ⋯ is hidden (every tool is a tile in the ⋮ sheet).
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
         // v11.35 (QR J16 = PCF MSA J37) -- #readMushafBtn (📜) joined #readBarEnd before 📖. Updated in place, reason recorded.
   // v12.16 (J63, 21 Oct 2026: "Attach to QCR tile") -- #readAttachQcrBtn joined the tools after #readAttachAsmaBtn. Updated in place, reason recorded.
         // v12.26 (PCF MSA J82 parts 4-5) -- #mushafPagePrevBtn and #mushafPageNextBtn (‹ ›, one printed Mushaf page; hidden outside Mushaf) joined the row before ⏮. Updated in place, reason recorded.
         // PCF MSA J99 (the Owner, 25 Oct 2026: "put those 3 buttons inside the dots on the card"): at this phone width (412px) #readApproachBar is the last item of the ⋯ card (#readToolsMenu), after #readAttachQcrBtn; 📜 #readMushafBtn stays in the page, hidden (📖 is the one switch). Updated in place, reason recorded.
-        bar.ids.join() === "readListBtn,mushafPageRef,readUnitChip,mushafPagePrevBtn,mushafPageNextBtn,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarEnd,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readToolsMenu,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readApproachBar,readQuickMenuSlot,readCompleteMsg",
+        bar.ids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,mushafPagePrevBtn,mushafPageNextBtn,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarEnd,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readToolsMenu,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readQuickMenuSlot,readCompleteMsg",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3371,12 +3372,13 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // v10.01 (decision 95, the Owner, 9 Oct 2026: "NotePane: Build the demo") -- #readNotesBtn (📝 Notes on the āyah) joined the row right after #readBookmarkBtn. Updated in place, reason recorded.
   // v10.21 (the Owner, 10 Oct 2026: the Read bar's tools "under one button") -- see the 33a note; the controls are read through #readBarEnd and #readToolsMenu. Updated in place.
   // v10.27 (the Owner, 12 Oct 2026: "Move those buttons up" and "Add bookmark button on the top of the Mushaf page") -- #readMeaningLayersSlot (the Meaning switches, on the bar while 📖 is on) joined before #readBackSlot, and #readBarBookmarkBtn (🔖 on the Mushaf bar) before 📖; in Mushaf view ⋯'s #readBookmarkBtn steps aside so 🔖 is shown once. Updated in place, reason recorded.
+// UPDATED IN PLACE (PCF MSA J114, 7 Nov 2026, ONE menu): #readApproachBar no longer sits in the ⋯ card; it stays on the bar right after #mushafPageRef, and ⋯ is hidden (every tool is a tile in the ⋮ sheet).
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
         // v11.35 (QR J16 = PCF MSA J37) -- #readMushafBtn (📜) joined #readBarEnd before 📖. Updated in place, reason recorded.
   // v12.16 (J63, 21 Oct 2026: "Attach to QCR tile") -- #readAttachQcrBtn joined the tools after #readAttachAsmaBtn. Updated in place, reason recorded.
         // v12.26 (PCF MSA J82 parts 4-5) -- ‹ › (#mushafPagePrevBtn, #mushafPageNextBtn) joined the row before ⏮. Updated in place, reason recorded.
         // PCF MSA J99 (the Owner, 25 Oct 2026: "put those 3 buttons inside the dots on the card"): at this phone width (412px) #readApproachBar is the last item of the ⋯ card (#readToolsMenu), after #readAttachQcrBtn; 📜 #readMushafBtn stays in the page, hidden (📖 is the one switch). Updated in place, reason recorded.
-        m.barKids.join() === "readListBtn,mushafPageRef,readUnitChip,mushafPagePrevBtn,mushafPageNextBtn,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readApproachBar,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
+        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,mushafPagePrevBtn,mushafPageNextBtn,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how
@@ -4534,7 +4536,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
   // 3 Nov 2026 (QR Lead): the stub applies what the app writes (opt-in, as read-note-pane-browser.mjs does), so the new Note
   // the ⋮ "Take Note" opens can write its Note and placement without the stub refusing it; real errors still count below.
-  const ctx = await ctxFor({ banner: false, extraSeedJs: "window.__stubApplyBatches = true; window.__stubRecordTxData = true;" });
+  const ctx = await ctxFor({ legacyTools: true /* drives the retired ⋯ path (J114 ONE menu) */, banner: false, extraSeedJs: "window.__stubApplyBatches = true; window.__stubRecordTxData = true;" });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400); // ensureAyahNoteDataLoaded() is fire-and-forget from this same click
@@ -4917,8 +4919,9 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     };
   });
   const s42t = await rd42t();
-  check("42t Root is off by default, right after Word by word, labelled \"Root\"", s42t.order === "wbw,roots,derivatives" && s42t.rootLabel === "Root" && s42t.rootPressed === "false" && !s42t.root, JSON.stringify(s42t));
-  check("42t Derivatives is off by default, right after Root, labelled \"Derivatives\"", s42t.derLabel === "Derivatives" && s42t.derPressed === "false" && !s42t.der, JSON.stringify(s42t));
+  // UPDATED IN PLACE (PCF MSA J114, ONE menu): the ⋮ sheet shows each item as a tile with its emoji and a short label ("🌱Root", "⇕Expand"), so the labels are matched at their end.
+  check("42t Root is off by default, right after Word by word, labelled \"Root\"", s42t.order === "wbw,roots,derivatives" && /Root$/.test(s42t.rootLabel) && s42t.rootPressed === "false" && !s42t.root, JSON.stringify(s42t));
+  check("42t Derivatives is off by default, right after Root, labelled \"Derivatives\"", /Derivatives$/.test(s42t.derLabel) && s42t.derPressed === "false" && !s42t.der, JSON.stringify(s42t));
   await page.click("#readQuickMenuSlot [data-qm-roots]");
   await page.waitForTimeout(600);
   const r42t = await rd42t();
@@ -4969,7 +4972,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     const el = document.querySelector('[data-ayah-collapsible-for="ayah:1:1"]');
     return { collapsed: !!el?.classList.contains("collapsed"), shown: !!el && el.getClientRects().length > 0, label: document.querySelector("#readQuickMenuSlot [data-qm-collapse]")?.textContent.trim() };
   });
-  check("42o the ⋮ menu's Collapse āyah text really hides this āyah's text and offers Expand", col42o.collapsed && !col42o.shown && col42o.label === "Expand āyah text", JSON.stringify(col42o));
+  check("42o the ⋮ menu's Collapse āyah text really hides this āyah's text and offers Expand", col42o.collapsed && !col42o.shown && /Expand/.test(col42o.label), JSON.stringify(col42o));
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
   await page.click("#readQuickMenuSlot [data-qm-collapse]");
@@ -5369,7 +5372,7 @@ console.log("\n=== 44. The Bookmark Manager (bookmarks.html) -- items 2/3/5 ==="
 
 console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/restore (item 4), and the READ screen's own star (item 3) ===");
 {
-  const ctx = await ctxFor({ banner: false });
+  const ctx = await ctxFor({ legacyTools: true /* drives the retired ⋯ path (J114 ONE menu) */, banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
