@@ -3,13 +3,18 @@
 Read `2026-11-08-qr-lead-handover.md` and `-handover-2.md` first (rules, gotchas, test setup); this adds only what changed.
 New QR Lead session: `session_01PL2xbKyCdK1gybgu11rFUj` (03A). Architect `session_01PL2xbJJrkv8JuD1FEhog98`; PCA `session_01PL2xbNATLmmCFj3TFkvWfR`.
 
-## J114 (#1516): finished, with the Architect for release. Untouched.
+## J114 (#1516): finished and RE-HANDED IN to the Architect at 11:25 AM (head 5627cfb, contains main 6dff932). Untouched since.
 
 ## J121 (audio from a YouTube video): reciter list DONE, posted to the Owner
 Posted as a "Claude ↳" comment in PMS J121 (11:10 AM): five reciters on everyayah.com, sample links, first āyah and 2:286, 18:110, 114:6 of each checked reachable (HTTP 206): Minshawy_Mujawwad_192kbps, Minshawy_Murattal_128kbps, Abdul_Basit_Mujawwad_128kbps, Yasser_Ad-Dussary_128kbps, Nasser_Alqatami_128kbps (+ Husary_128kbps as the plain reference). **Not checked: everyayah.com's terms of use.** Check them BEFORE building. When the Owner ticks n121e = P and names one: add a `direct` entry to `RECITERS` in `app/js/audio-player.js` (same shape as `ar`: `perAyahUrl: (s, a) => https://everyayah.com/data/<folder>/SSSAAA.mp3`), plus a check and a bn label. Nothing built.
 
-## J115 (Tābiʿūn Approach + eras): WAITING ON THE ARCHITECT, nothing edited
-Findings sent to the Architect (11:15 AM): the repo has NO era Approaches (templates stop at approach_30: Living by it / Da'wah / Teaching); the Owner's 28–37 exist only in his Firestore tenant catalogue, named only in label strings in `app/data/tafsir-scholars.json` ("28 Sahaba", "29 Tābiʿ al-Tābiʿīn", already "29 Tābiʿīn"). So the permanent id cannot be read from the repo. My proposal: build the era view (demo https://claude.ai/artifact/F3Z23ZiCgjGWGt84QDfzoW) and bind to the three era Approaches **by name at runtime**, with no hardcoded ids; create the Tābiʿūn Approach through the existing Add Approach path (owner-only); renumber the scholars labels (additive). **Next step: read the Architect's answer; if it is (ii) "by name, no ids", build it on a branch from current origin/main.** No branch exists for J115 yet (`claude/qr-lead-tabiun` is local only, empty).
+## J115 (Tābiʿūn Approach + eras): ARCHITECT ANSWERED (ii); nothing edited yet
+Finding (sent to the Architect): the repo has NO era Approaches (templates stop at approach_30: Living by it / Da'wah / Teaching); the Owner's 28–37 exist only in his Firestore tenant catalogue, named in the label strings of `app/data/tafsir-scholars.json`. **The Architect's decision (11:09 AM): go with (ii); do not ask the Owner for ids. Conditions:**
+1. No hardcoded Approach ids anywhere. Resolve Ṣaḥābah / Tābiʿūn / Tābiʿ al-Tābiʿīn at runtime from the tenant catalogue BY NAME (a small normalised-name matcher: transliteration variants + Arabic); say in plain words on the era view when one is not found.
+2. Creating the Tābiʿūn Approach is NEVER automatic on page load. ONE owner-only tap ("Add the Tābiʿūn Approach after the Ṣaḥābah Approach") through the existing Add Approach path (same id rule: next after the highest, removed included; same Rules), placed straight after the Ṣaḥābah one in display order. It refuses and says why if a matching name already exists, live OR removed (no second Tābiʿūn). A failed write reaches the user (I15). I9: nothing new on the startup path.
+3. Checks: the name matcher (positive and negative cases); the one-tap creation in the stub (writes once, idempotent on a second tap, refuses on an existing/removed match); each with a mutation that goes red on an assertion.
+4. Shared files approved as additive: `tafsir-scholars.json` + its builder `tools/scholars/build-tafsir-scholars.mjs`, bn.js new strings only. Do NOT touch `catalogue-data.js`'s APPROACH_TEMPLATES numbering. Send the Architect the PR when done.
+The era view itself is the demo https://claude.ai/artifact/F3Z23ZiCgjGWGt84QDfzoW (eras ~100 / 180 / ~220 AH; narrators count within an era). Branch from CURRENT origin/main (`claude/qr-lead-tabiun` exists locally only, empty). The existing Add Approach path: see `tools/i18n-verify/catalogue-add-approach-browser.mjs` and `app/catalogue.html`/`catalogue-data.js`.
 
 ## J119 (Bangla shared words): STAGE 1 BUILT, branch `claude/qr-lead-bangla-words`, draft PR
 Built and pushed (commits 41c1400, then the Word Card commit):
