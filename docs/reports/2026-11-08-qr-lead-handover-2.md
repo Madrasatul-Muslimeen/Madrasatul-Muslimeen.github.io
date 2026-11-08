@@ -6,6 +6,7 @@ Read `2026-11-08-qr-lead-handover.md` first (rules, gotchas); this adds only wha
 - **MSA · QR J114, PR #1516** (`claude/qr-lead-one-menu`, head 0e01544, contains main v13.51): DONE and re-handed to the Architect, who releases. harness defaults to the real page; `legacyTools: true` is the opt-in (13 suites + behaviour sections 42/bookmark + qr-text-size-reach); audit-part20 readbar updated in place. Main-vs-branch table by failure name is in the PR body: no new failures against main. behaviour 974/1 (14a), qr-text-size-reach 238/0, ayah-menu-sheet 87/0, apps-build-check 48/0. The ⋯ code stays this round. Nothing left for me except answering the Architect if they ask for more.
 - **Hadith "Back to the hadith" label**: ALREADY on main since v13.22 (check `qr-word-back-hadith-browser`, 4/0). Told the Architect; nothing to build.
 - **Architect session is now `session_01PL2xbJJrkv8JuD1FEhog98`** ("(03) MSA Master Architect", child of the PCA `session_01PL2xbJ6VcWmriMfUDFWBPQ`). The older `session_01PL2xbMRWvwANgScNoqZD4Q` also answered earlier today; send to the newer one.
+- **The current PCA is `session_01PL2xbNATLmmCFj3TFkvWfR`** (the old one passed my hand-over to it); send future messages there. When it announces a new MSA Architect, re-send them the #1516 hand-in (head e874d77): the Architect who reviewed it has already handed over.
 - PCF: J114 and J115 got a "Claude ↳" comment and an `act` stamp at about 11:05 AM Sydney. The PCA rule changed: hand over at about 30% context USED.
 
 ## Next jobs, in the Architect's order
