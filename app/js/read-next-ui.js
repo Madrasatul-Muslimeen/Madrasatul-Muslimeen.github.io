@@ -397,6 +397,17 @@ function loadEraSpeakers() {
   return eraPromise;
 }
 const personLine = (p) => `${p.en} · ${t("d. {year} AH", { year: num(p.d) })}${p.note ? ` · ${p.note}` : ""}`;
+// A person who is a row of the Scholars Database: the name opens that row (new tab, ← Back); everyone else is plain text.
+function personRow(p) {
+  const row = el("span", "rn-small");
+  const href = p.sid ? scholarHref(p.sid) : null;
+  if (!href) { row.textContent = personLine(p); return row; }
+  const a = el("a", "rn-scholar", p.en);
+  a.href = href; a.target = "_blank"; a.rel = "noopener"; a.dataset.readNextScholarLink = p.sid;
+  a.title = t("Open in your Scholars Database (new tab)");
+  row.append(a, personLine(p).slice(p.en.length));
+  return row;
+}
 
 async function erasPanel(panel, ctx) {
   const info = (await resolve(ctx.eras)) ?? {};
@@ -418,14 +429,14 @@ async function erasPanel(panel, ctx) {
       const c = el("div");
       c.appendChild(autoDir("span", "rn-ref", `${v.en} (${e.columns[v.id].length})`));
       if (!e.columns[v.id].length) c.appendChild(el("span", "rn-small", t("No one recorded in this era.")));
-      for (const p of e.columns[v.id]) c.appendChild(el("span", "rn-small", personLine(p)));
+      for (const p of e.columns[v.id]) c.appendChild(personRow(p));
       cols.appendChild(c);
     }
     body.appendChild(cols);
     if (e.after.length) {
       const a = el("div", "rn-era-after");
       a.appendChild(el("span", "rn-ref", t("Just after this era")));
-      for (const p of e.after) a.appendChild(el("span", "rn-small", personLine(p)));
+      for (const p of e.after) a.appendChild(personRow(p));
       body.appendChild(a);
     }
     for (const s of e.src) {

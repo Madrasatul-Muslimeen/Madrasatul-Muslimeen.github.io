@@ -3,6 +3,14 @@
   "job": "PCF MSA J115 round 2 (QR Lead): who in each era held which view on an āyah, with the later book and passage that reports it",
   "checked": false,
   "note": "A DRAFT, exactly the Owner-approved demo 'MSA J115 v01' (7 Nov 2026). Names are what Ibn Abī Ḥātim (d. 327), Ibn Kathīr (d. 774) and al-Rāzī (d. 606) say each person held; a line that says 'it is reported from' has no chain in that place and is not graded here. Death years are drafts from standard biographical works and have NOT been checked against the biographical books. The era of a person is the generation they belong to (stored per entry), not a function of the death year. Cut-offs the Owner set: Ṣaḥābah to about 100 AH, Tābiʿūn to about 180 AH, Tābiʿ al-Tābiʿīn to about 220 AH; narrators count within an era.",
+  "scholarIds": {
+    "أبو حنيفة|150": "s001",
+    "مالك|179": "s002",
+    "الشافعي|204": "s005",
+    "إسحاق بن راهويه|238": "s006",
+    "أحمد بن حنبل|241": "s007"
+  },
+  "scholarIdsNote": "Only people who really are a row of the Scholars Database (v1.6, by name AND death year AH) get a link. The database holds no Ṣaḥābī or Tābiʿī except these imams, so every other name stays plain text. Keyed by the Arabic name and the death year; never guessed from a name part.",
   "windows": { "sahabah": 100, "tabiun": 180, "tabi-tabiin": 220 },
   "ayat": {
     "2:228": {

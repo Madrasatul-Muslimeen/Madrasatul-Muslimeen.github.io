@@ -7,8 +7,9 @@ export const ERAS = [ERA_SAHABAH, ERA_TABIUN, ERA_TABI_TABIIN];
 const ARABIC_NAME = { [ERA_SAHABAH]: "الصحابة", [ERA_TABIUN]: "التابعون", [ERA_TABI_TABIIN]: "تابع التابعين" };
 const LATIN_NAME = { [ERA_SAHABAH]: "Ṣaḥābah", [ERA_TABIUN]: "Tābiʿūn", [ERA_TABI_TABIIN]: "Tābiʿ al-Tābiʿīn" };
 
-const person = ([ar, en, d, note]) => ({ ar, en, d, note: note ?? "" });
-const byDeath = (list) => (list ?? []).map(person).sort((a, b) => a.d - b.d);
+// `ids` = data.scholarIds, "<arabic name>|<death AH>" -> a Scholars Database id; a person without an entry has sid null.
+const person = (ids) => ([ar, en, d, note]) => ({ ar, en, d, note: note ?? "", sid: ids?.[`${ar}|${d}`] ?? null });
+const byDeath = (list, ids) => (list ?? []).map(person(ids)).sort((a, b) => a.d - b.d);
 
 /** "2:228" from a surah/āyah pair or a string; null for anything else. */
 export function ayahRef(surah, ayah) {
@@ -33,10 +34,10 @@ export function buildEraView(data, rows, ref) {
     const raw = entry.eras[e];
     const approach = findEraApproach(rows, e).live[0] ?? null;
     const columns = {};
-    for (const v of views) columns[v.id] = byDeath(raw[v.id]);
+    for (const v of views) columns[v.id] = byDeath(raw[v.id], data.scholarIds);
     return {
       era: e, name: LATIN_NAME[e], ar: ARABIC_NAME[e], window: data.windows?.[e] ?? null,
-      approach, approachFound: !!approach, columns, after: byDeath(raw.after),
+      approach, approachFound: !!approach, columns, after: byDeath(raw.after, data.scholarIds),
       src: (raw.src ?? []).map((s) => ({ book: s.book, died: s.died, note: s.note, view: s.view, quote: entry.quotes?.[s.quote] ?? "" })),
     };
   });

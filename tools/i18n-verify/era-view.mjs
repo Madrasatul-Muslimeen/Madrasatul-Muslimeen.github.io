@@ -7,12 +7,15 @@ import { pathToFileURL } from "node:url";
 
 const SRC = "app/js/era-view.js";
 const MUTATIONS = {
-  "people are not sorted by death year": ["(list ?? []).map(person).sort((a, b) => a.d - b.d)", "(list ?? []).map(person)"],
+  "people are not sorted by death year": ["(list ?? []).map(person(ids)).sort((a, b) => a.d - b.d)", "(list ?? []).map(person(ids))"],
   "the era Approach is not looked up": ["findEraApproach(rows, e).live[0] ?? null", "null"],
   "a removed Approach counts as live": ["findEraApproach(rows, e).live[0]", "findEraApproach(rows, e).removed[0]"],
   "an unknown āyah is not refused": ["if (!entry || !entry.eras) return { ok: false, reason: \"no-reports\" };", ""],
   "quotes are not joined to their source": ["quote: entry.quotes?.[s.quote] ?? \"\"", "quote: \"\""],
-  "the 'after' people are dropped": ["after: byDeath(raw.after),", "after: [],"],
+  "the 'after' people are dropped": ["after: byDeath(raw.after, data.scholarIds),", "after: [],"],
+  "scholar ids are not attached": ["sid: ids?.[`${ar}|${d}`] ?? null", "sid: null"],
+  "the 'after' people lose their scholar ids": ["after: byDeath(raw.after, data.scholarIds),", "after: byDeath(raw.after),"],
+  "ids are matched by the name alone, not name and death year": ["ids?.[`${ar}|${d}`]", "Object.entries(ids ?? {}).find(([k]) => k.split(\"|\")[0] === ar)?.[1]"],
 };
 const row = (id, en, extra = {}) => ({ id, name: { en }, status: "active", ...extra });
 
@@ -41,6 +44,18 @@ async function run(file) {
   check("every source's quote key exists", Object.values(data.ayat["2:228"].eras).every((e) => e.src.every((s) => s.quote in data.ayat["2:228"].quotes)));
   check("the data says it is a draft", data.checked === false && v.checked === false);
   check("no Approach id is written in the module", !/approach_\d/.test(fs.readFileSync(SRC, "utf8").replace(/\/\/.*$/gm, "")));
+  // J115 follow-up: the Scholars-row links. Each id must be a REAL row of the database whose death year AH is the person's.
+  const db = JSON.parse(fs.readFileSync("docs/reference/scholars-database/scholars-database-v1.6.json", "utf8")).rows;
+  const deathAH = (r) => Number((String(r.lifeAH).match(/(\d+)\s*AH(?!.*\d+\s*AH)/) ?? [])[1]);
+  const wanted = Object.entries(data.scholarIds ?? {});
+  check("scholarIds: 5 entries, each a real database row with the same death year", wanted.length === 5 && wanted.every(([k, id]) => { const r = db.find((x) => x.id === id); return r && deathAH(r) === Number(k.split("|")[1]); }));
+  const everyone = Object.values(v.eras).flatMap((e) => Object.values(e.columns).flat().concat(e.after));
+  check("linked people carry their id (Abū Ḥanīfa s001, Mālik s002, al-Shāfiʿī s005, Isḥāq s006, Aḥmad s007)", ["s001", "s002", "s005", "s006", "s007"].every((id) => everyone.some((p) => p.sid === id)), JSON.stringify(everyone.filter((p) => p.sid).map((p) => p.sid)));
+  check("nobody else is linked: Muqātil b. Ḥayyān (d. 150, same year as Abū Ḥanīfa) and the Ṣaḥābah have no id", everyone.filter((p) => p.sid).length === everyone.filter((p) => wanted.some(([k]) => k === `${p.ar}|${p.d}`)).length && everyone.find((p) => p.en.startsWith("Muqātil"))?.sid === null && sah.columns.tuhr.every((p) => p.sid === null));
+  const twin = JSON.parse(JSON.stringify(data));
+  for (const e of Object.values(twin.ayat["2:228"].eras)) for (const col of Object.values(e)) if (Array.isArray(col)) for (const p of col) if (p[0] === "مالك") p[2] = 180;
+  check("same Arabic name but another death year is NOT linked (name alone is not enough)", m.buildEraView(twin, rows, "2:228").eras.flatMap((e) => Object.values(e.columns).flat().concat(e.after)).filter((p) => p.ar === "مالك").every((p) => p.sid === null));
+  check("a file with no scholarIds still builds, nobody linked", m.buildEraView({ ...data, scholarIds: undefined }, rows, "2:228").eras.every((e) => Object.values(e.columns).flat().every((p) => p.sid === null)));
   console.log(`${path.basename(file)}: ${pass} passed, ${fail} failed`);
   return fail;
 }
