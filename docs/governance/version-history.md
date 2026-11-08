@@ -1092,3 +1092,4 @@ total). Allocated by the MMSA Architect.
 13.49: the keyboard ring in the night look (MSA J117). Allocated by the MMSA Architect.
 13.50: the four ruling questions on Approach 24 (QR J116). Allocated by the MMSA Architect.
 13.51: Hadith Study card colours and the translation-terms fold. Allocated by the MMSA Architect.
+13.52: ONE ⋮ menu (QR J114), the Hadith Text-pane terms fold, Dua J104 r13a. Allocated by the MMSA Architect.
