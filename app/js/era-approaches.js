@@ -18,7 +18,9 @@ export function eraOfName(name) {
   const latinTabi = tk.filter((t) => /^(tabi|tabe)/.test(t));
   const bnTabi = tk.filter((t) => /^তাব/.test(t));
   const arTabi = tk.filter((t) => /^(تابع|التابع|تابعو|تابعي)/.test(t));
-  const tabiCount = latinTabi.length + bnTabi.length + arTabi.length;
+  // a run-together spelling ("tabitabiin", "তাবেতাবেয়ী") holds the word twice in ONE token
+  const twice = tk.some((t) => (t.match(/tabi|tabe/g) ?? []).length >= 2 || (t.match(/তাব/g) ?? []).length >= 2);
+  const tabiCount = latinTabi.length + bnTabi.length + arTabi.length + (twice ? 1 : 0);
   if (tabiCount >= 2) return ERA_TABI_TABIIN;
   if (latinTabi.length === 1 && TABI_FORM.test(latinTabi[0])) return ERA_TABIUN;
   if (latinTabi.length === 1 && /^tabi?[ey]+n?$|^tabiy?een$/.test(latinTabi[0])) return ERA_TABIUN;

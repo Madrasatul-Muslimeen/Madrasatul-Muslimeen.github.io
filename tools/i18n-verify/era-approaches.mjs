@@ -1,5 +1,5 @@
 // PCF MSA J115 -- app/js/era-approaches.js: finding the era Approaches by name, and planning the one-tap "add Tābiʿūn".
-// Run from the repository root:  node tools/i18n-verify/era-approaches.mjs   (no server)   --prove: 6 broken copies must all go red.
+// Run from the repository root:  node tools/i18n-verify/era-approaches.mjs   (no server)   --prove: 7 broken copies must all go red.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -12,6 +12,7 @@ const MUTATIONS = {
   "a live Tābiʿūn does not stop a second one": ["if (tabiun.live.length) return { ok: false, reason: \"exists-live\", row: tabiun.live[0] };", ""],
   "a removed Ṣaḥābah row counts as live": ["(isRemoved(row) ? removed : live).push(row);", "live.push(row);"],
   "the new Approach is placed at the end": ["ids.splice(at < 0 ? ids.length : at + 1, 0, id);", "ids.push(id);"],
+  "a run-together spelling is read as Tābiʿūn": ["arTabi.length + (twice ? 1 : 0);", "arTabi.length;"],
   "Arabic is not read": ["const arTabi = tk.filter((t) => /^(تابع|التابع|تابعو|تابعي)/.test(t));", "const arTabi = [];"],
 };
 const nextId = (rows) => { let m = 0; for (const r of rows) { const x = /^approach_(\d+)$/.exec(r.id); if (x) m = Math.max(m, +x[1]); } return `approach_${String(m + 1).padStart(2, "0")}`; };
@@ -25,9 +26,10 @@ async function run(file) {
   check("exports present", ["eraOfName", "findEraApproach", "planAddTabiun"].every((k) => typeof m[k] === "function"));
   // names -> era, positive and negative
   for (const n of ["Ṣaḥābah", "Sahaba", "28 Sahaba", "Companions (Ṣaḥābah)", "الصحابة", "সাহাবা"]) check(`"${n}" is Ṣaḥābah`, era(n) === "sahabah", era(n));
-  for (const n of ["Tābiʿūn", "Tabi'un", "29 Tābiʿīn", "Tabeyeen", "التابعون", "তাবেয়ী", "তাবিঈন"]) check(`"${n}" is Tābiʿūn`, era(n) === "tabiun", era(n));
-  for (const n of ["Tābiʿ al-Tābiʿīn", "29 Tābiʿ al-Tābiʿīn", "Tabe Tabeen", "تابع التابعين", "তাবে তাবেয়ী"]) check(`"${n}" is Tābiʿ al-Tābiʿīn`, era(n) === "tabi-tabiin", era(n));
+  for (const n of ["Tābiʿūn", "Tabi'un", "29 Tābiʿīn", "Tabeyeen", "التابعون", "তাবেয়ী", "তাবিঈন", "তাবেঈ", "তাবিঈ", "তাবেয়ীন", "তাবেঈন", "২৯ তাবেয়ী"]) check(`"${n}" is Tābiʿūn`, era(n) === "tabiun", era(n));
+  for (const n of ["Tābiʿ al-Tābiʿīn", "29 Tābiʿ al-Tābiʿīn", "Tabe Tabeen", "تابع التابعين", "তাবে তাবেয়ী", "তাবে-তাবেয়ী", "তাবে তাবেঈন", "তাবেতাবেয়ী", "তাবি তাবিঈ", "tabitabiin"]) check(`"${n}" is Tābiʿ al-Tābiʿīn`, era(n) === "tabi-tabiin", era(n));
   for (const n of ["Da'wah", "Teaching Others", "30 Gen1", "Living by it", "Reading", "", null, undefined, 7]) check(`"${n}" is no era`, era(n) === null, era(n));
+  for (const n of ["তাবে তাবেয়ী", "তাবে-তাবেয়ী", "তাবেতাবেয়ী"]) check(`"${n}" is never Tābiʿūn`, era(n) !== "tabiun", era(n));
   // finding
   const base = [row("approach_27", "Living by it"), row("approach_28", "Ṣaḥābah"), row("approach_29", "Tābiʿ al-Tābiʿīn"), row("approach_31", "Da'wah"), row("approach_30", "Old", { status: "archived", name: { en: "Tābiʿ al-Tābiʿīn (old)" } })];
   const f = m.findEraApproach(base, "tabi-tabiin");
