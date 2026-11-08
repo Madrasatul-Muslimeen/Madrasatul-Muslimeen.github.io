@@ -699,11 +699,16 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   // J104 line 20, n104pub) and firestore.rules was made that file byte for byte, as 25b30cdc did for the Keys rules.
   // These two checks used to assert "the deployment file is firestore.rules + three blocks" and "DUA SAVING PENDING:
   // not published"; they now assert what production carries. The no-writer half stays until the Dua Lead's round R6.
-  check("DUA SAVING: firestore.rules IS the published deployment file, byte for byte, and carries the candidate's three blocks unchanged", () => {
-    const dep = read("docs/proposals/dua-saving.DEPLOYMENT-candidate.rules");
+  // UPDATED IN PLACE again 9 Nov 2026 (Architect 89L): the Owner then PUBLISHED the Hisn/Qur'anic dua-key change (PCF MSA
+  // J104 line 24, n104pub2, "Rule Published.", 22:05Z), so production now carries the dua-keys file, which is the 8 Nov
+  // file with the duaKey pattern widened in duaEdits and duaShares. The DUA KEYS checks below pin that difference exactly.
+  check("DUA SAVING: firestore.rules IS the published deployment file (now the dua-keys file), and carries the candidate's three blocks, the duaKey pattern widened", () => {
+    const dep = read("docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
     const live = read("firestore.rules");
-    assert.equal(live, dep, "firestore.rules differs from docs/proposals/dua-saving.DEPLOYMENT-candidate.rules, which is what production carries");
-    for (const c of DUA) assert.equal(matchBlock(live, `${c}/`), matchBlock(dua, `${c}/`), `firestore.rules' ${c} block differs from the candidate`);
+    assert.equal(live, dep, "firestore.rules differs from docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules, which is what production carries");
+    const OLDP = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40})$')";
+    const NEWP = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40}|hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?)$')";
+    for (const c of DUA) assert.equal(matchBlock(live, `${c}/`).replaceAll(NEWP, () => OLDP), matchBlock(dua, `${c}/`), `firestore.rules' ${c} block differs from the candidate beyond the widened duaKey pattern`);
     assert.ok(live.includes("    // PCF MSA J104 (Dua module)"), "the Dua section header is missing");
   });
   check("DUA SAVING NO WRITER YET: no app code names a Dua collection (round R6 adds the writers AND the forward/backward checks)", () => {
@@ -722,17 +727,18 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
 // DUA KEYS FOR HISN AL-MUSLIM AND QUR'ANIC DUAS (PCF MSA J104 line 23, the Owner 9 Nov 2026: Part 1 = A, Part 2 = D, option
 // B): docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules is today's firestore.rules with the duaKey pattern
 // widened in duaEdits and duaShares ONLY (plus one comment line). A CANDIDATE, NOT PUBLISHED. These checks pin that it is
-// exactly that and nothing more. The day the Owner publishes it and firestore.rules is made that file, the PENDING check
-// fails by name: update it in place to assert what production carries (as the Dua saving checks above were on 8 Nov).
+// exactly that and nothing more. UPDATED IN PLACE 9 Nov 2026 (Architect 89L): the Owner PUBLISHED it (J104 line 24,
+// "Rule Published.", 22:05Z) and firestore.rules was made that file byte for byte; the "candidate vs firestore.rules"
+// comparisons now compare it with the 8 Nov published file, and PENDING became PUBLISHED.
 {
   const KEYS = "docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules";
   const OLD = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40})$')";
   const NEW = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40}|hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?)$')";
-  const live = read("firestore.rules");
+  const live = read("docs/proposals/dua-saving.DEPLOYMENT-candidate.rules");   // the 8 Nov published file it was built on
   const cand = read(KEYS);
-  check("DUA KEYS: the candidate is firestore.rules with exactly the two duaKey pattern lines changed and one comment line added", () => {
+  check("DUA KEYS: the candidate is the 8 Nov published file with exactly the two duaKey pattern lines changed and one comment line added", () => {
     const a = live.split("\n"), b = cand.split("\n");
-    assert.equal(b.length, a.length + 1, `line count: firestore.rules ${a.length}, candidate ${b.length}`);
+    assert.equal(b.length, a.length + 1, `line count: 8 Nov file ${a.length}, candidate ${b.length}`);
     const added = b.findIndex((l, i) => l !== a[i]);
     assert.ok(added > 0 && b[added].startsWith("    //") && /hisn-<chapter>-<entry>/.test(b[added]), `the first differing line is not the added comment: ${b[added]}`);
     const rest = b.slice(0, added).concat(b.slice(added + 1));
@@ -746,7 +752,7 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   check("DUA KEYS: the widened pattern sits in duaEdits and duaShares and nowhere else; duaPlans and every other block are unchanged", () => {
     assert.equal(cand.split(NEW).length - 1, 2, "the widened pattern must occur exactly twice");
     assert.equal(cand.split(OLD).length - 1, 0, "the old pattern survives somewhere in the candidate");
-    assert.equal(live.split(OLD).length - 1, 2, "POSITIVE CONTROL: firestore.rules carries the published pattern twice");
+    assert.equal(live.split(OLD).length - 1, 2, "POSITIVE CONTROL: the 8 Nov published file carries the old pattern twice");
     assert.ok(matchBlock(cand, "duaEdits/").includes(NEW) && matchBlock(cand, "duaShares/").includes(NEW));
     assert.equal(matchBlock(cand, "duaPlans/"), matchBlock(live, "duaPlans/"));
   });
@@ -763,9 +769,10 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     assert.ok(m, "dua-saving-data.js names DUA_PLAN_KEY_FORMS but its PLAN_KEY_EXTRA pattern was not found");
     assert.equal(m[1], "hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?", "the app's extra key forms differ from the candidate's");
   });
-  check("DUA KEYS PENDING: the candidate is NOT published -- firestore.rules still refuses hisn- / quran- keys", () => {
-    assert.ok(!/hisn-\[0-9\]/.test(live), "firestore.rules now carries the hisn-/quran- forms: the Owner published, update these checks in place");
-    assert.notEqual(live, cand);
+  check("DUA KEYS PUBLISHED: firestore.rules IS the dua-keys file, byte for byte (the Owner published it, 9 Nov 2026)", () => {
+    const fr = read("firestore.rules");
+    assert.equal(fr, cand, "firestore.rules differs from the published dua-keys file");
+    assert.equal(fr.split(NEW).length - 1, 2, "firestore.rules does not carry the widened pattern twice");
   });
 }
 
