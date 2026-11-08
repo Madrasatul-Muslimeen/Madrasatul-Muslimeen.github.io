@@ -127,6 +127,14 @@ function rules(base, s) {
     }
   }
 
+  // PCF MSA J120 O1: MSA's install line (its manifest link, home-screen icon and theme colour) is on every MSA reader page
+  // (tools/offline/install-links.mjs). It is MSA's own, so every other app's pages lose it; the theme colour and manifest
+  // steps below then give that app its own. The count is exact: the source must carry the line on every listed page.
+  if (base.installHead) {
+    const line = `${base.installHead}\n`;
+    add(html, line, s.id === base.id ? line : "", { exact: base.manifest.pages.length }, "MSA's install line (manifest, icon, theme colour)");
+  }
+
   const hid = (list) => `export const HIDDEN_FROM_QR = [${list.map((m) => JSON.stringify(m)).join(", ")}];`;
   add((p) => p === "app/js/hidden-modules.js", hid(base.hiddenModules), hid(s.hiddenModules), { exact: 1 }, "modules hidden from this app");
   return r;
@@ -179,7 +187,9 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
   // so its address gives the site's 404 (and the app's own links can send readers to MSA for it).
   const keepPage = (rel) => !s.pages || !(rel.startsWith("app/") && rel.endsWith(".html")) || s.pages.includes(rel.slice(4));
   if (s.pages) for (const pg of s.pages) if (!fs.existsSync(path.join(src, "app", pg)) && !inOverlay(`app/${pg}`)) throw new Error(`settings "${id}": page app/${pg} does not exist`);
-  const files = listSite(src, srcSite).filter(keepPage);
+  // PCF MSA J120 O1: MSA's own web app manifest (its name and icons) is never copied into another app.
+  const msaOwnFile = (rel) => s.id !== base.id && !!base.manifest && rel === `app/${base.manifest.file}`;
+  const files = listSite(src, srcSite).filter(keepPage).filter((rel) => !msaOwnFile(rel));
 
   const rs = rules(base, s);
   const found = rs.map(() => 0);
@@ -201,6 +211,7 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
   // Rules apply to the whole source tree's app/ and index.html, whatever --only says,
   // so a partial build can never skip a count.
   const ruleFiles = listSite(src, ["index.html", "app"]);
+  for (let i = ruleFiles.length - 1; i >= 0; i--) if (msaOwnFile(ruleFiles[i])) ruleFiles.splice(i, 1);
   for (const rel of ruleFiles) {
     if (!TEXT_EXT.has(path.extname(rel))) continue;
     rs.forEach((rule, i) => {
@@ -231,7 +242,7 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
 
   // Theme colour and manifest: added to pages only when this app has them and MSA does not.
   const extra = new Map(); // rel -> new file text (files the build adds)
-  if (s.colours.theme && s.colours.theme !== base.colours.theme) {
+  if (s.colours.theme && (s.colours.theme !== base.colours.theme || (base.installHead && s.id !== base.id))) {
     for (const rel of ruleFiles.filter((p) => p.endsWith(".html") && (p === "index.html" || p.startsWith("app/")))) {
       const t = textOf(rel);
       if (/<meta name="theme-color"/.test(t)) continue;

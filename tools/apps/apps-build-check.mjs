@@ -144,6 +144,15 @@ check("the theme colour reaches every page head once", () => {
     return m.length === 1 && t.indexOf(m[0]) < t.indexOf("</head>");
   });
 });
+// PCF MSA J120 O1: MSA's install line (manifest link, home-screen icon, theme colour) and its manifest are MSA's own.
+check("QR's pages carry none of MSA's install line, and MSA's manifest is not in QR (positive control: MSA's pages carry it)", () => {
+  const ms = readSettings(SRC, "msa");
+  const srcPages = listFiles(SRC, ["app"]).filter((f) => f.endsWith(".html") && read(SRC, f).includes(ms.installHead));
+  const pages = listFiles(qrOut, ["app", "index.html"]).filter((f) => f.endsWith(".html"));
+  return srcPages.length === ms.manifest.pages.length && srcPages.length >= 30 && pages.length >= 7 &&
+    pages.every((f) => !read(qrOut, f).includes(ms.installHead) && !read(qrOut, f).includes('href="./manifest.webmanifest"')) &&
+    !fs.existsSync(path.join(qrOut, "app", ms.manifest.file)) && fs.existsSync(path.join(SRC, "app", ms.manifest.file));
+});
 check("files no rule touches are copied exactly (only the expected files differ)", () => {
   const d = compareTrees(SRC, qrPre, ONLY, inSettings).filter((x) => x.startsWith("differs "));
   const changed = new Set([...qr.changedFiles, ...qr.overlaid.replaced]);
@@ -222,6 +231,10 @@ check("...but the same words in a comment do not", () =>
   mutate("app/notes.html", "</body>", "<!-- Madrasah Study App (MSA) --></body>", () => !!buildMut("qr")));
 check("a new hard-coded MSA cache name elsewhere in app/ stops the qr build", () =>
   mutate("app/js/nav.js", "export const LEGACY_APP_URL", 'const X = "mm-app-x";\nexport const LEGACY_APP_URL', () => throws(() => buildMut("qr"), /nav\.js still says "mm-app-"/)));
+check("a reader page that lost MSA's install line stops even the msa build (PCF MSA J120 O1)", () => {
+  const line = readSettings(SRC, "msa").installHead + "\n";
+  return mutate("app/notes.html", line, "", () => throws(() => buildMut("msa"), /MSA's install line .*found \d+ of .*expected \d+/));
+});
 check("a hidden module nav.js cannot hide stops the build", () =>
   mutate("app/apps/qr.json", '"naturelife",', '"naturelife", "hadith",', () => throws(() => buildMut("qr"), /hidden module "hadith"/)));
 check("the hidden-modules list changed in the source stops the build", () =>

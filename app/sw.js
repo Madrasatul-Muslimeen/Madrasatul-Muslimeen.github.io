@@ -59,7 +59,7 @@ function isCacheable(request) {
   // cached. This extension allow-list is the second guard the issue asks
   // for: static files only, HTML, JS, CSS, fonts and the Quran data's own
   // JSON, never a document a reader's own actions changed.
-  return /\.(?:html|js|mjs|css|json|woff2?|ttf|otf|png|jpe?g|svg|webp)$/i.test(url.pathname);
+  return /\.(?:html|js|mjs|css|json|woff2?|ttf|otf|png|jpe?g|svg|webp|webmanifest)$/i.test(url.pathname);
 }
 
 // ---------------------------------------------------------------------------

@@ -1,0 +1,16 @@
+{
+  "name": "Madrasah Study App (MSA)",
+  "short_name": "MSA",
+  "description": "Madrasatul Muslimeen's Study App: Qur'an, Hadith, Dua and notes.",
+  "id": "/app/",
+  "start_url": "/app/quranrevival.html",
+  "scope": "/app/",
+  "display": "standalone",
+  "theme_color": "#1B2A41",
+  "background_color": "#1B2A41",
+  "icons": [
+    { "src": "img/icons/msa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/icons/msa-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/icons/msa-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
