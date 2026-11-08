@@ -99,4 +99,65 @@ for (const [name, b, old, rep] of M) {
   if (red) caught++;
 }
 console.log(`mutations caught: ${caught} of ${M.length}`);
-process.exit(caught === M.length ? 0 : 1);
+
+// ---------------------------------------------------------------------------------------------------------------------
+// PCF MSA J104 line 23 (9 Nov 2026): the hisn- / quran- duaKey forms, in the WHOLE deployment candidate
+// docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules, tested by dua-keys.rules.test.mjs. Each half of the widened
+// pattern is reverted (or loosened) block by block, every occurrence in that block replaced and counted; the suite must go RED.
+// NOT listed, EQUIVALENT: dropping the ^ / $ anchors -- Rules' matches() is a FULL match, so the anchors change nothing.
+const KSRC = path.resolve("../../docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
+const ksrc = fs.readFileSync(KSRC, "utf8");
+const kblock = (name) => {
+  const a = ksrc.indexOf(`match /${name}/`);
+  const nexts = BLOCKS.map((b) => ksrc.indexOf(`match /${b}/`)).filter((i) => i > a);
+  return [a, nexts.length ? Math.min(...nexts) : ksrc.lastIndexOf("  }\n}")];
+};
+const HISN = "|hisn-[0-9]{1,3}-[0-9]{1,3}", QURAN = "|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?";
+const K = [];
+for (const [b, tag] of [["duaEdits", "edit"], ["duaShares", "share"]]) {
+  K.push(
+    [`${tag}-hisn-reverted`, b, HISN, ""],
+    [`${tag}-quran-reverted`, b, QURAN, ""],
+    [`${tag}-both-reverted`, b, HISN + QURAN, ""],
+    [`${tag}-hisn-entry-optional`, b, HISN, "|hisn-[0-9]{1,3}(-[0-9]{1,3})?"],
+    [`${tag}-hisn-chapter-4-digits`, b, HISN, "|hisn-[0-9]{1,4}-[0-9]{1,3}"],
+    [`${tag}-hisn-entry-4-digits`, b, HISN, "|hisn-[0-9]{1,3}-[0-9]{1,4}"],
+    [`${tag}-hisn-entry-letters`, b, HISN, "|hisn-[0-9]{1,3}-[0-9A-Za-z]{1,3}"],
+    [`${tag}-hisn-chapter-empty-ok`, b, HISN, "|hisn-[0-9]{0,3}-[0-9]{1,3}"],
+    [`${tag}-hisn-any-case`, b, HISN, "|(?i:hisn)-[0-9]{1,3}-[0-9]{1,3}"],
+    [`${tag}-quran-many-ayahs`, b, QURAN, "|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})*"],
+    [`${tag}-quran-ayah-optional`, b, QURAN, "|quran-[0-9]{1,3}(-[0-9]{1,3})?(-[0-9]{1,3})?"],
+    [`${tag}-quran-surah-letters`, b, QURAN, "|quran-[0-9a-z]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?"],
+    [`${tag}-quran-surah-4-digits`, b, QURAN, "|quran-[0-9]{1,4}-[0-9]{1,3}(-[0-9]{1,3})?"],
+    [`${tag}-quran-ayah-4-digits`, b, QURAN, "|quran-[0-9]{1,3}-[0-9]{1,4}(-[0-9]{1,3})?"],
+    [`${tag}-quran-second-ayah-4-digits`, b, QURAN, "|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,4})?"],
+    [`${tag}-quran-trailing-dash-ok`, b, QURAN, "|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{0,3})?"],
+    [`${tag}-quran-any-case`, b, QURAN, "|(?i:quran)-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?"],
+    [`${tag}-any-prefix`, b, HISN, "|[a-z]+-[0-9]{1,3}-[0-9]{1,3}"],
+  );
+}
+K.push(
+  ["edit-added-on-hisn-quran", "duaEdits", "d().duaKey.matches('^new-.*$')", "d().duaKey.matches('^(new|hisn|quran)-.*$')"],
+  ["edit-added-anywhere-k", "duaEdits", "&& (('added' in d()) == d().duaKey.matches('^new-.*$'))", ""],
+  ["edit-key-free-k", "duaEdits", "&& editKey == d().tenantId + '__' + d().duaKey", ""],
+);
+let kcaught = 0;
+for (const [name, b, old, rep] of K) {
+  const [a, z] = kblock(b);
+  const part = ksrc.slice(a, z);
+  const n = part.split(old).length - 1;
+  const total = ksrc.split(old).length - 1;
+  if (n < 1) { console.log(`ANCHOR MISSING ${name}`); continue; }
+  const file = path.join(dir, `k-${name}.rules`);
+  fs.writeFileSync(file, ksrc.slice(0, a) + part.split(old).join(rep) + ksrc.slice(z));
+  const env = { ...process.env, MUTANT_FILE: file };
+  delete env.FULL_RULES_FILE;
+  const r = spawnSync("node", ["--test", "dua-keys.rules.test.mjs"], { env, encoding: "utf8" });
+  const red = r.status !== 0;
+  const by = ((r.stdout + r.stderr).match(/EXPECTED (?:ALLOW|DENY) but \w+ [^@]*/) || ["(no assertion text)"])[0].trim();
+  console.log(`${red ? "caught   " : "UNPROVEN "} ${name} (${n} occurrence${n > 1 ? "s" : ""} replaced in ${b}; ${total} in the whole file) -- ${by}`);
+  if (red) kcaught++;
+}
+console.log(`hisn/quran key mutations caught: ${kcaught} of ${K.length}`);
+console.log(`ALL mutations caught: ${caught + kcaught} of ${M.length + K.length}`);
+process.exit(caught === M.length && kcaught === K.length ? 0 : 1);
