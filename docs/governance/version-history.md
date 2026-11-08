@@ -1096,3 +1096,4 @@ total). Allocated by the MMSA Architect.
 13.53: Bangla words (QR J119) and the Tābiʿūn Approach tap (QR J115 r1). Allocated by the MMSA Architect.
 13.54: the Eras tab and Scholars label shift (QR J115 r2) with the QR nits. Allocated by the MMSA Architect.
 13.55: the Tafsīr books grouped by century (QR J115 Slice B). Allocated by the MMSA Architect.
+13.56: the Eras names linked to the Scholars Database (QR J115 follow-up). Allocated by the MMSA Architect.

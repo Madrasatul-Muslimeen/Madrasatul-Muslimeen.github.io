@@ -38,6 +38,13 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 768, 1280]) {
   await page.locator("#probe [data-read-next-era='tabiun']").click();
   const t2 = await page.evaluate(() => document.querySelector("#probe [data-read-next-panel='eras']").textContent);
   check(`${tag} the Tābiʿūn tab says its Approach is not in the catalogue`, /Tābiʿūn/.test(t2) && (lang === "bn" ? /ক্যাটালগে/.test(t2) : /not in your catalogue/.test(t2)), t2.slice(0, 160));
+  const links = [];
+  for (const era of ["sahabah", "tabiun", "tabi-tabiin"]) {
+    await page.locator(`#probe [data-read-next-era='${era}']`).click();
+    links.push(...await page.evaluate(() => [...document.querySelectorAll("#probe [data-read-next-panel='eras'] a[data-read-next-scholar-link]")].map((a) => ({ id: a.dataset.readNextScholarLink, href: a.href, blank: a.target === "_blank", h: Math.round(a.getBoundingClientRect().height) }))));
+  }
+  check(`${tag} the five imams' names link to their Scholars Database row, nobody else`, ["s001", "s002", "s005", "s006", "s007"].every((id) => links.some((l) => l.id === id && l.blank && l.href.includes(`?s=${id}&back=1`))) && links.length === 5, JSON.stringify(links.map((l) => l.id)));
+  check(`${tag} still no sideways scroll with the links`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   await page.locator("#probe [data-read-next-era='sahabah']").click();
   const src = await page.evaluate(() => { const d = document.querySelector("#probe details.read-next-group"); d.open = true; return d.querySelector(".rn-era-quote")?.textContent.length ?? 0; });
   check(`${tag} a source opens its verbatim Arabic`, src > 20);
