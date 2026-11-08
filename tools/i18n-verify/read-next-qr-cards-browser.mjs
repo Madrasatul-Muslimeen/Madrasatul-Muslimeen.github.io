@@ -1,5 +1,5 @@
 // J03 K3 "Read next" placed on QR's Āyah card and Word card (QR Lead, 4 Nov 2026), in a real browser:
-//   - Āyah card (36:38): the box is in the Info block with THREE tabs (Dictionary, Scholars, Tafsīr) -- no Qur'an or Hadith
+//   - Āyah card (36:38): the box is in the Info block with FOUR tabs (Dictionary, Scholars, Tafsīr, and since J115 Eras) -- no Qur'an or Hadith
 //     tab, because the card already has Related āyāt / Related hadith; each tab is a 40px target; Dictionary lists
 //     the āyah's real lemmas; the box SURVIVES the card's redraw (Next-then-back is not needed: a redraw is forced);
 //   - Word card: FOUR tabs (Qur'an, Dictionary, Scholars, Tafsīr); Dictionary shows the word's lemma; the Qur'an tab
@@ -14,8 +14,8 @@ const check = (name, ok, detail = "") => {
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
 };
 const setSel = (page, id, v) => page.evaluate(([i, val]) => { const s = document.getElementById(i); s.value = val; s.dispatchEvent(new Event("change", { bubbles: true })); }, [id, v]);
-const LABELS = { en: { ayah: ["Dictionary", "Scholars", "Tafsīr"], word: ["Qur'an", "Dictionary", "Scholars", "Tafsīr"] },
-  bn: { ayah: ["অভিধান", "আলেমগণ", "তাফসীর"], word: ["কুরআন", "অভিধান", "আলেমগণ", "তাফসীর"] } };
+const LABELS = { en: { ayah: ["Dictionary", "Scholars", "Tafsīr", "Eras"], word: ["Qur'an", "Dictionary", "Scholars", "Tafsīr"] },
+  bn: { ayah: ["অভিধান", "আলেমগণ", "তাফসীর", "যুগ"], word: ["কুরআন", "অভিধান", "আলেমগণ", "তাফসীর"] } };
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
 for (const lang of ["en", "bn"]) {
@@ -70,7 +70,7 @@ for (const lang of ["en", "bn"]) {
         related: !!document.querySelector("[data-ayah-sheet-related]") && !!document.querySelector("[data-ayah-sheet-hadith]"), sideways: document.documentElement.scrollWidth > innerWidth + 1 };
     });
     check(`${tag} Āyah card has the box in its Info block`, !!a?.inInfo);
-    check(`${tag} Āyah card tabs are Dictionary, Scholars, Tafsīr (no Qur'an/Hadith: the Related sections stay)`, a?.keys.join() === "dictionary,scholars,tafsir" && a.related, a?.keys.join());
+    check(`${tag} Āyah card tabs are Dictionary, Scholars, Tafsīr, Eras (J115; no Qur'an/Hadith: the Related sections stay)`, a?.keys.join() === "dictionary,scholars,tafsir,eras" && a.related, a?.keys.join());
     check(`${tag} Āyah card tab labels in ${lang}`, a?.labels.join("|") === LABELS[lang].ayah.join("|"), a?.labels.join("|"));
     check(`${tag} Āyah card tabs are 40px, no sideways scroll`, !!a && a.minH >= 39.5 && !a.sideways, JSON.stringify(a));
     await page.click("[data-ayah-sheet] [data-read-next-tab='dictionary']");

@@ -170,10 +170,11 @@ check("read-next.js is pure: no document, window, fetch; it imports only lemma-d
 });
 const ui = strip(fs.readFileSync("app/js/read-next-ui.js", "utf8"));
 // UPDATED IN PLACE for K3b (5 Nov 2026): a second fetch, loadTafsirLinks (the tafsīr books' sites), first use only.
-check("read-next-ui.js fetches only inside loadTafsirScholars and loadTafsirLinks (first use), never at import or on drawing the box", () => {
-  assert.equal((ui.match(/\bfetch\(/g) ?? []).length, 2);
-  for (const fn of ["loadTafsirScholars", "loadTafsirLinks"]) {
-    const body = ui.slice(ui.indexOf(`export function ${fn}`), ui.indexOf("\n}\n", ui.indexOf(`export function ${fn}`)));
+check("read-next-ui.js fetches only inside loadTafsirScholars, loadTafsirLinks and loadEraSpeakers (first use), never at import or on drawing the box", () => {
+  assert.equal((ui.match(/\bfetch\(/g) ?? []).length, 3);
+  for (const fn of ["loadTafsirScholars", "loadTafsirLinks", "loadEraSpeakers"]) {
+    const at = ui.indexOf(`function ${fn}`);
+    const body = ui.slice(at, ui.indexOf("\n}\n", at));
     assert.equal((body.match(/\bfetch\(/g) ?? []).length, 1, `${fn} holds one fetch`);
   }
   const render = ui.slice(ui.indexOf("export function renderReadNext"), ui.indexOf("function fillPanel"));

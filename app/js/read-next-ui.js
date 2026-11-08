@@ -24,6 +24,7 @@ import { t, num, surahName } from "./i18n.js";
 import { getAppLang } from "./prefs.js";
 import { getSurah } from "./quran-data.js";
 import { describeHit } from "./ayah-hadith.js";
+import { buildEraView } from "./era-view.js";
 import { loadLemmaDictionary, loadBanglaLemmaDictionary } from "./lemma-dictionary.js";
 import {
   tabsFor, uniqueAyahRefs, ayahHref, hadithHref, otherHadith, wordMeanings, dictionaryEntries, entryMeaning,
@@ -57,8 +58,8 @@ export function loadTafsirLinks() {
   return linksPromise;
 }
 
-const NARROW_SPANS = { 1: [6], 2: [3, 3], 3: [2, 2, 2], 4: [3, 3, 3, 3], 5: [2, 2, 2, 3, 3] };
-const LABELS = { quran: "Qur'an", hadith: "Hadith", dictionary: "Dictionary", scholars: "Scholars", tafsir: "Tafsīr" };
+const NARROW_SPANS = { 1: [6], 2: [3, 3], 3: [2, 2, 2], 4: [3, 3, 3, 3], 5: [2, 2, 2, 3, 3], 6: [2, 2, 2, 2, 2, 2] };
+const LABELS = { quran: "Qur'an", hadith: "Hadith", dictionary: "Dictionary", scholars: "Scholars", tafsir: "Tafsīr", eras: "Eras" };
 
 const CSS = `
 /* The box sits on light cards and on the dark reader windows alike: its headings and notes take the card's own text
@@ -68,6 +69,15 @@ const CSS = `
 .read-next-head { margin: 0; font-size: 0.95rem; font-weight: 700; color: inherit; }
 .read-next-tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
 .read-next-tabs > button { grid-column: span var(--rn-span, 2); min-width: 0; min-height: 40px; padding: 0 3px; border: 1px solid #c9b98f; border-radius: 10px; background: #fff; color: #1F3A6E; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rn-era-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 8px; }
+.rn-era-cols > div, .rn-era-after { min-width: 0; overflow-wrap: anywhere; }
+.rn-era-cols .rn-ref, .rn-era-cols .rn-small, .rn-era-after .rn-ref, .rn-era-after .rn-small { display: block; margin-top: 3px; }
+.rn-era-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.rn-era-tabs > button { flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0 6px; border: 1px solid #c9b98f; border-radius: 10px; background: #fff; color: #1F3A6E; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.rn-era-tabs > button[aria-pressed="true"] { border-color: #1F3A6E; background: #eef2fa; box-shadow: inset 0 -3px 0 #c9a24b; }
+.rn-era-quote { margin: 4px 0 0; font-size: 1.05rem; line-height: 1.8; }
+[data-card-look="night"] .rn-era-tabs > button { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }
+[data-card-look="night"] .rn-era-tabs > button[aria-pressed="true"] { background: var(--card-bg); color: var(--card-heading); border-color: var(--card-heading); }
 .read-next-tabs > button[aria-pressed="true"] { border-color: #1F3A6E; background: #eef2fa; box-shadow: inset 0 -3px 0 #c9a24b; }
 @container (min-width: 480px) {
   .read-next-tabs { grid-template-columns: repeat(var(--rn-n, 5), minmax(0, 1fr)); }
@@ -180,7 +190,7 @@ export function renderReadNext(host, ctx = {}) {
 function fillPanel(key, panel, ctx) {
   const wait = note(t("Loading…"));
   panel.appendChild(wait);
-  const job = { quran: quranPanel, hadith: hadithPanel, dictionary: dictionaryPanel, scholars: scholarsPanel, tafsir: tafsirPanel }[key];
+  const job = { quran: quranPanel, hadith: hadithPanel, dictionary: dictionaryPanel, scholars: scholarsPanel, tafsir: tafsirPanel, eras: erasPanel }[key];
   job(panel, ctx).then(() => { panel.dataset.readNextLoaded = "true"; }, (err) => {
     console.error(err);
     panel.appendChild(note(t("This could not be loaded just now. Try again later.")));
@@ -375,4 +385,63 @@ async function tafsirPanel(panel, ctx) {
     }
     panel.appendChild(item);
   }
+}
+
+// PCF MSA J115 round 2: the Eras tab. Who in each era (Ṣaḥābah, Tābiʿūn, Tābiʿ al-Tābiʿīn) held which view on this āyah,
+// the later book that reports it, and the verbatim passage. The data file is fetched on first tap (I9); eras are found in
+// the tenant's Approaches BY NAME (era-view.js), and when one is missing the panel says so in words and still shows the era.
+const ERA_URL = new URL("../data/era-speakers.json", import.meta.url).href;
+let eraPromise = null;
+function loadEraSpeakers() {
+  if (!eraPromise) eraPromise = fetch(ERA_URL).then((r) => { if (!r.ok) throw new Error(`era-speakers ${r.status}`); return r.json(); }).catch((e) => { eraPromise = null; throw e; });
+  return eraPromise;
+}
+const personLine = (p) => `${p.en} · ${t("d. {year} AH", { year: num(p.d) })}${p.note ? ` · ${p.note}` : ""}`;
+
+async function erasPanel(panel, ctx) {
+  const info = (await resolve(ctx.eras)) ?? {};
+  const view = buildEraView(await loadEraSpeakers(), info.rows ?? [], info.ref ?? null);
+  if (!view.ok) { panel.appendChild(note(view.reason === "no-reports" ? t("No reports by era are in the app for this āyah yet.") : t("The era reports are not available just now."))); return; }
+  panel.dataset.readNextEras = view.ref;
+  if (!view.checked) panel.appendChild(note(t("Not yet checked by a scholar.")));
+  panel.appendChild(autoDir("p", "read-next-sub", view.question));
+  const bar = el("div", "rn-era-tabs");
+  bar.setAttribute("role", "group");
+  const body = el("div");
+  const show = (e, b) => {
+    for (const x of bar.children) x.setAttribute("aria-pressed", String(x === b));
+    body.replaceChildren();
+    if (!e.approachFound) body.appendChild(note(t("The {era} Approach is not in your catalogue yet.", { era: e.name })));
+    if (e.window) body.appendChild(note(t("To about {year} AH", { year: num(e.window) })));
+    const cols = el("div", "rn-era-cols");
+    for (const v of view.views) {
+      const c = el("div");
+      c.appendChild(autoDir("span", "rn-ref", `${v.en} (${e.columns[v.id].length})`));
+      if (!e.columns[v.id].length) c.appendChild(el("span", "rn-small", t("No one recorded in this era.")));
+      for (const p of e.columns[v.id]) c.appendChild(el("span", "rn-small", personLine(p)));
+      cols.appendChild(c);
+    }
+    body.appendChild(cols);
+    if (e.after.length) {
+      const a = el("div", "rn-era-after");
+      a.appendChild(el("span", "rn-ref", t("Just after this era")));
+      for (const p of e.after) a.appendChild(el("span", "rn-small", personLine(p)));
+      body.appendChild(a);
+    }
+    for (const s of e.src) {
+      const d = el("details", "read-next-group");
+      d.appendChild(el("summary", null, `${s.book} · ${t("d. {year} AH", { year: num(s.died) })}`));
+      d.appendChild(el("p", "rn-small", s.note));
+      if (s.quote) d.appendChild(arabic("p", "rn-era-quote", s.quote));
+      body.appendChild(d);
+    }
+  };
+  for (const e of view.eras) {
+    const b = el("button", null, e.name);
+    b.type = "button"; b.dataset.readNextEra = e.era; b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => show(e, b));
+    bar.appendChild(b);
+  }
+  panel.append(bar, body);
+  show(view.eras[0], bar.firstElementChild);
 }

@@ -5,10 +5,10 @@
 // Scholars, Tafsīr. A card names only the tabs it can fill; a tab it leaves out is not drawn.
 import { lemmaDictionaryEntry } from "./lemma-dictionary.js";
 
-export const READ_NEXT_TABS = Object.freeze(["quran", "hadith", "dictionary", "scholars", "tafsir"]);
+export const READ_NEXT_TABS = Object.freeze(["quran", "hadith", "dictionary", "scholars", "tafsir", "eras"]);
 export const READ_NEXT_HADITH_LIMIT = 8;
 
-/** The tabs a ctx fills, in the fixed order. Dictionary is there when the card gives lemmas or word meanings. */
+/** The tabs a ctx fills, in the fixed order. Eras (J115) is there only when the card gives `eras`. Dictionary is there when the card gives lemmas or word meanings. */
 export function tabsFor(ctx = {}) {
   const has = (v) => v !== undefined && v !== null && v !== false;
   return READ_NEXT_TABS.filter((k) => (k === "dictionary" ? has(ctx.lemmas) || has(ctx.words) : has(ctx[k])));
