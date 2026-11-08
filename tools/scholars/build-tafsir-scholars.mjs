@@ -17,6 +17,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { eraOfName, ERA_SAHABAH, ERA_TABIUN } from "../../app/js/era-approaches.js";
 
 export const SOURCE = "docs/reference/scholars-database/scholars-database-v1.5.json";
 export const OUTPUT = "app/data/tafsir-scholars.json";
@@ -44,6 +45,17 @@ export function deathYearAH(row) {
 /** `quranWorks` before the database's " · When each book was written:" note. */
 export function quranWorkText(row) {
   return String(row.quranWorks ?? "").split(" · When each book was written")[0].trim();
+}
+/** DISPLAY labels only (Architect, 8 Nov 2026, J115 labels): the Tābiʿūn Approach takes display number 29 and the freed numbers
+ *  move up. "28 Sahaba" and "29 Tābiʿīn" stay; every other numbered tag from 29 up is one higher ("29 Tābiʿ al-Tābiʿīn" ->
+ *  30, "30 Gen1" -> 31 ... "36 Groups" -> 37). The era is read BY NAME (eraOfName), never by number. Unnumbered tags are untouched. */
+export function relabelApproach(tag) {
+  const m = /^(\d+)(\s+.*)$/.exec(String(tag ?? "").trim());
+  if (!m) return String(tag ?? "");
+  const n = Number(m[1]);
+  const era = eraOfName(m[2]);
+  if (era === ERA_SAHABAH || era === ERA_TABIUN || n < 29) return String(tag);
+  return `${n + 1}${m[2]}`;
 }
 export function splitApproachText(s) {
   return String(s ?? "").split(" · ").map((x) => x.trim()).filter(Boolean);
@@ -91,8 +103,8 @@ export function buildTafsirScholars(root = process.cwd()) {
       century: r.century ?? null,
       lifeAH: r.lifeAH ?? null,
       lifeCE: r.lifeCE ?? null,
-      approaches: splitApproachText(r.approaches),
-      approachesText: r.approaches ?? "",
+      approaches: splitApproachText(r.approaches).map(relabelApproach),
+      approachesText: splitApproachText(r.approaches).map(relabelApproach).join(" · "),
       quranWork,
       tafsir: r.type === "mufassir" ? quranWork.split(";").map((x) => x.trim()).filter(Boolean) : [],
       hadithBooks: Object.keys(books).filter((b) => books[b] === r.id),
