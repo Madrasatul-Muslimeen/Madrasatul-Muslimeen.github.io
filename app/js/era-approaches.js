@@ -25,7 +25,7 @@ export function eraOfName(name) {
   if (latinTabi.length === 1 && TABI_FORM.test(latinTabi[0])) return ERA_TABIUN;
   if (latinTabi.length === 1 && /^tabi?[ey]+n?$|^tabiy?een$/.test(latinTabi[0])) return ERA_TABIUN;
   if (bnTabi.length === 1 || arTabi.length === 1) return ERA_TABIUN;
-  if (tk.some((t) => /^(sahab|sahaab)(a|ah|i|is)?$/.test(t) || t === "companions" || /^(ال)?صحاب/.test(t) || /^ସাহাব/.test(t) || /^সাহাব/.test(t))) return ERA_SAHABAH;
+  if (tk.some((t) => /^(sahab|sahaab)(a|ah|i|is)?$/.test(t) || t === "companions" || /^(ال)?صحاب/.test(t) || /^সাহাব/.test(t))) return ERA_SAHABAH;
   return null;
 }
 
