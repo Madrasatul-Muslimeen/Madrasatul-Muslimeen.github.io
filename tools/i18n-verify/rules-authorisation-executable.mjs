@@ -747,6 +747,19 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     assert.ok(/updateDocument\(db, TENANT\.DUA_PLANS/.test(duaSrc) && /updateDocument\(db, TENANT\.DUA_EDITS/.test(duaSrc), "expected updates of plans and edits");
     assert.ok(!/updateDocument\(db, TENANT\.DUA_SHARES/.test(duaSrc), "a share must never be updated");
   });
+  check("DUA SAVING PLAN KEYS: the duaKey pattern the data layer enforces for edits and shares is EXACTLY the one the published Rules pin (so a key the layer accepts is never denied)", () => {
+    const ruleP = (blk) => { const x = blk.match(/d\(\)\.duaKey\.matches\('([^']+)'\)/); assert.ok(x, "no duaKey pattern in the block"); return x[1]; };
+    const src = (duaSrc.match(/const DUA_KEY = \/(.+)\/;/) || [])[1];
+    assert.ok(src, "DUA_KEY not found in dua-saving-data.js");
+    assert.equal(src, ruleP(matchBlock(live, "duaEdits/")), "the data layer's duaKey pattern differs from duaEdits'");
+    assert.equal(src, ruleP(matchBlock(live, "duaShares/")), "the data layer's duaKey pattern differs from duaShares'");
+  });
+  check("DUA SAVING PLAN KEYS: the plan-key vocabulary the data layer declares is the one the Owner's tick (J104 line 23) records, and the Rules do NOT inspect plan keys", () => {
+    const forms = (duaSrc.match(/DUA_PLAN_KEY_FORMS = Object\.freeze\(\[([\s\S]*?)\]\);/) || [])[1];
+    assert.ok(forms, "DUA_PLAN_KEY_FORMS not found");
+    assert.deepEqual([...forms.matchAll(/"([^"]+)"/g)].map((x) => x[1]), ["<number>", "new-<id>", "hisn-<chapter>-<entry>", "quran-<surah>-<ayah>[-<ayah>]"]);
+    assert.ok(!/hisn|quran/i.test(matchBlock(live, "duaPlans/").replace(/\/\/.*$/gm, "")), "the published duaPlans block now names a Hisn or Qur'an key: update this check");
+  });
   check("DUA SAVING: the only app code naming a Dua collection is the data layer and collections.js", () => {
     const names = [];
     const walk = (dir) => { for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
