@@ -47,9 +47,10 @@ button:focus-visible,input:focus-visible{outline:3px solid #c9a24b;outline-offse
     <button id="replay" type="button">↻ Play again</button>
     <button id="skip" type="button">Skip</button>
     <label class="opt"><input type="checkbox" id="words" checked> Light up each word with the voice</label>
-    <span class="opt"><button id="m1" type="button" disabled>−0.1 s</button><button id="p1" type="button" disabled>+0.1 s</button> move the cut between Aʿūdhu and Bismillah</span>
+    <span class="opt" style="flex-wrap:wrap"><span style="flex-basis:100%">Cut between Aʿūdhu and Bismillah:</span> <button id="m5" type="button" disabled>−0.5</button><button id="m1" type="button" disabled>−0.1</button><button id="p1" type="button" disabled>+0.1</button><button id="p5" type="button" disabled>+0.5</button></span>
     <label class="opt"><input type="checkbox" id="mute"> Sound off (text only, same timing)</label>
   </div>
+  <div><canvas id="wf" width="720" height="90" style="width:100%;height:90px;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:crosshair" aria-label="Sound of the opening. Tap where Aʿūdhu ends and Bismillah begins."></canvas><p class="note" id="wfh">Tap the picture where Aʿūdhu ends and Bismillah starts (gold line).</p></div>
   <div class="read" aria-live="off">
     <b>Now</b><span id="now">Waiting</span>
     <b>Audio time</b><span id="tm">0.0 s</span>
@@ -108,10 +109,11 @@ function analyse(pcm,sr){
   let a=db.findIndex(v=>v>thr);a=Math.max(0,a-3);
   let b=-1;for(let i=a+Math.floor(2/st);i<db.length;i++){if(db[i]<thr){let j=i;while(j<db.length&&db[j]<thr)j++;if((j-i)*st>=0.6){b=i;break}i=j}}
   if(b<0)b=Math.min(db.length-1,Math.floor(8/st));
-  // dip: lowest smoothed loudness between 30% and 75% of the opening
-  let lo=a+Math.floor((b-a)*0.3),hi=a+Math.floor((b-a)*0.75),best=lo,bv=1e9;
-  for(let i=lo;i<=hi;i++){const v=(db[i-1]||0)+db[i]+(db[i+1]||0);if(v<bv){bv=v;best=i}}
-  return {a:a*st,m:best*st,b:b*st};
+  // every quiet stretch (0.1 s or longer) inside the opening; the LONGEST one is the gap between the two prayers
+  const gaps=[];for(let i=a+Math.floor(1/st);i<b-Math.floor(1/st);i++){if(db[i]<thr+3){let j=i;while(j<b&&db[j]<thr+3)j++;if((j-i)*st>=0.1)gaps.push({s:i*st,e:j*st,len:(j-i)*st});i=j}}
+  gaps.sort((x,y)=>y.len-x.len);
+  let m;if(gaps.length)m=(gaps[0].s+gaps[0].e)/2;else{let lo=a+Math.floor((b-a)*0.3),hi=a+Math.floor((b-a)*0.75),best=lo,bv=1e9;for(let i=lo;i<=hi;i++){const v=(db[i-1]||0)+db[i]+(db[i+1]||0);if(v<bv){bv=v;best=i}}m=best*st}
+  return {a:a*st,m,b:b*st,gaps:gaps.slice(0,4),env:db.map(v=>Math.max(0,(v+60)/60))};
 }
 function wav(pcm,sr,from,to){const s=Math.floor(from*sr),e=Math.floor(to*sr),n=e-s,buf=new ArrayBuffer(44+n*2),v=new DataView(buf);
   const w=(o,t)=>[...t].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
@@ -120,13 +122,20 @@ function apply(){
   const pad=0.12;L[0].au.src=wav(PCM,SR,Math.max(0,cut.a-pad),cut.m);L[1].au.src=wav(PCM,SR,cut.m,Math.min(PCM.length/SR,cut.b+0.15));
   L[0].onset=pad;L[1].onset=0.1;
   $("tot").textContent="Voice starts "+cut.a.toFixed(1)+" s · cut at "+cut.m.toFixed(2)+" s · opening ends "+cut.b.toFixed(1)+" s";
+  draw();
 }
+function draw(){const c=$("wf"),x=c.getContext("2d"),W=c.width,H=c.height,span=cut.b+1,sx=t=>t/span*W;
+  x.clearRect(0,0,W,H);const css=getComputedStyle(document.documentElement);x.fillStyle=css.getPropertyValue("--muted").trim()||"#888";
+  cut.env.forEach((v,i)=>{const t=i*0.02;if(t>span)return;const h=v*H*0.9;x.fillRect(sx(t),(H-h)/2,Math.max(1,W/span*0.02),h)});
+  const line=(t,col,lbl)=>{x.fillStyle=col;x.fillRect(sx(t)-1,0,3,H);x.font="12px Inter,sans-serif";x.fillText(lbl,Math.min(W-60,sx(t)+4),12)};
+  line(cut.a,"#1d7a4a","start");line(cut.m,"#c9a24b","cut");line(cut.b,"#c0392b","end");}
 $("file").onchange=async e=>{const f=e.target.files[0];if(!f)return;$("fs").textContent="Reading…";
   try{const ac=new (window.AudioContext||window.webkitAudioContext)();const buf=await ac.decodeAudioData(await f.arrayBuffer());
     PCM=buf.getChannelData(0);SR=buf.sampleRate;cut=analyse(PCM,SR);apply();
-    $("fs").textContent="Found the opening: "+cut.a.toFixed(1)+" to "+cut.b.toFixed(1)+" s. Press Open the app.";$("start").disabled=false;$("m1").disabled=$("p1").disabled=false}
+    $("fs").textContent="Found the opening: "+cut.a.toFixed(1)+" to "+cut.b.toFixed(1)+" s. Press Open the app.";$("start").disabled=false;["m5","m1","p1","p5"].forEach(i=>$(i).disabled=false)}
   catch(err){$("fs").textContent="This file could not be read. Try the .webm again."}};
-$("m1").onclick=()=>{if(PCM){cut.m=Math.max(cut.a+0.5,cut.m-0.1);apply();run()}};
-$("p1").onclick=()=>{if(PCM){cut.m=Math.min(cut.b-0.5,cut.m+0.1);apply();run()}};
+const nudge=d=>()=>{if(PCM){cut.m=Math.min(cut.b-0.5,Math.max(cut.a+0.5,cut.m+d));apply();run()}};
+$("m5").onclick=nudge(-0.5);$("m1").onclick=nudge(-0.1);$("p1").onclick=nudge(0.1);$("p5").onclick=nudge(0.5);
+$("wf").onclick=e=>{if(!PCM)return;const r=$("wf").getBoundingClientRect();cut.m=Math.min(cut.b-0.3,Math.max(cut.a+0.3,(e.clientX-r.left)/r.width*(cut.b+1)));apply();run()};
 $("replay").disabled=false;
 </script>
