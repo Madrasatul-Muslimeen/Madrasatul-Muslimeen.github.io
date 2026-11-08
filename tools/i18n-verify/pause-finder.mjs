@@ -45,6 +45,10 @@ async function run(file) {
   check("silence, empty and a single frame are survived", m.findPauses(new Float64Array(0)).length === 0 && Array.isArray(m.findPauses(Float64Array.of(-20))));
   const blip = synth([[3, S], [1.0, P], [0.05, S], [1.0, P], [3, S]]);
   check("a 50 ms blip inside a pause does not split it in two", m.findPauses(m.loudnessFrames(blip, RATE)).length === 1);
+  const page = fs.readFileSync("docs/reference/2026-11-08-demo1104/index.html", "utf8");
+  const finderText = fs.readFileSync(SRC, "utf8").replace(/^export /gm, "");
+  check("the demo page carries the finder exactly as the module writes it (rebuild with build.mjs)", page.includes(finderText));
+  check("the demo page names no audio file and fetches nothing", !/fetch\(|XMLHttpRequest|sendBeacon|\.mp3|\.webm"/.test(page.replace(/accept="[^"]*"/, "")));
   console.log(`${path.basename(file)}: ${pass} passed, ${fail} failed`);
   return fail;
 }
