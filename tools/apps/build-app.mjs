@@ -127,6 +127,11 @@ function rules(base, s) {
     }
   }
 
+  // PCF MSA J120 O2: "Get ready for offline" (offline-ready.js) writes into the worker's own caches, so it names three of them.
+  for (const [q, name] of [["`", "app"], ['"', "ext"], ['"', "hadith"]]) {
+    add((p) => p === "app/js/offline-ready.js", `${q}${base.cachePrefix}-${name}-`, `${q}${s.cachePrefix}-${name}-`, { exact: 1 }, `offline cache "${name}" in offline-ready.js`);
+  }
+
   // PCF MSA J120 O1: MSA's install line (its manifest link, home-screen icon and theme colour) is on every MSA reader page
   // (tools/offline/install-links.mjs). It is MSA's own, so every other app's pages lose it; the theme colour and manifest
   // steps below then give that app its own. The count is exact: the source must carry the line on every listed page.

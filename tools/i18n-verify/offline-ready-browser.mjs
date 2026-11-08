@@ -170,6 +170,7 @@ for (const [lang, width] of PASSES) {
     !(await page.evaluate(() => performance.getEntriesByType("resource").some((e) => e.name.includes("offline-files.json")))));
   const ready0 = await openMyAccount(page);
   check(`${tag}: My account shows the Get ready button, enabled once the list has loaded`, ready0);
+  if (!ready0) { fail++; console.log(`  FAIL  ${tag}: the rest of this pass cannot run without the section`); await ctx.close(); continue; }
   const before = await page.evaluate(() => ({
     need: document.getElementById("offlineNeed")?.textContent || "",
     btn: document.getElementById("offlineReadyBtn")?.textContent || "",
@@ -183,7 +184,7 @@ for (const [lang, width] of PASSES) {
   check(`${tag}: the button reads in the reader's language`, before.btn === (lang === "bn" ? "ইন্টারনেট ছাড়া ব্যবহারের জন্য প্রস্তুত করুন" : "Get ready for offline"), before.btn);
   check(`${tag}: Duas is ticked by default, no other book`, before.dua === true && before.others === 0, JSON.stringify(before));
   check(`${tag}: one row per book (Duas, HadeethEnc, 15 books), each with its size in MB`, before.rows === 17 && before.sizes.every((s) => MB.test(s)), JSON.stringify(before.sizes.slice(0, 3)));
-  await page.locator(`input[data-offline-book="${MUWATTA}"]`).check();
+  await page.locator(`input[data-offline-book="${MUWATTA}"]`).check({ timeout: 5000 }).catch(() => {});
   const need2 = await page.evaluate(() => document.getElementById("offlineNeed").textContent);
   check(`${tag}: ticking al-Muwatta' raises the space it will use`, need2 !== before.need, `${before.need} -> ${need2}`);
 
