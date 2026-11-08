@@ -20,7 +20,7 @@ import { getAppLang, quranFontStack } from "./prefs.js";
 import { loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar } from "./openiti-corpus.js";
 import { duaCard, duaLoadFailed, fillDuaProgress, loadDuaCheckEnv } from "./dua-browser.js";
 import { el } from "./hadith-shared-ui.js";
-import { duaWords, duaWordsFingerprint } from "./dua-words.js";
+import { duaWords, duaNarration, duaWordsFingerprint } from "./dua-words.js";
 import { placeDialogAtHome } from "./home-window.js";
 import { posterNodes, shareNodes, selectionBar, fullTextNodes } from "./dua-poster.js";
 import { openDuaWindow, canFloatDuaCard } from "./dua-card-window.js";
@@ -134,8 +134,20 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
   let data = null;
   const detourOf = () => (where.tie != null ? { n: where.tie, from: listOf(data, where)?.[where.open - 1]?.h } : null);
 
+  // The Owner, 7 Nov: stepping ‹ › from a popped-up Dua Card must show the next dua IN the pop-up, not behind it.
+  let carryPop = false;
+  function dropPoppedCard() {
+    for (const w of document.querySelectorAll("[data-dua-window]")) w.remove();
+    document.body.classList.remove("dua-has-popped");
+  }
+  function popIfCarried(article) {
+    if (!carryPop || !article?.isConnected) return;
+    carryPop = false;
+    article._duaPop?.();
+  }
   function render() {
     closePop();
+    dropPoppedCard();
     root.textContent = "";
     closePull();
     const menu = el("div", "dua-pd-row");
@@ -365,11 +377,11 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       const prev = el("button", "dua-ref", "‹");
       prev.type = "button"; prev.disabled = i <= 1; prev.dataset.duaCardPrev = "";
       prev.setAttribute("aria-label", t("Previous dua"));
-      prev.addEventListener("click", () => { where.open = i - 1; where.tie = null; render(); });
+      prev.addEventListener("click", () => { carryPop = !!document.querySelector("[data-dua-window], .dua-card-popped"); where.open = i - 1; where.tie = null; render(); });
       const next = el("button", "dua-ref", "›");
       next.type = "button"; next.disabled = i >= list.length; next.dataset.duaCardNext = "";
       next.setAttribute("aria-label", t("Next dua"));
-      next.addEventListener("click", () => { where.open = i + 1; where.tie = null; render(); });
+      next.addEventListener("click", () => { carryPop = !!document.querySelector("[data-dua-window], .dua-card-popped"); where.open = i + 1; where.tie = null; render(); });
       const pos = el("span", "hadith-note dua-card-pos", t("{i} of {n}", { i: num(i), n: num(list.length) }));
       pos.dataset.duaCardPos = `${i}/${list.length}`;
       steps.append(prev, pos, next);
@@ -394,8 +406,10 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const slot = framedHost(body, titleOf(data, e));
     slot.parentElement.dataset.duaOpen = String(i);
     if (e.kind === "dua") return mountHadithDuaCard(slot, e.n, bar);
-    if (e.kind === "hisn") return slot.appendChild(hisnCard(e, bar));
-    slot.appendChild(quranCard(e, bar));
+    if (e.kind === "hisn") { const c = hisnCard(e, bar); slot.appendChild(c); return popIfCarried(c); }
+    const qc = quranCard(e, bar);
+    slot.appendChild(qc);
+    popIfCarried(qc);
   }
   function renderDetour(body) {
     const detour = detourOf();
@@ -526,10 +540,12 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
   const titled = (tt) => ({ title: tt && !tt.ar ? tt.text : null, titleAr: tt?.ar ? tt.text : null });
   /** D22 for the Hadith books' Dua card: words and progress stay; meaning, source, narration and ✓ Check pop up. */
   function layoutHadithCard(article, sheetOf, bar = null) {
+    // The Owner, 7 Nov: "The whole narration" and "Full text" were the same wish. The narration (chain and all, the dua's
+    // own words marked) now lives inside 📖 Full text, so the card's own fold is taken off the card.
+    for (const n of kids(article, "details.dua-narration")) n.remove();
     return dressCard(article, [
       { key: "meaning", label: t("Meaning"), nodes: kids(article, ".hadeethenc-explanation"), openFirst: true, empty: t("No meaning for this dua in the app yet.") },
       { key: "source", label: t("Source"), nodes: kids(article, ".openiti-standard-number, .dua-also") },
-      { key: "narration", label: t("The whole narration"), nodes: kids(article, "details.dua-narration") },
       { key: "check", label: t("✓ Check"), nodes: kids(article, ".dua-check-row") },
       ...sheetSections(sheetOf),
     ], bar);
@@ -552,7 +568,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const panel = el("div", "dua-menu-panel");
     panel.id = `duaMenuPanel${Math.random().toString(36).slice(2, 7)}`;
     panel.hidden = true;
-    const menuBtn = el("button", "dua-tile dua-tile-menu", `☰ ${t("Menu")}`);
+    const menuBtn = el("button", "dua-tile dua-tile-menu", "☰"); // the Owner, 7 Nov: three lines, no word, to save the bar
     menuBtn.type = "button"; menuBtn.dataset.duaMenuToggle = "";
     menuBtn.setAttribute("aria-expanded", "false");
     menuBtn.setAttribute("aria-controls", panel.id);
@@ -560,7 +576,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const setMenu = (open) => {
       panel.hidden = !open;
       menuBtn.setAttribute("aria-expanded", String(open));
-      menuBtn.textContent = open ? `✕ ${t("Menu")}` : `☰ ${t("Menu")}`;
+      menuBtn.textContent = open ? "✕" : "☰";
     };
     menuBtn.addEventListener("click", () => setMenu(panel.hidden));
     const popBtn = el("button", "dua-tile dua-tile-pop", "⤢");
@@ -583,6 +599,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       popBtn.setAttribute("aria-label", on ? t("Close pop-up") : t("Open as a pop-up"));
     };
     popBtn.addEventListener("click", () => setPop(!isPopped()));
+    article._duaPop = () => setPop(true);
     article.addEventListener("keydown", (ev) => {
       if (ev.key !== "Escape" || ev.defaultPrevented) return;
       if (isPopped()) { setPop(false); popBtn.focus(); }
@@ -655,6 +672,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       const article = duaCard(c, summary, state, cardRender, rows, links, page, vowels, grammar, checkEnv);
       const keep = layoutHadithCard(article, () => hadithSheet(article, c, links, n), bar);
       host.appendChild(article);
+      popIfCarried(article);
       // My Notes and Bookmark are written into the progress block as it fills: they move into the Menu's Keep group.
       Promise.resolve(fillDuaProgress(rows)).then(() => {
         const row = article.querySelector(".dua-progress .dua-note-bookmark");
@@ -681,6 +699,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       ...titled(titleOf(data, { kind: "dua", n })),
       ar: spans.length ? spans.map((s) => s.textContent).join(" ") : c.text,
       words, en: null, bn: null, line: t("Dua {n}", { n: num(n) }),
+      narration: picked ? { text: duaNarration(c.text), start: picked.start, end: picked.end } : { text: c.text, start: 0, end: 0 },
       ref: article.querySelector(".openiti-standard-number")?.textContent || t("Dua {n}", { n: num(n) }),
     };
   }

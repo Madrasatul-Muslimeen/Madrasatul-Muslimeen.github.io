@@ -255,7 +255,7 @@ const VIEWS = [
   { id: "card-menu", label: "The Dua Card's menu (scrolled into view)", url: RASUL_CARD, go: async (P) => { await cardReady(P); await P.evaluate(() => document.querySelector(".dua-card-menu")?.scrollIntoView({ block: "center" })); } },
   { id: "pop-meaning", label: "Pop-up card: Meaning", url: RASUL_CARD, go: popOpen("meaning") },
   { id: "pop-source", label: "Pop-up card: Source", url: RASUL_CARD, go: popOpen("source") },
-  { id: "pop-narration", label: "Pop-up card: The whole narration", url: RASUL_CARD, go: async (P) => { await popOpen("narration")(P); await P.evaluate(() => { const d = document.querySelector("[data-dua-pop] details"); if (d) d.open = true; }); await P.waitForTimeout(300); } },
+  { id: "pop-narration", label: "Pop-up card: Full text (holds The whole narration since 8 Nov)", url: RASUL_CARD, go: async (P) => { await popOpen("fulltext")(P); await P.evaluate(() => { const d = document.querySelector("[data-dua-pop] details"); if (d) d.open = true; }); await P.waitForTimeout(300); } },
   { id: "pop-check", label: "Pop-up card: ✓ Check", url: RASUL_CARD, go: popOpen("check") },
   { id: "check-panel", label: "✓ Check opened (the panel under the card)", url: RASUL_CARD, go: async (P) => { await popOpen("check")(P); await P.click("[data-dua-pop] [data-dua-check-open]"); await wait(P, "[data-dua-check-panel]", 15000); await P.waitForTimeout(500); } },
   { id: "pop-poster", label: "The 🖼 Poster", url: RASUL_CARD, go: popOpen("poster") },
