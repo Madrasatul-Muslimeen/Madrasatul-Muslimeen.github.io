@@ -36,7 +36,7 @@ const gr = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/dua/groups.
 const known = new Set(gr.groups.find((g) => g.id === "occasions").parts.flatMap((p) => p.items.map((i) => i.h)));
 check("every draft key is a real Hisn number", Object.keys(dm).every((k) => known.has(k)), JSON.stringify(Object.keys(dm).filter((k) => !known.has(k))));
 check("every draft has English and Bangla text, no HTML entity", Object.values(dm).every((m) => m.en?.length > 5 && m.bn?.length > 5 && !/&\w+;/.test(m.en + m.bn)));
-check("at least 50 drafts are in the file", Object.keys(dm).length >= 50, String(Object.keys(dm).length));
+check("at least 120 drafts are in the file", Object.keys(dm).length >= 120, String(Object.keys(dm).length));
 const none = await show("en", 3);
 check("a dua with no draft says no meaning is in the app yet", /No meaning of this dua is in the app yet/.test(none), JSON.stringify(none));
 await browser.close();
