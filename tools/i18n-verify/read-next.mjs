@@ -259,6 +259,20 @@ check("labels: each era's display number is bound to the era BY NAME, not by num
   assert.deepEqual(num(/Sahaba/), [28]); assert.deepEqual(num(/^\d+ Tābiʿīn$/), [29]); assert.deepEqual(num(/Tābiʿ al-Tābiʿīn/), [30]);
   assert.ok(![...tags].some((t) => /^(29 Tābiʿ al|30 Gen1|31 Gen2|32 Maliki|33 Hanbali|34 Hanafi|35 Shafiʿi|36 Groups)/.test(t)), "an old number is left");
 });
+check("Slice B: whereToReadByCentury holds the same books as whereToRead, grouped by death century, earliest first", () => {
+  const all = RN.whereToRead(data), groups = RN.whereToReadByCentury(data);
+  assert.equal(groups.flatMap((g) => g.books).length, all.length);
+  const cs = groups.map((g) => g.century).filter((c) => c != null);
+  assert.deepEqual(cs, [...cs].sort((a, b) => a - b)); assert.equal(new Set(cs).size, cs.length);
+  for (const g of groups) { for (const b of g.books) assert.equal(b.died == null ? null : Math.ceil(b.died / 100), g.century); const ds = g.books.map((b) => b.died ?? Infinity); assert.deepEqual(ds, [...ds].sort((a, b) => a - b)); }
+  assert.equal(RN.deathYearOf({ lifeAH: "224 AH – 310 AH" }), 310); assert.equal(RN.deathYearOf({ lifeAH: "? – 373 AH" }), 373); assert.equal(RN.deathYearOf({ lifeAH: "unknown" }), null);
+  // the real file is already in death order, so a fixture out of order proves the sorting itself
+  const mk = (id, ah, title) => ({ id, roles: ["tafsir"], lifeAH: ah, tafsir: [title], approaches: [] });
+  const fx = RN.whereToReadByCentury({ scholars: [mk("a", "? – 650 AH", "late"), mk("b", "? – 310 AH", "second"), mk("c", "? – 305 AH", "first"), mk("d", "unknown", "none"), mk("e", "? – 640 AH", "mid")] });
+  assert.deepEqual(fx.map((g) => g.century), [4, 7, null]);
+  assert.deepEqual(fx[0].books.map((b) => b.title), ["first", "second"]); assert.deepEqual(fx[1].books.map((b) => b.title), ["mid", "late"]);
+  assert.equal(groups[0].century, 4, "al-Ṭabarī (d. 310) is the first group");
+});
 const hb = fs.readFileSync("app/js/hadith-browser.js", "utf8");
 check("hadith-browser.js places the box with ONE call, inside the passage card", () => {
   assert.equal((hb.match(/renderReadNext\(/g) ?? []).length, 1);

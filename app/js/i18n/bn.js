@@ -4748,6 +4748,9 @@ export const BN = {
   "To about {year} AH": "প্রায় {year} হিজরি পর্যন্ত",
   "No one recorded in this era.": "এই যুগে কেউ নথিভুক্ত নেই।",
   "Just after this era": "এই যুগের ঠিক পরে",
+  // J115 Slice B: tafsīr books grouped by the century their author died
+  "Authors who died in century {n} AH": "যাঁদের মৃত্যু হিজরি {n} শতকে",
+  "Century not known": "শতক জানা নেই",
   // Retired keys, kept (a key is never removed, bn-duplicate-keys.mjs): "Read next" (renamed "Study Next", K3b) and the
   // pre-J112-R1 Siyagah bar sentence (replaced in #1468). Nothing reads them now.
   "Read next": "পরে পড়ুন",

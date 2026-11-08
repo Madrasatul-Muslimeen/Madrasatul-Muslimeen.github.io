@@ -28,7 +28,7 @@ import { buildEraView } from "./era-view.js";
 import { loadLemmaDictionary, loadBanglaLemmaDictionary } from "./lemma-dictionary.js";
 import {
   tabsFor, uniqueAyahRefs, ayahHref, hadithHref, otherHadith, wordMeanings, dictionaryEntries, entryMeaning,
-  groupByApproach, tafsirScholars, compilerOf, scholarName, lifeLine, whereToRead, hadithExplanation,
+  groupByApproach, tafsirScholars, compilerOf, scholarName, lifeLine, whereToRead, whereToReadByCentury, hadithExplanation,
   scholarHref, tafsirLinkFor, tafsirLinkHref,
 } from "./read-next.js";
 
@@ -355,7 +355,11 @@ async function tafsirPanel(panel, ctx) {
   const [data, links] = await Promise.all([loadTafsirScholars(), loadTafsirLinks().catch(() => null)]);
   const lang = getAppLang();
   if (links && ayat.length) panel.appendChild(note(t("Each link opens that book at the āyah, on a free website, in a new tab.")));
-  for (const { title, scholar } of whereToRead(data)) {
+  for (const g of whereToReadByCentury(data)) {
+  const head = el("p", "read-next-sub", g.century == null ? t("Century not known") : t("Authors who died in century {n} AH", { n: num(g.century) }));
+  head.dataset.readNextCentury = String(g.century);
+  panel.appendChild(head);
+  for (const { title, scholar } of g.books) {
     const item = el("div", "read-next-item");
     item.dataset.readNextTafsir = scholar.id;
     item.appendChild(el("span", "rn-ref", title));
@@ -384,6 +388,7 @@ async function tafsirPanel(panel, ctx) {
       item.appendChild(site);
     }
     panel.appendChild(item);
+  }
   }
 }
 
