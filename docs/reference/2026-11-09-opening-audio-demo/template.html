@@ -36,12 +36,12 @@ button:focus-visible,input:focus-visible{outline:3px solid #c9a24b;outline-offse
 </style>
 <div class="wrap">
   <h1>Opening Recitation Demo</h1>
-  <p>The app's opening card, played with the Aʿūdhu and Bismillah from the start of your Sūrah al-Wāqiʿah recording. Choose your file below. It stays in your browser and nothing is uploaded; the page cuts the opening out of it by itself. Each line appears when its recitation starts, and the next line comes in when it ends.</p>
+  <p>The app's opening card, played with the Aʿūdhu and Bismillah from the start of your Sūrah al-Wāqiʿah recording. The first 7 seconds are cut from your file and are inside this page. Each line appears when its recitation starts, and the next line comes in when it ends.</p>
   <div class="stage" id="stage">
     <div class="slide" id="s1"><div class="ar" id="ar1" lang="ar"></div><div class="tr">A'udhu billahi min ash-shaytwaner Rajeem</div><div class="en">I seek refuge with Allah from shaitwan, the rejected, accursed.</div></div>
     <div class="slide" id="s2"><div class="ar" id="ar2" lang="ar"></div><div class="en">In the name of Allah, the Most Gracious, the Most Merciful.</div></div>
     <div class="hint" id="hint">Tap the card to skip</div>
-    <div class="go" id="go"><div style="display:flex;flex-direction:column;gap:10px;align-items:center;padding:0 16px;text-align:center"><label class="main" id="pickl" style="display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:8px;background:#c9a24b;color:#1b2433;font-weight:600;cursor:pointer">Choose the Wāqiʿah file<input id="file" type="file" accept="audio/*,video/webm,.webm" style="position:absolute;opacity:0;width:1px;height:1px"></label><span id="fs" style="color:#f2e8d5;font-size:13px">Pick Surah_Waqiah.webm, then press Open the app.</span><button class="main" id="start" type="button" disabled>▶ Open the app with sound</button></div></div>
+    <div class="go" id="go"><div style="display:flex;flex-direction:column;gap:10px;align-items:center;padding:0 16px;text-align:center"><span id="fs" style="color:#f2e8d5;font-size:13px">Loading your recording…</span><button class="main" id="start" type="button" disabled>▶ Open the app with sound</button></div></div>
   </div>
   <div class="bar">
     <button id="replay" type="button">↻ Play again</button>
@@ -54,12 +54,13 @@ button:focus-visible,input:focus-visible{outline:3px solid #c9a24b;outline-offse
   <div class="read" aria-live="off">
     <b>Now</b><span id="now">Waiting</span>
     <b>Audio time</b><span id="tm">0.0 s</span>
-    <b>Found in your file</b><span id="tot">Not loaded yet</span>
+    <b>Cut points</b><span id="tot">Not loaded yet</span>
     <div class="prog"><i id="pg"></i></div>
   </div>
-  <p class="note">Honest limits. The line-by-line timing is exact, because it comes from the audio itself. The word-by-word light is an estimate: each word gets time in proportion to its letters, between the first sound and the end of the line. Exact word times need a hand check, like the sūrah timing helper. The cut points are found from the quiet moments in your recording; if one is off, move it with the buttons and play again. The audio is not saved anywhere. For the app, the two short pieces would be saved as small files from your recording, which is your decision to make (hosting).</p>
+  <p class="note">Honest limits. The line-by-line timing is exact, because it comes from the audio itself. The word-by-word light is an estimate: each word gets time in proportion to its letters, between the first sound and the end of the line. Exact word times need a hand check, like the sūrah timing helper. The cut between the two prayers (gold line) comes from the pitch and the sound shape of your recording, because I cannot hear it. If it is off, tap the picture or use the buttons and it plays again. The 7-second clip is inside this page only; hosting it for the app is your decision.</p>
 </div>
 <script>
+const OPEN="__OPEN__";
 const L=[{id:"ar1",src:null,onset:0,txt:"أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ",slide:"s1",name:"Aʿūdhu"},
          {id:"ar2",src:null,onset:0,txt:"بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",slide:"s2",name:"Bismillah"}];
 const $=i=>document.getElementById(i);
@@ -78,15 +79,15 @@ function playLine(i){
   if(!$("mute").checked){l.au.muted=false;l.au.play().catch(()=>{});}
   l.t0=performance.now();
   l.au.onended=null;
-  if(!$("mute").checked){l.au.onended=()=>setTimeout(()=>playLine(i+1),350)}
-  else{setTimeout(()=>{if(cur===i&&!done)playLine(i+1)},dur(l)*1000+350)}
+  if(!$("mute").checked){l.au.onended=()=>setTimeout(()=>playLine(i+1),30)}
+  else{setTimeout(()=>{if(cur===i&&!done)playLine(i+1)},dur(l)*1000+30)}
   loop();
 }
 function t(){const l=L[cur];return $("mute").checked?(performance.now()-l.t0)/1000:l.au.currentTime}
 function loop(){
   if(done||cur<0)return;const l=L[cur],T=t(),D=dur(l);
   $("tm").textContent=T.toFixed(1)+" s of "+D.toFixed(1)+" s";
-  const base=L.slice(0,cur).reduce((a,m)=>a+dur(m)+0.35,0),all=L.reduce((a,m)=>a+dur(m)+0.35,0);
+  const base=L.slice(0,cur).reduce((a,m)=>a+dur(m)+0.03,0),all=L.reduce((a,m)=>a+dur(m)+0.03,0);
   $("pg").style.width=Math.min(100,(base+T)/all*100)+"%";
   const f=Math.max(0,(T-l.onset)/(D-l.onset));
   l.words.forEach(x=>{x.s.className=!$("words").checked?"":f>=x.b?"done":f>=x.a?"lit":""});
@@ -129,11 +130,11 @@ function draw(){const c=$("wf"),x=c.getContext("2d"),W=c.width,H=c.height,span=c
   cut.env.forEach((v,i)=>{const t=i*0.02;if(t>span)return;const h=v*H*0.9;x.fillRect(sx(t),(H-h)/2,Math.max(1,W/span*0.02),h)});
   const line=(t,col,lbl)=>{x.fillStyle=col;x.fillRect(sx(t)-1,0,3,H);x.font="12px Inter,sans-serif";x.fillText(lbl,Math.min(W-60,sx(t)+4),12)};
   line(cut.a,"#1d7a4a","start");line(cut.m,"#c9a24b","cut");line(cut.b,"#c0392b","end");}
-$("file").onchange=async e=>{const f=e.target.files[0];if(!f)return;$("fs").textContent="Reading…";
-  try{const ac=new (window.AudioContext||window.webkitAudioContext)();const buf=await ac.decodeAudioData(await f.arrayBuffer());
-    PCM=buf.getChannelData(0);SR=buf.sampleRate;cut=analyse(PCM,SR);apply();
-    $("fs").textContent="Found the opening: "+cut.a.toFixed(1)+" to "+cut.b.toFixed(1)+" s. Press Open the app.";$("start").disabled=false;["m5","m1","p1","p5"].forEach(i=>$(i).disabled=false)}
-  catch(err){$("fs").textContent="This file could not be read. Try the .webm again."}};
+(async()=>{try{const bin=atob(OPEN),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+  const ac=new (window.AudioContext||window.webkitAudioContext)();const buf=await ac.decodeAudioData(u.buffer);
+  PCM=buf.getChannelData(0);SR=buf.sampleRate;const an=analyse(PCM,SR);cut={a:0.1,m:4.35,b:PCM.length/SR-0.05,env:an.env};apply();
+  $("fs").textContent="Ready: Aʿūdhu then Bismillah, cut at "+cut.m.toFixed(2)+" s.";$("start").disabled=false;["m5","m1","p1","p5"].forEach(i=>$(i).disabled=false)}
+  catch(err){$("fs").textContent="The recording could not be loaded."}})();
 const nudge=d=>()=>{if(PCM){cut.m=Math.min(cut.b-0.5,Math.max(cut.a+0.5,cut.m+d));apply();run()}};
 $("m5").onclick=nudge(-0.5);$("m1").onclick=nudge(-0.1);$("p1").onclick=nudge(0.1);$("p5").onclick=nudge(0.5);
 $("wf").onclick=e=>{if(!PCM)return;const r=$("wf").getBoundingClientRect();cut.m=Math.min(cut.b-0.3,Math.max(cut.a+0.3,(e.clientX-r.left)/r.width*(cut.b+1)));apply();run()};
