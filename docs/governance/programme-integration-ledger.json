@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.57",
+    "version": "13.58",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6629,8 +6629,20 @@
     {
       "version": "13.57",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "PCF MSA · Dua J104 r14a (#1534): Qur'anic duas play the Quran Study recitation; a Hadith dua's poster and sharing carry HadeethEnc's translation of the hadith, reviewed by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-11-08",
+        "integratedOn": "2026-11-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.58",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "PCF MSA · Dua J104 r14b (#1543): 16 draft Hisn al-Muslim meanings marked draft, a failed recitation said in words on the card, and a poster opened before its translation loads rebuilt when it arrives, reviewed by the Architect.",
       "integration": {
         "authorizedOn": "2026-11-08",
         "integratedOn": "2026-11-08",
@@ -6639,8 +6651,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.58",
+  "nextUnallocated": "13.59",
   "nextUnallocatedNote": [
+    "v13.58 was allocated to the draft Hisn meanings and the r14a follow-ups (Dua J104 r14b), 2026-11-08.",
     "v13.57 was allocated to Qur'anic duas play and the hadith translation on the Dua poster (Dua J104 r14a), 2026-11-08.",
     "v13.56 was allocated to the Eras names linked to the Scholars Database (QR J115 follow-up), 2026-11-08.",
     "v13.55 was allocated to the Tafsīr books grouped by century (QR J115 Slice B), 2026-11-08.",

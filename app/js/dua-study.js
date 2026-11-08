@@ -26,6 +26,7 @@ import { posterNodes, shareNodes, selectionBar, fullTextNodes } from "./dua-post
 import { openDuaWindow, canFloatDuaCard } from "./dua-card-window.js";
 import { trapModal } from "./modal-focus.js";
 
+const DRAFTS_URL = "../tools/hadith-data-pull/output/dua/draft-meanings.json";
 const GROUPS_URL = "../tools/hadith-data-pull/output/dua/groups.json";
 const BANNER_URL = "./img/dua-banner-bottom.webp";
 export const PER_PAGE = 50;
@@ -44,6 +45,16 @@ const EMPTY = {
   salaf: () => t("No duas here yet. Each one needs a checked source, for example an-Nawawi's al-Adhkār."),
   ulama: () => t("No duas here yet. Each one needs the scholar's name and the book it is from."),
 };
+
+let draftsPromise = null;
+/** 10 B: the draft meanings file, read once on the first press of a Hisn card's Menu; a failed read is not kept. */
+function loadDraftMeanings() {
+  if (!draftsPromise) {
+    draftsPromise = fetch(DRAFTS_URL).then((res) => { if (!res.ok) throw new Error("draft meanings"); return res.json(); }).then((d) => d?.meanings || {});
+    draftsPromise.catch(() => { draftsPromise = null; });
+  }
+  return draftsPromise;
+}
 
 let groupsPromise = null;
 /** The groups file, read once; a failed read is not kept, so Try again really asks again. */
@@ -534,10 +545,21 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
   const kids = (article, sel) => [...article.children].filter((c) => c.matches(sel));
   /** D07 / D14: the poster and copy / share entries of a card's menu, for the sheet `sheetOf()` gives when opened. */
   const sheetSections = (sheetOf) => [
-    { key: "fulltext", label: `📖 ${t("Full text")}`, build: () => [fullTextNodes(sheetOf())] },
-    { key: "poster", label: `🖼 ${t("Poster")}`, sheet: sheetOf, build: () => posterNodes(sheetOf(), closePop) },
-    { key: "share", label: `${t("Copy / share")}`, build: () => shareNodes(sheetOf(), closePop) },
+    { key: "fulltext", label: `📖 ${t("Full text")}`, build: () => whenReady(sheetOf, (sh) => [fullTextNodes(sh)]) },
+    { key: "poster", label: `🖼 ${t("Poster")}`, sheet: sheetOf, build: () => whenReady(sheetOf, (sh) => posterNodes(sh, closePop)) },
+    { key: "share", label: `${t("Copy / share")}`, build: () => whenReady(sheetOf, (sh) => shareNodes(sh, closePop)) },
   ];
+  /**
+   * Follow-up from the Architect (8 Nov): a sheet may still be loading its translation or draft meaning (`sheet.ready`).
+   * The pop-up is built at once, and rebuilt in place when that arrives, so a fast press never shows a poster without it.
+   */
+  function whenReady(sheetOf, make) {
+    const first = sheetOf();
+    const holder = el("div", "dua-ready-holder");
+    holder.append(...make(first));
+    if (first.ready) first.ready.then(() => { const next = sheetOf(); if (next.en !== first.en || next.bn !== first.bn) holder.replaceChildren(...make(next)); });
+    return [holder];
+  }
   const titled = (tt) => ({ title: tt && !tt.ar ? tt.text : null, titleAr: tt?.ar ? tt.text : null });
   /** D22 for the Hadith books' Dua card: words and progress stay; meaning, source, narration and ✓ Check pop up. */
   function layoutHadithCard(article, sheetOf, bar = null) {
@@ -671,14 +693,14 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       if (!c) { host.appendChild(el("p", "hadith-note", t("Dua {n} was not found.", { n: num(n) }))); return; }
       const rows = [];
       const article = duaCard(c, summary, state, cardRender, rows, links, page, vowels, grammar, checkEnv);
-      const hadithTr = { en: null, bn: null };
+      const hadithTr = { en: null, bn: null, ready: null };
       const keep = layoutHadithCard(article, () => hadithSheet(article, c, links, n, hadithTr), bar);
       // 10 A (the Owner, 8 Nov): the poster and sharing carry HadeethEnc's translation of the hadith, labelled as such. It is
       // read on the first press of the Menu, never when the card opens.
       article.addEventListener("click", function once(ev) {
         if (!ev.target.closest?.("[data-dua-menu-toggle]")) return;
         article.removeEventListener("click", once);
-        loadHadithTranslations(c, hadithTr);
+        hadithTr.ready = loadHadithTranslations(c, hadithTr);
       });
       host.appendChild(article);
       popIfCarried(article);
@@ -695,7 +717,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
    * respected). Word meanings come from the same Qur'an word links the card's word panel uses, only when those links
    * were made from these very words (their fingerprint).
    */
-  function hadithSheet(article, c, wordLinks, n, hadithTr = { en: null, bn: null }) {
+  function hadithSheet(article, c, wordLinks, n, hadithTr = { en: null, bn: null, ready: null }) {
     const spans = [...article.querySelectorAll(".dua-words [data-dua-word]")];
     const picked = duaWords(c.text);
     const links = wordLinks?.duas?.[c.dua];
@@ -707,7 +729,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     return {
       ...titled(titleOf(data, { kind: "dua", n })),
       ar: spans.length ? spans.map((s) => s.textContent).join(" ") : c.text,
-      words, en: hadithTr.en, bn: hadithTr.bn, trNote: hadithTr.en || hadithTr.bn ? t("translation of the hadith") : null, line: t("Dua {n}", { n: num(n) }),
+      words, ready: hadithTr.ready, en: hadithTr.en, bn: hadithTr.bn, trNote: hadithTr.en || hadithTr.bn ? t("translation of the hadith") : null, line: t("Dua {n}", { n: num(n) }),
       narration: picked ? { text: duaNarration(c.text), start: picked.start, end: picked.end } : { text: c.text, start: 0, end: 0 },
       ref: article.querySelector(".openiti-standard-number")?.textContent || t("Dua {n}", { n: num(n) }),
     };
@@ -731,6 +753,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     return p;
   }
   /** A Hisn al-Muslim dhikr: its chapter, its words, how many times, al-Qaḥṭānī's reference, and its Dua card if tied. */
+  const L2 = () => (getAppLang() === "bn" ? "bn" : "en");
   function hisnCard(e, bar = null) {
     const card = el("article", "hadith-card dua-card dua-hisn-card");
     card.dataset.duaHisn = e.h;
@@ -759,9 +782,29 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       card.appendChild(box);
     }
     card.appendChild(el("p", "dua-words-note", t("Source: Hisn al-Muslim, typed by Abdellah Sellam (MIT licence).")));
+    // 10 B (the Owner, 8 Nov): where HadeethEnc has nothing, a short DRAFT meaning, marked "draft, to be checked".
+    const draft = { en: null, bn: null, ready: null };
+    const meaning = el("div", "dua-hisn-meaning");
+    meaning.appendChild(el("p", "hadith-note", t("No meaning of this dua is in the app yet.")));
+    card.appendChild(meaning);
+    card.addEventListener("click", function once(ev) {
+      if (!ev.target.closest?.("[data-dua-menu-toggle]")) return;
+      card.removeEventListener("click", once);
+      draft.ready = loadDraftMeanings().then((all) => {
+        const m = all[e.h];
+        if (!m) return;
+        draft.en = m.en || null; draft.bn = m.bn || null;
+        meaning.textContent = "";
+        const text = el("p", "dua-quran-meaning", m[L2()] || m.en || m.bn);
+        text.lang = m[L2()] ? L2() : (m.en ? "en" : "bn");
+        meaning.appendChild(text);
+        meaning.appendChild(el("p", "dua-proposed", t("draft, to be checked")));
+      }).catch(() => {});
+    });
     dressCard(card, [
+      { key: "meaning", label: t("Meaning"), nodes: [meaning] },
       { key: "source", label: t("Source"), nodes: kids(card, ".dua-hisn-ref, .dua-also, .dua-words-note") },
-      ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: null, en: null, bn: null, line: t("Hisn al-Muslim {ref}", { ref: num(e.h) }),
+      ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: null, ready: draft.ready, en: draft.en, bn: draft.bn, trNote: draft.en || draft.bn ? t("draft, to be checked") : null, line: t("Hisn al-Muslim {ref}", { ref: num(e.h) }),
         ref: `${t("Hisn al-Muslim {ref}", { ref: num(e.h) })}${e.ref ? ` · ${e.ref}` : ""}` })),
     ], bar).remove();
     return card;
@@ -800,6 +843,11 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     play.disabled = false;
     play.title = t("Play");
     let player = null;
+    const say = (msg) => {
+      let m = card.querySelector(".dua-play-msg");
+      if (!m) { m = el("p", "hadeethenc-study-reason dua-play-msg"); m.setAttribute("role", "status"); card.querySelector("[data-dua-topbar]")?.after(m); }
+      m.textContent = msg;
+    };
     const sync = () => { const on = !!player?.isPlaying(); play.textContent = on ? "⏸" : "▶"; play.setAttribute("aria-label", on ? t("Pause") : t("Play")); play.dataset.duaPlaying = on ? "1" : "0"; };
     play.addEventListener("click", async () => {
       try {
@@ -808,10 +856,13 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
         if (player.isPaused()) { player.resume(); sync(); return; }
         player.unlockAudio();
         player.setPlaybackStateHandler(sync);
+        player.setPlaybackErrorHandler(() => { say(t("The recitation could not be played. Check your internet connection and try again.")); sync(); });
         player.playAyah(s, a, "ar");
+        card.querySelector(".dua-play-msg")?.remove();
         sync();
       } catch (err) {
         play.title = t("Audio could not be played");
+        say(t("The recitation could not be played. Check your internet connection and try again."));
         console.error(err);
       }
     });
