@@ -449,6 +449,9 @@ const PUBLISHED_DEPLOYMENTS = [
   // Sydney, PCF MSA J03 k4rules1104, released as v13.32), and firestore.rules was made this file the same morning.
   // Red on main before that, because firestore.rules had moved on from the Zab file; the dawahPages-block half is unchanged.
   "docs/governance/2026-10-15-ayah-keys-candidate.rules",
+  // Added 8 Nov 2026 (Architect 88L): the Owner published the Dua saving Rules in study-monitoring (PCF MSA J104 line
+  // 20, n104pub), and firestore.rules was made this file byte for byte; the dawahPages-block half is unchanged.
+  "docs/proposals/dua-saving.DEPLOYMENT-candidate.rules",
 ];
 function dawahBlock(text) {
   const start = text.indexOf("match /dawahPages/");
