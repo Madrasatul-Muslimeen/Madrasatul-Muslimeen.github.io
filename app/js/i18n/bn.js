@@ -3329,6 +3329,8 @@ export const BN = {
   "Dua Card": "দুআ কার্ড",
   "Audio is coming soon": "অডিও শীঘ্রই আসছে",
   "translation of the hadith": "হাদীসের অনুবাদ",
+  "No meaning of this dua is in the app yet.": "এই দুআর অর্থ এখনো অ্যাপে নেই।",
+  "draft, to be checked": "খসড়া, যাচাই করা হবে",
   "Audio could not be played": "অডিও চালানো গেল না",
   "Reciter": "ক্বারী",
   "Speed": "গতি",

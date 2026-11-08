@@ -26,6 +26,7 @@ import { posterNodes, shareNodes, selectionBar, fullTextNodes } from "./dua-post
 import { openDuaWindow, canFloatDuaCard } from "./dua-card-window.js";
 import { trapModal } from "./modal-focus.js";
 
+const DRAFTS_URL = "../tools/hadith-data-pull/output/dua/draft-meanings.json";
 const GROUPS_URL = "../tools/hadith-data-pull/output/dua/groups.json";
 const BANNER_URL = "./img/dua-banner-bottom.webp";
 export const PER_PAGE = 50;
@@ -44,6 +45,16 @@ const EMPTY = {
   salaf: () => t("No duas here yet. Each one needs a checked source, for example an-Nawawi's al-Adhkār."),
   ulama: () => t("No duas here yet. Each one needs the scholar's name and the book it is from."),
 };
+
+let draftsPromise = null;
+/** 10 B: the draft meanings file, read once on the first press of a Hisn card's Menu; a failed read is not kept. */
+function loadDraftMeanings() {
+  if (!draftsPromise) {
+    draftsPromise = fetch(DRAFTS_URL).then((res) => { if (!res.ok) throw new Error("draft meanings"); return res.json(); }).then((d) => d?.meanings || {});
+    draftsPromise.catch(() => { draftsPromise = null; });
+  }
+  return draftsPromise;
+}
 
 let groupsPromise = null;
 /** The groups file, read once; a failed read is not kept, so Try again really asks again. */
@@ -731,6 +742,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     return p;
   }
   /** A Hisn al-Muslim dhikr: its chapter, its words, how many times, al-Qaḥṭānī's reference, and its Dua card if tied. */
+  const L2 = () => (getAppLang() === "bn" ? "bn" : "en");
   function hisnCard(e, bar = null) {
     const card = el("article", "hadith-card dua-card dua-hisn-card");
     card.dataset.duaHisn = e.h;
@@ -759,9 +771,29 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       card.appendChild(box);
     }
     card.appendChild(el("p", "dua-words-note", t("Source: Hisn al-Muslim, typed by Abdellah Sellam (MIT licence).")));
+    // 10 B (the Owner, 8 Nov): where HadeethEnc has nothing, a short DRAFT meaning, marked "draft, to be checked".
+    const draft = { en: null, bn: null };
+    const meaning = el("div", "dua-hisn-meaning");
+    meaning.appendChild(el("p", "hadith-note", t("No meaning of this dua is in the app yet.")));
+    card.appendChild(meaning);
+    card.addEventListener("click", function once(ev) {
+      if (!ev.target.closest?.("[data-dua-menu-toggle]")) return;
+      card.removeEventListener("click", once);
+      loadDraftMeanings().then((all) => {
+        const m = all[e.h];
+        if (!m) return;
+        draft.en = m.en || null; draft.bn = m.bn || null;
+        meaning.textContent = "";
+        const text = el("p", "dua-quran-meaning", m[L2()] || m.en || m.bn);
+        text.lang = m[L2()] ? L2() : (m.en ? "en" : "bn");
+        meaning.appendChild(text);
+        meaning.appendChild(el("p", "dua-proposed", t("draft, to be checked")));
+      }).catch(() => {});
+    });
     dressCard(card, [
+      { key: "meaning", label: t("Meaning"), nodes: [meaning] },
       { key: "source", label: t("Source"), nodes: kids(card, ".dua-hisn-ref, .dua-also, .dua-words-note") },
-      ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: null, en: null, bn: null, line: t("Hisn al-Muslim {ref}", { ref: num(e.h) }),
+      ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: null, en: draft.en, bn: draft.bn, trNote: draft.en || draft.bn ? t("draft, to be checked") : null, line: t("Hisn al-Muslim {ref}", { ref: num(e.h) }),
         ref: `${t("Hisn al-Muslim {ref}", { ref: num(e.h) })}${e.ref ? ` · ${e.ref}` : ""}` })),
     ], bar).remove();
     return card;
