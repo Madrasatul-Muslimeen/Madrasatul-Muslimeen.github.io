@@ -3331,6 +3331,7 @@ export const BN = {
   "translation of the hadith": "হাদীসের অনুবাদ",
   "No meaning of this dua is in the app yet.": "এই দুআর অর্থ এখনো অ্যাপে নেই।",
   "draft, to be checked": "খসড়া, যাচাই করা হবে",
+  "The recitation could not be played. Check your internet connection and try again.": "তিলাওয়াত চালানো গেল না। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।",
   "Audio could not be played": "অডিও চালানো গেল না",
   "Reciter": "ক্বারী",
   "Speed": "গতি",

@@ -31,6 +31,9 @@ for (const lang of ["en", "bn"]) {
   await P.waitForTimeout(1500);
   const want = `${String(s).padStart(3, "0")}${String(a).padStart(3, "0")}.mp3`;
   check(`${tag} pressing ▶ asks for that āyah's recitation (${want})`, asked.some((u) => u.includes(want)), JSON.stringify(asked));
+  await P.waitForSelector(".dua-play-msg", { timeout: 6000 }).catch(() => {});
+  const msg = await P.$eval(".dua-play-msg", (e) => ({ t: e.textContent, vis: e.getBoundingClientRect().height > 0 })).catch(() => null);
+  check(`${tag} a failed recitation says so in words on the card`, !!msg && msg.vis && msg.t.length > 20, JSON.stringify(msg));
   await ctx.close();
 }
 const ctx = await newContext(browser, { appLang: "en", banner: false, viewport: { width: 390, height: 900 } });
