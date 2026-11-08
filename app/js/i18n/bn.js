@@ -3528,6 +3528,13 @@ export const BN = {
   "Name (Bangla)": "নাম (বাংলা)", // ?
   "It is added at the end of its section. You can move it, rename it and write its Guide with Edit.": "এটি তার বিভাগের শেষে যোগ হয়। Edit দিয়ে আপনি এটি সরাতে, নাম বদলাতে এবং এর নির্দেশিকা লিখতে পারবেন।", // ?
   "Add Approach": "পদ্ধতি যোগ করুন", // ?
+  "The eras of the scholars": "আলিমদের যুগ",
+  "One tap adds the Tābiʿūn Approach straight after the Ṣaḥābah Approach. It is never added by itself, and never twice.": "একটি চাপে তাবেয়ী পদ্ধতিটি সাহাবা পদ্ধতির ঠিক পরে যোগ হয়। এটি নিজে থেকে কখনও যোগ হয় না, আর দুইবারও না।",
+  "Add the Tābiʿūn Approach after the Ṣaḥābah Approach": "সাহাবা পদ্ধতির পরে তাবেয়ী পদ্ধতি যোগ করুন",
+  "There is already a Tābiʿūn Approach, so a second one is not added.": "তাবেয়ী পদ্ধতি আগেই আছে, তাই দ্বিতীয়টি যোগ হয়নি।",
+  "A Tābiʿūn Approach exists but is removed, so a second one is not added. Bring that one back instead.": "তাবেয়ী পদ্ধতি আছে কিন্তু সরানো, তাই দ্বিতীয়টি যোগ হয়নি। সেটিই ফিরিয়ে আনুন।",
+  "There is no Ṣaḥābah Approach to put it after. Add or bring back the Ṣaḥābah Approach first.": "এর আগে বসানোর মতো সাহাবা পদ্ধতি নেই। আগে সাহাবা পদ্ধতি যোগ করুন বা ফিরিয়ে আনুন।",
+  "Added the Tābiʿūn Approach after the Ṣaḥābah Approach.": "সাহাবা পদ্ধতির পরে তাবেয়ী পদ্ধতি যোগ হয়েছে।",
   "Choose a section.": "একটি বিভাগ বেছে নিন।", // ?
   "Added \"{name}\" to {section}.": "\"{name}\" {section}-এ যোগ হয়েছে।", // ?
 
