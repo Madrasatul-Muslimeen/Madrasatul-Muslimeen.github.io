@@ -45,10 +45,11 @@ label.row{display:flex;gap:10px;align-items:center;min-height:44px}input[type=ch
 
 <section class="card">
 <h2 data-i="s2">2. Audio settings</h2>
-<label class="row"><input type="checkbox" id="optOpen" checked><span data-i="optOpen">Play Aʿūdhu and Bismillah first (before āyah 1)</span></label>
-<label class="row"><input type="checkbox" id="optJoin"><span data-i="optJoin">Joined āyāt (22 and 23): play the pair twice, once for each, in "Play all"</span></label>
+<label class="row"><input type="checkbox" id="optOpen" checked><span data-i="optOpen">Play Aʿūdhu and Bismillah once, when listening starts, and again when a new sūrah starts</span></label>
+<label class="row"><input type="checkbox" id="optJoin" checked><span data-i="optJoin">Joined āyāt (22–23, 28–29, 30–31, 93–94): in "Play all", play each pair twice, once for each āyah</span></label>
+<label class="row"><input type="checkbox" id="together" checked><span data-i="together">Play 28–29, 30–31 and 93–94 as one stretch (they have a short pause between them)</span></label>
 <label class="row"><input type="checkbox" id="joined" checked><span data-i="joined">Āyāt 22 and 23 are recited together with no pause</span></label>
-<p class="mut" data-i="joinNote">There is no pause between 22 and 23, so cutting there would clip a word. Both share one stretch of sound. Picking either plays the pair.</p>
+<p class="mut" data-i="joinNote">22 and 23 have no pause at all, so cutting there would clip a word. In every joined pair both āyāt share one stretch of sound, and picking either plays the pair.</p>
 </section>
 
 <section class="card">
@@ -102,11 +103,12 @@ function findPauses(db, { frameMs = FRAME_MS, dropDb = 7, minPause = 0.6, mergeG
 
 /**
  * Lay the pauses onto a sūrah of `ayat` āyāt. `joined` = [[22,23]]: āyāt the reciter says with NO pause between them; they
- * share one [from,to] and play together. A sound file usually starts with the opening (Aʿūdhu + Bismillah) and ends with
+ * share one [from,to] and play together. `together` = [[28,29],…]: āyāt that DO have a pause between them (it is counted
+ * as a boundary) but the Owner wants them played as one stretch, so both get [start of the first, end of the second]. A sound file usually starts with the opening (Aʿūdhu + Bismillah) and ends with
  * silence: the FIRST pause closes the opening (opening=true) and a LAST pause that reaches the end of the file is only the
  * ending. Boundaries needed = ayat - 1 - (number of joined pairs). Anything else is reported, never hidden.
  */
-function layOut(pauses, total, { ayat, joined = [], hasOpening = true } = {}) {
+function layOut(pauses, total, { ayat, joined = [], together = [], hasOpening = true } = {}) {
   const issues = [], p = pauses.slice();
   let tail = null; if (p.length && total - p[p.length - 1].to < 0.3) tail = p.pop();
   let openEnd = 0; if (hasOpening) { if (!p.length) issues.push("no-opening"); else openEnd = p.shift().mid; }
@@ -119,21 +121,23 @@ function layOut(pauses, total, { ayat, joined = [], hasOpening = true } = {}) {
     const to = a === ayat ? (tail ? tail.from + Math.min(0.5, (tail.to - tail.from) / 2) : total) : (bounds[bi++] ?? null);
     ayahs.push({ n: a, from, to }); from = to;
   }
+  for (const [a, b] of together) { const x = ayahs[a - 1], y = ayahs[b - 1]; if (x && y && y.to !== null) { x.to = y.to; y.from = x.from; } }
+  for (const a of ayahs) a.pair = [...joined, ...together].find(([x, y]) => a.n === x || a.n === y) ?? null;
   return { opening: hasOpening ? { from: 0, to: openEnd } : null, ayahs, found: p.length, need, issues, ok: issues.length === 0 };
 }
 
 const FOUND = {"total":776.85,"pauses":[[7.64,9.5],[15.52,17.52],[21.1,22.88],[26.52,28.28],[30.98,32.7],[36.32,37.94],[41.7,43.14],[50.28,52.24],[58.58,60.14],[67,69.16],[76.22,78.9],[85.06,85.9],[93.1,95.32],[100.46,102],[106.74,108.1],[112.7,114.26],[117.36,118.88],[124.34,126.66],[133.72,135.38],[143.5,144.92],[151.24,152.9],[160.14,161.28],[169.66,170.28],[179.14,181.04],[187.64,188.58],[195.14,196.34],[202.16,203.68],[211.82,212.44],[221.44,223.26],[230.96,232.6],[235.74,236.84],[242.04,243.62],[247.04,248.64],[257.88,259.62],[263.68,264.62],[267.12,268.74],[272.1,273.22],[277.76,279.24],[284.7,285.54],[294.28,296.36],[300.78,302.18],[308.06,309.1],[313.84,315.62],[322.32,323.68],[331,332.58],[339.92,341.46],[350.3,351.86],[358.08,358.7],[365.96,366.96],[374.6,376.82],[386.1,387.7],[394.52,395.86],[400.36,401.8],[407.62,408.6],[412.6,413.74],[418.36,419.5],[425.62,427],[431.32,433.2],[441.88,443.26],[452.7,453.66],[462.4,463.98],[469.98,471.42],[479.7,481.38],[486.46,487.66],[495.84,497.22],[507.14,508.48],[512.88,514.08],[518.78,519.76],[527.46,529.22],[538.72,540.52],[549.98,552.2],[557.68,559.44],[570.06,571.82],[580.16,582.02],[586.88,588.4],[594.26,595.76],[602.74,604.2],[610,611.36],[616.08,617.3],[625.44,627.32],[633.46,634.9],[641.86,642.76],[649.98,651.68],[657.82,659.12],[665.92,667.54],[676.58,678.66],[686.04,687.62],[694.58,696.02],[702.52,703.84],[711.24,712.56],[720.3,721.92],[727.46,729.12],[737.98,739.92],[746.52,748.3],[753.36,755.2],[760,776.84]]};
-const AYAT = 96, SURAH = 56;
+const AYAT = 96, SURAH = 56, TOGETHER = [[28, 29], [30, 31], [93, 94]];
 const T = {
- en:{title:"Ayah times from a whole-sūrah recording",sub:"Demo (not part of the app). Sūrah al-Wāqiʿah, 96 āyāt. The helper finds each āyah's start from the pauses; you listen and tick.",priv:"Your file stays in this browser tab. Nothing is uploaded, copied or kept. Only the times are saved.",s1:"1. Choose your recording",s2:"2. Audio settings",s3:"3. Listen and tick",optOpen:"Play Aʿūdhu and Bismillah first (before āyah 1)",optJoin:"Joined āyāt (22 and 23): play the pair twice, once for each, in \"Play all\"",joined:"Āyāt 22 and 23 are recited together with no pause",joinNote:"There is no pause between 22 and 23, so cutting there would clip a word. Both share one stretch of sound. Picking either plays the pair.",playOpen:"▶ Aʿūdhu + Bismillah",playAll:"▶ Play all",stop:"■ Stop",dl:"Save the times",play:"▶ Play",ayah:"Āyah",pair:"recited together with the next/previous one: both play",checked:"checked",wait:"Listening for the pauses…",nofile:"Choose your recording above.",loaded:"Loaded",found:"Found {f} pauses between āyāt; {n} are needed.",ok:"The count matches.",missing:"One or more pauses are missing: tick \"recited together\" if two āyāt have no pause, or move a start by hand.",surplus:"There are more pauses than āyāt: a long breath may count as a pause. Move or ignore the extras.",noopen:"No opening found.",saved:"Saved times used (this tab cannot decode the file).",env:"Listening needs a computer (Chrome or Edge). Playing works on any device.",ticks:"{t} of {n} ticked",wrongdur:"This file is {d} s; the saved times were made for about {e} s."},
- bn:{title:"পুরো সূরার রেকর্ডিং থেকে আয়াতের সময়",sub:"ডেমো (অ্যাপের অংশ নয়)। সূরা আল-ওয়াকিয়া, ৯৬ আয়াত। সহায়ক বিরতি দেখে প্রতিটি আয়াতের শুরু খোঁজে; আপনি শুনে টিক দেন।",priv:"আপনার ফাইল এই ব্রাউজার ট্যাবেই থাকে। কিছু আপলোড, কপি বা জমা হয় না। শুধু সময়গুলো সংরক্ষণ হয়।",s1:"১. আপনার রেকর্ডিং বেছে নিন",s2:"২. অডিও সেটিং",s3:"৩. শুনুন ও টিক দিন",optOpen:"আয়াত ১-এর আগে আউযু ও বিসমিল্লাহ বাজান",optJoin:"যুক্ত আয়াত (২২ ও ২৩): \"সব বাজান\"-এ জোড়াটি দুইবার বাজান",joined:"২২ ও ২৩ আয়াত বিরতি ছাড়া একসাথে পড়া হয়েছে",joinNote:"২২ ও ২৩-এর মাঝে বিরতি নেই, তাই কাটলে শব্দ কেটে যাবে। দুটি একই অংশ ভাগ করে। যেকোনোটি বাছলে জোড়া বাজবে।",playOpen:"▶ আউযু + বিসমিল্লাহ",playAll:"▶ সব বাজান",stop:"■ থামান",dl:"সময়গুলো সংরক্ষণ",play:"▶ বাজান",ayah:"আয়াত",pair:"আগের/পরেরটির সাথে একসাথে পড়া: দুটিই বাজে",checked:"যাচাইকৃত",wait:"বিরতি খোঁজা হচ্ছে…",nofile:"উপরে রেকর্ডিং বেছে নিন।",loaded:"লোড হয়েছে",found:"আয়াতের মাঝে {f}টি বিরতি পাওয়া গেছে; দরকার {n}টি।",ok:"সংখ্যা মিলেছে।",missing:"এক বা একাধিক বিরতি নেই: দুই আয়াতে বিরতি না থাকলে \"একসাথে পড়া\" টিক দিন, অথবা শুরু হাতে সরান।",surplus:"আয়াতের চেয়ে বিরতি বেশি: লম্বা শ্বাসও বিরতি গণ্য হতে পারে। বাড়তিগুলো সরান বা বাদ দিন।",noopen:"শুরুর অংশ পাওয়া যায়নি।",saved:"সংরক্ষিত সময় ব্যবহার হয়েছে (এই ট্যাব ফাইলটি পড়তে পারেনি)।",env:"শোনার কাজে কম্পিউটার (Chrome বা Edge) লাগে। বাজানো সব ডিভাইসে চলে।",ticks:"{n}টির মধ্যে {t}টিতে টিক",wrongdur:"এই ফাইল {d} সেকেন্ডের; সংরক্ষিত সময় প্রায় {e} সেকেন্ডের জন্য।"}
+ en:{title:"Ayah times from a whole-sūrah recording",sub:"Demo (not part of the app). Sūrah al-Wāqiʿah, 96 āyāt. The helper finds each āyah's start from the pauses; you listen and tick.",priv:"Your file stays in this browser tab. Nothing is uploaded, copied or kept. Only the times are saved.",s1:"1. Choose your recording",s2:"2. Audio settings",s3:"3. Listen and tick",optOpen:"Play Aʿūdhu and Bismillah once, when listening starts, and again when a new sūrah starts",optJoin:"Joined āyāt (22–23, 28–29, 30–31, 93–94): in \"Play all\", play each pair twice, once for each āyah",together:"Play 28–29, 30–31 and 93–94 as one stretch (they have a short pause between them)",joined:"Āyāt 22 and 23 are recited together with no pause",joinNote:"22 and 23 have no pause at all, so cutting there would clip a word. In every joined pair both āyāt share one stretch of sound, and picking either plays the pair.",playOpen:"▶ Aʿūdhu + Bismillah",playAll:"▶ Play all",stop:"■ Stop",dl:"Save the times",play:"▶ Play",ayah:"Āyah",pair:"recited together with the next/previous one: both play",checked:"checked",wait:"Listening for the pauses…",nofile:"Choose your recording above.",loaded:"Loaded",found:"Found {f} pauses between āyāt; {n} are needed.",ok:"The count matches.",missing:"One or more pauses are missing: tick \"recited together\" if two āyāt have no pause, or move a start by hand.",surplus:"There are more pauses than āyāt: a long breath may count as a pause. Move or ignore the extras.",noopen:"No opening found.",saved:"Saved times used (this tab cannot decode the file).",env:"Listening needs a computer (Chrome or Edge). Playing works on any device.",ticks:"{t} of {n} ticked",wrongdur:"This file is {d} s; the saved times were made for about {e} s."},
+ bn:{title:"পুরো সূরার রেকর্ডিং থেকে আয়াতের সময়",sub:"ডেমো (অ্যাপের অংশ নয়)। সূরা আল-ওয়াকিয়া, ৯৬ আয়াত। সহায়ক বিরতি দেখে প্রতিটি আয়াতের শুরু খোঁজে; আপনি শুনে টিক দেন।",priv:"আপনার ফাইল এই ব্রাউজার ট্যাবেই থাকে। কিছু আপলোড, কপি বা জমা হয় না। শুধু সময়গুলো সংরক্ষণ হয়।",s1:"১. আপনার রেকর্ডিং বেছে নিন",s2:"২. অডিও সেটিং",s3:"৩. শুনুন ও টিক দিন",optOpen:"শোনা শুরুর সময় একবার আউযু ও বিসমিল্লাহ বাজান, আর নতুন সূরা শুরু হলে আবার",optJoin:"যুক্ত আয়াত (২২–২৩, ২৮–২৯, ৩০–৩১, ৯৩–৯৪): \"সব বাজান\"-এ প্রতিটি জোড়া দুইবার বাজান, প্রতি আয়াতের জন্য একবার",together:"২৮–২৯, ৩০–৩১ ও ৯৩–৯৪ একসাথে এক অংশে বাজান (মাঝে ছোট বিরতি আছে)",joined:"২২ ও ২৩ আয়াত বিরতি ছাড়া একসাথে পড়া হয়েছে",joinNote:"২২ ও ২৩-এর মাঝে একদমই বিরতি নেই, তাই কাটলে শব্দ কেটে যাবে। প্রতিটি যুক্ত জোড়ায় দুই আয়াত একই অংশ ভাগ করে, আর যেকোনোটি বাছলে জোড়া বাজবে।",playOpen:"▶ আউযু + বিসমিল্লাহ",playAll:"▶ সব বাজান",stop:"■ থামান",dl:"সময়গুলো সংরক্ষণ",play:"▶ বাজান",ayah:"আয়াত",pair:"আগের/পরেরটির সাথে একসাথে পড়া: দুটিই বাজে",checked:"যাচাইকৃত",wait:"বিরতি খোঁজা হচ্ছে…",nofile:"উপরে রেকর্ডিং বেছে নিন।",loaded:"লোড হয়েছে",found:"আয়াতের মাঝে {f}টি বিরতি পাওয়া গেছে; দরকার {n}টি।",ok:"সংখ্যা মিলেছে।",missing:"এক বা একাধিক বিরতি নেই: দুই আয়াতে বিরতি না থাকলে \"একসাথে পড়া\" টিক দিন, অথবা শুরু হাতে সরান।",surplus:"আয়াতের চেয়ে বিরতি বেশি: লম্বা শ্বাসও বিরতি গণ্য হতে পারে। বাড়তিগুলো সরান বা বাদ দিন।",noopen:"শুরুর অংশ পাওয়া যায়নি।",saved:"সংরক্ষিত সময় ব্যবহার হয়েছে (এই ট্যাব ফাইলটি পড়তে পারেনি)।",env:"শোনার কাজে কম্পিউটার (Chrome বা Edge) লাগে। বাজানো সব ডিভাইসে চলে।",ticks:"{n}টির মধ্যে {t}টিতে টিক",wrongdur:"এই ফাইল {d} সেকেন্ডের; সংরক্ষিত সময় প্রায় {e} সেকেন্ডের জন্য।"}
 };
 let lang = "en"; const $ = (id) => document.getElementById(id), tr = (k, v = {}) => (T[lang][k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x]);
 const num = (x) => lang === "bn" ? String(x).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]) : String(x);
-const au = $("au"); let layout = null, ticked = new Set(), playing = null, queue = [], url = null, state = "none";
+const au = $("au"); let openingHeard = false, layout = null, ticked = new Set(), playing = null, queue = [], url = null, state = "none";
 const fmt = (s) => { const m = Math.floor(s / 60), r = (s % 60).toFixed(1).padStart(4, "0"); return `${m}:${r}`; };
 function joinedPairs() { return $("joined").checked ? [[22, 23]] : []; }
-function relayout(pauses, total) { layout = layOut(pauses, total, { ayat: AYAT, joined: joinedPairs() }); render(); }
+function relayout(pauses, total) { layout = layOut(pauses, total, { ayat: AYAT, joined: joinedPairs(), together: $("together").checked ? TOGETHER : [] }); render(); }
 let rawPauses = null, rawTotal = 0;
 function status() {
   const s = $("status"); if (!layout) { s.hidden = true; return; } s.hidden = false;
@@ -144,7 +148,7 @@ function render() {
   status(); const list = $("list"); list.replaceChildren(); if (!layout) return;
   $("ticks").textContent = tr("ticks", { t: num(ticked.size), n: num(AYAT) });
   for (const a of layout.ayahs) {
-    const pair = joinedPairs().find(([x, y]) => a.n === x || a.n === y);
+    const pair = a.pair;
     const row = document.createElement("div"); row.className = "ay" + (pair ? " join" : ""); row.dataset.ayah = a.n; row.setAttribute("role", "listitem");
     const n = document.createElement("span"); n.className = "n"; n.textContent = num(a.n);
     const t = document.createElement("span"); t.className = "t"; t.textContent = `${fmt(a.from)} → ${fmt(a.to)}`;
@@ -173,11 +177,11 @@ function runQueue() {
   au.currentTime = next.from; au.play().catch(() => stopAll());
   const tick = () => { if (playing !== next) return; if (au.currentTime >= next.to || au.ended) { au.pause(); runQueue(); } else requestAnimationFrame(tick); }; requestAnimationFrame(tick);
 }
-function playAyah(n) { stopAll(); const a = layout.ayahs[n - 1]; if (n === 1 && $("optOpen").checked && layout.opening) queue.push(seg(0, layout.opening.to)); queue.push(seg(a.from, a.to, n)); runQueue(); }
+function playAyah(n) { stopAll(); const a = layout.ayahs[n - 1]; if (!openingHeard && $("optOpen").checked && layout.opening) { queue.push(seg(0, layout.opening.to)); openingHeard = true; } queue.push(seg(a.from, a.to, n)); runQueue(); }
 function playAll() {
-  stopAll(); if ($("optOpen").checked && layout.opening) queue.push(seg(0, layout.opening.to));
-  const pairs = joinedPairs(), twice = $("optJoin").checked;
-  for (const a of layout.ayahs) { const second = pairs.some(([x, y]) => a.n === y); if (second && !twice) continue; queue.push(seg(a.from, a.to, a.n)); } runQueue();
+  stopAll(); if ($("optOpen").checked && layout.opening) { queue.push(seg(0, layout.opening.to)); openingHeard = true; } // Play all starts the sūrah, so it opens with Aʿūdhu + Bismillah
+  const twice = $("optJoin").checked;
+  for (const a of layout.ayahs) { const second = a.pair && a.n === a.pair[1]; if (second && !twice) continue; queue.push(seg(a.from, a.to, a.n)); } runQueue();
 }
 function save() {
   const out = { source: "local-file", surah: SURAH, checked: ticked.size === AYAT, joined: joinedPairs(), opening: layout.opening ? { timestamp_from: 0, timestamp_to: Math.round(layout.opening.to * 1000) } : null,
@@ -194,13 +198,14 @@ async function analyse(file) {
     const ch = buf.getChannelData(0), mono = buf.numberOfChannels > 1 ? Float32Array.from(ch, (v, i) => (v + buf.getChannelData(1)[i]) / 2) : ch;
     pauses = findPauses(loudnessFrames(mono, buf.sampleRate)); state = "live"; ctx.close?.();
   } catch (e) { pauses = FOUND.pauses.map(([f, t]) => ({ from: f, to: t, mid: (f + t) / 2 })); total = FOUND.total; state = "saved"; }
-  rawPauses = pauses; rawTotal = total;
+  rawPauses = pauses; rawTotal = total; openingHeard = false; // a new sūrah: its opening plays again
   for (const id of ["open", "all", "stop", "dl"]) $(id).disabled = false;
   relayout(pauses, total); $("env").textContent = `${tr("loaded")}: ${file.name} · ${fmt(total)}`;
 }
 $("file").addEventListener("change", (e) => { const f = e.target.files[0]; if (f) analyse(f); });
 $("joined").addEventListener("change", () => { if (rawPauses) relayout(rawPauses, rawTotal); });
-$("open").addEventListener("click", () => { stopAll(); if (layout.opening) { queue.push(seg(0, layout.opening.to)); runQueue(); } });
+$("open").addEventListener("click", () => { stopAll(); if (layout.opening) { queue.push(seg(0, layout.opening.to)); openingHeard = true; runQueue(); } });
+$("together").addEventListener("change", () => { if (rawPauses) relayout(rawPauses, rawTotal); });
 $("all").addEventListener("click", playAll); $("stop").addEventListener("click", stopAll); $("dl").addEventListener("click", save);
 $("lang").addEventListener("click", () => { lang = lang === "en" ? "bn" : "en"; document.documentElement.lang = lang; $("lang").textContent = lang === "en" ? "বাংলা" : "English";
   document.querySelectorAll("[data-i]").forEach((e) => { e.textContent = tr(e.dataset.i); }); $("env").textContent = tr("env"); render(); });
