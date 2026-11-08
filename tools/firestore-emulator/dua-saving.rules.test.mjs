@@ -262,11 +262,16 @@ test("candidate Dua-saving Rules: isolated allow/deny cases", async () => {
 
     // ===== duaShares (D15) =============================================================================================
     const sh = (c) => collection(c, "duaShares");
-    for (const [c, uid] of [[teacher, "uid-teacher"], [student, "uid-student"], [guardian, "uid-guardian"], [otherprime, "uid-otherprime"], [stranger, "uid-nobody"]]) {
+    // create: ANY member of the madrasah records their own share; another madrasah's member, a stranger, nobody may not
+    for (const [c, uid] of [[otherprime, "uid-otherprime"], [other, "uid-other"], [stranger, "uid-nobody"]]) {
       await assertFails(setDoc(S(c, "s1"), share(T, uid)));
     }
     await assertFails(setDoc(S(anon, "s1"), share(T, "uid-owner")));
-    for (const [c, uid] of [[owner, "uid-owner"], [prime, "uid-prime"], [admin, "uid-admin"]]) await assertSucceeds(addDoc(sh(c), share(T, uid)));
+    for (const [c, uid] of [[owner, "uid-owner"], [prime, "uid-prime"], [admin, "uid-admin"], [teacher, "uid-teacher"], [student, "uid-student"], [guardian, "uid-guardian"]]) {
+      await assertSucceeds(addDoc(sh(c), share(T, uid)));
+    }
+    await assertFails(setDoc(S(student, "s1"), share(T, "uid-teacher")));                    // a member recording as SOMEONE ELSE
+    await assertSucceeds(setDoc(S(otherprime, "s1"), share(T2, "uid-otherprime")));          // paired: the other madrasah's prime, in their own
     const sb = () => share(T, "uid-owner");
     await assertFails(setDoc(S(owner, "s2"), { ...sb(), extra: 1 }));
     await assertFails(setDoc(S(owner, "s2"), (({ occasion, ...r }) => r)(sb())));
