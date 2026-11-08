@@ -49,7 +49,11 @@ const HELPERS = [
 assert.equal(HELPERS.length, 22);
 const head = "service cloud.firestore {\n  match /databases/{database}/documents {";
 assert.ok(candidate.includes(head), "the candidate no longer opens with the expected service/match header");
-const rules = candidate.replace(head, head + "\n" + HELPERS.join("\n") + "\n");
+// FULL_RULES_FILE=<path>: run the same cases against a WHOLE rules file (the deployment candidate the Owner pastes), with its
+// own helpers in place, instead of the extract + lifted helpers.
+const rules = process.env.FULL_RULES_FILE
+  ? fs.readFileSync(path.resolve(root, process.env.FULL_RULES_FILE), "utf8")
+  : candidate.replace(head, head + "\n" + HELPERS.join("\n") + "\n");
 const matchBlocks = [...new Set([...candidate.matchAll(/match \/(\w+)\//g)].map((m) => m[1]))].filter((n) => n !== "databases");
 if (process.env.DUMP_RULES) fs.writeFileSync(process.env.DUMP_RULES, rules);
 assert.deepEqual(matchBlocks, ["duaPlans", "duaEdits", "duaShares"], `the candidate must govern exactly the three Dua collections, saw: ${matchBlocks.join(",")}`);
