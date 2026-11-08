@@ -675,5 +675,36 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   });
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// DUA SAVING (PCF MSA J104 tick 9 = A, 8 Nov 2026): docs/proposals/dua-saving.candidate.rules -- duaPlans (D10), duaEdits
+// (D03/D05), duaShares (D15). A CANDIDATE with NO WRITER yet: the Dua Lead's round R6 builds the writers after the Owner
+// publishes. So the forward/backward comparison cannot run yet, and these checks pin that state instead. The day a writer
+// or a published block appears, the PENDING check below fails by name, and the forward/backward checks must be added here
+// (as for ayahKeyMarks / hadithKeyMarks above) before that round is accepted.
+{
+  const dua = read("docs/proposals/dua-saving.candidate.rules");
+  const DUA = ["duaPlans", "duaEdits", "duaShares"];
+  check("DUA SAVING: the candidate governs exactly duaPlans, duaEdits and duaShares, each with no delete and pinned identity on update", () => {
+    const blocks = [...new Set([...dua.matchAll(/match \/(\w+)\//g)].map((m) => m[1]))].filter((n) => n !== "databases");
+    assert.deepEqual(blocks, DUA);
+    for (const c of DUA) assert.match(matchBlock(dua, `${c}/`), /allow delete: if false;/, `${c} may delete`);
+    assert.match(matchBlock(dua, "duaPlans/"), /d\(\)\.personId == resource\.data\.personId/);
+    assert.match(matchBlock(dua, "duaEdits/"), /d\(\)\.duaKey == resource\.data\.duaKey/);
+    assert.match(matchBlock(dua, "duaShares/"), /allow update: if false;/);
+  });
+  check("DUA SAVING PENDING: not published in firestore.rules, and no app code writes these collections yet (add forward/backward checks when either changes)", () => {
+    const live = read("firestore.rules");
+    for (const c of DUA) assert.ok(!live.includes(`match /${c}/`), `firestore.rules now carries ${c}: add the forward/backward checks`);
+    const writers = [];
+    const walk = (dir) => { for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+      const p = `${dir}/${e.name}`;
+      if (e.isDirectory()) walk(p);
+      else if (/\.(js|html)$/.test(e.name) && DUA.some((c) => new RegExp(`["'\`]${c}["'\`]`).test(read(p)))) writers.push(p);
+    } };
+    walk("app");
+    assert.deepEqual(writers, [], `app code now names a Dua collection (${writers.join(", ")}): add the forward/backward checks`);
+  });
+}
+
 console.log(`\n==== Rules authorisation executable: ${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);
