@@ -16,10 +16,10 @@ import { normaliseArabic } from "./hadith-words.js";
 
 export const RASULULLAH = "Rasulullah Sallallahu A'laihi Wa Sallam";
 
-const PEACE = "(?:\\s*\\((?=[^)]{0,100}peace)[^)]{0,100}\\)|,\\s*may Allah['’]s peace and blessings? be upon him)?"; // any short parenthetical about peace: the source spells it many ways (typos, hidden marks)
+const PEACE = "(?:\\s*\\((?=[^)]{0,100}peace)[^)]{0,100}\\)|\\s*\\(\\s*[\u200e\u200f\ufe0f]*\ufdfa\\s*\\)|\\s*\ufdfa|,\\s*may Allah['’]s peace and blessings? be upon him)?"; // a short parenthetical about peace, or the ﷺ sign (alone or in brackets): the sources spell it many ways (typos, hidden marks)
 // "the Prophet", "Prophet", "the Messenger of Allah", "Messenger of Allah", "Allah's Messenger": never "a Prophet", "Prophets",
 // "O Prophet" (a Qur'an address inside a quoted āyah, left as the translation has it), "Prophet Musa" (another prophet by name). Prophet Muhammad is left as written (a name, not the bare title).
-const PROPHET_RE = new RegExp(`(?<![Aa] )(?<!\\bO )\\b(?:[Tt]he )?(?:Prophet|Messenger of Allah|Allah['’]s Messenger)(?![a-z])(?!\\s+(?:[A-Z][a-z]+))${PEACE}`, "g");
+const PROPHET_RE = new RegExp(`(?<![Aa] )(?<!\\bO )\\b(?:[Tt]he )?(?:Prophet|Messenger of Allah|Apostle of Allah|Allah['’]s (?:Messenger|Apostle))(?![a-z])(?!\\s+(?:[A-Z][a-z]+))${PEACE}`, "g");
 
 /** What the hadith's Arabic permits. */
 export function arabicFacts(arabic) {
@@ -43,7 +43,7 @@ export function foldTerms(english, arabic) {
   });
   // Addressing him ("O Messenger of Allah", the Companions' call) is written "O Rasulullah", as a Muslim says it; the full
   // formula is for naming him. (Flagged to the Owner: say if the full formula is wanted here too.)
-  out = out.replace(/\bO (?:Messenger of Allah|Prophet of Allah)\b/g, (m) => { if (f.prophet) { did.rasulullah++; return "O Rasulullah"; } return m; });
+  out = out.replace(/\bO (?:Messenger of Allah|Apostle of Allah|Prophet of Allah|Allah['’]s (?:Messenger|Apostle))(?![a-z])/g, (m) => { if (f.prophet) { did.rasulullah++; return "O Rasulullah"; } return m; });
   out = out.replace(PROPHET_RE, (m) => { if (f.prophet) { did.rasulullah++; return RASULULLAH; } return m; });
   return { text: out, did, left };
 }

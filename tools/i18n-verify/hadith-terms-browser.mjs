@@ -16,6 +16,7 @@ const MUT = {
   anyprophet: ["js/hadith-terms.js", "(?<![Aa] )(?<!\\\\bO )", ""],
   namedprophet: ["js/hadith-terms.js", "(?!\\\\s+(?:[A-Z][a-z]+))", ""],
   keeppeace: ["js/hadith-terms.js", "(?=[^)]{0,100}peace)", "(?=[^)]{0,100}NEVERPEACE)"],
+  nosign: ["js/hadith-terms.js", "\\\\s*\\\\(\\\\s*[\\u200e\\u200f\\ufe0f]*\\ufdfa\\\\s*\\\\)|\\\\s*\\ufdfa|", ""],
   noswitch: ["js/hadith-terms-ui.js", "      if (!changed) return null;\n", "      return null;\n"],
   switchnoop: ["js/hadith-terms-ui.js", "for (const [node, sourced, folded] of items) node.textContent = asSourced ? sourced : folded;", ""],
   alwaysfold: ["js/hadith-terms.js", "return { rabb: /رب/.test(a), prophet: /النبي|نبي|رسول الله|رسول/.test(a) };", "return { rabb: true, prophet: true };"],
@@ -51,12 +52,17 @@ check("Lord becomes Rabb where the Arabic has رب", f("my Lord, the Lord of the
 check("Lord is LEFT where the Arabic has no رب (and counted)", f("his Lord", "قال الله").text === "his Lord" && f("his Lord", "قال الله").left.lord === 1);
 check("God becomes Allah", f("O God, forgive").text === "O Allah, forgive");
 check('"no God" and "any other God" stay (an ilah may be God)', f("there is no God but You").text === "there is no God but You" && f("do not call on any other God").text === "do not call on any other God");
+check("the sign in brackets folds: «the Prophet (ﷺ)»", f("the Prophet (\ufdfa) said").text === `${RASULULLAH} said`, f("the Prophet (\ufdfa) said").text);
+check("the sign alone folds: «the Prophet ﷺ»", f("the Prophet \ufdfa said").text === `${RASULULLAH} said`, f("the Prophet \ufdfa said").text);
+check("the sign with a hidden mark (variation selector, direction mark) folds", f("the Prophet (\u200f\ufe0f\ufdfa) said").text === `${RASULULLAH} said`, f("the Prophet (\u200f\ufe0f\ufdfa) said").text);
 check("the Prophet with the peace formula becomes exactly Rasulullah Sallallahu A'laihi Wa Sallam", f("the Prophet (may Allah's peace and blessings be upon him) said").text === `${RASULULLAH} said`, f("the Prophet (may Allah's peace and blessings be upon him) said").text);
 check("the curly-apostrophe and comma forms of the formula too", f("the Prophet (may Allah’s peace and blessings be upon him) said").text === `${RASULULLAH} said` && f("the Prophet, may Allah's peace and blessings be upon him, said").text.startsWith(RASULULLAH));
 check("the Messenger of Allah and Allah's Messenger become Rasulullah Sallallahu A'laihi Wa Sallam", f("the Messenger of Allah said").text === `${RASULULLAH} said` && f("Allah's Messenger said").text === `${RASULULLAH} said`);
 check('"O Messenger of Allah" (a call) becomes "O Rasulullah"', f("O Messenger of Allah, I said").text === "O Rasulullah, I said");
 check('"a Prophet", "the Prophets" and "O Prophet" are not changed', f("a Prophet came").text === "a Prophet came" && f("the Prophets said").text === "the Prophets said" && f("[O Prophet] a clear conquest").text === "[O Prophet] a clear conquest");
 check("another prophet by name is not changed", f("the Prophet Musa spoke and Prophet Dawūd (peace be upon him)").text === "the Prophet Musa spoke and Prophet Dawūd (peace be upon him)");
+check("the ﷺ sign (alone or in brackets) after the Prophet, the Messenger of Allah or Allah's Apostle is folded", f("the Prophet (ﷺ) said").text === `${RASULULLAH} said` && f("Allah's Messenger (ﷺ) said").text === `${RASULULLAH} said` && f("Allah's Apostle ﷺ said").text === `${RASULULLAH} said`);
+check('a call to him ("O Allah\'s Apostle!", "O Messenger of Allah") is "O Rasulullah"', f("He said: O Allah's Apostle! O Messenger of Allah,").text === "He said: O Rasulullah! O Rasulullah,");
 check("with no Prophet word in the Arabic nothing is guessed", f("the Prophet said", "قال زيد").text === "the Prophet said");
 check("no doubled formula, and folding twice changes nothing more", !f("the Messenger of Allah (may Allah's peace and blessings be upon him) said").text.includes("(may") && f(f("the Prophet (may Allah's peace and blessings be upon him) said").text).text === f("the Prophet (may Allah's peace and blessings be upon him) said").text);
 
