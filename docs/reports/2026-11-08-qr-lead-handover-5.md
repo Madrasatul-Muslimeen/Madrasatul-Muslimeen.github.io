@@ -16,3 +16,8 @@ This session: `session_01PL2xbM4MiKgwuTGUTUTwVo` (03A). MSA Architect `session_0
 4. J121 only when the Owner ticks n121e (ask the Architect first, everyayah.com has no terms). J119 Monitor figure / Learn next badge segment only if the Architect says so.
 
 PCA correction already applied: nits (a)/(b) were in #1526, not a separate PR.
+
+## UPDATE 12:46 PM — the Architect ANSWERED the hook and refined the labels (supersedes "STILL UNANSWERED" above)
+- **HOOK: an "Eras" button in the EXISTING Read-next/Tafsīr panel row of `read-next-ui.js`; nothing on the Approach pill.** It is a new control in a row: measure that row at 320/390/768/1280 in en and bn before and after (nothing cut, no ragged wrap, tap size at least 40px, no sideways scroll) and LOOK at the screenshots. Names open their Scholars row only when it exists; ← Back via `setAppReturn()`.
+- **LABELS:** map only display labels in `tools/scholars/build-tafsir-scholars.mjs`: 28 stays; Tābiʿūn = 29 (fold the two existing "29 Tābiʿīn" tags into it); "29 Tābiʿ al-Tābiʿīn" -> 30; every later label +1, so the last becomes **38** (not 37). Regenerate `tafsir-scholars.json`; no change to the Scholars Database source or any Approach id. Checks: builder output equals the committed JSON; labels match their era BY NAME; a mutation for it. Compare `read-next*.mjs` against main by failure name.
+- Slice B separately, later. One PR from main for Slice A (UI) + labels is fine; #1528 is the draft to build on (rebase nothing: merge main into it).
