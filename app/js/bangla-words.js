@@ -100,3 +100,26 @@ export function banglaTagText(bn, lang = "en") {
   const word = String(bn ?? "").split(/[,،]/)[0].trim();
   return word ? (lang === "bn" ? `বাংলায়ও: ${word}` : `Also in Bangla: ${word}`) : (lang === "bn" ? "বাংলায়ও" : "Also in Bangla");
 }
+
+/** Switch ONE of the three Wheel displays (ring, centre, tenth) on or off; anything else is refused unchanged. */
+export function setBanglaWheel(state, key, on) {
+  if (!["ring", "centre", "tenth"].includes(key)) return state;
+  return { ...state, wheel: { ...state.wheel, [key]: on === true } };
+}
+
+/**
+ * What the Vocabulary Wheel draws for the Bangla words (J119, n119c = F, G, H: all three, each on or off).
+ * Nothing at all while the whole list is off or empty. `ring` is the thin outer ring's ratio (0..1), `centre` the share
+ * as a number for the centre line, `tenth` the extra part. Pure: the page makes the picture.
+ */
+export function banglaWheelPlan(state, figures) {
+  const none = { ring: null, centre: null, tenth: null };
+  if (!state || !state.on || !figures || !(figures.words > 0)) return none;
+  const w = state.wheel ?? {};
+  const ratio = Math.max(0, Math.min(1, figures.share / 100));
+  return {
+    ring: w.ring ? { ratio } : null,
+    centre: w.centre ? figures.share : null,
+    tenth: w.tenth ? { words: figures.words, occurrences: figures.occurrences, share: figures.share } : null,
+  };
+}

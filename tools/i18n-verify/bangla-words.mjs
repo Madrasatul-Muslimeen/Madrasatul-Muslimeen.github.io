@@ -1,6 +1,6 @@
 // PCF MSA J119 -- app/js/bangla-words.js, the pure model of "Words the Qur'an shares with Bangla".
 // Run from the repository root:  node tools/i18n-verify/bangla-words.mjs   (no server needed)
-//   --prove  re-runs the suite against 5 deliberately broken copies of the module; every one must go red.
+//   --prove  re-runs the suite against 8 deliberately broken copies of the module; every one must go red.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -12,6 +12,9 @@ const MUTATIONS = {
   "the admin list is editable by anyone": ["list === LIST_ADMIN ? canAdmin === true : false", "list === LIST_ADMIN ? true : false"],
   "the off switch does not empty the set": ["return s.on ? new Set(s[s.list]) : new Set();", "return new Set(s[s.list]);"],
   "a Bangla word does not count as known": ["isKnown(row) === true || banglaSet.has(row?.l)", "isKnown(row) === true"],
+  "the ring ignores its switch": ["ring: w.ring ? { ratio } : null,", "ring: { ratio },"],
+  "the plan draws while the list is off": ["if (!state || !state.on ||", "if (!state ||"],
+  "a wheel switch accepts any key": ['if (!["ring", "centre", "tenth"].includes(key)) return state;', ""],
   "bad storage throws": ["catch { return emptyBanglaState(); }", "catch (e) { throw e; }"],
 };
 
@@ -64,6 +67,17 @@ async function run(file) {
   check("storage that throws gives the empty state", JSON.stringify(m.loadBanglaState({ getItem() { throw new Error("blocked"); } })) === JSON.stringify(m.emptyBanglaState()));
   check("a hostile state is cleaned", m.normaliseBanglaState({ list: "x", admin: ["ok", 3, "", "ok"], mine: "no", wheel: { tenth: "yes" } }).admin.length === 1);
   check("the tag text, English and Bangla", m.banglaTagText("খালি, ফাঁকা") === "Also in Bangla: খালি" && m.banglaTagText("খালি", "bn") === "বাংলায়ও: খালি");
+  // the Wheel displays (n119c): each on or off, nothing while the list is off or empty
+  const wf = m.banglaFigures([{ l: "a", n: 60 }, { l: "b", n: 40 }], 1000, new Set(["a", "b"]));
+  const ws = { ...m.emptyBanglaState(), admin: ["a", "b"], wheel: { ring: true, centre: true, tenth: true } };
+  const all = m.banglaWheelPlan(ws, wf);
+  check("all three displays are drawn when on", all.ring && Math.abs(all.ring.ratio - 0.1) < 1e-9 && Math.abs(all.centre - 10) < 1e-9 && all.tenth?.words === 2 && all.tenth.occurrences === 100, JSON.stringify(all));
+  const off = (k) => m.banglaWheelPlan(m.setBanglaWheel(ws, k, false), wf);
+  check("each display switches off alone", off("ring").ring === null && off("ring").centre !== null && off("centre").centre === null && off("centre").ring !== null && off("tenth").tenth === null && off("tenth").tenth === null && off("tenth").ring !== null);
+  check("nothing is drawn while the whole list is off", JSON.stringify(m.banglaWheelPlan({ ...ws, on: false }, wf)) === JSON.stringify({ ring: null, centre: null, tenth: null }));
+  check("nothing is drawn for an empty list", m.banglaWheelPlan(ws, m.banglaFigures([{ l: "a", n: 1 }], 10, new Set())).ring === null);
+  check("an unknown wheel switch changes nothing", m.setBanglaWheel(ws, "bogus", true) === ws);
+  check("a switch is stored and read back", m.setBanglaWheel(ws, "tenth", false).wheel.tenth === false && m.normaliseBanglaState(m.setBanglaWheel(ws, "tenth", false)).wheel.tenth === false);
   return { pass, fail };
 }
 

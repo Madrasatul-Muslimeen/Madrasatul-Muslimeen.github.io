@@ -47,6 +47,16 @@ export function banglaBlockHtml({ state, lemma, bn = "", canAdmin = false, figur
     </details>
   </div>`;
 }
+/** The three Wheel switches (ring, centre line, tenth part), for the Wheel's legend row. `text` = { ring, centre, tenth, label }. */
+export function banglaWheelSwitchesHtml(state, text = {}) {
+  if (!state) return "";
+  const T = { label: "Bangla words on the Wheel", ring: "Ring", centre: "Centre", tenth: "Part", ...text };
+  const sw = (k) => `<button type="button" class="bnw-chip" data-bangla-wheel="${k}" aria-pressed="${state.wheel?.[k] === true}">${esc(T[k])}</button>`;
+  return `<div class="bnw-wheelsw" role="group" aria-label="${esc(T.label)}" data-bangla-wheel-switches>${sw("ring")}${sw("centre")}${sw("tenth")}</div>`;
+}
+export function wireBanglaWheelSwitches(root, onSwitch) {
+  root?.querySelectorAll?.("[data-bangla-wheel]").forEach((b) => b.addEventListener("click", () => onSwitch?.(b.dataset.banglaWheel, b.getAttribute("aria-pressed") !== "true")));
+}
 const inListSet = (state, l) => state.on && new Set(state[state.list]).has(l);
 
 /** One delegated listener. onWord(lemma, on), onList(id), onOnOff(on). A click on the summary's switch never toggles the details. */
@@ -72,6 +82,9 @@ export const BANGLA_CSS = `
 .bnw-mark:disabled,.bnw-sw:disabled{opacity:.45;cursor:default}
 .bnw-tag{margin-left:auto;font-size:.8rem;font-weight:700;color:#8fcaff;border:1px solid #5fb3ff;border-radius:999px;padding:1px 10px;white-space:nowrap}
 .bnw-sub{font-size:.8rem;opacity:.85}
+.bnw-wheelsw{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0 8px}
+.bnw-chip{min-height:40px;min-width:44px;padding:2px 12px;border-radius:999px;border:1px solid #c9a24a;background:transparent;color:inherit;font:inherit;font-weight:600;cursor:pointer}
+.bnw-chip[aria-pressed="true"]{background:#c9a24a;color:#10233a}
 .bnw-count{border:1px solid #c9a24a;border-radius:10px;padding:8px 12px;background:#0b1826;font-size:.9rem}
 .bnw-list{border:1px solid #2c4262;border-radius:10px;background:#0b1826}
 .bnw-list summary{padding:8px 12px;font-weight:700;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:10px;list-style:none}

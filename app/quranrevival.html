@@ -7834,8 +7834,8 @@
     // PCF MSA J03 K2 -- the three marks (Difficult / Need practice / Done) on the Āyah card, the Word card and the Marks wheel.
     import { loadSurahKeys, loadPersonSurahKeys, setAyahKey, setWordKey } from "./js/ayah-keys-data.js";
     // PCF MSA J119 -- words the Qur'an shares with Bangla (Word Card button + list; marks stay on this device until the Rules are published).
-    import { loadBanglaState, saveBanglaState, setBanglaWord, activeBanglaSet, banglaFigures, banglaTagText } from "./js/bangla-words.js";
-    import { banglaBlockHtml, wireBanglaBlock, BANGLA_CSS } from "./js/bangla-words-ui.js";
+    import { loadBanglaState, saveBanglaState, setBanglaWord, setBanglaWheel, banglaWheelPlan, activeBanglaSet, banglaFigures, banglaTagText } from "./js/bangla-words.js";
+    import { banglaBlockHtml, wireBanglaBlock, banglaWheelSwitchesHtml, wireBanglaWheelSwitches, BANGLA_CSS } from "./js/bangla-words-ui.js";
     import { marksRowHtml, wireMarksRow, wheelPieces, marksWheelHtml, wireMarksWheel, marksLegendHtml, MARKS_CSS, MARKS_WHEEL_VIEWS } from "./js/marks-ui.js";
     import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
     import { renderReadNext } from "./js/read-next-ui.js"; // J03 K3 "Study Next" (was "Read next") on the Āyah card and the Word card
@@ -11366,6 +11366,15 @@
       const c = learnNextCtx, mode = vocabFillMode();
       const b = vocabBadgeFigures(c.data.rows, c.data.total, learnNextIsKnown);
       const grouped = (n) => num(Number(n).toLocaleString("en-US"));
+      // PCF MSA J119 (n119c = F, G, H): the Bangla words on the Wheel, each of the three displays on or off.
+      const bnFig = banglaFigures(c.data.rows, c.data.total, activeBanglaSet(banglaState));
+      const bnPlan = banglaWheelPlan(banglaState, bnFig);
+      const bnPct = num(bnFig.share.toFixed(2));
+      // The switches sit in the Legend drawer on a phone; in the wide window that drawer is under the bottom bar, so they sit above the step list there.
+      const bnSwitches = banglaWheelSwitchesHtml(banglaState, { label: t("Bangla words on the Wheel"), ring: t("Ring"), centre: t("Centre line"), tenth: t("Tenth part") });
+      const bnSwitchesBesideList = window.matchMedia("(min-width: 900px)").matches;
+      const wireBnSwitches = (root) => wireBanglaWheelSwitches(root, (k, on) => { banglaState = setBanglaWheel(banglaState, k, on); saveBanglaState(banglaState); renderVocabWheel(); });
+      if (!bnSwitchesBesideList) { wheelLegendContainer.insertAdjacentHTML("beforeend", bnSwitches); wireBnSwitches(wheelLegendContainer); }
       const items = b.steps.map((s) => {
         const fill = vocabStepFill(s, mode);
         const k = mode === "all" ? s.allKnown : s.newKnown, size = mode === "all" ? s.n : s.newSize;
@@ -11380,21 +11389,34 @@
           title: escapeHtml(`${name}: ${t("{k} of {n} words known", { k: grouped(k), n: grouped(size) })}${s.passed ? ` · ${t("passed")}` : ""}`),
         };
       });
+      if (bnPlan.tenth) {
+        items.push({
+          key: "vstep-bangla", number: "", fill: "#22305a", progress: 1, progressFill: "#2a6db0",
+          sliceLines: [escapeHtml(t("Bangla")), escapeHtml(`${grouped(bnFig.words)}`)],
+          title: escapeHtml(t("Bangla words: {words} words, {percent}% of the Qur'an's words", { words: grouped(bnFig.words), percent: bnPct })),
+        });
+      }
       wheelContainer.innerHTML = renderScopedWheel(items, {
         centerLabel: `${num(b.share.toFixed(1))}%`,
         centerSub: escapeHtml(t("of the Qur'an's words")),
+        ...(bnPlan.ring ? { ring: bnPlan.ring } : {}),
       });
+      if (bnPlan.centre !== null) {
+        const svg = wheelContainer.querySelector("svg"), half = Number(svg?.getAttribute("width") || 360) / 2;
+        svg?.insertAdjacentHTML("beforeend", `<text class="vocab-wheel-bn" data-vocab-wheel-bn x="${half}" y="${half + 33}" text-anchor="middle" font-family="Inter" font-size="10" fill="#8fcaff" style="pointer-events:none">${escapeHtml(t("Bangla {percent}%", { percent: bnPct }))}</text>`);
+      }
       wheelContainer.querySelector("svg")?.setAttribute("data-vocab-wheel", mode);
       wheelContainer.querySelectorAll(".wheel-seg").forEach((seg) => {
         const n = Number(String(seg.dataset.key).replace("vstep-", ""));
         if (b.steps.find((s) => s.n === n)?.passed) seg.setAttribute("stroke", "#7fd1a2");
       });
-      attachScopedWheelClickHandler(wheelContainer, (key) => openLearnNextAtStep(Number(String(key).replace("vstep-", ""))));
-      wheelSidebarContainer.innerHTML = `<ul class="vocab-wheel-list" data-vocab-wheel-list>${b.steps.map((s) => {
+      attachScopedWheelClickHandler(wheelContainer, (key) => { if (key !== "vstep-bangla") openLearnNextAtStep(Number(String(key).replace("vstep-", ""))); });
+      wheelSidebarContainer.innerHTML = `${bnSwitchesBesideList ? bnSwitches : ""}<ul class="vocab-wheel-list" data-vocab-wheel-list>${b.steps.map((s) => {
         const k = mode === "all" ? s.allKnown : s.newKnown, size = mode === "all" ? s.n : s.newSize;
         return `<li class="${s.passed ? "vwl-done" : ""}"><button type="button" data-vstep="${s.n}"><span class="vwl-name">${escapeHtml(t("First {n}", { n: grouped(s.n) }))}</span><span class="vwl-fig">${escapeHtml(`${grouped(k)}/${grouped(size)}`)}</span></button></li>`;
       }).join("")}</ul>`;
       wheelSidebarContainer.querySelectorAll("[data-vstep]").forEach((btn) => btn.addEventListener("click", () => openLearnNextAtStep(Number(btn.dataset.vstep))));
+      if (bnSwitchesBesideList) wireBnSwitches(wheelSidebarContainer);
     }
     /** A segment opens its step in Learn next; Learn next's ← Back closes it onto the Wheel, still on Vocabulary. */
     function openLearnNextAtStep(n) {
