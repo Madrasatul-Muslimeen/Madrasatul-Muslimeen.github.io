@@ -255,6 +255,13 @@
       <button id="addApproachBtn" style="margin-top:0.7rem;">Add Approach</button>
       <div id="addApproachResult" role="status" style="margin-top:0.5rem; font-size:0.88rem;"></div>
     </fieldset>
+    <!-- PCF MSA J115: ONE owner-only tap adds the Tābiʿūn Approach straight after the Ṣaḥābah Approach (era-approaches.js finds both BY NAME). -->
+    <fieldset id="addTabiunBox" style="display:none; margin-top:0.9rem;">
+      <legend>The eras of the scholars</legend>
+      <p class="readonly-note" style="margin:0 0 0.5rem;">One tap adds the Tābiʿūn Approach straight after the Ṣaḥābah Approach. It is never added by itself, and never twice.</p>
+      <button id="addTabiunBtn" type="button">Add the Tābiʿūn Approach after the Ṣaḥābah Approach</button>
+      <div id="addTabiunResult" role="status" style="margin-top:0.5rem; font-size:0.88rem;"></div>
+    </fieldset>
     </section>
 
     <section class="cat-panel" id="catPanel-ladders" hidden>
@@ -301,6 +308,7 @@
     import { getAppLang, mountCardLookControl } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
+    import { planAddTabiun } from "./js/era-approaches.js";
     import {
       getMyMembershipRoles,
       hydrateMemberships,
@@ -1959,6 +1967,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       addSubjectBox.style.display = canEdit ? "block" : "none";
       addLadderBox.style.display = canEdit ? "block" : "none";
       document.getElementById("addApproachBox").style.display = canEdit ? "block" : "none";
+      document.getElementById("addTabiunBox").style.display = canEdit ? "block" : "none";
       readOnlyNote.style.display = canEdit ? "none" : "block";
 
       // Sections BEFORE trackables: renderTrackables() groups the Approach
@@ -2150,6 +2159,46 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         applyTrackables(trackableList.map((r) => (ids.includes(r.id) ? { ...r, order: ids.indexOf(r.id) + 1 } : r)));
       }
       result.textContent = t("Added \"{name}\" to {section}.", { name: langText(name, getAppLang(), id), section: langText(sectionNameFor(group), getAppLang(), "") });
+    });
+
+    // PCF MSA J115: the one-tap "add the Tābiʿūn Approach". The same writes as Add an Approach (createApproach with the next id,
+    // then the display-order renumber); nothing here names an Approach id; era-approaches.js finds the Ṣaḥābah row by name.
+    document.getElementById("addTabiunBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("addTabiunBtn");
+      const result = document.getElementById("addTabiunResult");
+      const plan = planAddTabiun(allApproaches(), { displayIds: approachesInDisplayOrder().map((x) => x.id), nextId: nextApproachId });
+      if (!plan.ok) {
+        result.textContent = plan.reason === "exists-live" ? t("There is already a Tābiʿūn Approach, so a second one is not added.")
+          : plan.reason === "exists-removed" ? t("A Tābiʿūn Approach exists but is removed, so a second one is not added. Bring that one back instead.")
+          : t("There is no Ṣaḥābah Approach to put it after. Add or bring back the Ṣaḥābah Approach first.");
+        return;
+      }
+      const name = { en: "Tābiʿūn", bn: "তাবেয়ী" };
+      const shortName = { en: "", bn: "" };
+      const lastOrder = trackableList.reduce((m, r) => Math.max(m, Number(r.order) || 0), 0);
+      btn.disabled = true;
+      const outcome = await safeWrite(
+        () => createApproach(db, activeTenantId, {
+          id: plan.id, name, shortName, group: plan.group, groupName: sectionNameFor(plan.group) ?? null,
+          countsForEachAyah: plan.countsForEachAyah, order: lastOrder + 1,
+        }, auth.currentUser.uid),
+        { collection: "trackables", action: "createApproach", id: plan.id }
+      );
+      btn.disabled = false;
+      if (!outcome.ok) { result.textContent = outcome.entry.message; return; } // I15: a failed write reaches the person
+      { const k = sectionKeyForNumber(plan.group); if (k) openSectionKeys.add(k); }
+      applyTrackables([...trackableList, {
+        id: plan.id, tenantId: activeTenantId, moduleId: "quranrevival", subjectId: "quran",
+        group: plan.group, groupName: sectionNameFor(plan.group) ?? null, name,
+        guide: { what: {}, how: {}, measure: {} }, panels: [], order: lastOrder + 1,
+        status: "active", countsForEachAyah: plan.countsForEachAyah, sourceTemplateId: null, edited: true,
+      }]);
+      const renumber = await safeWrite(
+        () => reorderTrackables(db, activeTenantId, plan.ids, trackableList, auth.currentUser.uid),
+        { collection: "trackables", action: "normaliseOrder", id: activeTenantId }
+      );
+      if (renumber.ok) applyTrackables(trackableList.map((r) => (plan.ids.includes(r.id) ? { ...r, order: plan.ids.indexOf(r.id) + 1 } : r)));
+      result.textContent = t("Added the Tābiʿūn Approach after the Ṣaḥābah Approach.");
     });
 
     addSubjBtn.addEventListener("click", async () => {
