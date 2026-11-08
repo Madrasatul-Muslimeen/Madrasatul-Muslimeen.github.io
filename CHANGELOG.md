@@ -23465,3 +23465,10 @@ The evening's third release, the follow-up to v13.26.
 - **QR nits (QR Lead, #1526).** The stray Odia-script regex is gone from `app/js/era-approaches.js`; `bangla-words-browser`'s no-save mutation now fails cleanly (36/9) and the normal run is 45/0.
 - **Checks:** behaviour 974/1 (14a, the same as main), run alone on the combined tree; read-next 36/0 (main 35/0, one new labels check), read-next-browser 250/0 and read-next-qr-cards-browser 78/0 (no failure on either side; the Āyah-card tab list updated in place for the fourth tab); era-view 17/0; era-approaches 54/0; eras-tab-browser 72/0 (the row measured at 320/390/768/1280 in en and bn); labels mutations each turn 3 checks red; builder --check equal to the committed JSON; 8 governance suites green; apps-build-check.
 - Nothing deployed to Firestore.
+
+## v13.55 — 8 Nov 2026 — The Tafsīr tab groups its books by the century their author died
+
+- **PCF MSA · QR J115 Slice B (QR Lead, #1531).** Study Next → Tafsīr lists the where-to-read books under one heading per hijri century of the author's death ("Authors who died in century {n} AH", bn "যাঁদের মৃত্যু হিজরি {n} শতকে"), earliest first and in death-year order inside each century; an author with no death year goes under "Century not known". `whereToReadByCentury` / `deathYearOf` in `app/js/read-next.js` are pure and return the same books as `whereToRead`.
+- **Docs carried:** the QR Lead's MSA · QR J121 demo plan (`docs/reports/2026-11-08-j121-demo1104-plan.md`: the Owner chose the auto-listen helper, n121e = Q) and QR Lead handover 6.
+- **Checks:** behaviour 974/1 (14a, the same as main), run alone on the combined tree; read-next 37/0 (main 36/0; the sort and century-rounding mutations each turn the new check red); read-next-browser 250/0, read-next-qr-cards-browser 78/0, eras-tab-browser 72/0, identical to main; the Tafsīr panel at 320 and 1280 px in en and bn: the same 53 books as main, 11 headings (4th–14th century), none cut, no sideways scroll; 8 governance suites green; apps-build-check.
+- Nothing deployed to Firestore.

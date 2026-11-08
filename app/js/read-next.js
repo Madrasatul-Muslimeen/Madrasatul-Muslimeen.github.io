@@ -150,6 +150,28 @@ export function whereToRead(data) {
   return out;
 }
 
+/** The death year AH in a lifeAH text ("224 AH – 310 AH", "? – 373 AH", "d. 671 AH"): the LAST "NNN AH", or null. */
+export function deathYearOf(scholar) {
+  const all = [...String(scholar?.lifeAH ?? "").matchAll(/(\d+)\s*AH/g)];
+  return all.length ? Number(all[all.length - 1][1]) : null;
+}
+
+/** J115 Slice B: the where-to-read books grouped by their author's era of DEATH, one group per hijri century (2nd, 3rd, ...),
+ *  earliest first, books in death-year order inside a group; a book whose author has no death year goes last in a group
+ *  with `century: null`. Returns [{ century, books: [{ title, scholar, died }] }]. Pure: the same books as whereToRead. */
+export function whereToReadByCentury(data) {
+  const groups = new Map();
+  for (const b of whereToRead(data)) {
+    const died = deathYearOf(b.scholar);
+    const century = died == null ? null : Math.ceil(died / 100);
+    if (!groups.has(century)) groups.set(century, []);
+    groups.get(century).push({ ...b, died });
+  }
+  const key = (c) => (c == null ? Infinity : c);
+  return [...groups.entries()].sort((a, b) => key(a[0]) - key(b[0]))
+    .map(([century, books]) => ({ century, books: books.sort((x, y) => (x.died ?? Infinity) - (y.died ?? Infinity)) }));
+}
+
 /** K3b (the Owner, 5 Nov 2026): a scholar's name opens THAT scholar's own row of the Scholars Database (by its fixed
  *  id, s001…), in a new tab, with ← Back. The database page lives in the repository (docs/reference/scholars-database),
  *  served by GitHub Pages; the absolute address keeps it working from QR's site too. */

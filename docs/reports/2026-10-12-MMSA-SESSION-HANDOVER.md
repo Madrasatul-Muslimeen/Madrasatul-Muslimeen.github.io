@@ -3174,3 +3174,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.52** (2026-11-08): ONE ⋮ menu (QR J114), the Hadith Text-pane terms fold, Dua J104 r13a.
 - **v13.53** (2026-11-08): Bangla words (QR J119) and the Tābiʿūn Approach tap (QR J115 r1).
 - **v13.54** (2026-11-08): the Eras tab and Scholars label shift (QR J115 r2) with the QR nits.
+- **v13.55** (2026-11-08): the Tafsīr books grouped by century (QR J115 Slice B).

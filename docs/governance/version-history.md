@@ -1095,3 +1095,4 @@ total). Allocated by the MMSA Architect.
 13.52: ONE ⋮ menu (QR J114), the Hadith Text-pane terms fold, Dua J104 r13a. Allocated by the MMSA Architect.
 13.53: Bangla words (QR J119) and the Tābiʿūn Approach tap (QR J115 r1). Allocated by the MMSA Architect.
 13.54: the Eras tab and Scholars label shift (QR J115 r2) with the QR nits. Allocated by the MMSA Architect.
+13.55: the Tafsīr books grouped by century (QR J115 Slice B). Allocated by the MMSA Architect.
