@@ -692,6 +692,16 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     assert.match(matchBlock(dua, "duaEdits/"), /d\(\)\.duaKey == resource\.data\.duaKey/);
     assert.match(matchBlock(dua, "duaShares/"), /allow update: if false;/);
   });
+  check("DUA SAVING DEPLOYMENT FILE: it is firestore.rules with exactly the candidate's three blocks added, nothing above changed", () => {
+    const dep = read("docs/proposals/dua-saving.DEPLOYMENT-candidate.rules");
+    for (const c of DUA) assert.equal(matchBlock(dep, `${c}/`), matchBlock(dua, `${c}/`), `${c} differs between the deployment file and the candidate`);
+    const live = read("firestore.rules");
+    const cut = dep.indexOf("    // =====================================================================\n    // PCF MSA J104 (Dua module)");
+    assert.ok(cut > 0, "the deployment file's Dua section header is missing");
+    const tailAt = live.trimEnd().lastIndexOf("  }\n}");
+    assert.equal(dep.slice(0, cut).trimEnd(), live.slice(0, tailAt).trimEnd(), "the deployment file no longer starts with the whole of firestore.rules");
+    assert.equal(dep.trimEnd().slice(-5), "  }\n}");
+  });
   check("DUA SAVING PENDING: not published in firestore.rules, and no app code writes these collections yet (add forward/backward checks when either changes)", () => {
     const live = read("firestore.rules");
     for (const c of DUA) assert.ok(!live.includes(`match /${c}/`), `firestore.rules now carries ${c}: add the forward/backward checks`);
