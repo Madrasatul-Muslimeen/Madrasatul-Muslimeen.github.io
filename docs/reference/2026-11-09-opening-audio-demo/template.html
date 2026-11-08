@@ -1,0 +1,99 @@
+<title>Opening Recitation Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Inter:wght@400;600&display=swap">
+<style>
+/* Layout: the app's real opening card (navy, gold Arabic) as a stage, with a plain control strip under it. */
+:root{--bg:#f3f1ec;--fg:#1b2433;--muted:#5b6475;--line:#d6d2c8;--panel:#fff;--gold:#8a6a1c;--stage:#1b2a41;--stage-fg:#f2e8d5;--stage-gold:#c9a24b;--stage-dim:#8f9ab0;--ok:#1d7a4a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111826;--fg:#e6e9f0;--muted:#97a1b5;--line:#2c3750;--panel:#182134;--gold:#d9b25c;--ok:#5fcf98;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111826;--fg:#e6e9f0;--muted:#97a1b5;--line:#2c3750;--panel:#182134;--gold:#d9b25c;--ok:#5fcf98;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 Inter,system-ui,sans-serif;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:22px;margin:0;text-wrap:balance}
+p{margin:0;max-width:65ch;color:var(--muted)}
+.stage{position:relative;background:radial-gradient(ellipse at top,#2a3a57 0%,#1b2a41 55%,#121b2c 100%);border-radius:10px;min-height:340px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 20px;opacity:0;transition:opacity .6s ease;pointer-events:none}
+.slide.on{opacity:1}
+.ar{font-family:Amiri,serif;font-size:clamp(28px,6.4vw,44px);line-height:1.7;direction:rtl;color:var(--stage-dim);margin-bottom:12px;transition:color .2s}
+.ar span{transition:color .12s;display:inline-block;margin:0 .14em}
+.ar span.lit{color:var(--stage-gold)}
+.ar span.done{color:#e8d49a}
+.tr{font:italic 500 18px 'Cormorant Garamond',serif;color:#b9c2d4;margin-bottom:6px}
+.en{font:500 20px/1.5 'Cormorant Garamond',serif;color:var(--stage-fg);max-width:34ch;text-wrap:balance}
+.hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;font-size:13px;color:rgba(242,232,213,.65)}
+.go{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:3;background:rgba(18,27,44,.55)}
+.go[hidden]{display:none}
+button{font:600 15px Inter,system-ui,sans-serif;min-height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+button.main{background:#c9a24b;border-color:#c9a24b;color:#1b2433}
+button:focus-visible,input:focus-visible{outline:3px solid #c9a24b;outline-offset:2px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.opt{display:flex;gap:8px;align-items:center;min-height:44px}
+.opt input{width:20px;height:20px}
+.read{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-variant-numeric:tabular-nums;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.read b{color:var(--muted);font-weight:600}
+.prog{height:6px;border-radius:3px;background:var(--line);overflow:hidden;grid-column:1/-1;margin-top:6px}
+.prog i{display:block;height:100%;width:0;background:var(--gold)}
+.note{font-size:13px}
+</style>
+<div class="wrap">
+  <h1>Opening Recitation Demo</h1>
+  <p>The app's opening card, with the recitation playing. Each line appears when its recitation starts, and the next line comes in when the recitation ends. Nothing is timed by guess: the screen follows the audio.</p>
+  <div class="stage" id="stage">
+    <div class="slide" id="s1"><div class="ar" id="ar1" lang="ar"></div><div class="tr">A'udhu billahi min ash-shaytwaner Rajeem</div><div class="en">I seek refuge with Allah from shaitwan, the rejected, accursed.</div></div>
+    <div class="slide" id="s2"><div class="ar" id="ar2" lang="ar"></div><div class="en">In the name of Allah, the Most Gracious, the Most Merciful.</div></div>
+    <div class="hint" id="hint">Tap the card to skip</div>
+    <div class="go" id="go"><button class="main" id="start" type="button">▶ Open the app with sound</button></div>
+  </div>
+  <div class="bar">
+    <button id="replay" type="button">↻ Play again</button>
+    <button id="skip" type="button">Skip</button>
+    <label class="opt"><input type="checkbox" id="words" checked> Light up each word with the voice</label>
+    <label class="opt"><input type="checkbox" id="mute"> Sound off (text only, same timing)</label>
+  </div>
+  <div class="read" aria-live="off">
+    <b>Now</b><span id="now">Waiting</span>
+    <b>Audio time</b><span id="tm">0.0 s</span>
+    <b>Whole opening</b><span id="tot">about 12 s (the old card used 6 s)</span>
+    <div class="prog"><i id="pg"></i></div>
+  </div>
+  <p class="note">Honest limits. The line-by-line timing is exact, because it comes from the audio itself. The word-by-word light is an estimate: each word gets time in proportion to its letters, between the first sound and the end of the line. Exact word times need a hand check, like the sūrah timing helper. The recitations in this demo are free files from everyayah.com, used here only to show the idea; for the app I would play them from that site, not copy them, and the Owner can choose another voice.</p>
+</div>
+<script>
+const A1="__A1__",A2="__A2__";
+const L=[{id:"ar1",src:A1,onset:0.53,txt:"أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ",slide:"s1",name:"Aʿūdhu"},
+         {id:"ar2",src:A2,onset:0.65,txt:"بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",slide:"s2",name:"Bismillah"}];
+const $=i=>document.getElementById(i);
+const weight=w=>Math.max(1,[...w].filter(c=>!/[ً-ْٰـ]/.test(c)).length);
+L.forEach(l=>{const el=$(l.id);l.words=l.txt.split(" ").map(w=>{const s=document.createElement("span");s.textContent=w;el.appendChild(s);return {s,w:weight(w)}});
+  const tot=l.words.reduce((a,b)=>a+b.w,0);let c=0;l.words.forEach(x=>{x.a=c/tot;c+=x.w;x.b=c/tot});
+  l.au=new Audio(l.src);l.au.preload="auto"});
+let cur=-1,timer=null,done=true,t0=0;
+function reset(){L.forEach(l=>{l.au.pause();l.au.currentTime=0;l.words.forEach(x=>x.s.className="");$(l.slide).classList.remove("on")});cur=-1;done=true;cancelAnimationFrame(timer)}
+function dur(l){return isFinite(l.au.duration)&&l.au.duration>0?l.au.duration:6}
+function playLine(i){
+  if(i>=L.length){finish();return}
+  cur=i;const l=L[i];L.forEach((m,j)=>$(m.slide).classList.toggle("on",j===i));
+  $("now").textContent=l.name+" ("+(i+1)+" of 2)";
+  l.au.currentTime=0;
+  if(!$("mute").checked){l.au.muted=false;l.au.play().catch(()=>{});}
+  l.t0=performance.now();
+  l.au.onended=null;
+  if(!$("mute").checked){l.au.onended=()=>setTimeout(()=>playLine(i+1),350)}
+  else{setTimeout(()=>{if(cur===i&&!done)playLine(i+1)},dur(l)*1000+350)}
+  loop();
+}
+function t(){const l=L[cur];return $("mute").checked?(performance.now()-l.t0)/1000:l.au.currentTime}
+function loop(){
+  if(done||cur<0)return;const l=L[cur],T=t(),D=dur(l);
+  $("tm").textContent=T.toFixed(1)+" s of "+D.toFixed(1)+" s";
+  const base=L.slice(0,cur).reduce((a,m)=>a+dur(m)+0.35,0),all=L.reduce((a,m)=>a+dur(m)+0.35,0);
+  $("pg").style.width=Math.min(100,(base+T)/all*100)+"%";
+  const f=Math.max(0,(T-l.onset)/(D-l.onset));
+  l.words.forEach(x=>{x.s.className=!$("words").checked?"":f>=x.b?"done":f>=x.a?"lit":""});
+  timer=requestAnimationFrame(loop);
+}
+function finish(){done=true;$("now").textContent="Finished: the app opens here";$("pg").style.width="100%";setTimeout(()=>{if(done)$("hint").textContent="The card closes and the app shows"},0)}
+function run(){reset();done=false;$("go").hidden=true;$("hint").textContent="Tap the card to skip";playLine(0)}
+$("start").onclick=run;$("replay").onclick=run;
+$("skip").onclick=$("stage").onclick=e=>{if(e.target.id==="start")return;if(!done){reset();finish()}};
+$("mute").onchange=()=>{if(!done)run()};
+</script>
