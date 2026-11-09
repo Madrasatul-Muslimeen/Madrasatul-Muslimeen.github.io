@@ -166,7 +166,19 @@ Read this first, every session. It is the standing brief.
 > then the Owner's approval, then build; demo versions go up v1.01, v1.02…; every build is numbered D01…. Nothing is built
 > until the Owner ticks it in PCF MSA J104.
 
-> ## ⇢ QURAN STUDY'S TWO READING VIEWS, AND WHAT EACH IS FOR (the Owner, 2 Nov 2026) — BINDING
+> ## ⇢ QURAN STUDY'S READING VIEWS: ONE AYAH VIEW WITH "READ ON", AND THE MUSHAF (the Owner, 9 Nov 2026) — BINDING
+>
+> **This REPLACES the 2 Nov rule below** (kept as history). In the QR Lead's chat on 9 Nov the Owner asked to keep only
+> two views, the Mushaf and one regular view, and after comparing two demos (https://claude.ai/artifact/Ts4fF6afBpRqf641rDBbSK)
+> chose: **"Demo 1, build it. Bismillah!"** (9 Nov 2026, 2:27 pm Sydney; checked in that session's own record by the
+> Architect). So Quran Study's Read has **the ONE Ayah View with a "Read on" switch, and the Mushaf**. The separate Reading
+> View goes: its continuous flow becomes "Read on", and 📖 moves between ONE Ayah View and Mushaf. The Owner's words in full
+> are in PCF MSA J110 comment c110q38. Later, the ONE Ayah View may also be connected to "Quran Study – One Ayah a Day" and
+> to particular Approaches; that goes in an "App planning" note in the PCF Manual. **This ships as v14.01**, the first v14
+> version (the Owner, 9 Nov: "the new view QR is building goes to the new version v14"). In the same release the last v13
+> release is archived as `legacy-v13/`.
+>
+> ### (Superseded 9 Nov 2026) QURAN STUDY'S TWO READING VIEWS, AND WHAT EACH IS FOR (the Owner, 2 Nov 2026)
 >
 > Besides the Mushaf, Quran Study's Read has **two views, and they stay DISTINCT; do not merge them.** The Owner's words:
 > "Ayah view meant to be ONE AYAH view as an invitation to study the 'Quran Study - ONE AYAH a Day' program … keep it
