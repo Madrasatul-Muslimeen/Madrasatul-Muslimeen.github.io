@@ -3273,3 +3273,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.59** (2026-11-09): the Dua saving writers (R6) and Wiktionary suggested meanings (Dua J104).
 - **v13.60** (2026-11-09): Family across duas and the Hisn/Qur'anic dua keys (Dua J104 tick 18 B, lines 23-24).
 - **v13.61** (2026-11-09): the Legacy App links under one button, with v12 (the Owner, 9 Nov).
+- **v13.62** (2026-11-09): Install MSA and Get ready for offline (J120 O1+O2).
