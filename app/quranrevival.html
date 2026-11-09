@@ -5298,7 +5298,7 @@
   /* Measured: ‹ 🔍 [This āyah] word ROOT › × needs ~440px of card to leave the Arabic word 70px, so on a narrower card the
      header takes two rows -- ‹ 🔍 [This āyah] … › × on the first (the button stays beside 🔍), the word and its root centred on
      the second -- rather than squeezing the word to nothing. */
-  @container wordcard (max-width: 30rem) {
+  @container wordcard (max-width: 34rem) {
     .quran-word-card header { flex-wrap: wrap; row-gap: 0.25rem; }
     .quran-word-card header button.word-card-legend-btn { margin-inline-end: auto; } /* J59: was on "This āyah"; the ⓘ now sits beside it */
     .quran-word-card header > .word-card-head-word { order: 5; flex: 1 1 calc(100% - 6rem); min-width: 4.5rem; }
@@ -5345,11 +5345,12 @@
   .quran-word-card header > button.word-card-app-back { margin-inline-end: 0; }
   .quran-word-card header button.word-card-menu-btn { font-size: 1.15rem; border-color: #c9a24a; color: #c9a24a; }
   .quran-word-card header button.word-card-menu-btn[aria-expanded="true"] { background: #c9a24a; color: #1c2a46; }
-  @container wordcard (max-width: 30rem) {
+  @container wordcard (max-width: 34rem) {
     .quran-word-card header > [data-word-card-move="next"] { order: 3; margin-inline-start: auto; }
     .quran-word-card header > button.word-card-legend-btn { order: 3; }
     .quran-word-card header > [data-word-card-close] { order: 4; }
     .quran-word-card header > button.word-card-menu-btn { order: 4; }
+    .quran-word-card header > button.word-card-forms-head { order: 6; } /* on the word's row, after it */
   }
   /* with ← in the header (a card up to 25rem) or without it (a card up to 22rem) ⓘ takes the second row, before the word */
   @container wordcard (max-width: 25rem) {
@@ -5362,6 +5363,9 @@
     .quran-word-card header > .word-card-head-word { order: 6; flex-basis: calc(100% - 6rem - 44px); }
     .quran-word-card header > .word-card-root-box { order: 7; }
     .quran-word-card header:has(> .word-card-app-back) > .word-card-head-word { flex-basis: calc(100% - 9rem - 44px); }
+  }
+  @container wordcard (min-width: 30rem) and (max-width: 34rem) {
+    .quran-word-card header > .word-card-head-word { flex: 1 1 calc(100% - 7.5rem); }
   }
   .word-card-menu-row { position: relative; height: 0; z-index: 6; }
   #wordCardMenuPanel[hidden] { display: none; }
@@ -19976,6 +19980,9 @@
       balloon.hidden = !open;
       // J59: the pointer sits under the ⓘ wherever the header has put it (one row or two, any width).
       if (open) {
+        // MSA · QR J125: ⓘ now sits in the right-hand group, so the balloon slides under it (kept inside the row) rather than staying at the left edge.
+        const rowEl = balloon.parentElement, rowRect = rowEl.getBoundingClientRect(), b0 = btn.getBoundingClientRect(), w0 = balloon.getBoundingClientRect().width;
+        balloon.style.left = `${Math.max(0, Math.min(rowRect.width - w0, b0.left + b0.width / 2 - rowRect.left - w0 / 2))}px`;
         const b = btn.getBoundingClientRect(), r = balloon.getBoundingClientRect();
         balloon.style.setProperty("--wc-legend-arrow", `${Math.max(8, Math.min(r.width - 24, b.left + b.width / 2 - r.left - 7))}px`);
       }
