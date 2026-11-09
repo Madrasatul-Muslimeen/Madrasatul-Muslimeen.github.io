@@ -20083,9 +20083,19 @@
         if (content) content.innerHTML = "";
       });
     }
+    // MSA · QR J134: the card's "Words also in Bangla" switch is OFF for every NEW word -- a different word, or the card
+    // opened again after it was closed. It is a CARD switch, kept in memory only: J119's saved whole-list setting
+    // (banglaState.on, which the Wheel and "known" read) is untouched. A redraw of the same word keeps what the reader set.
+    let banglaCardOn = false, banglaSwitchWordId = null;
+    function resetBanglaSwitchForNewWord() {
+      const id = quranWordCardState.open ? quranWordCardState.occurrenceId : null;
+      if (id === banglaSwitchWordId) return;
+      banglaSwitchWordId = id; banglaCardOn = false;
+    }
     function renderPersistentWordCard() {
       const mount = activeWordCardMount();
-      if (!mount || !quranWordCardState.open || !currentSurahData) { clearWordCardMounts(); return; }
+      if (!mount || !quranWordCardState.open || !currentSurahData) { banglaSwitchWordId = null; banglaCardOn = false; clearWordCardMounts(); return; }
+      resetBanglaSwitchForNewWord();
       const focused = mount.contains(document.activeElement) ? document.activeElement : null;
       const focusSelector = focused?.dataset.wordCardLevel
         ? `[data-word-card-level="${focused.dataset.wordCardLevel}"]`
@@ -23890,8 +23900,8 @@
       const inList = set.has(lemma);
       const bn = banglaByLemma?.get(lemma)?.b ?? "";
       return banglaBlockHtml({
-        state: banglaState, lemma, canAdmin: canAdminCatalogueClientSide(), figures, rows, open: banglaListOpen,
-        tag: inList ? banglaTagText(bn, getAppLang() === "bn" ? "bn" : "en") : "",
+        state: { ...banglaState, on: banglaCardOn }, lemma, canAdmin: canAdminCatalogueClientSide(), figures, rows, open: banglaListOpen, // J134: this card's own switch
+        tag: inList && banglaCardOn ? banglaTagText(bn, getAppLang() === "bn" ? "bn" : "en") : "",
         text: {
           mark: t("Also in Bangla"), marked: t("In Bangla"), heading: t("Bangla list"), admin: t("Admin's"), mine: t("Mine"),
           adminNote: t("admin marks"), readOnly: t("read only"), yours: t("yours"), listHeading: t("Words also in Bangla ({n})"),
@@ -23908,7 +23918,7 @@
       wireBanglaBlock(content, {
         onWord: (lemma, on) => banglaChanged(setBanglaWord(banglaState, lemma, on, { canAdmin: canAdminCatalogueClientSide() })),
         onList: (id) => banglaChanged({ ...banglaState, list: id }),
-        onOnOff: (on) => banglaChanged({ ...banglaState, on }),
+        onOnOff: (on) => { banglaCardOn = on; if (quranWordCardState?.open) renderPersistentWordCard(); }, // J134: the card's own switch, never saved
       });
     }
     const marksStyleEl = document.createElement("style"); marksStyleEl.textContent = MARKS_CSS; document.head.appendChild(marksStyleEl);
