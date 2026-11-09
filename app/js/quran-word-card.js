@@ -552,10 +552,9 @@ function notApplicableHtml(progress, authority, text) {
 // four, BELOW the Word Progress buttons. renderQuranWordCard sets this before it builds a level panel (a synchronous render).
 let markLearnRowHtml = "";
 function markLearnRow(word, context, text) {
-  const lemma = word?.morphology?.lemma;
-  if (!context.marksHtml && !lemma) return "";
-  const learn = lemma ? `<button type="button" class="word-card-practise mk-learn" data-vocab-practise-word data-lemma="${escapeHtml(lemma)}">${escapeHtml(String(text.learnWord ?? WORD_CARD_TEXT.learnWord))}</button>` : "";
-  return `<div class="word-card-markrow" data-word-card-marks>${context.marksHtml ?? ""}${learn}</div>`;
+  // MSA · QR J135: the row is the three marks only (Difficult · Learn · Learned); the old "Learn" practise button is gone.
+  if (!context.marksHtml) return "";
+  return `<div class="word-card-markrow" data-word-card-marks>${context.marksHtml}</div>`;
 }
 
 function progressBlock(progress, authority, coverage, text, formatNumber, wbw = {}) {
