@@ -2729,6 +2729,8 @@ export const BN = {
   "Move folder": "ফোল্ডার সরান",
   // The Owner, 5 Oct 2026 -- Last read / Last played in the Bookmark menu.
   "Last read": "সর্বশেষ পড়া",
+  "Your last reads": "আপনার সর্বশেষ পড়াগুলো",
+  "No reads yet.": "এখনো কিছু পড়া হয়নি।",
   "Last played": "সর্বশেষ শোনা",
   "Nothing read yet": "এখনো কিছু পড়া হয়নি",
   "Nothing played yet": "এখনো কিছু শোনা হয়নি",
