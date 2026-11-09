@@ -21,7 +21,7 @@ const WINDOWS = [
   { id: "notes", root: "#readNotePane", close: ".rnp-close", title: ".rnp-title" },
   { id: "newnote", root: "#noteOpener", close: ".no-close", title: ".no-title" }, // J108: the shared Note opener (note-opener.js)
   { id: "note", root: ".note-win", close: "[data-win-close]", title: ".nw-title" },
-  { id: "ayah", root: "#ayahActionSheetOverlay.open [data-ayah-sheet], #ayahActionSheetOverlay.open [data-unit-card]", hide: "#ayahActionSheetOverlay", close: ".ayah-sheet-close", title: ".ayah-sheet-ref" },
+  { id: "ayah", noButton: true, root: "#ayahActionSheetOverlay.open [data-ayah-sheet], #ayahActionSheetOverlay.open [data-unit-card]", hide: "#ayahActionSheetOverlay", close: ".ayah-sheet-close", title: ".ayah-sheet-ref" },
   { id: "track", root: "#wayModalMount .way-modal", hide: "#wayModalMount", close: ".way-close-btn", title: ".way-modal-header h2, .way-modal-header h3, .way-modal-title" },
   { id: "read", root: "body.read-windowed #readView", close: "#readWinCloseBtn", title: "#readRef" },
   { id: "card", root: ".fc-floating", close: "[data-close], .close-btn, button[aria-label='Close'], button[title='Close']", title: "h2, h3, header" },
@@ -126,7 +126,7 @@ function ensureDock() {
 function addButtons() {
   for (const spec of WINDOWS) {
     document.querySelectorAll(spec.root).forEach((root) => {
-      if (!shown(root)) return;
+      if (!shown(root) || spec.noButton) return;
       const close = [...root.querySelectorAll(spec.close)].find(shown);
       if (!close || close.previousElementSibling?.matches?.(".mm-min-btn")) return;
       const btn = document.createElement("button");

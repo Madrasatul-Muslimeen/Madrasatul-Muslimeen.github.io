@@ -32,6 +32,8 @@ async function openCard(ctx) {
   await setSel(page, "ayahSelect", "14"); await page.waitForTimeout(900);
   await page.evaluate(() => document.querySelector('[data-word-occurrence$=":2:14:8"]')?.click());
   await page.waitForFunction(() => !!document.querySelector("#quranWordCardMount [data-bangla-block]"), null, { timeout: 15000 }).catch(() => {});
+  // UPDATED IN PLACE (J125, 9 Nov 2026): the Bangla block now lives in the card's ☰ menu, shut until it is opened; every check below opens it first.
+  await page.evaluate(() => { const p = document.querySelector("#quranWordCardMount [data-word-card-menu-panel]"); if (p?.hidden) document.querySelector("#quranWordCardMount [data-word-card-menu-toggle]")?.click(); }); await page.waitForTimeout(300);
   return page;
 }
 const state = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("mm_bangla_words.v1") || "null") ?? { admin: [], on: null, list: null, mine: [] }); // never null: a mutation that stops saving must FAIL a check, not crash the run
