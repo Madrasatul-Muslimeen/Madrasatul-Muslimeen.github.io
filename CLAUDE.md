@@ -166,7 +166,19 @@ Read this first, every session. It is the standing brief.
 > then the Owner's approval, then build; demo versions go up v1.01, v1.02…; every build is numbered D01…. Nothing is built
 > until the Owner ticks it in PCF MSA J104.
 
-> ## ⇢ QURAN STUDY'S TWO READING VIEWS, AND WHAT EACH IS FOR (the Owner, 2 Nov 2026) — BINDING
+> ## ⇢ QURAN STUDY'S READING VIEWS: ONE AYAH VIEW WITH "READ ON", AND THE MUSHAF (the Owner, 9 Nov 2026) — BINDING
+>
+> **This REPLACES the 2 Nov rule below** (kept as history). In the QR Lead's chat on 9 Nov the Owner asked to keep only
+> two views, the Mushaf and one regular view, and after comparing two demos (https://claude.ai/artifact/Ts4fF6afBpRqf641rDBbSK)
+> chose: **"Demo 1, build it. Bismillah!"** (9 Nov 2026, 2:27 pm Sydney; checked in that session's own record by the
+> Architect). So Quran Study's Read has **the ONE Ayah View with a "Read on" switch, and the Mushaf**. The separate Reading
+> View goes: its continuous flow becomes "Read on", and 📖 moves between ONE Ayah View and Mushaf. The Owner's words in full
+> are in PCF MSA J110 comment c110q38. Later, the ONE Ayah View may also be connected to "Quran Study – One Ayah a Day" and
+> to particular Approaches; that goes in an "App planning" note in the PCF Manual. **This ships as v14.01**, the first v14
+> version (the Owner, 9 Nov: "the new view QR is building goes to the new version v14"). In the same release the last v13
+> release is archived as `legacy-v13/`.
+>
+> ### (Superseded 9 Nov 2026) QURAN STUDY'S TWO READING VIEWS, AND WHAT EACH IS FOR (the Owner, 2 Nov 2026)
 >
 > Besides the Mushaf, Quran Study's Read has **two views, and they stay DISTINCT; do not merge them.** The Owner's words:
 > "Ayah view meant to be ONE AYAH view as an invitation to study the 'Quran Study - ONE AYAH a Day' program … keep it
@@ -441,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v13.60 on `main`** (9 Nov 2026, shown as "v13.60-09.11.26". **PCF MSA · Dua J104 tick 18 B and lines 23-24 (the Dua Lead, #1550 and #1569), reviewed by the Architect by measurement against `main`.** (1) #1550: the Dua Word Card's Family level lists the same root in OTHER duas ("The same root in other duas"), each a link to that dua with ← Back (the way-back law), at least 40px tall, up to 40 shown, marked "Roots are a computer's guess, to be checked"; `tools/hadith-data-pull/output/dua/root-index.json` (49 KB, 618 roots, 380 in two or more duas) is read on the first Family level only (I9); 6 Bangla strings. (2) #1569: `app/js/dua-saving-data.js` has ONE dua-key vocabulary for marks, edits and shares, the Owner's line 23 A: a Hadith dua's number, `hisn-<chapter>-<entry>`, `quran-<surah>-<ayah>[-<ayah>]`, `new-<id>`; a new guard check asserts the layer's DUA_KEY is EXACTLY the pattern the published firestore.rules pins on duaEdits and duaShares, and the old "PLAN_KEY_EXTRA" check (which could return without asserting) was updated in place to a stricter one. Still no page imports the saving layer. Checks: rules-authorisation-executable 113/0, dua-saving-data 24/0; 29 Dua suites identical to main by failure name (audit-part16 572/8, dua-check 47/2 on both; dua-word-levels 55/0 vs 52/0, #1550's new checks); way-back 360/0, hadith-dua-a11y --page=dua 1423/0 and night-hadith-dua --page=dua 2716/0 with findings identical to main, large-text 1779/0, keyboard 1086/0, intention 32/0; behaviour 974/1 (14a, the same as main). Nothing deployed to Firestore.)
+**Current milestone: v13.61 on `main`** (9 Nov 2026, shown as "v13.61-09.11.26". **The Owner's two asks of 9 Nov, built by the Architect (90L).** (1) "Why the v12 is not kept in legacy?": legacy-v12/ (v12.139) had been archived on 31 Oct but never linked, because 26 pages listed v10 and v11 only, app/sw.js's archive list stopped at v11, and `legacy-links-browser.mjs` checked a TYPED list ["v10","v11"], so nothing failed. The link and the worker entry are added, and the suite (and manual-claims-msa) now READ every legacy-v1N/ folder off disk with a positive control, so legacy-v13/ cannot be missed. (2) "Legacy became a long list in the home menu, place it under one button": on all 26 pages the archive links sit inside ONE native <details> "Legacy App ▾" (bn পুরাতন অ্যাপ), closed by default, each link reading just "v06 ↗" … "v12 ↗"; the suite checks one button, closed by default, >=40px, one tap opens it (checkVisibility, since Chrome 153 keeps boxes inside a closed <details>), with mutations nogroup (96 red) and nov12 (120 red). Also: CLAUDE.md records the Owner's 9 Nov reading-view rule ("Demo 1, build it. Bismillah!": ONE Ayah View with Read on, plus the Mushaf, to ship as v14.01 with legacy-v13/), replacing the 2 Nov rule, kept as history. Checks: legacy-links 340/0; behaviour 974/1 (14a, the same as main); manual-claims-msa 487/9, the same 9 failures as main by name; navcheck fits at every width in both languages, as on main; apps-build-check 48/0. Nothing deployed to Firestore.)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
