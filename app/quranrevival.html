@@ -3611,6 +3611,14 @@
   .rc-card header h2 { margin: 0; font-size: 1.05rem; }
   .rc-header-actions { display: inline-flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; }
   .rc-home-btn { flex: 0 0 auto; min-height: 40px; padding: 0 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem; font: inherit; font-size: 0.95rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.5); border-radius: 0.35rem; background: transparent; color: #fff; cursor: pointer; white-space: nowrap; }
+  /* MSA · QR J123: "Last read" on the Surah list header -- the last 5 places read, on this device */
+  @media (max-width: 359px) { #readContentsLastBtn .rc-home-word { display: none; } #readContentsLastBtn { min-width: 44px; justify-content: center; padding: 0 0.5rem; } } /* icon only on the narrowest phones: its name stays in aria-label */
+  #readContentsRecent[hidden] { display: none; }
+  .rc-recent { display: grid; gap: 0.35rem; padding: 0.5rem 0.9rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.18); }
+  .rc-recent h3 { margin: 0; font-size: 0.85rem; font-weight: 700; opacity: 0.85; }
+  .rc-recent button { min-height: 44px; display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; padding: 0.3rem 0.8rem; font: inherit; text-align: start; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.06); color: inherit; cursor: pointer; }
+  .rc-recent button b { font-weight: 700; }
+  .rc-recent .rc-recent-empty { margin: 0; opacity: 0.8; }
   .rc-home-btn span[aria-hidden] { font-size: 1.15rem; line-height: 1; }
   .rc-card header h2 { flex: 1 1 auto; min-width: 0; } /* J72: ← Back first, the title, then ⌂ Home and × */
   .rc-tabs { display: flex; gap: 0.25rem; padding: 0.4rem 0.5rem 0; border-bottom: 1px solid var(--card-line); }
@@ -4281,6 +4289,14 @@
   .ln-count { grid-area: count; font-weight: 800; font-size: 0.9rem; } .ln-sofar { grid-area: sofar; font-size: 0.75rem; color: #4b2a85; text-align: end; }
   .ln-tick { grid-area: tick; font-size: 0.78rem; font-weight: 800; color: #1d6b4a; }
   /* PCF MSA J48 -- Vocabulary. Purple (#4b2a85 on #f1e9fb) for the module's own parts; known = the J47 green. */
+  /* MSA · QR J128: the three marks and Learn are ONE row of four, below the Word Progress buttons. */
+  .word-card-markrow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem; align-items: end; margin: 0.45rem 0 0; }
+  .word-card-markrow .marks-row { grid-column: 1 / 4; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; margin: 0; }
+  .word-card-markrow .marks-row-label { grid-column: 1 / -1; font-size: 0.8rem; }
+  .word-card-markrow .marks-row-buttons { display: contents; }
+  .word-card-markrow .mk-btn, .word-card-markrow .word-card-practise { min-width: 0; width: auto; min-height: 44px; margin: 0; padding: 0.25rem 0.3rem; border-radius: 0.5rem; font-size: 0.82rem; line-height: 1.15; overflow-wrap: anywhere; }
+  .word-card-markrow .word-card-practise.mk-learn { background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); font-weight: 700; }
+  .word-card-markrow .mk-btn, .word-card-markrow .word-card-practise { flex: 1 1 0; min-width: 0; width: auto; min-height: 44px; margin: 0; padding: 0.25rem 0.3rem; border-radius: 0.5rem; font-size: 0.82rem; line-height: 1.15; overflow-wrap: anywhere; }
   .word-card-practise { display: block; width: 100%; min-height: 44px; margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; border-radius: 0.5rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); font: inherit; font-weight: 700; cursor: pointer; box-sizing: border-box; }
   /* PCF MSA J57: the way to the āyah this word sits in. Outlined in the card's own purple tokens, so it reads on the light
      and the night card alike, and stays second to Practise (filled). */
@@ -4469,6 +4485,9 @@
   /* Owner, 2 Oct 2026: the whole-Qur'an total, eye-catching and bold. */
   .word-progress-whole-quran-box { margin: 0.6rem 0 0.2rem; padding: 0.55rem 0.75rem; border: 1px solid var(--card-line); border-left: 4px solid var(--card-heading); border-radius: 0.45rem; background: var(--card-bg-inset); }
   .word-progress-whole-quran-box p { margin: 0; font-size: 0.98rem; font-weight: 700; line-height: 1.45; color: var(--card-text); }
+  /* MSA · QR J126 (Owner, 9 Nov): the study titles WbW: / Root: / Family: / Taṣrīf: / Depth: are bright and eye-catching. */
+  .word-progress-level-title { font-weight: 800; letter-spacing: 0.01em; color: #b0125f; }
+  [data-card-look="night"] .word-progress-level-title { color: #5ff0ff; text-shadow: 0 0 10px rgba(95, 240, 255, 0.35); }
   .word-progress-whole-quran-box p + p { margin-top: 0.2rem; }
   /* PCF J23, layout B (the Owner, 14 Oct): the known number in a filled gold disc; the percentage written inside
      a progress circle that fills (option C's circle, in place of the number). */
@@ -7711,10 +7730,12 @@
         <!-- Owner, 2 Oct 2026 (a phone photo of this list): "Enable a way to
              move to home (page landing) from here." -->
         <span class="rc-header-actions">
+          <button type="button" id="readContentsLastBtn" class="rc-home-btn" aria-haspopup="true" aria-expanded="false" aria-controls="readContentsRecent"><span aria-hidden="true">🕘</span> <span class="rc-home-word">Last read</span></button>
           <button type="button" id="readContentsHomeBtn" class="rc-home-btn"><span aria-hidden="true">⌂</span> <span class="rc-home-word">Home</span></button>
           <button type="button" id="readContentsCloseBtn" class="my-status-close-btn">&times;</button>
         </span>
       </header>
+      <div id="readContentsRecent" class="rc-recent" role="group" hidden></div>
       <div id="readContentsTabs" class="rc-tabs" role="tablist"></div>
       <input type="search" id="readContentsSearch" class="rc-search" autocomplete="off" />
       <div id="readContentsBody" class="rc-body"></div>
@@ -7988,7 +8009,7 @@
       renderAssignDropdown, wireAssignDropdown, checkedAssignees, buildClaimResultMessage,
     } from "./js/way-modal.js";
     import {
-      RECITERS, reciterIsReady, reciterSupportsSingleAyah, playSurah,
+      RECITERS, reciterIsReady, reciterSupportsSingleAyah, reciterOffersSurah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
       warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, isRunContinuing, unlockAudio,
       setPlaybackStateHandler, playOneAndWait, setTimingNoteHandler,
@@ -12326,6 +12347,7 @@
         settings: { ...captureQuranBookmarkSettings(), ayahNum: ayah, view: "read" }, at: new Date().toISOString(),
       };
       if (prev && prev.surahNum === place.surahNum && prev.ayahNum === place.ayahNum && JSON.stringify(prev.settings) === JSON.stringify(place.settings)) return; // nothing moved
+      if (kind === "read") rememberRecentRead(place);
       pendingLastPlaces[kind] = place;
       bookmarksDoc.lastPlaces = { ...(bookmarksDoc.lastPlaces ?? {}), [kind]: place };
       if (!lastPlaceTimer) lastPlaceTimer = setTimeout(flushLastPlaces, 10000);
@@ -12343,6 +12365,27 @@
     }
     addEventListener("pagehide", () => { flushLastPlaces(); });
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushLastPlaces(); });
+
+    // MSA · QR J123 -- the last 5 places read, one per sūrah, newest first, kept on THIS device (no Rules, no Firestore field).
+    const RECENT_READS_MAX = 5;
+    const recentReadsKey = () => `mm_recent_reads:${selectedPersonId || "none"}`;
+    function recentReads() {
+      try { const a = JSON.parse(localStorage.getItem(recentReadsKey()) || "[]"); return Array.isArray(a) ? a.filter((p) => p && Number.isInteger(p.surahNum) && Number.isInteger(p.ayahNum) && p.settings).slice(0, RECENT_READS_MAX) : []; } catch { return []; }
+    }
+    function rememberRecentRead(place) {
+      try { localStorage.setItem(recentReadsKey(), JSON.stringify([place, ...recentReads().filter((p) => p.surahNum !== place.surahNum)].slice(0, RECENT_READS_MAX))); } catch { /* private window: nothing remembered */ }
+    }
+    async function openRecentRead(place) {
+      await ensureAyahNoteDataLoaded();
+      if (isPlaying() || isPaused()) { stopDrill(); stopAudio(); }
+      await applyQuranBookmarkSettings(place.settings, null);
+      if (place.surahNum !== currentSurahNum) return;
+      openReadingScreen();
+      const [from, to] = currentUnitAyahBounds();
+      const ayah = Math.min(Math.max(place.ayahNum, from), to);
+      setAyahNum(ayah); syncAyahSelect(); renderStudyScreen();
+      requestAnimationFrame(() => { (document.querySelector(`#readView .page-flow-ayah[data-ayah="${ayah}"]`) ?? document.querySelector(`#readView [data-ayah="${ayah}"]`))?.scrollIntoView({ block: "center", inline: "nearest" }); });
+    }
 
     /** Open the Last read (the Read view at that ayah) or the Last played
         (play on from that ayah). From the Bookmark menu, Play starts inside
@@ -14123,6 +14166,7 @@
 
     function renderReadContents() {
       document.getElementById("readContentsTitle").textContent = t("Read");
+      setRecentOpen(false); readContentsLastBtn.querySelector(".rc-home-word").textContent = t("Last read"); readContentsLastBtn.setAttribute("aria-label", t("Last read"));
       document.getElementById("readContentsCloseBtn").setAttribute("aria-label", t("Close"));
       document.getElementById("readContentsHomeBtn").setAttribute("aria-label", t("Home"));
       readContentsSearchEl.placeholder = t("Sūrah name or number, or an āyah like 2:255");
@@ -14219,6 +14263,21 @@
 
     document.getElementById("readContentsBtn")?.addEventListener("click", openReadContents);
     document.getElementById("readListBtn")?.addEventListener("click", openReadContents);
+    // MSA · QR J123: the Surah list's "Last read" button lists the last 5 reads to choose from.
+    const readContentsRecentEl = document.getElementById("readContentsRecent"), readContentsLastBtn = document.getElementById("readContentsLastBtn");
+    function setRecentOpen(open) { readContentsRecentEl.hidden = !open; readContentsLastBtn.setAttribute("aria-expanded", String(open)); }
+    function renderRecentReads() {
+      const list = recentReads();
+      readContentsRecentEl.setAttribute("aria-label", t("Your last reads"));
+      readContentsRecentEl.innerHTML = `<h3>${rcEsc(t("Your last reads"))}</h3>` + (list.length ? list.map((p, i) =>
+        `<button type="button" data-recent-read="${i}"><b>${rcEsc(rcSurahName(p.surahNum))}</b><span>${rcEsc(t("Ayah {n}", { n: num(p.ayahNum) }))}</span></button>`).join("") : `<p class="rc-recent-empty">${rcEsc(t("No reads yet."))}</p>`);
+    }
+    readContentsLastBtn?.addEventListener("click", () => { if (!readContentsRecentEl.hidden) { setRecentOpen(false); return; } renderRecentReads(); setRecentOpen(true); });
+    readContentsRecentEl?.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-recent-read]"); if (!b) return;
+      const place = recentReads()[Number(b.dataset.recentRead)]; if (!place) return;
+      closeReadContents({ restoreFocus: false }); openRecentRead(place);
+    });
     document.getElementById("readContentsCloseBtn")?.addEventListener("click", closeReadContents);
     // Owner, 2 Oct 2026: straight from the list to the landing page.
     document.getElementById("readContentsHomeBtn")?.addEventListener("click", () => { closeReadContents({ restoreFocus: false }); openApproachWheel(); });
@@ -18916,6 +18975,7 @@
         learnNextTitle: t("Learn next"),
         practiseThisWord: t("Practise this word"),
         menuLabel: t("Menu"),
+        learnWord: t("Learn"),
         goToItsAyah: t("Go to its āyah {ref}"),
         learnNextLine: t("Next up: {word} · {meaning} · {count} places"),
         rootsStudiedSentence: t("{level}: studied {known} of {total} roots"),
@@ -23773,7 +23833,7 @@
     intentionStyleEl.textContent = INTENTION_CSS + `
 #intentionHost.intention-one-line .intention-card { display:flex; align-items:center; gap:.5rem; margin:.25rem 0; padding:.2rem .6rem; }
 #intentionHost.intention-one-line .intention-lab { display:none; }
-#intentionHost.intention-one-line .intention-text { flex:1 1 auto; min-width:0; margin:0; font-size:.88rem; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#intentionHost.intention-one-line .intention-text { flex:1 1 auto; min-width:0; margin:0; font-size:.84rem; line-height:1.3; white-space:normal; overflow-wrap:anywhere; } /* MSA · QR J124: the Owner's 9 Nov report -- the text was CUT with "…" before its Bismillah button; it now wraps and shows in full (the card is still far shorter than the full card) */
 #intentionHost.intention-one-line .intention-bismillah { flex:0 0 auto; }`; document.head.appendChild(intentionStyleEl);
     let intentionClosedThisOpening = false;
     const intentionPerson = () => selectedPersonId || null;
@@ -27026,7 +27086,7 @@
     // Stop: Stop lives on the reading screen, where the listener actually is.
     // -----------------------------------------------------------------------
     function renderListeningControls() {
-      const reciters = Object.values(RECITERS).filter((r) => reciterIsReady(r.id));
+      const reciters = Object.values(RECITERS).filter((r) => reciterIsReady(r.id) && reciterOffersSurah(r.id, currentSurahNum)); // a one-sūrah recording is offered only on its own sūrah (MSA · QR J121)
       if (drillSelectedReciterIds === null) drillSelectedReciterIds = [currentReciterId].filter((id) => reciterSupportsSingleAyah(id));
 
       // Shell round 26 -- this whole block used to be rebuilt on EVERY render,
@@ -27036,7 +27096,7 @@
       // ("uncheck and recheck an option" behaving oddly). The markup only
       // changes when a choice changes, so it is only rebuilt when it changes.
       const signature = JSON.stringify([
-        drillSelectedReciterIds, drillRepeatCount, drillMode, loopIsOn, getAppLang(),
+        drillSelectedReciterIds, drillRepeatCount, drillMode, loopIsOn, getAppLang(), currentSurahNum,
       ]);
       if (signature === lastListeningSignature) { setLoop(loopIsOn); return; }
       lastListeningSignature = signature;
@@ -27112,7 +27172,7 @@
         whole-surah branch in playCurrentSelection() below. */
     function playbackReciterIds() {
       const ticked = (drillSelectedReciterIds ?? []).filter((id) => RECITERS[id]);
-      return ticked.filter((id) => reciterSupportsSingleAyah(id));
+      return ticked.filter((id) => reciterSupportsSingleAyah(id) && reciterOffersSurah(id, currentSurahNum));
     }
 
     /** A failure the audio layer has already put on screen must not be shown a
@@ -27193,7 +27253,9 @@
         reciter, and the card now offers a list. First ticked wins; an empty
         list leaves the last choice alone rather than silently muting Play. */
     function adoptFirstTickedReciter() {
-      const first = (drillSelectedReciterIds ?? []).find((id) => reciterSupportsSingleAyah(id));
+      const first = (drillSelectedReciterIds ?? []).find((id) => reciterSupportsSingleAyah(id) && reciterOffersSurah(id, currentSurahNum));
+      // MSA · QR J121: a one-sūrah recording left chosen must not play on another sūrah
+      if (!first && !reciterOffersSurah(currentReciterId, currentSurahNum)) currentReciterId = "ar";
       if (first && first !== currentReciterId) {
         currentReciterId = first;
         warmSegmentedTimestamps(); // idempotent; a second chance to have the timing map ready before Play
