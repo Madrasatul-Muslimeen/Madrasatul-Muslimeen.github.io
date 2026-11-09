@@ -2,7 +2,7 @@
 // Word Progress buttons; nothing of the marks sits above the tabs any more. Run from the repo root, node serve.js on :8080.
 //   node tools/i18n-verify/word-card-marks-row-browser.mjs [--mutate=top|stack|rename]
 //   --mutate=top     the marks row is rendered above the tabs again       -> "below the Progress buttons" FAILS
-//   --mutate=stack   the row wraps (flex-wrap)                            -> "four in one row" FAILS
+//   --mutate=stack   the three marks stack (display: block)  -> the one-row check FAILS (re-anchored v14.05 for J135's one-column row)
 //   --mutate=rename  the buttons keep the Āyah card's names                -> "Learn / Learned" FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -10,7 +10,7 @@ const PAGE = "app/quranrevival.html", JS = "app/js/quran-word-card.js";
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   top: [JS, "    ${originBar(context.origin, text)}\n", "    ${context.marksHtml ? `<div class=\"word-card-markrow\" data-word-card-marks>${context.marksHtml}</div>` : \"\"}\n    ${originBar(context.origin, text)}\n"],
-  stack: [PAGE, ".word-card-markrow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));", ".word-card-markrow { display: block; align-items: end;"],
+  stack: [PAGE, ".word-card-markrow .marks-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));", ".word-card-markrow .marks-row { grid-column: 1 / -1; display: block; grid-template-columns: repeat(3, minmax(0, 1fr));"],
   rename: [PAGE, 'function wordMarkNames() { return { practice: t("Learn"), done: t("Learned") }; }', 'function wordMarkNames() { return {}; }'],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error("unknown mutation");
