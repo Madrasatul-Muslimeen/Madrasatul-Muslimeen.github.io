@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.02",
+    "version": "14.03",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6713,8 +6713,20 @@
     {
       "version": "14.02",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v14.02 releases MSA · QR J121 (#1566): the Owner's own Sūrah al-Wāqiʿah recording as a reciter on sūrah 56, served from this repository, with a Bangla label added at release.",
+      "integration": {
+        "authorizedOn": "2026-11-09",
+        "integratedOn": "2026-11-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "14.03",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Word card marks+Learn row, intention strip wrap, level title colours and Last read (MSA · QR J128, J124, J126, J123; #1578-#1581)",
       "integration": {
         "authorizedOn": "2026-11-09",
         "integratedOn": "2026-11-09",
@@ -6723,8 +6735,9 @@
       }
     }
   ],
-  "nextUnallocated": "14.03",
+  "nextUnallocated": "14.04",
   "nextUnallocatedNote": [
+    "v14.03 was allocated to four Quran Study fixes: Word card marks row (J128), intention strip wraps (J124), level titles (J126), Last read (J123), 2026-11-09.",
     "v14.02 was allocated to the Owner's al-Wāqiʿah recording as a reciter (MSA · QR J121, #1566), 2026-11-09.",
     "v14.01 was allocated to the ONE Ayah View with Read on, plus the Mushaf (the Owner's Demo 1, J110), and v13 kept as legacy-v13, 2026-11-09.",
     "v13.62 was allocated to Install MSA and Get ready for offline (J120 O1+O2), 2026-11-09.",

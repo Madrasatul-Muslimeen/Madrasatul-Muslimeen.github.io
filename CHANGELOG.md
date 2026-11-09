@@ -23546,3 +23546,14 @@ PCF MSA · QR J121. The Owner chose the audio-file route ("J121. Go ahead with A
 - **Offline**: the webm is not cached by the worker (OFFLINE-PLAN.md).
 - **Tests**: new `waqiah-reciter.mjs` 9/0 and `waqiah-reciter-browser.mjs` 20/0 (the real file in a real browser, en/bn × 390/1280; `--mutate=no-surah-filter` red, 4 fail). On the release tree: qr-play-run-gap 21/0, bn-audio-clip 24/0, study-options-play-read 73/0, dua-quran-play 7/0, read-on-switch 160/0, behaviour 974/1 (14a, as main), apps-build-check 53/0; QR's 29 checks identical by failure name to v14.01's release run.
 - Nothing deployed to Firestore.
+
+## v14.03 — 9 Nov 2026 — Quran Study: Word card marks row, level titles, intention strip, Last read
+
+Four rounds by QR Lead 40L, each merged at its own head; reviewed and released by the MSA Architect 91L.
+
+- **J128 (#1578, head 57b0b8d)**: the Word card's marks and a **Learn** button sit on one row (`.word-card-markrow`, `markLearnRow`); Bangla "শিখুন" already existed.
+- **J124 (#1579, head afe9f20)**: the intention strip wraps on a narrow screen instead of cutting its words off. CSS only. The Owner's Quick task, 9 Nov 5:25 pm Sydney, with screenshots.
+- **J126 (#1580, head da16783)**: the Word card's level titles (`.word-progress-level-title`) in magenta, cyan at night.
+- **J123 (#1581, head 5eb0340)**: a **Last read** button (`#readContentsLastBtn`) in the sūrah list, opening one of the last five places read, kept on this device in localStorage `mm_recent_reads:<personId>`; 2 Bangla strings. The Owner's Quick task. It is per device: across devices it would need a Rules change, an Owner Control Gate, noted in J123 as a later option.
+- **Tests on the release tree**: word-card-marks-row 48/0, marks-k2 76/0, marks-k2-matrix 90/0, vocabulary 76/0, word-card-goto-ayah 35/0, intention-mushaf-one-line 60/0, intention-reminder 40/0 (+ pure 11/0), intention-hadith-dua 32/0, word-card-level-titles 36/0, word-card-five-levels 290/0, learn-next 204/0, word-progress-practising 458/0, surah-list-last-read 40/0, read-contents 248/0, read-list-home 30/0, read-contents-ayah-search 74/0, read-list-button 72/0, qr-landing-back-reach 114/0, read-on-switch 160/0, waqiah-reciter 20/0; mutations all red (marks rename 18 fail, stack 12, top 24; intent-wrap 15; titles-plain 24; lastread-nolist fails on the missing list); behaviour 974/1 (14a, as main); apps-build-check 53/0; QR's 29 checks identical by failure name to v14.02's release run.
+- Nothing deployed to Firestore.
