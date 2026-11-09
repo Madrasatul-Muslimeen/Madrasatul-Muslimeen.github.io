@@ -78,7 +78,9 @@ export function mountAccountCard({ tenantRow, personRow = null, getSummary = () 
   const facts = el("dl", { id: "accountCardFacts" });
   const pickers = el("div", { class: "account-sheet-pickers", id: "accountCardPickers" });
   const later = el("div", { class: "account-sheet-later", id: "accountCardLater" }, t("More account details will appear here later."));
-  sheet.append(header, facts, pickers, later);
+  // PCF MSA J120 O2: "Get ready for offline". Its script and its file list load the first time the card opens, never at startup (I9).
+  const offline = el("div", { id: "accountCardOffline" });
+  sheet.append(header, facts, pickers, offline, later);
   overlay.appendChild(sheet);
   document.body.appendChild(overlay);
 
@@ -107,6 +109,14 @@ export function mountAccountCard({ tenantRow, personRow = null, getSummary = () 
   function open(from) {
     opener = from || null;
     fillFacts();
+    if (!offline.dataset.loading) {
+      offline.dataset.loading = "1";
+      import("./offline-ready.js").then((m) => m.mountOfflineSection(offline)).catch((err) => {
+        // I15: a failure reaches the reader in words.
+        offline.textContent = t("Offline settings could not load ({why}).", { why: String(err && err.message || err) });
+        delete offline.dataset.loading;
+      });
+    }
     overlay.classList.add("open");
     close.focus();
   }
