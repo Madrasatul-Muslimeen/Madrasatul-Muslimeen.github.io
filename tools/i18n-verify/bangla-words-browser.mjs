@@ -6,6 +6,9 @@
 // fits the screen (no sideways overflow) at 390 and 1280 in English and Bangla; Learn next treats a marked word as known.
 //   --mutate=nosave  marks are not written to storage          -> the reload check FAILS
 //   --mutate=smallswitch the on/off switches are 26px tall again -> the touch-target check FAILS
+//   --mutate=keepon  the switch keeps its state on a new word -> "OFF for the next word" FAILS
+//   --mutate=resetsame the switch resets on every redraw  -> "a redraw of the same word keeps it" FAILS
+//   --mutate=savesw  the card switch writes the saved whole-list setting (Wheel would lose Bangla) -> "saved setting untouched" FAILS
 //   --mutate=nocount the count line is not drawn               -> the count check FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -18,6 +21,10 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const MUT = {
   nosave: ["try { storage.setItem(BANGLA_STORAGE_KEY, JSON.stringify(normaliseBanglaState(state))); return true; }", "try { return true; }", "app/js/bangla-words.js"],
   smallswitch: [".bnw-sw{width:52px;height:40px;", ".bnw-sw{width:52px;height:26px;", "app/js/bangla-words-ui.js"],
+  // J134 (9 Nov 2026): the switch is OFF for every new word.
+  keepon: ["      banglaSwitchWordId = id; banglaCardOn = false;", "      banglaSwitchWordId = id;", "app/quranrevival.html"],
+  resetsame: ["      if (id === banglaSwitchWordId) return;\n", "", "app/quranrevival.html"],
+  savesw: ["onOnOff: (on) => { banglaCardOn = on; if (quranWordCardState?.open) renderPersistentWordCard(); },", "onOnOff: (on) => { banglaCardOn = on; banglaChanged({ ...banglaState, on }); },", "app/quranrevival.html"],
   nocount: ["${count ? `<div class=\"bnw-count\" data-bangla-count>${count}</div>` : \"\"}", "", "app/js/bangla-words-ui.js"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -36,6 +43,7 @@ async function openCard(ctx) {
   await page.evaluate(() => { const p = document.querySelector("#quranWordCardMount [data-word-card-menu-panel]"); if (p?.hidden) document.querySelector("#quranWordCardMount [data-word-card-menu-toggle]")?.click(); }); await page.waitForTimeout(300);
   return page;
 }
+const tap = (loc) => loc.click({ timeout: 3000 }).catch(() => {}); // a mutated page may leave a control disabled: the CHECK must fail, not the run
 const state = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("mm_bangla_words.v1") || "null") ?? { admin: [], on: null, list: null, mine: [] }); // never null: a mutation that stops saving must FAIL a check, not crash the run
 
 for (const [w, h, lang] of [[1280, 900, "en"], [390, 844, "en"], [390, 844, "bn"]]) {
@@ -55,10 +63,14 @@ for (const [w, h, lang] of [[1280, 900, "en"], [390, 844, "en"], [390, 844, "bn"
   check(`${tag} the Bangla block is in the Word Card`, has);
   if (!has) { await ctx.close(); continue; }
   const btn = () => page.locator("#quranWordCardMount [data-bangla-block] .bnw-mark");
+  const sw = () => page.locator("#quranWordCardMount [data-bangla-onoff]");
+  // UPDATED IN PLACE (J134, 9 Nov 2026): the whole-list switch starts OFF (the mark button is disabled until it is switched ON).
+  check(`${tag} the switch starts OFF and the mark button waits for it`, (await sw().getAttribute("aria-pressed")) === "false" && (await btn().isDisabled()));
+  await tap(sw()); await page.waitForTimeout(300);
   const dis = await btn().isDisabled();
-  check(`${tag} (positive control) the signed-in owner can mark`, !dis);
+  check(`${tag} (positive control) with the switch ON the signed-in owner can mark`, !dis);
   const lemma = await btn().getAttribute("data-bangla-word");
-  await btn().click(); await page.waitForTimeout(400);
+  await tap(btn()); await page.waitForTimeout(400);
   check(`${tag} the button is pressed after a tap`, (await btn().getAttribute("aria-pressed")) === "true");
   check(`${tag} the tag shows`, await page.evaluate(() => !!document.querySelector("#quranWordCardMount [data-bangla-tag]")));
   const st = await state(page);
@@ -72,22 +84,35 @@ for (const [w, h, lang] of [[1280, 900, "en"], [390, 844, "en"], [390, 844, "bn"
   check(`${tag} (positive control) the block shows its switches`, boxes.filter(([c]) => c === "bnw-sw").length >= 2, JSON.stringify(boxes));
   check(`${tag} every button in the block, the on/off switches included, is at least 40px tall`, boxes.every(([, h]) => h >= 40), JSON.stringify(boxes.filter(([, h]) => h < 40)));
   // the whole-list switch
-  await page.locator("#quranWordCardMount [data-bangla-onoff]").click(); await page.waitForTimeout(300);
+  check(`${tag} the switch is the CARD's, in memory only: J119's saved whole-list setting is untouched (still on) while the card switch is ON`, (await state(page)).on !== false && (await sw().getAttribute("aria-pressed")) === "true");
+  await tap(sw()); await page.waitForTimeout(300);
   check(`${tag} the heading switch turns the whole list off`, (await btn().getAttribute("aria-pressed")) === "false" && (await btn().isDisabled()));
-  check(`${tag} turning it off keeps the words`, (await state(page)).admin.includes(lemma) && (await state(page)).on === false);
-  await page.locator("#quranWordCardMount [data-bangla-onoff]").click(); await page.waitForTimeout(300);
+  check(`${tag} turning it off keeps the words`, (await state(page)).admin.includes(lemma) && (await state(page)).on !== false); // J134: the card switch no longer writes the saved setting
+  await tap(sw()); await page.waitForTimeout(300);
   check(`${tag} turning it on brings the word back`, (await btn().getAttribute("aria-pressed")) === "true");
   // Mine is its own list
-  await page.locator('#quranWordCardMount [data-bangla-list="mine"]').click(); await page.waitForTimeout(300);
+  await tap(page.locator('#quranWordCardMount [data-bangla-list="mine"]')); await page.waitForTimeout(300);
   check(`${tag} "Mine" starts empty and separate`, (await btn().getAttribute("aria-pressed")) === "false" && (await state(page)).mine.length === 0);
-  await page.locator('#quranWordCardMount [data-bangla-list="admin"]').click(); await page.waitForTimeout(300);
+  await tap(page.locator('#quranWordCardMount [data-bangla-list="admin"]')); await page.waitForTimeout(300);
   // fit
   const fit = await page.evaluate(() => { const c = document.querySelector("#quranWordCardMount .bnw"); const m = document.querySelector("#quranWordCardMount"); return c.scrollWidth <= c.clientWidth + 1 && c.getBoundingClientRect().right <= m.getBoundingClientRect().right + 1 && document.documentElement.scrollWidth <= innerWidth + 1; });
   check(`${tag} the block fits the screen`, fit);
+  // a redraw of the SAME word keeps the switch; the NEXT word starts OFF again
+  await page.evaluate(() => document.querySelector('#quranWordCardMount [data-word-card-level="intermediate"]')?.click()); await page.waitForTimeout(600);
+  await page.evaluate(() => document.querySelector('#quranWordCardMount [data-word-card-level="wbw"]')?.click()); await page.waitForTimeout(600);
+  await page.evaluate(() => { const p = document.querySelector("#quranWordCardMount [data-word-card-menu-panel]"); if (p?.hidden) document.querySelector("#quranWordCardMount [data-word-card-menu-toggle]")?.click(); }); await page.waitForTimeout(300);
+  check(`${tag} a redraw of the same word keeps it ON`, (await sw().getAttribute("aria-pressed")) === "true");
+  await page.evaluate(() => document.querySelector('#quranWordCardMount [data-word-card-move="next"]')?.click()); await page.waitForTimeout(900);
+  await page.evaluate(() => { const p = document.querySelector("#quranWordCardMount [data-word-card-menu-panel]"); if (p?.hidden) document.querySelector("#quranWordCardMount [data-word-card-menu-toggle]")?.click(); }); await page.waitForTimeout(300);
+  check(`${tag} the next word starts with the switch OFF`, (await sw().getAttribute("aria-pressed")) === "false");
+  await page.evaluate(() => document.querySelector('#quranWordCardMount [data-word-card-move="prev"]')?.click()); await page.waitForTimeout(900);
+  await page.evaluate(() => { const p = document.querySelector("#quranWordCardMount [data-word-card-menu-panel]"); if (p?.hidden) document.querySelector("#quranWordCardMount [data-word-card-menu-toggle]")?.click(); }); await page.waitForTimeout(300);
+  check(`${tag} (positive control) back on the marked word its mark is still stored (switch OFF hides it, ON shows it)`, (await state(page)).admin.includes(lemma));
   // reload keeps the mark
   await page.reload(); await page.waitForTimeout(800);
   const page2 = await openCard(ctx);
-  check(`${tag} the mark is still there after a reload`, (await page2.locator("#quranWordCardMount [data-bangla-block] .bnw-mark").getAttribute("aria-pressed")) === "true");
+  await tap(page2.locator("#quranWordCardMount [data-bangla-onoff]")); await page2.waitForTimeout(300);
+  check(`${tag} the mark is still there after a reload (once the switch is ON)`, (await page2.locator("#quranWordCardMount [data-bangla-block] .bnw-mark").getAttribute("aria-pressed")) === "true");
   await ctx.close();
 }
 await browser.close();
