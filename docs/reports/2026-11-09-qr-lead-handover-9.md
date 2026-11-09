@@ -13,6 +13,12 @@ Read `2026-11-08-qr-lead-handover-4.md` for rules and the test setup, then hando
 3. **MSA J05 T11 = A, T15 = A** (Ten Steps master file and question cards, demo first): not started.
 4. The opening-recitation demo v4 (https://claude.ai/artifact/1LSnho2zzRa3zNzANiuiFR) is still unjudged by the Owner; wiring it into `app/js/splash.js` waits for their word (n121i AA to AE).
 
+## OPEN LIST (carry1109; every Owner message of the last 24 h is recorded in its PMS job)
+- **MSA J110** (views): Owner's 9 Nov words and the choice of Demo 1 recorded in comment c110q38. Next: finish `claude/qr-one-ayah-read-on` (job 1 above). J110 is marked `done` in the PMS: reopen it when the PR goes up. Owner answer: "Demo 1, build it. Bismillah!" (9 Nov, morning Sydney). Waiting on the Owner: nothing.
+- **MSA · QR J121**: Owner "J121:A" recorded in comment c121q38b. Next: PR #1566 checks. Waiting on the Owner: nothing (n121i is answered by "A"; n121h and the opening-demo verdict, n121i AA to AE, still unanswered).
+- **MSA J05**: T11 = A and T15 = A (Owner, earlier) not started; demo first.
+- **Architect 90L (9 Nov 2:20 pm): v14.01 plan.** The combined reading view is released as v14.01 and the last v13 is archived as `legacy-v13/` in the same release PR; #1566 goes out as v13.xx first. 38L answered that the view is Demo 1 (see the Architect message thread); the Architect decides the timing.
+
 ## Lessons this session
 - Do not write `cat > $TMPDIR/x` (empty variable) in a command: it waits on stdin and hangs.
 - Quran data is in `tools/quran-data-pull/output/surahs/surah_NNN.json`.
