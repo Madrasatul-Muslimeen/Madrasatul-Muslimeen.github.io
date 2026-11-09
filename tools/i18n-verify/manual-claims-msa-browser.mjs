@@ -85,7 +85,8 @@ if (want("start")) {
     // 9 Nov 2026: was a typed list ending at v11, so legacy-v12/ went unlinked; now every legacy-v1N/ folder on disk is required.
     const onDisk = fs.readdirSync(".").filter((d) => /^legacy-v1\d$/.test(d)).map((d) => d.slice(7));
     const wantV = ["v06", "v07", "v08", "v09", ...onDisk];
-    check(`[${tag}] The menu bar: Home ▾ links Legacy App ${wantV[0]} ↗ … ${wantV[wantV.length - 1]} ↗ (every archive on disk)`, onDisk.length >= 3 && wantV.every((v) => legacy.some((l) => l === `Legacy App - ${v} ↗`)), JSON.stringify(legacy));
+    // 9 Nov 2026: the links sit inside ONE "Legacy App" button and read just "v06 ↗" … (the Owner: "place it under one button").
+    check(`[${tag}] The menu bar: Home ▾ → Legacy App holds ${wantV[0]} ↗ … ${wantV[wantV.length - 1]} ↗ (every archive on disk)`, onDisk.length >= 3 && wantV.every((v) => legacy.some((l) => l === `${v} ↗`)), JSON.stringify(legacy));
     // Bookmark sheet
     await summ("Bookmark").click(); await page.waitForTimeout(400);
     const sheet = await page.evaluate(() => { const c = document.querySelector(".nav-cat-bookmark .nav-cat-links"); const r = c.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), close: document.querySelector("[data-nav-bm-close]")?.textContent.trim() }; });

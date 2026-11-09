@@ -77,6 +77,7 @@ export const BN = {
   "Not signed in.": "সাইন ইন করা হয়নি।",
   "Signed in as {email}": "{email} হিসেবে সাইন ইন করা আছে",
   "Sign-in failed: {message}": "সাইন ইন ব্যর্থ হয়েছে: {message}",
+  "Legacy App": "পুরাতন অ্যাপ",
   "Legacy App - v06 ↗": "পুরাতন অ্যাপ - v06 ↗",
   "Legacy App - v07 ↗": "পুরাতন অ্যাপ - v07 ↗",
   "Legacy App - v08 ↗": "পুরাতন অ্যাপ - v08 ↗",
