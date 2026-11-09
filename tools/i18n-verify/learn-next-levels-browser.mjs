@@ -93,6 +93,8 @@ const openSheet = async (page) => {
   await page.waitForFunction(() => { const s = document.getElementById("learnNextSheet"); return s && !s.hidden && s.querySelectorAll(".ln-row").length > 0; }, null, { timeout: 12000 }).catch(() => {});
 };
 const pickLevel = async (page, level) => {
+  // A mutated page may have no switch: say so at once (the checks then fail) instead of waiting 12s on every call.
+  if (!(await page.evaluate((l) => !!document.querySelector(`#learnNextSheet [data-ln-level="${l}"]`), level))) return;
   await page.evaluate((l) => document.querySelector(`#learnNextSheet [data-ln-level="${l}"]`)?.click(), level);
   await page.waitForFunction((l) => document.querySelector(`#learnNextSheet [data-ln-level="${l}"][aria-pressed="true"]`), level, { timeout: 12000 }).catch(() => {});
   await page.waitForTimeout(300);
@@ -114,6 +116,7 @@ const info = (page) => page.evaluate(() => {
   };
 });
 
+try {
 for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 768, 900], ["en", 1440, 900], ["bn", 320, 640], ["bn", 390, 844], ["bn", 1440, 900]]) {
   const tag = `[${lang} ${width}]`;
   console.log(`\n=== Learn next levels ${tag} ===`);
@@ -196,6 +199,8 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
   }
   await ctx.close();
 }
-await browser.close();
+} finally {
+  await browser.close();
+}
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
