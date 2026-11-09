@@ -94,3 +94,28 @@ export function vocabBadgeFigures(rows, total, isKnown) {
   const next = steps.find((s) => !s.passed) ?? null;
   return { words, share: total > 0 ? (100 * occurrences) / total : 0, steps, passed: steps.filter((s) => s.passed).length, next: next ? next.n : null };
 }
+
+// MSA · QR J133 (the Owner, 9 Nov 2026): the Learn next sheet follows the Word Card's level. WbW is learn-next.json (a
+// row per dictionary word); Family and Root rows are folded from it offline into learn-next-levels.json
+// (tools/quran-data-pull/build-learn-next-levels.mjs), fetched only when the reader first leaves WbW. Root, Taṣrīf and
+// Depth are all marks on a ROOT, so they share the root rows and differ only in which marks count as known.
+export const LEARN_NEXT_LEVELS = Object.freeze(["wbw", "intermediate", "basic", "tasrif", "depth"]);
+const LEVELS_URL = "/tools/quran-data-pull/output/learn-next-levels.json";
+let levelsPromise = null;
+export function loadLearnNextLevels() {
+  if (!levelsPromise) {
+    levelsPromise = fetch(LEVELS_URL).then((res) => {
+      if (!res.ok) throw new Error(`Couldn't load the Learn next levels (HTTP ${res.status}).`);
+      return res.json();
+    }).catch((err) => { levelsPromise = null; throw err; });
+  }
+  return levelsPromise;
+}
+/** What one row of a level is: a word, a Family (meaning group) or a root. */
+export function unitOfLevel(level) { return level === "wbw" ? "word" : level === "basic" ? "family" : "root"; }
+/** The rows the sheet lists at `level`; `levels` is the learn-next-levels.json document (not needed for WbW). */
+export function rowsForLevel(level, base, levels) {
+  if (level === "wbw") return base?.rows ?? [];
+  if (level === "basic") return levels?.family?.rows ?? [];
+  return levels?.root?.rows ?? [];
+}
