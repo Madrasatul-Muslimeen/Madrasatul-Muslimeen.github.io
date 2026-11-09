@@ -85,6 +85,20 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   check(`${tag} ...57:5 is in the flow and drawn plainly (not faint)`, !!at && !at.out, JSON.stringify(at));
   check(`${tag} ...📖 still names the Mushaf; no sideways overflow`, s1.btn === MUSHAF && s1.over <= 0, JSON.stringify({ b: s1.btn, o: s1.over }));
 
+  // The way-back law (decision 86): a word opened from the Read on flow comes back to the same place, Read on still on.
+  const wc = await page.evaluate(async () => {
+    const art = document.querySelector('#pageViewContainer [data-meaning-key="57:5"]'); const w = art?.querySelector(".ayah-word-clickable");
+    if (!w) return { word: false };
+    w.click();
+    for (let i = 0; i < 40 && !document.querySelector("[data-word-card-close]"); i++) await new Promise((r) => setTimeout(r, 150));
+    const close = document.querySelector("[data-word-card-close]"), r = close?.getBoundingClientRect();
+    return { word: true, opened: !!close && r.width > 0 };
+  });
+  check(`${tag} way back: a word tapped in the Read on flow opens its Word Card`, wc.word && wc.opened, JSON.stringify(wc));
+  await page.evaluate(() => document.querySelector("[data-word-card-close]")?.click()); await page.waitForTimeout(800);
+  const wb = await page.evaluate(() => ({ on: document.getElementById("readOnCheck").checked, card: !!document.querySelector("[data-word-card-close]") && document.querySelector("[data-word-card-close]").getBoundingClientRect().width > 0, at: !!document.querySelector('#pageViewContainer [data-meaning-key="57:5"]') && document.querySelector('#pageViewContainer [data-meaning-key="57:5"]').getBoundingClientRect().height > 0 }));
+  check(`${tag} way back: closing the Word Card returns to the Read on flow, still on, 57:5 still there`, wb.on && !wb.card && wb.at, JSON.stringify(wb));
+
   // Read on, reach 57:8, switch off: back on the āyah reached.
   await page.evaluate(() => document.querySelector('#pageViewContainer [data-meaning-key="57:8"]')?.scrollIntoView({ block: "start", behavior: "instant" }));
   await page.waitForTimeout(500);
