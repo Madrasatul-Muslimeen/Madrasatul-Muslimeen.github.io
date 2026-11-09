@@ -119,3 +119,12 @@ export async function clickReadTool(page, sel) {
   }
   await page.click(sel);
 }
+
+/** The Owner, 9 Nov 2026 (Demo 1): the Reading View is "Read on" inside the ONE Ayah view. One step toward Read on being ON:
+ *  out of the Mushaf first (📖 goes Mushaf → ONE Ayah view), then the switch. Suites loop this until the flow shows. */
+export async function goReadOn(page) {
+  await page.evaluate(() => {
+    if (document.getElementById("mushafToggle")?.checked) { document.getElementById("readMeaningBtn").click(); return; }
+    const c = document.getElementById("readOnCheck"); if (c && !c.checked) c.click();
+  });
+}

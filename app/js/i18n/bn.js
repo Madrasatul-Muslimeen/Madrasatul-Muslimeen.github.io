@@ -77,12 +77,14 @@ export const BN = {
   "Not signed in.": "সাইন ইন করা হয়নি।",
   "Signed in as {email}": "{email} হিসেবে সাইন ইন করা আছে",
   "Sign-in failed: {message}": "সাইন ইন ব্যর্থ হয়েছে: {message}",
+  "Legacy App": "পুরাতন অ্যাপ",
   "Legacy App - v06 ↗": "পুরাতন অ্যাপ - v06 ↗",
   "Legacy App - v07 ↗": "পুরাতন অ্যাপ - v07 ↗",
   "Legacy App - v08 ↗": "পুরাতন অ্যাপ - v08 ↗",
   "Legacy App - v09 ↗": "পুরাতন অ্যাপ - v09 ↗",
   "Legacy App - v10 ↗": "পুরাতন অ্যাপ - v10 ↗",
   "Legacy App - v11 ↗": "পুরাতন অ্যাপ - v11 ↗",
+  "Legacy App - v12 ↗": "পুরাতন অ্যাপ - v12 ↗",
   // 10 Oct 2026: Essence | Act, Unique | Shared on the Name bar (asmaXQuickFile).
   "Filed under {classification}. Tap to take it out.": "{classification}-এর অধীনে রাখা আছে। সরাতে চাপুন।",
   "File under {classification}": "{classification}-এর অধীনে রাখুন",
@@ -3294,6 +3296,12 @@ export const BN = {
   "Dua chapters": "দুআর অধ্যায়", // ?
   "Duas {from}–{to} of {total}, most narrated first. Each dua's narrations were found by matching words and are still to be checked.": "দুআ {from}–{to}, মোট {total}টির মধ্যে, সবচেয়ে বেশি বর্ণিতগুলো আগে। প্রতিটি দুআর বর্ণনাগুলো শব্দ মিলিয়ে পাওয়া, যাচাই এখনও বাকি।", // ?
   "Dua {n}": "দুআ {n}", // ?
+  "Words of the same root in other duas need a root, and this word has none yet.": "অন্য দুআর একই মূলের শব্দ দেখাতে মূল লাগে, আর এই শব্দের এখনো কোনো মূল নেই।",
+  "The same root in other duas": "অন্য দুআয় একই মূল",
+  "No other dua has a word of this root.": "অন্য কোনো দুআয় এই মূলের শব্দ নেই।",
+  "{n} more not shown.": "আরও {n}টি দেখানো হয়নি।",
+  "Could not load the other duas just now.": "এই মুহূর্তে অন্য দুআগুলো লোড করা গেল না।",
+  "Roots are a computer's guess, to be checked.": "মূলগুলো কম্পিউটারের অনুমান, যাচাই করা হবে।",
   "Narrated in {n} places": "{n}টি স্থানে বর্ণিত", // ?
   "Words picked out by the computer · a person checks them": "কম্পিউটার দোয়ার শব্দগুলো বেছে নিয়েছে · একজন মানুষ তা যাচাই করবেন",
   "The whole narration": "পুরো বর্ণনা",
@@ -4150,6 +4158,8 @@ export const BN = {
   "English: Wiktionary (CC BY-SA 4.0)": "ইংরেজি: উইকশনারি (CC BY-SA 4.0)", // ?
   "Bangla: Quraniyo Obhidhan": "বাংলা: কুরআনীয় অভিধান", // ?
   "No dictionary entry yet for this word.": "এই শব্দের জন্য অভিধানে এখনো কোনো এন্ট্রি নেই।", // ?
+  "Suggested meaning (English)": "প্রস্তাবিত অর্থ (ইংরেজি)",
+  "Suggested, to be checked: Wiktionary (CC BY-SA 4.0), matched by the word's letters, so it may be the wrong sense.": "প্রস্তাবিত, যাচাই করা হবে: উইকশনারি (CC BY-SA 4.0), শব্দের অক্ষর মিলিয়ে নেওয়া, তাই অর্থটি ভুল হতে পারে।",
   "No root is suggested for this word yet.": "এই শব্দের জন্য এখনো কোনো মূল (রুট) প্রস্তাব করা হয়নি।", // ?
   "Root meanings and other words of the root are in the dictionaries linked under WbW.": "মূলের অর্থ ও একই মূলের অন্য শব্দ WbW-এর নিচের অভিধান-লিংকে আছে।", // ?
   "Other words of this dua from the same root": "এই দুআর একই মূলের অন্য শব্দ", // ?
@@ -4341,6 +4351,8 @@ export const BN = {
   "Reading View": "পড়ার দৃশ্য",
   "Reading View: translations and word by word": "পড়ার দৃশ্য: অনুবাদ ও শব্দে শব্দে",
   "ONE Ayah View": "এক আয়াত দৃশ্য",
+  "Read on": "পড়তে থাকুন",
+  "Read on: keep reading the next āyāt": "পরের আয়াতগুলো পড়তে থাকুন",
   "ONE Ayah View: one āyah to study": "এক আয়াত দৃশ্য: অধ্যয়নের জন্য এক আয়াত",
   "Show: English, Bangla, Word by Word": "দেখান: ইংরেজি, বাংলা, শব্দে শব্দে",
   // 10 Oct 2026: the Read bar's ⋯ (Text size, Bookmark, Notes, Mark complete, Writing sheet, Attach to Asma).
@@ -4935,4 +4947,23 @@ export const BN = {
   "Bright navy (A2)": "উজ্জ্বল নেভি (A2)",
   "Copper border (A6)": "তামার কিনারা (A6)",
   "As sourced": "উৎসে যেমন আছে",
+  // PCF MSA J120 O2: "Get ready for offline" in My account (app/js/offline-ready.js).
+  "Use the app without internet": "ইন্টারনেট ছাড়া অ্যাপ ব্যবহার",
+  "Keeps the app, the Qur'an and the books you tick on this device, so they open with no internet.": "অ্যাপ, কুরআন আর আপনার টিক দেওয়া কিতাবগুলো এই ডিভাইসে রেখে দেয়, যাতে ইন্টারনেট ছাড়াই খোলে।",
+  "Hadith and Dua books to keep offline": "ইন্টারনেট ছাড়া রাখার জন্য হাদীস ও দু‘আর কিতাব",
+  "Loading the list…": "তালিকা আসছে…",
+  "Get ready for offline": "ইন্টারনেট ছাড়া ব্যবহারের জন্য প্রস্তুত করুন",
+  "This browser cannot keep the app for use without internet.": "এই ব্রাউজার ইন্টারনেট ছাড়া ব্যবহারের জন্য অ্যাপ রাখতে পারে না।",
+  "Ready ✓ (updated {when})": "প্রস্তুত ✓ (হালনাগাদ {when})",
+  "Space it will use: {size}": "জায়গা লাগবে: {size}",
+  "{n} MB": "{n} MB",
+  "The list of files to keep could not be loaded ({why}). Check the internet and open My account again.": "রাখার ফাইলের তালিকা আনা যায়নি ({why})। ইন্টারনেট দেখে আবার আমার অ্যাকাউন্ট খুলুন।",
+  "Getting ready…": "প্রস্তুত হচ্ছে…",
+  "{done} of {total} files · {mbDone} of {mbTotal}": "{total}টি ফাইলের {done}টি · {mbTotal}-এর {mbDone}",
+  "This device now keeps {used} for the app ({free} free).": "এই ডিভাইস এখন অ্যাপের জন্য {used} রাখছে ({free} খালি)।",
+  "The browser may clear it if the device runs short of space.": "ডিভাইসে জায়গা কমে গেলে ব্রাউজার এটি মুছে দিতে পারে।",
+  "Not ready yet.": "এখনও প্রস্তুত হয়নি।",
+  "{n} file(s) could not be downloaded: {names}. Tap the button again to try them.": "{n}টি ফাইল নামানো যায়নি: {names}। আবার চেষ্টা করতে বোতামটি আবার চাপুন।",
+  "and {n} more": "আর {n}টি",
+  "Offline settings could not load ({why}).": "ইন্টারনেট ছাড়া ব্যবহারের সেটিং খোলা যায়নি ({why})।",
 };

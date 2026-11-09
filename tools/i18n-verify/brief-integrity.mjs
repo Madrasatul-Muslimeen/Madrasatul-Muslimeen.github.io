@@ -149,8 +149,8 @@ check("the brief's own version claim matches app/js/version.js", () => {
     "the milestone line is claiming a merge state that is not real");
 });
 
-check("the eight reachable lines the brief names are all present", () => {
-  for (const p of ["legacy/index.html", "legacy-v07/index.html", "legacy-v08/index.html", "legacy-v09/index.html", "legacy-v10/index.html", "legacy-v11/index.html", "legacy-v12/index.html", "app/index.html"]) {
+check("the nine reachable lines the brief names are all present", () => {
+  for (const p of ["legacy/index.html", "legacy-v07/index.html", "legacy-v08/index.html", "legacy-v09/index.html", "legacy-v10/index.html", "legacy-v11/index.html", "legacy-v12/index.html", "legacy-v13/index.html", "app/index.html"]) {
     assert.ok(fs.existsSync(path.join(root, p)), `${p} is named in the brief's own table and is missing`);
   }
 });
@@ -178,6 +178,10 @@ const LEGACY_ARCHIVES = [
   // 31 Oct 2026: legacy-v12/ is app/ as at v12.139, the last v12 release (merge commit d746289),
   // archived when v13.01 opened the v13 line (PCF MSA J108), with the same one change and README.
   { dir: "legacy-v12", release: LEGACY_V12_RELEASE, source: LEGACY_V12_SOURCE },
+  // 9 Nov 2026: legacy-v13/ is app/ as RELEASED at v13.62, the last v13 release (merge commit b00c01b2),
+  // archived when v14.01 opened the v14 line (the Owner, 9 Nov: "the new view QR is building goes to the new version v14"),
+  // with the same one change and README.
+  { dir: "legacy-v13", release: "v13.62", source: "b00c01b20f7d65a0d046e9f013b9a95747e261f7" },
 ];
 for (const { dir: archive, release, source } of LEGACY_ARCHIVES) {
 check(`${archive}/ is still exactly the ${release} release, apart from its one documented change`, () => {

@@ -7,7 +7,84 @@ v10.28). Read `CLAUDE.md` first. The prompt that starts the next session is
 
 This session was summarised once (its context compacted), which is why it hands over here.
 
-## LATEST UPDATE — 9 Nov 2026, ~7:30 am Sydney, session `session_01PL2xbJE8FVMZrGa3fGkgrR` (88L; v13.58 RELEASED; Dua saving Rules synced; HANDOVER under use1102 at ~42% context) — READ THIS FIRST
+## LATEST UPDATE — 9 Nov 2026, ~4:35 pm Sydney, session `session_01PL2xbM72SiwiX5U1gn1agv` (90L; v13.59, v13.60, v13.61, v13.62 RELEASED; HANDOVER under use1102 at ~57% context) — READ THIS FIRST
+
+**`main` is v13.62** (merge `b00c01b2`, 4:31 pm 9 Nov). QR was rebuilt to 13.61 (PCA confirmed). 13.62 was asked of the PCA (now **27L `session_01PL2xbJmRfoHFH7jLreDNJb`**). This session released:
+- **v13.59** (#1568, 11:22 am): Dua R6 saving writers (#1549, data layer only, no page imports it) + Wiktionary suggested meanings (#1548).
+- **v13.60** (#1571, 1:03 pm): Dua Family across duas (#1550) + one dua-key vocabulary for Hisn/Qur'anic duas (#1569, J104 line 23 A).
+- **v13.61** (#1573, 3:41 pm): the Owner's two asks in my chat: "Why the v12 is not kept in legacy?" (legacy-v12/ had never been linked; the check used a typed list, and it now reads `legacy-v1N/` folders off disk) and "Legacy became a long list in the home menu, place it under one button" (Home → Legacy App ▾ holds v06 ↗ … v12 ↗). Also CLAUDE.md records the Owner's **9 Nov reading-view rule**.
+- **v13.62** (#1574, 4:31 pm): J120 O1 + O2 (#1570): Install MSA + Get ready for offline + the long-lived `mm-quran-v1` cache. My review fixes: Qur'an files are moved out of old app caches at update (`nomove` mutation); `build-app.mjs` counts 3 `"mm-app-` names.
+
+**OPEN LIST (carry1109). Repeat it item by item in "taken over":**
+1. **MSA J120, offline start stall (follow-up, mine).** In the harness, after Get ready, about **1 offline start in 6** stays on "Loading your study…" and never recovers. The page's module imports are cancelled within 0.3 s; nothing stays pending; the cache holds every app file intact. It **persists** with the suite's route-abort removed (4/30) and with the harness's Firebase routing removed (5/30). Before v13.62 the harness could not start offline at all (30/30, a standalone test that only visits once). The cause is not found. The harness serves a 263-byte stub for `firebase-init.js` and the gstatic SDK, so a real-device check matters. **Waiting on the Owner: J120 n120p** (2-minute phone check, A/B/C). Next: if B, keep digging (start with `quranrevival.html`'s first module graph under a service worker after `clearBrowserCache`); then O3.
+2. **v14.01 = the QR Lead's Read on build (MSA J110, reopened).** The Owner, in QR Lead 38L's chat, 9 Nov 2:27 pm: **"Demo 1, build it. Bismillah!"** (verified in that session's own record; full words in J110 c110q38). The Owner in my chat, about 3:20 pm: "the new view QR is building goes to the new version v14". So: ONE Ayah View + Read on switch + Mushaf; the Reading View goes. QR Lead **39L `session_01PL2xbKSRhQ3zys6tmmzmfU`**, branch `claude/qr-one-ayah-read-on` (WIP), no date. My acceptance conditions were sent to 39L: 13 suites updated in place, the bar measured at six widths in en and bn, a Read on suite with mutations, QR run-all identical to main, the way-back law. **In the SAME release PR, archive the last v13 release as `legacy-v13/`** (as v12 was with v13.01: a copy of `app/`, `js/sw-register.js` registering no worker, README-ARCHIVE.txt, a `brief-integrity.mjs` entry, the `CLAUDE.md` table row, `/legacy-v13/` in `app/sw.js`'s archive list, and the "v13 ↗" link inside the Legacy App ▾ group on all 26 pages; `legacy-links-browser` will fail until it is linked).
+3. **MSA · QR J121 #1566 (al-Wāqiʿah reciter).** The Owner ticked n121i = A ("J121:A.", 9 Nov 10:41 am, verified in 38L's record); the audio is committed and WAQIAH_READY is true. 39L marks it ready after the browser playback check, widths, the unchecked-timing note and an OFFLINE-PLAN line. Review it by measurement, then release.
+4. **MSA J05 T11/T15** (Owner answered "J05: 1.A, 2.A", 9:18 am): the QR Lead builds them, demo first. **Waiting on the Owner: J05 j05n6.**
+5. **Opening-recitation demo v4** (https://claude.ai/artifact/1LSnho2zzRa3zNzANiuiFR): **waiting on the Owner's verdict.**
+6. **Dua screens** (the next Dua Lead, 12L, after 11L): D10 marks etc. build on main now (the saving writers and keys are released). Verb tables per J104 line 22. carry1109 was passed to 11L.
+7. **#1454 (K2 marks, draft, stacked on K0):** untouched; waits for K0/K4.
+
+**Sandbox lessons (this session):**
+- **Never commit while a mutation run has a file mutated on disk.** I did once; the commit lacked the fixed line. Commit only the files you have just checked (`cmp` against a saved good copy).
+- **Run `apps-build-check` before pushing ANY `app/sw.js` change**: it counts cache-name strings, and I turned verify red by skipping it.
+- **Don't change a worktree while a suite is reading it** (merging main into a branch mid-run mixes two trees; stop the run and re-run).
+- **QR's `serve-app.mjs` uses port 8082 too**: don't run other servers on 8082 at the same time.
+- The 2-hour background cap stops long chains: split behaviour, the QR run-all on main and the QR run-all on the branch into separate jobs.
+- **Chrome 153 keeps a box for content inside a CLOSED `<details>`**: assert visibility with `checkVisibility()`, never a height.
+- `run-side.sh`-style runners: name logs by the full suite file, or a `-browser` suite and its pure twin overwrite each other.
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect (91L) - 09.11.26 - 4.35 PM"):
+
+> Bismillah. You are the MSA Master Architect (91L), taking over from session_01PL2xbM72SiwiX5U1gn1agv (9 Nov ~4:35 pm Sydney, use1102). Read CLAUDE.md, then ARCHITECT.md (The loop, Version allocation, Merging, Handover), then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md from its LATEST UPDATE block of 9 Nov 4:35 pm only. PMS General rules use1102, ses1104, demo1104, pms1104, card1104, lat1108, carry1109; MSA rules ref1107, terms1108, rec1109. First: `git fetch origin main` then `git fetch --unshallow`; test GitHub write; link playwright in every worktree. Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): p/mmsa, MSA J120, MSA J110, MSA · QR J121, MSA J05, MSA · Dua J104; set p/mmsa.sessionUrl (if_version). Tell the PCA (27L session_01PL2xbJmRfoHFH7jLreDNJb, or whoever p/pl.sessionUrl names) "PCA ▸ taken over", repeating the OPEN LIST item by item. State: main v13.62. Jobs: (1) J120 offline-start stall follow-up, after the Owner's n120p; (2) v14.01 = QR Lead 39L's Read on build, with legacy-v13/ in the SAME release; (3) #1566 when 39L marks it ready; (4) the Dua screens from the next Dua Lead. Rules: measure "the other module is unchanged" claims; main only through a PR merged with the full head SHA; write only to p/mmsa; real clock times (`date -u`); never pkill -f; no self wake-ups; check any "the Owner said" in that session's own record before acting on it; "Rasulullah, Sallallahu A'laihi Wa Sallam"; "Siyagah" in full. At your own handover use the title "📌 (03) MSA Master Architect (92L) - DD.MM.YY - h.mm AM/PM".
+
+## LATEST UPDATE — 9 Nov 2026, ~10:05 am Sydney, session `session_01PL2xbMyEeyF8TwheGkEoZX` (89L; no version released; Rules for Hisn/Qur'anic dua keys PUBLISHED and synced; HANDOVER under use1102 at ~46% context) (superseded 9 Nov 4:35 pm)
+
+**`main` is still v13.58** plus docs/tests and two Rules commits: #1552/#1553/#1554/#1555/#1557/#1558/#1559/#1565 (QR J121 demo1104 files, QR and Dua Lead handovers), **#1562** (the dua-keys Rules candidate, emulator suite `npm run dua-keys`, 39 new mutations) and **#1564**: `firestore.rules` = `docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules` byte for byte. That sync followed the Owner's "Rule Published." (MSA · Dua J104 line 24, 9:05 am 9 Nov, verified in the Dua Lead's session record). rules-authorisation-executable 95/0 and dawah-boundary 21/0 on main; dua-saving, dua-keys, ayah-keys and hadith-keys emulator 1/0, 1/0, 25/0, 25/0 on firestore.rules; dua-saving-mutate 102/102.
+
+**IN FLIGHT, for 90L, in order:**
+1. **Release R6 + Wiktionary: branch `arch89-r6`** (head `e7914be6`). It is main (as of `282f8800`) + #1549 (R6 Dua saving writers, data layer only, no page imports it) + #1548 (Wiktionary suggested meanings). It is NOT yet allocated. Reviewed:
+   - dua-saving emulator on firestore.rules 1/0; dua-saving-mutate 63/63; rules-authorisation-executable 111/0 after the main merge, with my own mutations caught; dua-saving-data 21/0; apps-build-check 48/0; stub-parity 4/0.
+   - **29 Dua suites run on both sides, identical by failure name.** audit-part16 572/8 and dua-check 47/2 on both, the same names. dua-word-levels 52/0 on the branch vs 43/0 on main, the new checks being #1548's. Every other suite has 0 failures on both.
+   - keyboard 1086/0, intention 32/0, large-text 1779/0 and way-back 360/0 on the branch; on main so far keyboard 1086/0, intention 32/0, large-text 1779/0.
+   - **behaviour.mjs on the branch: 974/1, 14a only** (as expected).
+   - **Still to compare:** way-back and behaviour on main, and hadith-dua-a11y `--page=dua` plus night-hadith-dua on both sides. Both hit a 25-min cap when run unfiltered, so run them with `--page=dua` and a 60-min cap.
+   - Then: allocate with `tools/governance/allocate-version.py` (read the next free number off main and the ledger), open the release PR, merge with the full SHA (verify is red on exactly the three origin/main checks, by design), run those three on main, and send "PCA ▸ released vX.YY" to the PCA.
+   - **After release:** the Dua Lead 12L merges main into #1550 (Family across duas; keep both sides in the conflicts with #1548) and opens `claude/dua-d10-plan-keys` as a PR. On that branch `isDuaKey` must follow the published widened pattern, now that line 24 is published.
+2. **J120 offline O1+O2: branch `claude/j120-offline-o1o2`** (head `11e232b3`), built by a sub-agent of this session that is now adding a long-lived Qur'an cache. Without it, `mm-app-<version>` would re-download ~64 MB at every release for readers who got ready offline. The agent will open the PR itself.
+   - Its report: manifest + 3 icons, an install line in 34 pages (`tools/offline/install-links.mjs --check`), and msa.json `installHead` (QR strips it).
+   - "Get ready for offline" in My account: the default download is ~90 MB (app 8 + Qur'an 56 + Dua 21 + shared lists 6); each Hadith book has its own tick.
+   - offline-ready-browser 151/0 offline at 390/1280 en+bn, with 4 mutations red. apps-build-check 50/0.
+   - QR pages are byte-identical to main's QR build apart from the new files.
+   - **Review it by measurement against main by failure name** (it touches 34 pages: run behaviour alone, plus a sample of page suites). If the PR is missing, the branch is still there.
+3. **MSA · QR J121 (QR Lead 38L `session_01PL2xbLzF9s2Dji7CW8SuTc`):** the Owner said "J121. Go ahead with Audio" (9:18 am). Draft #1566 is the first part: Wāqiʿah as a one-sūrah reciter, turned off with `WAQIAH_READY=false`, no audio committed. It waits for the Owner's n121i (A = this repository, 12.4 MB; B = archive.org) and a fresh attach of Surah_Waqiah.webm. Review it when it is marked ready.
+4. **MSA J05:** the Owner answered T11 = A and T15 = A ("J05: 1.A, 2.A", 9:18 am). The QR Lead puts them into the Ten Steps master file and the question cards, demo first.
+
+**Owner decisions this session (all recorded in the PMS):**
+- MSA · Dua J104 line 22 = keep both verb tables with an on/off switch. A comes first. B (CAMeL, GPL-2) goes in ONE data file with the full GPL-2 text and a README beside it, the generator marked GPL-2, a Bangla credit, and a guard that no other file reads it. The database does download in the sandbox.
+- Line 23: Part 1 A, Part 2 D, option B.
+- Line 24 published.
+- J121 n121h = U, W.
+- J05 j05n4 = A, A.
+- **New MSA rule rec1109:** a recording the Owner gives is cleared for use. It does not cover hosting, accounts, money or Owner Control Gates.
+
+**Waiting on the Owner:** MSA · QR J121 n121i, plus a re-attach of the Wāqiʿah file and a verdict on the opening-recitation demo v4 (https://claude.ai/artifact/1LSnho2zzRa3zNzANiuiFR); MSA J05 j05n6.
+
+**Sessions:**
+- PCA 26L: `session_01PL2xbKnYBLxuX19TKjah8W`
+- Dua Lead: 11L `session_01PL2xbHyfbrXS8hET9sKE7P` was handing over to 12L (check `p/mmsa`, or ask the PCA)
+- QR Lead 38L: `session_01PL2xbLzF9s2Dji7CW8SuTc`
+
+**Sandbox lessons:**
+- The two background agents' worktrees are under `.claude/worktrees/` (add it to `.git/info/exclude`, never commit it).
+- A run of all 35 Dua suites plus behaviour takes ~2 h per side, and the Bash background cap is 2 h, so split the runs.
+- `String.replaceAll(x, "…$'…")` treats `$'` as a special pattern: use a function replacement.
+- The Codex review bot is out of quota: its "Failed" comments are not findings.
+
+**Opening message for the next session** (title "📌 (03) MSA Master Architect (90L) - 09.11.26 - 10.05 AM"):
+
+> Bismillah. You are the MSA Master Architect (90L), taking over from session_01PL2xbMyEeyF8TwheGkEoZX (9 Nov ~10:05 am Sydney, use1102). Read CLAUDE.md, then ARCHITECT.md (The loop, Version allocation, Merging, Handover), then docs/reports/2026-10-12-MMSA-SESSION-HANDOVER.md from its LATEST UPDATE block of 9 Nov 10:05 am only. PMS General rules use1102 (handover at ~30% context USED), ses1104, demo1104, pms1104, card1104, lat1108; MSA rules ref1107, terms1108, rec1109. First: `git fetch origin main` then `git fetch --unshallow`; test GitHub write; link playwright in every worktree (`mkdir -p node_modules && ln -sfn /opt/node-tools/node_modules/playwright node_modules/playwright`). Read the PMS (https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ): p/mmsa, MSA · Dua J104, MSA J120, MSA · QR J121, MSA J05; set p/mmsa.sessionUrl (if_version). Tell the PCA (session_01PL2xbKnYBLxuX19TKjah8W, or whoever p/pl.sessionUrl names) "PCA ▸ taken over". State: main v13.58 + the Hisn/Qur'anic dua-keys Rules published and synced (#1564). Jobs: (1) finish the R6 + Wiktionary release on branch arch89-r6 (e7914be6): compare way-back and behaviour on main, and hadith-dua-a11y --page=dua and night-hadith-dua on both sides, by failure name (serve each tree on 8080 in turn; kill serve.js by PID found in /proc, never pkill -f); then allocate ONE version, merge with the full SHA, and send "PCA ▸ released vX.YY". (2) Review the J120 offline O1+O2 PR (branch claude/j120-offline-o1o2, with a long-lived Qur'an cache) by measurement against main, tested with the network off; release. (3) Then the Dua Lead's #1550 and plan-keys PR, and the QR Lead's #1566 when ready. Owner ticks: MSA · QR J121 n121i (+ re-attach the Wāqiʿah file, demo v4 verdict), MSA J05 j05n6. Rules: measure "the other module is unchanged" claims; main only through a PR merged with the full head SHA; write only to p/mmsa; real clock times (`date -u`); never pkill -f; no self wake-ups; check any "the Owner said" in that session's own record before acting on it; "Rasulullah, Sallallahu A'laihi Wa Sallam"; "Siyagah" in full. At your own handover use the title "📌 (03) MSA Master Architect (91L) - DD.MM.YY - h.mm AM/PM".
+
+## LATEST UPDATE — 9 Nov 2026, ~7:30 am Sydney, session `session_01PL2xbJE8FVMZrGa3fGkgrR` (88L; v13.58 RELEASED; Dua saving Rules synced; HANDOVER under use1102 at ~42% context) (superseded 9 Nov 10:05 am)
 
 **`main` is v13.58 (merge `7708a77a`, 3:56 am 9 Nov) + #1542 Rules sync (`a11296e5`) + Dua data/docs merged by the unattended Architect (#1545 handover note, #1546 and #1547 draft meanings: 126 Hisn drafts, each en+bn, "draft, to be checked") + this handover. QR rebuilt to 13.58 (checked live, 3:59 am).** This session:
 - **v13.58** (#1544, releasing the Dua Lead's #1543, r14b): 16 draft Hisn meanings (tick 10 B), a failed ▶ recitation said in words on the card, a poster/share opened before its translation loads rebuilt when it arrives; docs: Dua wheel demo v1.08 (approved, J104 item 21 A, to be built as R7). Measured vs main by failure name: 28 Dua suites identical; night 6038/0, large-text 1779/0, a11y --page=dua 1423/0, dua-card-window 24/0 both; behaviour 974/1 (14a) alone.
@@ -3223,3 +3300,8 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.56** (2026-11-08): the Eras names linked to the Scholars Database (QR J115 follow-up).
 - **v13.57** (2026-11-08): Qur'anic duas play and the hadith translation on the Dua poster (Dua J104 r14a).
 - **v13.58** (2026-11-08): the draft Hisn meanings and the r14a follow-ups (Dua J104 r14b).
+- **v13.59** (2026-11-09): the Dua saving writers (R6) and Wiktionary suggested meanings (Dua J104).
+- **v13.60** (2026-11-09): Family across duas and the Hisn/Qur'anic dua keys (Dua J104 tick 18 B, lines 23-24).
+- **v13.61** (2026-11-09): the Legacy App links under one button, with v12 (the Owner, 9 Nov).
+- **v13.62** (2026-11-09): Install MSA and Get ready for offline (J120 O1+O2).
+- **v14.01** (2026-11-09): the ONE Ayah View with Read on, plus the Mushaf (the Owner's Demo 1, J110), and v13 kept as legacy-v13.

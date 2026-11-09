@@ -5,7 +5,7 @@
 //     An āyah's own ⋮ in the Reading View carries the āyah's tiles only. Tiles >= 40px; the sheet is inside the screen; words are not cut.
 // At 320, 390, 768, 1280. --mutate=showbar drops the CSS that retires the bar buttons; --mutate=showdots brings ⋯ back; --mutate=wide, nowrap, nobn,
 // autofit, plain1fr as in the J114 rounds.   Run from the repository root, serve.js on :8080.
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, goReadOn } from "./harness.mjs";
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => { if (ok && typeof ok.then === "function") throw new Error("promise"); if (ok) { pass++; console.log(`  PASS  ${n}`); } else { fail++; console.log(`  FAIL  ${n} ${d}`); } };
 const has = (m) => process.argv.includes(`--mutate=${m}`);
@@ -62,7 +62,7 @@ for (const width of [320, 390, 768, 1280]) {
   check(`${tag} ONE Ayah View at 100% text: every row is four tiles but the last (never 3+1 in the middle)`, !!one && one.perRow.slice(0, -1).every((n) => n === 4) && one.perRow.at(-1) <= 4, JSON.stringify(one));
   await page.evaluate(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.click());
   // Reading View
-  for (let i = 0; i < 3; i++) { if (await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)) break; await page.click("#readMeaningBtn"); await page.waitForTimeout(1300); }
+  for (let i = 0; i < 3; i++) { if (await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)) break; await goReadOn(page); await page.waitForTimeout(1300); }
   await page.waitForSelector(".meaning-ayah .ayah-quick-btn", { timeout: 15000 }).catch(() => {});
   await page.evaluate(() => document.querySelector(".meaning-ayah .ayah-quick-btn")?.click()); await page.waitForTimeout(300);
   const rv = await sheetInfo(page, ".meaning-ayah");
@@ -132,7 +132,7 @@ for (const [lang, width, pct] of [["bn", 390, 100], ["en", 390, 150], ["en", 390
   await page.click("#tabReadBtn"); await page.waitForTimeout(500);
   await setSel(page, "unitTypeSelect", "surah"); await page.waitForTimeout(600);
   await setSel(page, "surahSelect", "112"); await page.waitForTimeout(1500);
-  for (let i = 0; i < 3; i++) { if (await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)) break; await page.click("#readMeaningBtn"); await page.waitForTimeout(1300); }
+  for (let i = 0; i < 3; i++) { if (await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)) break; await goReadOn(page); await page.waitForTimeout(1300); }
   await page.evaluate(() => document.querySelector(".meaning-ayah .ayah-quick-btn")?.click()); await page.waitForTimeout(400);
   const r = await page.evaluate(() => {
     const m = document.querySelector(".quick-menu.open"); const b = m?.getBoundingClientRect();

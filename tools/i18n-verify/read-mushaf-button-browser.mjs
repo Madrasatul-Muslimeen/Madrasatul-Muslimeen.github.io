@@ -1,5 +1,7 @@
 // QR J16 = PCF MSA J37 (the Owner chose A, 17 Oct 2026) gave the Read bar a "📜 Mushaf" button beside 📖 Meaning.
 // PCF MSA J99 (the Owner ticked B, 25 Oct 2026: "what's the two button with similar functions doing here?") made them
+// 9 Nov 2026 (the Owner, Demo 1): the Reading View became a "Read on" switch (#readOnSwitch) in the ONE Ayah view and 📖 now
+// moves ONE Ayah view <-> Mushaf only; this suite is updated in place for that, reason recorded.
 // ONE: 📖 moves on round the three views, Āyah (the plain reading) → Meaning → Mushaf → Āyah, and names (icon, word,
 // spoken name) the view it goes to NEXT. Mushaf is still the same switch as Options ▸ "Mushaf view" (#mushafToggle), and
 // the button stays in full screen. This suite was the 📜 suite; it is UPDATED IN PLACE for the one button, reason recorded:
@@ -128,32 +130,31 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     if (fs) check(`${t} POSITIVE CONTROL: the bare full-screen state is on`, await bare(page));
     const s0 = await state(page);
     check(`${t} Āyah view: one switch, 📖 tappable, ≥ 40px, and no 📜 beside it`, s0.shown && s0.tappable && s0.h >= 40 && !s0.oldShown && !s0.tick && s0.flow === 0, JSON.stringify(s0));
-    check(`${t} ...it names the next view, Meaning (${width >= 600 ? "icon and word" : "icon alone below 600px, 40px wide"})`, names(lang, s0, "meaning", width) && (fs || s0.wordShown === (width >= 600)) && (width >= 600 || s0.w === 40), JSON.stringify({ icon: s0.icon, word: s0.word, label: s0.label, w: s0.w, wordShown: s0.wordShown }));
+    check(`${t} ...it names the next view, Mushaf (${width >= 600 ? "icon and word" : "icon alone below 600px, 40px wide"})`, names(lang, s0, "mushaf", width) && (fs || s0.wordShown === (width >= 600)) && (width >= 600 || s0.w === 40), JSON.stringify({ icon: s0.icon, word: s0.word, label: s0.label, w: s0.w, wordShown: s0.wordShown }));
     if (!s0.shown) continue; // counted above; nothing to tap
     const r0 = await rows(page);
     check(`${t} ...#readBarEnd is one row and the switch adds no line to the bar (${r0.withIt} vs ${r0.without}), no sideways overflow`, r0.oneRow && r0.withIt === r0.without && r0.over <= 0, JSON.stringify(r0));
 
-    await page.click("#readMeaningBtn"); await waitFlow(page, true);
+    // The Owner, 9 Nov 2026 (Demo 1): the Reading View is now "Read on", a switch beside 📖 in the ONE Ayah view; 📖 itself
+    // moves ONE Ayah view <-> Mushaf only. Updated in place, reason recorded: what the flow shows is unchanged.
+    check(`${t} POSITIVE CONTROL: Read on is shown and off in the ONE Ayah view`, await page.evaluate(() => { const w = document.getElementById("readOnSwitch"); return !!w && !w.hidden && w.getBoundingClientRect().width > 0 && !document.getElementById("readOnCheck").checked; }));
+    await page.click("#readOnCheck", { force: true }); await waitFlow(page, true);
     const s1 = await state(page);
-    check(`${t} tap 1 → the Meaning flow, opened at 57:2, pressed`, s1.flow > 0 && s1.flowKey === "57:2" && s1.pressed === "true" && !s1.tick, JSON.stringify({ flow: s1.flow, key: s1.flowKey, pressed: s1.pressed, tick: s1.tick }));
-    check(`${t} ...it names the next view, Mushaf`, names(lang, s1, "mushaf", width) && !s1.oldShown, JSON.stringify({ icon: s1.icon, word: s1.word, label: s1.label, old: s1.oldShown }));
-    // In the Meaning view the English / Bangla / WbW switches sit on the bar and take it to a second line at some widths
-    // ON MAIN TOO, with the old 📖 (measured side by side, 25 Oct 2026: 320/360 en, 768 en, 320 bn, the same height before
-    // and after). What the switch itself owes there is to take the least room: its icon alone, 40px, below 1024px.
+    check(`${t} Read on → the flow, opened at 57:2, 📖 still names the Mushaf, not pressed`, s1.flow > 0 && s1.flowKey === "57:2" && !s1.tick && names(lang, s1, "mushaf", width) && !s1.oldShown, JSON.stringify({ flow: s1.flow, key: s1.flowKey, pressed: s1.pressed, tick: s1.tick }));
     const r1 = await rows(page);
-    check(`${t} ...beside the Meaning switches it is the icon alone, 40px, below 1024px; no sideways overflow`, (width >= 1024 || s1.w === 40) && r1.over <= 0, JSON.stringify({ w: s1.w, over: r1.over }));
+    check(`${t} ...beside the Layers switches it is the icon alone, 40px, below 1024px; no sideways overflow`, (width >= 1024 || s1.w === 40) && r1.over <= 0, JSON.stringify({ w: s1.w, over: r1.over }));
 
     await page.click("#readMeaningBtn"); await waitMushaf(page, true);
     const s2 = await state(page);
     check(`${t} tap 2 → the Mushaf (the Options tick on), the flow closed, 57:2 marked on the page`, s2.tick && s2.pages > 0 && s2.flow === 0 && s2.pressed === "false" && s2.stored === "0" && s2.marked.includes("57:2"), JSON.stringify({ tick: s2.tick, pages: s2.pages, flow: s2.flow, marked: s2.marked, stored: s2.stored }));
-    check(`${t} ...it names the next view, Āyah`, names(lang, s2, "ayah", width), JSON.stringify({ icon: s2.icon, word: s2.word, label: s2.label }));
+    check(`${t} ...it names the next view, ONE Ayah View; Read on is out of sight in the Mushaf`, names(lang, s2, "ayah", width) && await page.evaluate(() => document.getElementById("readOnSwitch").getBoundingClientRect().width === 0), JSON.stringify({ icon: s2.icon, word: s2.word, label: s2.label }));
     const r2 = await rows(page);
     check(`${t} ...one row, no line added (${r2.withIt} vs ${r2.without})`, r2.oneRow && r2.withIt === r2.without && r2.over <= 0, JSON.stringify(r2));
     if (width === 390) await page.screenshot({ path: `${SHOT_DIR}/read-switch-${lang}-${width}${fs ? "-fullscreen" : ""}-mushaf.png` });
 
     await page.click("#readMeaningBtn"); await waitMushaf(page, false);
     const s3 = await state(page);
-    check(`${t} tap 3 → back to the Āyah view: tick off, no page, no flow, still āyah 57:2${fs ? ", still full screen" : ""}`, !s3.tick && s3.pages === 0 && s3.flow === 0 && s3.ayah === "2" && (!fs || (await bare(page))) && names(lang, s3, "meaning", width), JSON.stringify(s3));
+    check(`${t} tap 3 → back to the Āyah view: tick off, no page, no flow, still āyah 57:2${fs ? ", still full screen" : ""}`, !s3.tick && s3.pages === 0 && s3.flow === 0 && s3.ayah === "2" && (!fs || (await bare(page))) && names(lang, s3, "mushaf", width), JSON.stringify(s3));
   }
   await page.click("#hideChromeBtn"); await page.waitForTimeout(300);
   for (let i = 0; i < 4 && (await page.evaluate(() => document.body.classList.contains("immersive-read"))); i++) { await page.click("#hideChromeBtn"); await page.waitForTimeout(300); }
@@ -168,14 +169,14 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   await page.evaluate(() => { const t = document.getElementById("mushafToggle"); t.checked = false; t.dispatchEvent(new Event("change", { bubbles: true })); });
   await waitMushaf(page, false);
   const o2 = await state(page);
-  check(`${tag} unticking it in Options → the switch names Meaning next`, !o2.tick && names(lang, o2, "meaning", width), JSON.stringify(o2));
+  check(`${tag} unticking it in Options → the switch names Mushaf next`, !o2.tick && names(lang, o2, "mushaf", width), JSON.stringify(o2));
 
   // A Whole Surah unit still reaches the Mushaf (the Architect: "a Range, Surah or Page unit with Mushaf on must still be reachable").
   await setSel(page, "unitTypeSelect", "surah"); await page.waitForTimeout(1200);
-  await page.click("#readMeaningBtn"); await waitFlow(page, true);
+  await page.click("#readOnCheck", { force: true }); await waitFlow(page, true);
   await page.click("#readMeaningBtn"); await waitMushaf(page, true);
   const u1 = await state(page);
-  check(`${tag} Whole Surah: two taps reach the Mushaf, and the switch names Reading next`, u1.tick && u1.pages > 0 && names(lang, u1, "reading", width), JSON.stringify({ tick: u1.tick, pages: u1.pages, icon: u1.icon, word: u1.word, label: u1.label }));
+  check(`${tag} Whole Surah: Read on then 📖 reach the Mushaf, and the switch names ONE Ayah View next`, u1.tick && u1.pages > 0 && names(lang, u1, "reading", width), JSON.stringify({ tick: u1.tick, pages: u1.pages, icon: u1.icon, word: u1.word, label: u1.label }));
 
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|archive\.org|net::|api\.quran/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();

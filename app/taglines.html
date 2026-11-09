@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="manifest" href="./manifest.webmanifest" /><link rel="apple-touch-icon" href="./img/icons/msa-192.png" /><meta name="theme-color" content="#1B2A41" />
 <link rel="stylesheet" href="./css/shell.css" />
 <link rel="stylesheet" href="./css/card-look.css" />
   <script>(function(){try{document.documentElement.setAttribute('data-card-look',localStorage.getItem('mm_card_look')==='light'?'light':'night');}catch(e){document.documentElement.setAttribute('data-card-look','night');}})();</script>
@@ -94,12 +95,19 @@
       <summary>Home</summary>
       <div class="nav-cat-links">
         <button type="button" class="nav-legacy-link nav-screensaver-link" data-screensaver-settings>🌙 Screensaver</button>
-        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
-        <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v07 ↗</a>
-        <a href="https://madrasatul-muslimeen.github.io/legacy-v08/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v08 ↗</a>
-        <a href="https://madrasatul-muslimeen.github.io/legacy-v09/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v09 ↗</a>
-        <a href="https://madrasatul-muslimeen.github.io/legacy-v10/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v10 ↗</a>
-        <a href="https://madrasatul-muslimeen.github.io/legacy-v11/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v11 ↗</a>
+        <details class="nav-legacy-group">
+          <summary class="nav-legacy-link nav-legacy-summary">Legacy App</summary>
+          <div class="nav-legacy-list">
+          <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">v06 ↗</a>
+          <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">v07 ↗</a>
+          <a href="https://madrasatul-muslimeen.github.io/legacy-v08/index.html" class="nav-legacy-link" target="_blank" rel="noopener">v08 ↗</a>
+          <a href="https://madrasatul-muslimeen.github.io/legacy-v09/index.html" class="nav-legacy-link" target="_blank" rel="noopener">v09 ↗</a>
+          <a href="https://madrasatul-muslimeen.github.io/legacy-v10/index.html" class="nav-legacy-link" target="_blank" rel="noopener">v10 ↗</a>
+          <a href="https://madrasatul-muslimeen.github.io/legacy-v11/index.html" class="nav-legacy-link" target="_blank" rel="noopener">v11 ↗</a>
+          <a href="https://madrasatul-muslimeen.github.io/legacy-v12/index.html" class="nav-legacy-link" target="_blank" rel="noopener">v12 ↗</a>
+          <a href="https://madrasatul-muslimeen.github.io/legacy-v13/index.html" class="nav-legacy-link" target="_blank" rel="noopener">v13 ↗</a>
+          </div>
+        </details>
         <div id="who">Checking sign-in…</div>
         <button id="signInBtn" style="display:none;">Sign in with Google</button>
         <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>

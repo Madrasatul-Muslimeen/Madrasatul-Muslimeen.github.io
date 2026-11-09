@@ -1099,3 +1099,8 @@ total). Allocated by the MMSA Architect.
 13.56: the Eras names linked to the Scholars Database (QR J115 follow-up). Allocated by the MMSA Architect.
 13.57: Qur'anic duas play and the hadith translation on the Dua poster (Dua J104 r14a). Allocated by the MMSA Architect.
 13.58: the draft Hisn meanings and the r14a follow-ups (Dua J104 r14b). Allocated by the MMSA Architect.
+13.59: the Dua saving writers (R6) and Wiktionary suggested meanings (Dua J104). Allocated by the MMSA Architect.
+13.60: Family across duas and the Hisn/Qur'anic dua keys (Dua J104 tick 18 B, lines 23-24). Allocated by the MMSA Architect.
+13.61: the Legacy App links under one button, with v12 (the Owner, 9 Nov). Allocated by the MMSA Architect.
+13.62: Install MSA and Get ready for offline (J120 O1+O2). Allocated by the MMSA Architect.
+14.01: the ONE Ayah View with Read on, plus the Mushaf (the Owner's Demo 1, J110), and v13 kept as legacy-v13. Allocated by the MMSA Architect.

@@ -12,7 +12,7 @@
 //   --mutate=open       the phone keeps the switches open on the bar        -> the phone's "Show ▾" checks fail
 //   --mutate=names      the old word "Meaning" on the button                -> the name checks fail
 //   --mutate=lastread   the Reading View never notes the scroll            -> the last-read check fails
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, goReadOn } from "./harness.mjs";
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -26,7 +26,8 @@ const MUT = {
   nomenu: ["</span>${meaningQuickMenuHtml(g.surah, a.ayah)}</div>", "</span></div>"],
   double: ["        attachAyahQuickMenus(pageBox);", "        attachAyahQuickMenus(pageViewContainer);"],
   open: ["  @media (max-width: 899.98px) {\n    #readMeaningLayersSlot { position: relative; overflow: visible; }", "  @media (max-width: 1px) {\n    #readMeaningLayersSlot { position: relative; overflow: visible; }"],
-  names: [`["📖", t("Reading View"),`, `["📖", t("Meaning"),`],
+  // Re-aimed 9 Nov 2026 (Demo 1): the Reading View is "Read on" now; its switch carries the name.
+  names: [`const word = t("Read on");`, `const word = t("Meaning");`],
   lastread: [`      if (stageView !== "read" || readViewNow() !== "meaning" || isPlaying()) return;`, `      return;`],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -77,7 +78,11 @@ async function openFatiha(page) {
 const view = (page) => page.evaluate(() => document.querySelector("#pageViewContainer [data-meaning-flow]") ? "meaning" : document.querySelector("#pageViewContainer .hifz-page") ? "mushaf" : document.querySelector("#pageViewContainer .page-flow-ayah") ? "plain" : "?");
 const word = (page) => page.evaluate(() => { const b = document.getElementById("readMeaningBtn"); return { word: b?.querySelector(".read-meaning-word")?.textContent.trim() ?? "", label: b?.getAttribute("aria-label") ?? "" }; });
 async function goTo(page, want) {
-  for (let i = 0; i < 4 && (await view(page)) !== want; i++) { await page.click("#readMeaningBtn"); await page.waitForTimeout(1300); }
+  // Demo 1 (9 Nov 2026): "plain" = ONE Ayah view with Read on off; "meaning" = Read on on; "mushaf" = 📖 from the ONE Ayah view.
+  for (let i = 0; i < 4 && (await view(page)) !== want; i++) {
+    if (want === "plain") await page.evaluate(() => { if (document.getElementById("mushafToggle").checked) document.getElementById("readMeaningBtn").click(); else { const c = document.getElementById("readOnCheck"); if (c.checked) c.click(); } });
+    else if (want === "mushaf") await page.evaluate(() => { const c = document.getElementById("readOnCheck"); if (c.checked) c.click(); else document.getElementById("readMeaningBtn").click(); });
+    else await goReadOn(page); await page.waitForTimeout(1300); }
   if (want === "meaning") await page.waitForFunction(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(400);
 }
@@ -104,12 +109,16 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 360], ["en", 768],
   await openFatiha(page);
 
   // ---- B: the names --------------------------------------------------------------------------------------------
-  const W = lang === "bn" ? { rv: "পড়ার দৃশ্য", one: "এক আয়াত দৃশ্য", mushaf: "মুসহাফ" } : { rv: "Reading View", one: "ONE Ayah View", mushaf: "Mushaf" };
-  const w0 = await word(page), v0 = await view(page);
-  check(`${tag} B: in the ONE Ayah View the button names the next view "${W.rv}" (its tip too)`, v0 === "plain" && w0.word === W.rv && w0.label.startsWith(W.rv), JSON.stringify({ v0, ...w0 }));
+  const W = lang === "bn" ? { one: "এক আয়াত দৃশ্য", mushaf: "মুসহাফ" } : { one: "ONE Ayah View", mushaf: "Mushaf" };
+  // The Owner, 9 Nov 2026 (Demo 1): the Reading View is "Read on" in the ONE Ayah View; 📖 moves ONE Ayah view <-> Mushaf.
+  // Updated in place, reason recorded: B asked for plain names, and now the switch is the name.
+  const ro = (p) => p.evaluate(() => ({ word: document.querySelector("#readOnSwitch [data-read-on-word]")?.textContent.trim() ?? "", shown: (document.getElementById("readOnSwitch")?.getBoundingClientRect().width ?? 0) > 0, on: document.getElementById("readOnCheck")?.checked }));
+  const WR = lang === "bn" ? "পড়তে থাকুন" : "Read on";
+  const w0 = await word(page), v0 = await view(page), r0 = await ro(page);
+  check(`${tag} B: in the ONE Ayah View the switch "${WR}" is shown and off, and the button names the Mushaf next`, v0 === "plain" && r0.shown && !r0.on && r0.word === WR && w0.word === W.mushaf, JSON.stringify({ v0, r0, ...w0 }));
   await goTo(page, "meaning");
-  const w1 = await word(page);
-  check(`${tag} B: in the Reading View it names the Mushaf next ("${W.mushaf}")`, (await view(page)) === "meaning" && w1.word === W.mushaf, JSON.stringify(w1));
+  const w1 = await word(page), r1 = await ro(page);
+  check(`${tag} B: with Read on the flow shows, the switch is on, and the button still names the Mushaf next ("${W.mushaf}")`, (await view(page)) === "meaning" && r1.on && w1.word === W.mushaf, JSON.stringify({ r1, ...w1 }));
 
   // ---- A: the switches ---------------------------------------------------------------------------------------
   const s0 = await switches(page);
@@ -208,7 +217,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 360], ["en", 768],
   const plain = await page.evaluate(() => ({ rows: document.querySelectorAll("#pageViewContainer .page-flow-ayah").length, qm: document.querySelectorAll("#pageViewContainer .page-flow-ayah .ayah-quick-header [data-qm-toggle]").length, slotHidden: document.getElementById("readMeaningLayersSlot")?.hidden }));
   check(`${tag} the ONE Ayah View is as it was: its 7 rows, each with its ⋮, and no switches on the bar`, plain.rows === 7 && plain.qm === 7 && plain.slotHidden === true, JSON.stringify(plain));
   const w2 = await word(page);
-  check(`${tag} B: ...and there the button names "${W.rv}" again`, w2.word === W.rv, JSON.stringify(w2));
+  check(`${tag} B: ...and there (Read on off) the button names "${W.mushaf}"`, w2.word === W.mushaf, JSON.stringify(w2));
   // From the Mushaf the button names the ONE Ayah View.
   await page.evaluate(() => { const t = document.getElementById("mushafToggle"); t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); });
   await page.waitForTimeout(1500);

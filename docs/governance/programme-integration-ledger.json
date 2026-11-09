@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.58",
+    "version": "14.01",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6641,7 +6641,7 @@
     {
       "version": "13.58",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "PCF MSA · Dua J104 r14b (#1543): 16 draft Hisn al-Muslim meanings marked draft, a failed recitation said in words on the card, and a poster opened before its translation loads rebuilt when it arrives, reviewed by the Architect.",
       "integration": {
         "authorizedOn": "2026-11-08",
@@ -6649,10 +6649,75 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "13.59",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "v13.59 releases the Dua Lead's R6 saving writers (#1549, data layer only, no page imports it) and the Wiktionary suggested meanings on the Dua Word Card (#1548), merged together on arch89-r6.",
+      "integration": {
+        "authorizedOn": "2026-11-09",
+        "integratedOn": "2026-11-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.60",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "v13.60 releases the Dua Lead's #1550 (Family across duas on the Dua Word Card) and #1569 (one dua-key vocabulary for marks, edits and shares, following the published Rules).",
+      "integration": {
+        "authorizedOn": "2026-11-09",
+        "integratedOn": "2026-11-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.61",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "v13.61: the Home menu's Legacy App links under ONE button, v12 added (legacy-v12/ was archived 31 Oct but never linked); CLAUDE.md records the 9 Nov reading-view rule.",
+      "integration": {
+        "authorizedOn": "2026-11-09",
+        "integratedOn": "2026-11-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.62",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "v13.62 releases J120 O1+O2 (#1570): the install manifest and icons on 34 pages, Get ready for offline in My account, the long-lived mm-quran-v1 cache, and the Architect's review fixes (Qur'an files moved out of old app caches; QR's cache-name count).",
+      "integration": {
+        "authorizedOn": "2026-11-09",
+        "integratedOn": "2026-11-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "14.01",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "v14.01 opens the v14 line: Quran Study's Read is the ONE Ayah View with a Read on switch plus the Mushaf (PR #1576, QR Lead 39L), and legacy-v13/ archives v13.62.",
+      "integration": {
+        "authorizedOn": "2026-11-09",
+        "integratedOn": "2026-11-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "13.59",
+  "nextUnallocated": "14.02",
   "nextUnallocatedNote": [
+    "v14.01 was allocated to the ONE Ayah View with Read on, plus the Mushaf (the Owner's Demo 1, J110), and v13 kept as legacy-v13, 2026-11-09.",
+    "v13.62 was allocated to Install MSA and Get ready for offline (J120 O1+O2), 2026-11-09.",
+    "v13.61 was allocated to the Legacy App links under one button, with v12 (the Owner, 9 Nov), 2026-11-09.",
+    "v13.60 was allocated to Family across duas and the Hisn/Qur'anic dua keys (Dua J104 tick 18 B, lines 23-24), 2026-11-09.",
+    "v13.59 was allocated to the Dua saving writers (R6) and Wiktionary suggested meanings (Dua J104), 2026-11-09.",
     "v13.58 was allocated to the draft Hisn meanings and the r14a follow-ups (Dua J104 r14b), 2026-11-08.",
     "v13.57 was allocated to Qur'anic duas play and the hadith translation on the Dua poster (Dua J104 r14a), 2026-11-08.",
     "v13.56 was allocated to the Eras names linked to the Scholars Database (QR J115 follow-up), 2026-11-08.",

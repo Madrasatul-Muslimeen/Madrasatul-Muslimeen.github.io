@@ -134,8 +134,10 @@ function authorisedUpdate(source, collectionPath, identityFn) {
  */
 function authorisedCreate(source, collectionPath) {
   const block = matchBlock(source, collectionPath);
-  const only = block.match(/keys\(\)\.hasOnly\(\[([\s\S]*?)\]\)/);
-  const all = block.match(/keys\(\)\.hasAll\(\[([\s\S]*?)\]\)/);
+  // 9 Nov 2026 (R6): prefer the DOCUMENT's key list, `d().keys()`, because a helper earlier in a block (duaEdits' title check,
+  // `t.keys().hasOnly(['en', 'bn'])`) can carry a hasOnly of its own. The size assertions below still catch a wrong pick.
+  const only = block.match(/\bd\(\)\.keys\(\)\.hasOnly\(\[([\s\S]*?)\]\)/) || block.match(/keys\(\)\.hasOnly\(\[([\s\S]*?)\]\)/);
+  const all = block.match(/\bd\(\)\.keys\(\)\.hasAll\(\[([\s\S]*?)\]\)/) || block.match(/keys\(\)\.hasAll\(\[([\s\S]*?)\]\)/);
   assert.ok(only, `${collectionPath}: no hasOnly list found`);
   assert.ok(all, `${collectionPath}: no hasAll list found`);
   const permitted = new Set(idsIn(only[1]));
@@ -711,15 +713,67 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     for (const c of DUA) assert.equal(matchBlock(live, `${c}/`).replaceAll(NEWP, () => OLDP), matchBlock(dua, `${c}/`), `firestore.rules' ${c} block differs from the candidate beyond the widened duaKey pattern`);
     assert.ok(live.includes("    // PCF MSA J104 (Dua module)"), "the Dua section header is missing");
   });
-  check("DUA SAVING NO WRITER YET: no app code names a Dua collection (round R6 adds the writers AND the forward/backward checks)", () => {
-    const writers = [];
+  // UPDATED IN PLACE 9 Nov 2026 (Dua Lead, round R6): the writers exist now (app/js/dua-saving-data.js), so "NO WRITER YET"
+  // is replaced by the forward/backward comparison, as for ayahKeyMarks / hadithKeyMarks above. The data layer DECLARES
+  // every field it writes (DUA_*_WRITES; dua-saving-data.mjs proves the declaration by running every writer); the
+  // published block's create lists are DERIVED from the Rules text in firestore.rules.
+  const duaSrc = read("app/js/dua-saving-data.js");
+  const live = read("firestore.rules");
+  const declared = (name) => {
+    const m = duaSrc.match(new RegExp(`export const ${name} = Object\\.freeze\\(\\[([\\s\\S]*?)\\]\\)`));
+    assert.ok(m, `${name} not found in dua-saving-data.js`);
+    return new Set(idsIn(m[1].replace(/"/g, "'")));
+  };
+  const ownOf = (set) => [...set].filter((f) => !ENVELOPE.has(f));
+  for (const [coll, writesName, optional] of [["duaPlans/", "DUA_PLAN_WRITES", []], ["duaEdits/", "DUA_EDIT_WRITES", ["added"]], ["duaShares/", "DUA_SHARE_WRITES", []]]) {
+    const writes = declared(writesName);
+    const { permitted, required } = authorisedCreate(live, coll);
+    check(`DUA SAVING POSITIVE CONTROL (${coll}): the parsers read the published block and the declared writes`, () => {
+      assert.ok(writes.size >= 4 && permitted.has("tenantId") && required.has("tenantId") && writes.has("tenantId"),
+        `parsed writes=${[...writes]} permitted=${[...permitted]} required=${[...required]}`);
+    });
+    check(`DUA SAVING BACKWARD (${coll}): every field the data layer can write is one the published Rules allow`, () => {
+      assert.deepEqual([...writes].filter((f) => !permitted.has(f)), [], "denied in production");
+    });
+    check(`DUA SAVING FORWARD (${coll}): every field the published Rules allow is written by the data layer`, () => {
+      assert.deepEqual(ownOf(permitted).filter((f) => !writes.has(f)), [], "an authorised field no code can perform");
+    });
+    check(`DUA SAVING REQUIRED (${coll}): every required field is one the data layer writes (or the envelope stamps)`, () => {
+      assert.deepEqual(ownOf(required).filter((f) => !writes.has(f)), []);
+    });
+    check(`DUA SAVING REQUIRED BOTH WAYS (${coll}): every field the data layer creates with is REQUIRED, bar the optional ${optional.join(", ") || "(none)"}`, () => {
+      assert.deepEqual([...writes].filter((f) => !required.has(f) && !optional.includes(f)), [], "a create could omit an identity field");
+    });
+  }
+  check("DUA SAVING UPDATE/DELETE: the data layer never deletes, and the published blocks have no delete", () => {
+    assert.ok(!/\bdeleteDoc\b|\.delete\(|deleteField/.test(duaSrc), "dua-saving-data.js must never delete");
+    for (const c of DUA) assert.match(matchBlock(live, `${c}/`), /allow delete: if false;/, `${c} may delete`);
+    assert.match(matchBlock(live, "duaShares/"), /allow update: if false;/, "a share record must not be editable");
+    assert.ok(/updateDocument\(db, TENANT\.DUA_PLANS/.test(duaSrc) && /updateDocument\(db, TENANT\.DUA_EDITS/.test(duaSrc), "expected updates of plans and edits");
+    assert.ok(!/updateDocument\(db, TENANT\.DUA_SHARES/.test(duaSrc), "a share must never be updated");
+  });
+  check("DUA SAVING PLAN KEYS: the duaKey pattern the data layer enforces for edits and shares is EXACTLY the one the published Rules pin (so a key the layer accepts is never denied)", () => {
+    const ruleP = (blk) => { const x = blk.match(/d\(\)\.duaKey\.matches\('([^']+)'\)/); assert.ok(x, "no duaKey pattern in the block"); return x[1]; };
+    const src = (duaSrc.match(/const DUA_KEY = \/(.+)\/;/) || [])[1];
+    assert.ok(src, "DUA_KEY not found in dua-saving-data.js");
+    assert.equal(src, ruleP(matchBlock(live, "duaEdits/")), "the data layer's duaKey pattern differs from duaEdits'");
+    assert.equal(src, ruleP(matchBlock(live, "duaShares/")), "the data layer's duaKey pattern differs from duaShares'");
+  });
+  check("DUA SAVING PLAN KEYS: the key vocabulary the data layer declares is the one the Owner's tick (J104 line 23) records, and the duaPlans block does NOT inspect plan keys", () => {
+    const forms = (duaSrc.match(/DUA_PLAN_KEY_FORMS = Object\.freeze\(\[([\s\S]*?)\]\);/) || [])[1];
+    assert.ok(forms, "DUA_PLAN_KEY_FORMS not found");
+    assert.deepEqual([...forms.matchAll(/"([^"]+)"/g)].map((x) => x[1]), ["<number>", "new-<id>", "hisn-<chapter>-<entry>", "quran-<surah>-<ayah>[-<ayah>]"]);
+    assert.ok(!/hisn|quran/i.test(matchBlock(live, "duaPlans/").replace(/\/\/.*$/gm, "")), "the published duaPlans block now names a Hisn or Qur'an key: update this check");
+  });
+  check("DUA SAVING: the only app code naming a Dua collection is the data layer and collections.js", () => {
+    const names = [];
     const walk = (dir) => { for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
       const p = `${dir}/${e.name}`;
       if (e.isDirectory()) walk(p);
-      else if (/\.(js|html)$/.test(e.name) && DUA.some((c) => new RegExp(`["'\`]${c}["'\`]`).test(read(p)))) writers.push(p);
+      else if (/\.(js|html)$/.test(e.name) && DUA.some((c) => new RegExp(`["'\`]${c}["'\`]`).test(read(p)))) names.push(p);
     } };
     walk("app");
-    assert.deepEqual(writers, [], `app code now names a Dua collection (${writers.join(", ")}): add the forward/backward checks`);
+    assert.deepEqual(names.sort(), ["app/js/collections.js"], `unexpected files name a Dua collection: ${names.join(", ")}`);
   });
 }
 
@@ -760,14 +814,15 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     const rule = "&& (('added' in d()) == d().duaKey.matches('^new-.*$'))";
     assert.ok(matchBlock(cand, "duaEdits/").includes(rule) && matchBlock(live, "duaEdits/").includes(rule));
   });
-  check("DUA KEYS: the candidate's new forms are the app's DUA_PLAN_KEY_FORMS (when dua-saving-data.js declares them)", () => {
-    const p = "app/js/dua-saving-data.js";
-    if (!fs.existsSync(path.join(root, p))) return;   // not on this tree yet (it lives on claude/dua-d10-plan-keys)
-    const src = read(p);
-    const m = src.match(/const PLAN_KEY_EXTRA = \/\^\((.*)\)\$\/;/);
-    if (!m && !/DUA_PLAN_KEY_FORMS/.test(src)) return;
-    assert.ok(m, "dua-saving-data.js names DUA_PLAN_KEY_FORMS but its PLAN_KEY_EXTRA pattern was not found");
-    assert.equal(m[1], "hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?", "the app's extra key forms differ from the candidate's");
+  // UPDATED IN PLACE 9 Nov 2026 (Dua Lead, with the follow-up on the Owner's line 24): the data layer no longer keeps the two new forms
+  // in a separate PLAN_KEY_EXTRA; the one DUA_KEY carries them (Rules and marks share one vocabulary), so this asserts the SAME forms
+  // inside DUA_KEY. It is stricter than before: it fails if the forms are missing, not only if a constant is absent.
+  check("DUA KEYS: the candidate's new forms are inside the app's DUA_KEY, which declares DUA_PLAN_KEY_FORMS", () => {
+    const src = read("app/js/dua-saving-data.js");
+    assert.ok(/DUA_PLAN_KEY_FORMS/.test(src), "dua-saving-data.js does not declare DUA_PLAN_KEY_FORMS");
+    const m = src.match(/const DUA_KEY = \/\^\((.*)\)\$\/;/);
+    assert.ok(m, "dua-saving-data.js: DUA_KEY not found");
+    assert.ok(m[1].endsWith("|hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?"), "the app's DUA_KEY lacks the candidate's new forms: " + m[1]);
   });
   check("DUA KEYS PUBLISHED: firestore.rules IS the dua-keys file, byte for byte (the Owner published it, 9 Nov 2026)", () => {
     const fr = read("firestore.rules");
