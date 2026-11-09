@@ -1,0 +1,112 @@
+<title>Āyah View and Reading View demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Figtree:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500&display=swap">
+<style>
+/* Layout: a phone-width app mock under a demo switcher; the same bar, layers and cards the real app uses. */
+:root{--bg:#f6f4ef;--panel:#fffdf8;--fg:#1f2a2c;--mute:#5d6b6e;--line:#d9d3c4;--accent:#0f6b63;--accent-fg:#fff;--soft:#e3efec;--hl:#fff3cf;--warn:#8a5a00;--ar:'Amiri','Traditional Arabic',serif;--sans:'Figtree',system-ui,sans-serif;--bn:'Hind Siliguri','Noto Sans Bengali',sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14191a;--panel:#1c2324;--fg:#e8ecea;--mute:#a1b0b2;--line:#34403f;--accent:#4fc2b6;--accent-fg:#0b1514;--soft:#223a37;--hl:#3b3418;--warn:#e0b252;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14191a;--panel:#1c2324;--fg:#e8ecea;--mute:#a1b0b2;--line:#34403f;--accent:#4fc2b6;--accent-fg:#0b1514;--soft:#223a37;--hl:#3b3418;--warn:#e0b252;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans);padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:16px 48px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:1.25rem;margin:0;text-wrap:balance}
+p{margin:0}.mute{color:var(--mute);font-size:.9rem}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--fg);font:600 .9rem var(--sans);cursor:pointer;flex:1 1 200px;text-align:left}
+.tab[aria-selected=true]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.app{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;height:min(78vh,640px)}
+.bar{position:relative;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--bg)}
+.btn{min-width:44px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--fg);font:600 .9rem var(--sans);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn[aria-pressed=true],.btn[aria-expanded=true]{background:var(--soft);border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:default}
+.pos{font-weight:700;min-width:5.5em;text-align:center}
+.sw{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;font-weight:600;font-size:.9rem}
+.sw input{width:20px;height:20px;accent-color:var(--accent)}
+.sp{flex:1}
+.layers{position:static}
+.menu{position:absolute;right:10px;top:calc(100% - 4px);max-width:calc(100% - 20px);z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;min-width:190px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.menu label{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;cursor:pointer}
+.menu input{width:20px;height:20px;accent-color:var(--accent)}
+.scroll{overflow:auto;flex:1;padding:12px 14px 40px;position:relative}
+.ay{border-bottom:1px solid var(--line);padding:14px 0}
+.ay:last-child{border:0}
+.ay.focus{background:var(--hl);margin-inline:-14px;padding-inline:14px}
+.ref{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:.85rem;font-weight:600}
+.ar{font:400 2rem/2.2 var(--ar);direction:rtl;text-align:right;margin:4px 0}
+.one .ar{font-size:2.5rem}
+.tr{font-size:.98rem;margin-top:6px}
+.tr.bn{font-family:var(--bn)}
+.tl{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-top:8px}
+.wbw{display:flex;flex-wrap:wrap;flex-direction:row-reverse;gap:6px;margin-top:10px;direction:rtl}
+.w{direction:ltr;text-align:center;border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-width:76px;background:var(--bg)}
+.w b{display:block;font:400 1.35rem/1.6 var(--ar)}
+.w i{display:block;font-size:.72rem;color:var(--mute);font-style:normal}
+.w span{display:block;font-size:.8rem}
+.root{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:.82rem;background:var(--bg)}
+.chip b{font:700 1rem var(--ar);margin-inline-end:4px}
+.panel{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg)}
+.panel h3{margin:0 0 4px;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.panel ul{margin:0;padding-left:1.1rem}
+.panel textarea{width:100%;min-height:64px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);padding:8px;font:inherit}
+.more{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.note{font-size:.85rem;color:var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}
+.tw{overflow-x:auto;background:var(--panel);border-radius:10px}
+</style>
+<div class="wrap">
+<h1>Āyah view and Reading View: two ways to keep one</h1>
+<p class="mute">Sūrat al-Fātiḥa, real text with word by word and roots. Both demos use the same bar, the same ⋮ Layers button and the same cards as the app. Demo only; nothing in the app has changed.</p>
+<div class="tabs" role="tablist">
+ <button class="tab" role="tab" id="t1" aria-selected="true">Demo 1 · One Āyah view with a Read on switch</button>
+ <button class="tab" role="tab" id="t2" aria-selected="false">Demo 2 · One combined view</button>
+</div>
+<p class="mute" id="how"></p>
+<div class="app" id="app"></div>
+<div class="tw"><table>
+<thead><tr><th></th><th>Demo 1</th><th>Demo 2</th></tr></thead>
+<tbody>
+<tr><th>What you see first</th><td>One āyah, big, with stepping.</td><td>The whole sūrah as a scroll.</td></tr>
+<tr><th>Continuous reading</th><td>Turn Read on: it scrolls from this āyah. Turn it off: back to one āyah, at the āyah you reached.</td><td>Always on.</td></tr>
+<tr><th>Root, Derivatives, Approach panels, Collapse</th><td>Root and Derivatives are layers in both modes. Reflection, Checklist and Collapse are on the One Āyah screen: turn Read on off to reach them.</td><td>Open under any āyah with Study, in place.</td></tr>
+<tr><th>For One Ayah a Day</th><td>The One Āyah mode is already a screen the program can open.</td><td>Study on one āyah opens the same panels; a program would open that.</td></tr>
+<tr><th>Cost</th><td>One mode switch to learn.</td><td>No mode, but a long page, and the Approach panels sit inside the flow.</td></tr>
+</tbody></table></div>
+<p class="mute">Not shown here: Tajweed colours, the Word Card, the 📝 Notes pane and the ⋮ menu. They are the same in both and are kept as they are.</p>
+</div>
+<script>
+const D=/*__DATA__*/null;
+const A=D.ayahs, $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let demo=1,i=0,readOn=false,menu=false,open=new Set(),L={en:true,bn:true,wbw:true,root:false,der:false};
+try{const s=JSON.parse(localStorage.getItem('twoViewDemo')||'{}');if(s.L)L={...L,...s.L};}catch(e){}
+function save(){try{localStorage.setItem('twoViewDemo',JSON.stringify({L}))}catch(e){}}
+function sameRoot(r,skip){if(!r)return[];const seen=new Set(),out=[];A.forEach(a=>a.w.forEach(w=>{if(w.root===r&&w.ar!==skip&&!seen.has(w.ar)){seen.add(w.ar);out.push(w)}}));return out}
+function wbw(a){return `<div class="wbw">${a.w.map(w=>`<div class="w"><b>${esc(w.ar)}</b><i>${esc(w.tr)}</i>${L.en?`<span>${esc(w.en)}</span>`:''}${L.bn?`<span style="font-family:var(--bn)">${esc(w.bn)}</span>`:''}</div>`).join('')}</div>`}
+function roots(a){return `<div class="tl">Root</div><div class="root">${a.w.filter(w=>w.root).map(w=>`<span class="chip"><b>${esc(w.root)}</b>${esc(w.tr)}</span>`).join('')}</div>`}
+function ders(a){const rows=a.w.filter(w=>w.root).map(w=>{const o=sameRoot(w.root,w.ar);return o.length?`<li><b style="font-family:var(--ar)">${esc(w.root)}</b>: ${o.map(x=>`<span style="font-family:var(--ar)">${esc(x.ar)}</span> ${esc(x.tr)}`).join(' · ')}</li>`:''}).join('');return `<div class="panel"><h3>Derivatives (same root, elsewhere in this sūrah)</h3>${rows?`<ul>${rows}</ul>`:'<p class="mute">None in this sūrah.</p>'}</div>`}
+function approach(a){return `<div class="panel"><h3>Reflection</h3><textarea aria-label="Reflection on ${D.name} ${a.n}" placeholder="What does this āyah ask of me today?"></textarea></div><div class="panel"><h3>Checklist</h3><label class="sw" style="border:0;padding:0"><input type="checkbox"> I understood the words</label><label class="sw" style="border:0;padding:0"><input type="checkbox"> I can say it from memory</label></div>`}
+function text(a){return `${L.en?`<p class="tr">${esc(a.en)}</p>`:''}${L.bn?`<p class="tr bn">${esc(a.bn)}</p>`:''}${L.wbw?wbw(a):''}${L.root?roots(a):''}${L.der?ders(a):''}`}
+function bar(){const lay=(d2)=>`<div class="layers"><button class="btn" id="lb" aria-haspopup="true" aria-expanded="${menu}">⋮ Layers</button>${menu?`<div class="menu" role="group" aria-label="Layers">${[['en','English'],['bn','Bangla'],['wbw','Word by Word'],...(d2?[]:[['root','Root'],['der','Derivatives']])].map(([k,n])=>`<label><input type="checkbox" data-l="${k}" ${L[k]?'checked':''}> ${n}</label>`).join('')}</div>`:''}</div>`;
+ return demo===1?`<div class="bar"><button class="btn" id="pv" aria-label="Previous āyah" ${i<1?'disabled':''}>‹</button><span class="pos">${D.name} ${A[i].n}/${A.length}</span><button class="btn" id="nx" aria-label="Next āyah" ${i>=A.length-1?'disabled':''}>›</button><label class="sw"><input type="checkbox" id="ro" ${readOn?'checked':''}> Read on</label><span class="sp"></span>${lay(false)}</div>`
+ :`<div class="bar"><span class="pos">${D.name} · ${A.length} āyāt</span><span class="sp"></span>${lay(true)}</div>`}
+function one(){const a=A[i];return `<div class="scroll one"><div class="ref">${D.name} ${a.n}</div><div class="ar" lang="ar">${esc(a.ar)}</div>${text(a)}${approach(a)}<div class="more"><button class="btn" id="col">Collapse</button></div></div>`}
+function flow1(){return `<div class="scroll" id="sc">${A.slice(i).map(a=>`<div class="ay${a.n===A[i].n?' focus':''}" data-n="${a.n}"><div class="ref">${D.name} ${a.n}</div><div class="ar" lang="ar">${esc(a.ar)}</div>${text(a)}</div>`).join('')}</div>`}
+function flow2(){return `<div class="scroll" id="sc">${A.map((a,k)=>{const o=open.has(a.n);return `<div class="ay${o?' focus':''}" data-n="${a.n}"><div class="ref">${D.name} ${a.n}<span class="sp"></span><button class="btn" data-study="${a.n}" aria-expanded="${o}">${o?'Close study':'Study'}</button></div><div class="ar" lang="ar">${esc(a.ar)}</div>${text(a)}${o?`${roots(a)}${ders(a)}${approach(a)}<div class="more"><button class="btn" data-go="${k-1}" ${k<1?'disabled':''}>‹ Previous āyah</button><button class="btn" data-go="${k+1}" ${k>=A.length-1?'disabled':''}>Next āyah ›</button></div>`:''}</div>`}).join('')}</div>`}
+function paint(){const keepScroll=$('#sc')?.scrollTop||0;$('#app').innerHTML=bar()+(demo===1?(readOn?flow1():one()):flow2());
+ $('#how').textContent=demo===1?'Step with ‹ ›. Turn Read on to read from this āyah downwards; turn it off and you are back on the āyah you reached.':'No switch between views. Scroll to read; press Study under any āyah to open its Root, Derivatives and Reflection in place.';
+ $('#lb').onclick=()=>{menu=!menu;paint()};
+ document.querySelectorAll('[data-l]').forEach(c=>c.onchange=()=>{L[c.dataset.l]=c.checked;save();paint()});
+ if(demo===1){$('#pv').onclick=()=>{i--;paint()};$('#nx').onclick=()=>{i++;paint()};$('#ro').onchange=e=>{readOn=e.target.checked;paint()};
+  if($('#col'))$('#col').onclick=()=>{document.querySelectorAll('.panel,.wbw,.root').forEach(x=>x.hidden=!x.hidden)};
+  if(readOn){const sc=$('#sc');sc.onscroll=()=>{const t=sc.getBoundingClientRect().top;const el=[...sc.querySelectorAll('.ay')].find(e=>e.getBoundingClientRect().bottom>t+60);if(el){const n=+el.dataset.n-1;if(n!==i){i=n;sc.querySelectorAll('.ay').forEach(e=>e.classList.toggle('focus',e===el));$('.pos').textContent=`${D.name} ${A[i].n}/${A.length}`}}}}}
+ else{document.querySelectorAll('[data-study]').forEach(b=>b.onclick=()=>{const n=+b.dataset.study;open.has(n)?open.delete(n):open.add(n);paint()});
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const k=+b.dataset.go;const n=A[k].n;open.clear();open.add(n);paint();$('#sc').querySelector(`[data-n="${n}"]`).scrollIntoView({block:'start'})})}
+ if(demo===2&&keepScroll)$('#sc').scrollTop=keepScroll;}
+function pick(d){demo=d;menu=false;$('#t1').setAttribute('aria-selected',d===1);$('#t2').setAttribute('aria-selected',d===2);paint()}
+$('#t1').onclick=()=>pick(1);$('#t2').onclick=()=>pick(2);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&menu){menu=false;paint()}});
+paint();
+</script>
