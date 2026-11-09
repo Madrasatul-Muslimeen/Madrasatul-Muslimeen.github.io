@@ -190,16 +190,18 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
   });
 
   // 6 + 7: Meaning, full screen cycle, window.
+  // 9 Nov 2026 (the Owner, Demo 1): Meaning is the "Read on" switch (#readOnCheck) now, not the 📖 button's pressed state;
+  // updated in place, reason recorded: what is checked of the flow is unchanged.
   await flow("meaning+fullscreen", lang, width, null, async (t, page) => {
     await openRead(page);
-    const pressed = () => ev(page, () => document.getElementById("readMeaningBtn").getAttribute("aria-pressed"));
+    const pressed = () => ev(page, () => String(document.getElementById("readOnCheck").checked));
     check(`${t}: POSITIVE CONTROL Meaning starts off`, (await pressed()) === "false");
     const base = await readLen(page);
-    await click(page, "readMeaningBtn");
+    await ev(page, () => document.getElementById("readOnCheck").click());
     await page.waitForFunction(() => document.getElementById("readMeaningLayersSlot").getBoundingClientRect().width > 0, null, { timeout: 5000 }).catch(() => {});
     const on = await ev(page, () => ({ slot: !document.getElementById("readMeaningLayersSlot").hidden, w: document.getElementById("readMeaningLayersSlot").getBoundingClientRect().width }));
     check(`${t}: 📖 Meaning turns on (pressed, layer switches shown)`, (await pressed()) === "true" && on.slot && on.w > 0, JSON.stringify(on));
-    await click(page, "readMeaningBtn"); await settle(page, 500);
+    await ev(page, () => document.getElementById("readOnCheck").click()); await settle(page, 500);
     check(`${t}: pressing it again turns Meaning off and the layer switches go`, (await pressed()) === "false" && await ev(page, () => document.getElementById("readMeaningLayersSlot").hidden || document.getElementById("readMeaningLayersSlot").getBoundingClientRect().width === 0));
     check(`${t}: the Read view is as before (${base} -> ${await readLen(page)})`, (await readLen(page)) === base);
     // Full screen is a cycle: normal -> reading only -> chosen hides -> normal.

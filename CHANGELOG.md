@@ -23523,3 +23523,15 @@ The evening's third release, the follow-up to v13.26.
 - **Known, recorded as a follow-up:** in the test harness, about 1 offline start in 6 stays on "Loading your study…" after "Get ready". Before this release the app could not start offline at all (30 of 30 in the harness). The stall persists with the suite's request-refusing route removed and with the harness's Firebase routing removed; the cause is not yet found. A real-device check is asked of the Owner.
 - **Checks:** offline-ready-browser 162/0 (6 mutations red); behaviour 974/1 (14a, the same as main); QR's 29 checks identical to main by failure name (student 4, student-tools 64, student-device 2, lang-switch 24 on both; upgrade-browser needs a QR clone on both); legacy-links 340/0; apps-build-check 53/0; rules-authorisation-executable 113/0; build-offline-files and install-links --check pass.
 - Nothing deployed to Firestore.
+
+## v14.01 — 9 Nov 2026 — Quran Study: ONE Ayah View with "Read on", plus the Mushaf; v13 kept as legacy-v13
+
+PCF MSA J110 (reopened). The Owner, in QR Lead 38L's chat, 9 Nov 2026 2:27 pm Sydney: **"Demo 1, build it. Bismillah!"**, and in the Architect's chat: "the new view QR is building goes to the new version v14". Built by QR Lead 39L (PR #1576, head f6b8bd73), reviewed and released by the MSA Architect 91L.
+
+- **Read on** (`#readOnSwitch` / `#readOnCheck` in the Read bar, before `#readMeaningLayersSlot`): on, the ONE Ayah View becomes the continuous flow (what the Reading View was), starting at the āyah being read; off, it returns to the āyah the reader reached (in the same sūrah, unit type āyah). Hidden in the Mushaf. Kept in bare full screen. Remembered on the device (`qr.readMeaning`, the key the Reading View already used).
+- **📖** now moves between the ONE Ayah View (with or without Read on) and the Mushaf only. Going to the Mushaf from Read on closes the flow and opens the page the reader had reached.
+- **Layout**: the switch is compact below 1280px and below 360px; at 1024–1279px with Read on the 📖 button shows its icon alone; at 600–899px the Show button's count badge steps aside. The bar with Read on equals main's height at 320, 390, 768, 1024, 1280 and 1440px, en and bn.
+- **Strings**: "Read on" (পড়তে থাকুন) and its tip.
+- **Tests**: new `read-on-switch-browser.mjs` (5 widths × en+bn; mutations noland, showmushaf, nolabel, stuck, nostore each red); 13 suites updated in place with their reasons (shared `goReadOn()` in `harness.mjs`).
+- **legacy-v13/**: `app/` as released at v13.62 (merge commit b00c01b2), with the one documented change (`js/sw-register.js` registers no worker, so it does not open offline and shows no Zab bar) and `README-ARCHIVE.txt`; checked file by file by `brief-integrity.mjs`; `/legacy-v13/` added to `app/sw.js`'s archive list; "v13 ↗" in Legacy App ▾ on all 26 pages (`legacy-links-browser` reads the folders off disk).
+- Nothing deployed to Firestore.

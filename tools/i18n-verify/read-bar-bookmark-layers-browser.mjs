@@ -9,7 +9,7 @@
 //   nobm      the bar 🔖 never shown                  -> the 🔖 checks fail
 //   fsbm      the bare full-screen rule hides the 🔖   -> "kept in bare full screen" fails
 //   twobm     ⋯'s 🔖 stays beside the bar's one       -> "on the bar once" fails at 1280
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, goReadOn } from "./harness.mjs";
 import fs from "fs";
 
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
@@ -68,7 +68,7 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
 
   // PCF MSA J99 (the Owner ticked B): 📖 cycles Āyah → Meaning → Mushaf, so from the Mushaf it takes two taps to Meaning
   // (via the plain reading). Updated in place, reason recorded.
-  for (let i = 0; i < 3 && !(await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)); i++) { await page.click("#readMeaningBtn"); await page.waitForTimeout(1200); }
+  for (let i = 0; i < 3 && !(await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)); i++) { await goReadOn(page); await page.waitForTimeout(1200); }
   await page.waitForFunction(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(700);
   // PCF MSA J110 A (the Owner ticked A, 2 Nov 2026): below 600px the switches are behind ONE "Show ▾" on 📖's line; it is
