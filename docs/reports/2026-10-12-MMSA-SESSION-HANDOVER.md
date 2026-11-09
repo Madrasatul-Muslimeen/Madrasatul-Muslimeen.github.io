@@ -3305,3 +3305,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.61** (2026-11-09): the Legacy App links under one button, with v12 (the Owner, 9 Nov).
 - **v13.62** (2026-11-09): Install MSA and Get ready for offline (J120 O1+O2).
 - **v14.01** (2026-11-09): the ONE Ayah View with Read on, plus the Mushaf (the Owner's Demo 1, J110), and v13 kept as legacy-v13.
+- **v14.02** (2026-11-09): the Owner's al-Wāqiʿah recording as a reciter (MSA · QR J121, #1566).

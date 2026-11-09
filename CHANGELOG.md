@@ -23535,3 +23535,14 @@ PCF MSA J110 (reopened). The Owner, in QR Lead 38L's chat, 9 Nov 2026 2:27 pm Sy
 - **Tests**: new `read-on-switch-browser.mjs` (5 widths × en+bn; mutations noland, showmushaf, nolabel, stuck, nostore each red); 13 suites updated in place with their reasons (shared `goReadOn()` in `harness.mjs`).
 - **legacy-v13/**: `app/` as released at v13.62 (merge commit b00c01b2), with the one documented change (`js/sw-register.js` registers no worker, so it does not open offline and shows no Zab bar) and `README-ARCHIVE.txt`; checked file by file by `brief-integrity.mjs`; `/legacy-v13/` added to `app/sw.js`'s archive list; "v13 ↗" in Legacy App ▾ on all 26 pages (`legacy-links-browser` reads the folders off disk).
 - Nothing deployed to Firestore.
+
+## v14.02 — 9 Nov 2026 — Quran Study: the Owner's al-Wāqiʿah recording as a reciter
+
+PCF MSA · QR J121. The Owner chose the audio-file route ("J121. Go ahead with Audio", 9 Nov ~9:18 am) and where it lives: "J121:A." (9 Nov, 10:41 am Sydney, QR Lead 38L's own chat, Surah Waqiah.webm attached; checked in that record by the Architect). Built by QR Lead 38L and 40L (PR #1566, head 7cc46c3), reviewed and released by the MSA Architect 91L.
+
+- **Reciter `waqiah`** ("Owner's recording (Sūrah al-Wāqiʿah only)", Bangla "মালিকের রেকর্ডিং (শুধু সূরা আল-ওয়াক্বিআহ)", added at release): one 13 MB file, `tools/quran-data-pull/output/audio/waqiah.webm`, played āyah by āyah from the times in its pauses (`waqiah-timestamps.json`).
+- **`reciterOffersSurah()`**: every reciter picker and the play path ask it, so the recording is offered on sūrah 56 only; a reciter left chosen on another sūrah falls back to Arabic. `ready: false` hides a reciter whose file is missing.
+- **Timing cache** is now one entry per segmented reciter (it was one shared promise, so a second reciter would have read the first one's times).
+- **Offline**: the webm is not cached by the worker (OFFLINE-PLAN.md).
+- **Tests**: new `waqiah-reciter.mjs` 9/0 and `waqiah-reciter-browser.mjs` 20/0 (the real file in a real browser, en/bn × 390/1280; `--mutate=no-surah-filter` red, 4 fail). On the release tree: qr-play-run-gap 21/0, bn-audio-clip 24/0, study-options-play-read 73/0, dua-quran-play 7/0, read-on-switch 160/0, behaviour 974/1 (14a, as main), apps-build-check 53/0; QR's 29 checks identical by failure name to v14.01's release run.
+- Nothing deployed to Firestore.

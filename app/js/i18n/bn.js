@@ -594,6 +594,7 @@ export const BN = {
   "Ibraheem Walk (English)": "Ibraheem Walk (ইংরেজি)",
   "Kevan Brighting (English, whole surah only)": "Kevan Brighting (ইংরেজি, শুধু সম্পূর্ণ সূরা)",
   "Shareef Bayezid Mahmud (Bangla)": "শরীফ বায়েজিদ মাহমুদ (বাংলা)",
+  "Owner's recording (Sūrah al-Wāqiʿah only)": "মালিকের রেকর্ডিং (শুধু সূরা আল-ওয়াক্বিআহ)", // ? MSA · QR J121
 
   // --- The wheel's own one-time intro button + settled caption -----------
   "Study Quran": "কুরআন অধ্যয়ন করুন", // ?

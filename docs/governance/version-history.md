@@ -1104,3 +1104,4 @@ total). Allocated by the MMSA Architect.
 13.61: the Legacy App links under one button, with v12 (the Owner, 9 Nov). Allocated by the MMSA Architect.
 13.62: Install MSA and Get ready for offline (J120 O1+O2). Allocated by the MMSA Architect.
 14.01: the ONE Ayah View with Read on, plus the Mushaf (the Owner's Demo 1, J110), and v13 kept as legacy-v13. Allocated by the MMSA Architect.
+14.02: the Owner's al-Wāqiʿah recording as a reciter (MSA · QR J121, #1566). Allocated by the MMSA Architect.
