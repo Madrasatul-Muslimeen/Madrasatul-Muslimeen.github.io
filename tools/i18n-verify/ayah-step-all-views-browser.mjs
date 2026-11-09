@@ -3,7 +3,7 @@
 //   2. ◂ ▸ (#prevAyahBtn / #nextAyahBtn) are on the bar in the Reading View and the Mushaf, and move along the page:
 //      Reading View -> the next / previous āyah row comes to the top; Mushaf -> the next / previous end marker is brought into view.
 // At 360, 600, 768, 1280. --mutate=hidden keeps the old "hidden in a flow" rule -> FAIL.   Run from the repository root, serve.js on :8080.
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, goReadOn } from "./harness.mjs";
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => { if (ok && typeof ok.then === "function") throw new Error("promise"); if (ok) { pass++; console.log(`  PASS  ${n}`); } else { fail++; console.log(`  FAIL  ${n} ${d}`); } };
 const MUT = process.argv.includes("--mutate=hidden");
@@ -21,7 +21,7 @@ for (const width of [360, 600, 768, 1280]) {
   await setSel(page, "unitTypeSelect", "surah"); await page.waitForTimeout(600);
   await setSel(page, "surahSelect", "2"); await page.waitForTimeout(1500);
   // ---- Reading View
-  for (let i = 0; i < 3; i++) { if (await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)) break; await page.click("#readMeaningBtn"); await page.waitForTimeout(1300); }
+  for (let i = 0; i < 3; i++) { if (await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)) break; await goReadOn(page); await page.waitForTimeout(1300); }
   await page.waitForSelector(".meaning-ayah", { timeout: 15000 }).catch(() => {});
   const slot = await page.evaluate(() => { const s = document.getElementById("readMeaningLayersSlot"); const mb = s?.querySelector("[data-ml-menu]"); const lab = [...(s?.querySelectorAll("label") ?? [])].map((l) => l.getBoundingClientRect().width); return { btn: !!mb && mb.getBoundingClientRect().width > 0, labelsShown: lab.filter((w) => w > 0).length }; });
   if (width < 900) check(`${tag} the three layer switches are folded under ONE "Show ▾" button`, slot.btn && slot.labelsShown === 0, JSON.stringify(slot));
