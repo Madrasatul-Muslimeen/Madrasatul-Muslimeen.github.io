@@ -3026,7 +3026,13 @@
   .read-on-switch:focus-within { outline: 3px solid #B8862F; outline-offset: 2px; }
   .read-on-switch[hidden] { display: none; }
   /* Measured 9 Nov 2026 (768px): the switch at full size pushed the bar onto a new line; compact it below 1024px, where the bar is tight. */
-  @media (max-width: 1023.98px) { .read-on-switch { padding: 0 0.45rem; font-size: 0.78rem; border-radius: 9px; } }
+  @media (max-width: 1279.98px) { .read-on-switch { padding: 0 0.45rem; font-size: 0.78rem; border-radius: 9px; } }
+  /* Same measurement, 1024-1279px: with Read on the Layers stand open, and 📖 keeping its word pushes the bar onto a new line; icon alone, 40px. */
+  @media (min-width: 1024px) and (max-width: 1279.98px) {
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
+    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
+  }
+  @media (min-width: 900px) and (max-width: 919.98px) { .read-on-switch { padding: 0 0.25rem; font-size: 0.74rem; } #readMeaningLayersSlot .ml-items label { padding: 0 0.4rem; font-size: 0.8rem; } }
   /* Same measurement, tablet: with the switch the bar needs ~20px more than a 600-899px row has; the Show button's count badge steps aside. */
   @media (min-width: 600px) and (max-width: 899.98px) { #readMeaningLayersSlot .ml-count { display: none; } }
   #readMeaningLayersSlot label:has(input:focus-visible) { outline: 3px solid #B8862F; outline-offset: 2px; }
