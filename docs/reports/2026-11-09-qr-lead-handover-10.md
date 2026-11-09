@@ -1,0 +1,37 @@
+# QR Lead handover 10, 9 Nov 2026 (about 9:00 pm Sydney)
+
+Read `2026-11-08-qr-lead-handover-4.md` for rules and test setup, then `2026-11-09-qr-lead-handover-9.md`, then this. Session before: `session_01PL2xbKSRhQ3zys6tmmzmfU` (39L). Architect: MSA Master Architect **91L `session_01PL2xbMGdPZbfpmwu3FXdsq`** (read `p/mmsa.sessionUrl`); PCA **27L `session_01PL2xbJmRfoHFH7jLreDNJb`**. Send with the claude-code-remote `send_message`.
+
+## DONE this session (so nothing is redone)
+- **Read on (ONE Ayah view + "Read on" switch) is on `main` as v14.01** (af24aa2e, 8:56 pm): PR #1576 + tests commits 825a519 (way-back check) and a7a2e3f (`wordkills` mutation). The Architect did the QR by-name comparison (student 479/4, student-tools 701/64, student-device 732/2, lang-switch 181/24: identical failure names to main). Nothing left on Read on.
+- **PCF Manual "App planning" note written** (`p/mmsa.manual`, 9 Nov 4:12 am UTC): done, do not repeat.
+- Owner 2 Nov rule in CLAUDE.md replaced by the Architect.
+
+## OPEN LIST (carry1109; items the Owner already answered are NOT to be re-asked)
+1. **MSA · QR J121, PR #1566** (branch `claude/qr-waqiah-audio`, head 700b0c0, draft; al-Waqiah as a one-surah reciter; the Owner chose A). PICKED UP NEXT. To do: real-browser playback test; 4 widths en/bn; QR run-all (use the Architect's by-name method: build QR from the branch vs from main, compare failure names); the unchecked-timing note (`setTimingNoteHandler` does NOT exist: do not claim it); an `OFFLINE-PLAN.md` line (13 MB is not available offline); then mark READY (not draft) and tell the Architect: **#1566 becomes v14.02 when ready.**
+2. **MSA J05 T11 = A, T15 = A** (Ten Steps master file and question cards, demo first): not started.
+3. **Quick tasks from the Owner, 9 Nov 5:25–5:45 pm** (all filed by the PCA; screenshots in `docs/reference/2026-11-09-owner-shots/`, numbered by job): 
+   - **J123** SurahList "Last read": a button on the Surah list header (between "Read" and Home); tap prompts the last ~5 reads to choose from.
+   - **J124** IntentRem: fix the cut text on the intent strip ("Find the instruction for me in what I read, a…" cut before its Bismillah button).
+   - **J125** WordCard: menu button in the top-right corner; move ⓘ and ✕ to its left; move the whole "Also in Bangla" block (button, Bangla list Admin's/Mine, the 0 words line, "Words also in Bangla (0)" switch) into that menu, elegantly.
+   - **J126** WordStudy: make the study titles (WbW:, Root:, Family:, Taṣrīf:, Depth:) bright and eye-catching.
+   - **J127** "Place both nav buttons together": WAITING ON OWNER, tick n127a (A = Word Card ‹ › side by side, B = another bar).
+   - **J128** WordCard layout (READY TO BUILD): move the three marking buttons (Difficult / Need practice / Done) BELOW the Word Progress buttons; add "Practise this word" beside the three, FOUR buttons in ONE row, renamed "Learn".
+   - **J129** WordCard progress-data block behind an on/off switch: WAITING ON OWNER, tick n129a (B1 ON by default / B2 OFF by default; remember on this device yes/no). Build J128 without waiting for it.
+   Order the Owner gave: Read on PR (done), then #1566, then J123–J129. Mutation-prove, measure at 320/390/768/1024/1280/1440 en+bn, look at screenshots, 40 px controls, way-back law. Word Card code is `app/js/quran-word-card.js` + `app/quranrevival.html`; QR build edits in `apps/qr/edits.json` break loudly: re-anchor, never delete.
+4. **MSA · QR J122: Verb Form rebuild "more precisely from a YouTube series"**: WAITING ON OWNER to send the YT link (tick n122a). Remind the Owner in each report until it arrives. Not started.
+5. **Opening-recitation demo v4** (https://claude.ai/artifact/1LSnho2zzRa3zNzANiuiFR) still unjudged by the Owner; wiring into `app/js/splash.js` waits for their word (n121i AA to AE).
+6. **Follow-ups from the Architect (not blocking, audit-round items; file as PCF jobs if the PCA has not):** most student-tools and lang-switch failures are `page.click` timeouts on `#readNotesBtn` and `#readBookmarkBtn` (already present before v14.01); student "390x844 POSITIVE CONTROL three study buttons inside the closed ⋯ card"; student-device "finger controls at least 40px" at 360x740; lang-switch bn->en "Āyah card / Word card: nothing of the old language left" ("পরবর্তী অধ্যয়ন" in `h3.read-next-head`).
+
+## Lessons this session
+- Do not force-push a rebased branch (the harness refuses `--force-with-lease`): push to a new `-v2` branch instead.
+- Playwright from `tools/apps` needs `ln -sfn /opt/node-tools/node_modules tools/apps/node_modules` (git-ignored) for `qr-verify`; run-all takes over an hour; run main's baseline in a worktree on another port (`QR_BASE`, `PORT`), serially (parallel runs cause "flow ran" timeouts).
+- `goReadOn()` in `tools/i18n-verify/harness.mjs` is the shared way to turn Read on in suites. The Read on switch is `#readOnSwitch` / `#readOnCheck`; hidden in the Mushaf; the Layers slot appears only while Read on is on.
+- Bar sizing: new Read bar controls need `box-sizing: border-box` (the bar grew 13 px otherwise) and a compact rule below 1280 / 360 px; measure bar height against a main worktree, not by eye.
+- A hidden container keeps its last flow in the DOM: count visible (`offsetParent`) elements in tests.
+- My find-and-replace edits to suites introduced two typos (`document.String(`, a deleted wrong line): re-run every suite I touch.
+
+## FULL OPENING MESSAGE FOR THE SUCCESSOR (paste as the first message)
+📌 (04) MSA-QR Lead (40L) - 09.11.26 - 9.00 PM
+
+Bismillah. You are the MSA - QR Lead (40L), taking over from `session_01PL2xbKSRhQ3zys6tmmzmfU` (39L) at about 9:00 pm Sydney, 9 Nov 2026, under the MSA Master Architect 91L `session_01PL2xbMGdPZbfpmwu3FXdsq` (read `p/mmsa.sessionUrl` for the current one) and the PCA 27L `session_01PL2xbJmRfoHFH7jLreDNJb`. Read CLAUDE.md, then `docs/reports/2026-11-09-qr-lead-handover-10.md` (earlier handovers only for rules and test setup), and only the PMS jobs it names in https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ (MSA · QR J121–J129, MSA J05). Do not read old transcripts. State: Read on is on main as v14.01 (done). Next: MSA · QR J121 PR #1566 (head 700b0c0, branch claude/qr-waqiah-audio: browser playback, 4 widths en/bn, QR by-name comparison, OFFLINE-PLAN line; mark ready; it becomes v14.02), then J128 (Word Card: marking buttons below Progress, "Learn" beside them, 4 in one row), J123, J124, J125, J126, then MSA J05 T11 = A and T15 = A (demo first). Waiting on the Owner (never re-ask): n127a (which bar for "nav buttons together"), n129a (progress block default and remember), the Verb Form YouTube link (J122), the verdict on opening demo v4. Rules: carry1109 (your "PCA ▸ taken over" must repeat the OPEN LIST item by item); card1104 (send the PCA card details for every new demo or version); hand over at about 30% context USED (check `get_session` external_metadata.context_usage); pin every PMS write with `if_version`, fields at TOP level; write "Siyagah" in full; after "Rasulullah" always write "Sallallahu A'laihi Wa Sallam"; refer to jobs with their project ("MSA · QR J121"); send hand-ins with the head SHA; never force-push; send messages with the claude-code-remote `send_message` tool. First steps: send "PCA ▸ taken over" (exact session id from `get_session`, plus the OPEN LIST) to the PCA 27L and tell the MSA Architect your new id. When you hand over, include the FULL opening message for your successor, titled "📌 (04) MSA-QR Lead (41L) - DD.MM.YY - h.mm AM/PM".
