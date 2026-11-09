@@ -2670,6 +2670,7 @@ export const BN = {
   // PCF MSA J48 -- Vocabulary (Learn, Practise, Step test).
   "Vocabulary": "শব্দভান্ডার",
   "Learn": "শিখুন",
+  "Learned": "শেখা হয়েছে",
   "Practise": "অনুশীলন",
   "Step test": "ধাপের পরীক্ষা",
   "Practise this word": "এই শব্দটি অনুশীলন করুন",

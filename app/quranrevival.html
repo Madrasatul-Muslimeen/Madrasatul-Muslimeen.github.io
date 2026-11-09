@@ -4290,8 +4290,8 @@
   .ln-tick { grid-area: tick; font-size: 0.78rem; font-weight: 800; color: #1d6b4a; }
   /* PCF MSA J48 -- Vocabulary. Purple (#4b2a85 on #f1e9fb) for the module's own parts; known = the J47 green. */
   /* MSA · QR J128: the three marks and Learn are ONE row of four, below the Word Progress buttons. */
-  .word-card-markrow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem; align-items: end; margin: 0.45rem 0 0; }
-  .word-card-markrow .marks-row { grid-column: 1 / 4; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; margin: 0; }
+  .word-card-markrow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.35rem; margin: 0.45rem 0 0; }
+  .word-card-markrow .marks-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; margin: 0; }
   .word-card-markrow .marks-row-label { grid-column: 1 / -1; font-size: 0.8rem; }
   .word-card-markrow .marks-row-buttons { display: contents; }
   .word-card-markrow .mk-btn, .word-card-markrow .word-card-practise { min-width: 0; width: auto; min-height: 44px; margin: 0; padding: 0.25rem 0.3rem; border-radius: 0.5rem; font-size: 0.82rem; line-height: 1.15; overflow-wrap: anywhere; }
@@ -20078,7 +20078,7 @@
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: marksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Marks for this word")), banglaHtml: banglaHtmlFor(word), search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: marksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Marks for this word"), wordMarkNames()), banglaHtml: banglaHtmlFor(word), search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       wireMarksRow(content, onMarkToggle); // PCF MSA J03 K2
       wireBanglaFor(content); // PCF MSA J119
       // J03 K3 "Study Next" (was "Read next"): Qur'an (this word's places), Dictionary, Scholars and Tafsīr under the card. The box is kept per
@@ -23896,11 +23896,14 @@
     }
     function marksReadyFor(surah) { const c = marksCtx(); return !!c && marksStore.id === marksStoreId(c, surah) && marksStore.state === "ready"; }
     /** The marks row for one unit, or "" while the marks are not loaded (the card says nothing rather than something false). */
-    function marksRowFor(unitKey, surah, heading) {
+    // MSA · QR J135 (the Owner, 9 Nov 2026): on the Word card the marks read Difficult · Learn · Learned (the same saved marks as
+    // Difficult · Need practice · Done on the Āyah card and the Marks wheel).
+    function wordMarkNames() { return { practice: t("Learn"), done: t("Learned") }; }
+    function marksRowFor(unitKey, surah, heading, names = null) {
       if (!marksCtx()) return "";
       ensureSurahMarks(surah);
       if (!marksReadyFor(surah)) return "";
-      return marksRowHtml({ unitKey, keys: marksStore.mine[unitKey] ?? [], lang: marksLang(), heading, busy: marksBusy.has(unitKey) });
+      return marksRowHtml({ unitKey, keys: marksStore.mine[unitKey] ?? [], lang: marksLang(), heading, busy: marksBusy.has(unitKey), names });
     }
     async function onMarkToggle(unitKey, keyId, on) {
       const c = marksCtx();
@@ -23913,6 +23916,12 @@
         const res = type === "qword" ? await setWordKey(db, c, { ...base, position: Number(w) }) : await setAyahKey(db, c, base);
         // Failed saves are already reported (I15); the mark simply stays as it was.
         if (res?.ok && marksStore.id === marksStoreId(c, surah)) marksStore.mine = { ...marksStore.mine, [unitKey]: res.keys };
+        // MSA · QR J135 (the Owner, 9 Nov 2026): marking a word 📖 Learn also takes the reader to learn it -- the ten-question practise round
+        // that the Word card's own "Learn" button used to start. Turning the mark OFF only unmarks.
+        if (res?.ok && on && type === "qword" && keyId === "practice") {
+          const lemma = currentSurahData?.ayahs?.find((x) => x.ayah === Number(a))?.words?.find((x) => x.position === Number(w))?.morphology?.lemma;
+          if (lemma) openVocabWordRound(lemma).catch((error) => console.warn("Vocabulary unavailable", error));
+        }
       } finally { marksBusy.delete(unitKey); repaintMarks(); }
     }
     function renderAyahActionSheetNow() {

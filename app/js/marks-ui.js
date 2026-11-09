@@ -22,9 +22,10 @@ const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").
 export const MARKS_WHEEL_VIEWS = Object.freeze(["ayat", "ayah-words", "all-words"]);
 
 /** One row of the three marks. `keys` = the stored key ids of this item; `disabled` = a read-only viewer. */
-export function marksRowHtml({ unitKey, keys = [], lang = "en", disabled = false, heading = "", busy = false } = {}) {
+export function marksRowHtml({ unitKey, keys = [], lang = "en", disabled = false, heading = "", busy = false, names = null } = {}) {
+  // MSA · QR J135: `names` ({ keyId: label }) renames buttons for ONE surface (the Word card says Learn / Learned); the saved key ids never change.
   const on = marksIn(keys);
-  const buttons = MARK_IDS.map((id) => `<button type="button" class="mk-btn mk-${id}" data-mark-key="${id}" aria-pressed="${on.includes(id)}"${disabled || busy ? " disabled" : ""}>${esc(keyName(id, lang))}</button>`).join("");
+  const buttons = MARK_IDS.map((id) => `<button type="button" class="mk-btn mk-${id}" data-mark-key="${id}" aria-pressed="${on.includes(id)}"${disabled || busy ? " disabled" : ""}>${esc(names?.[id] ?? keyName(id, lang))}</button>`).join("");
   return `<div class="marks-row" data-marks-row data-marks-unit="${esc(unitKey)}" role="group" aria-label="${esc(heading || t("Marks"))}">`
     + `${heading ? `<span class="marks-row-label">${esc(heading)}</span>` : ""}<span class="marks-row-buttons">${buttons}</span></div>`;
 }
