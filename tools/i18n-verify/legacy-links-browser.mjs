@@ -2,7 +2,7 @@
 // finger-sized, on screen, in the page's language, opening its own folder in a new tab. legacy-v10/ (v10.68) joined
 // legacy-v07, -v08 and -v09 here, and legacy-v11/ (v11.39) on 19 Oct 2026 (the Owner, PCF MSA J39). Measured on the rendered page at 320 / 390 / 820 / 1440px, English and Bangla.
 // Run from the repository root with serve.js on :8080:
-//   node tools/i18n-verify/legacy-links-browser.mjs [--mutate=nov10|nov11]
+//   node tools/i18n-verify/legacy-links-browser.mjs [--mutate=nov10|nov11|nov12|...]  (any archive on disk)
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 let pass = 0, fail = 0;
@@ -12,7 +12,12 @@ function check(name, ok, detail = "") {
 }
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const LINK = (v) => `<a href="https://madrasatul-muslimeen.github.io/legacy-${v}/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - ${v} ↗</a>`;
-const ARCHIVES = ["v10", "v11"];
+// 9 Nov 2026 (the Owner: "Why the v12 is not kept in legacy?"): this list was typed by hand, so legacy-v12/ was archived
+// on 31 Oct with no menu link and nothing failed. It is now READ off the repository: every legacy-v1N/ folder must have
+// its link. A future archive (legacy-v13/) fails this suite until its link is on every page.
+const ARCHIVES = fs.readdirSync(".").filter((d) => /^legacy-v1\d$/.test(d) && fs.statSync(d).isDirectory()).map((d) => d.slice(7)).sort();
+if (!(ARCHIVES.length >= 3 && ARCHIVES.includes("v10") && ARCHIVES.includes("v11"))) throw new Error(`positive control: archive folders read as ${JSON.stringify(ARCHIVES)}; run from the repository root`);
+console.log(`archives found on disk: ${ARCHIVES.join(", ")}`);
 const PAGES = ["/app/quranrevival.html", "/app/records.html", "/app/notes.html"];
 const LABEL = (v) => ({ en: `Legacy App - ${v} ↗`, bn: `পুরাতন অ্যাপ - ${v} ↗` });
 const browser = await chromium.launch();
@@ -21,7 +26,7 @@ for (const pagePath of PAGES) for (const lang of ["en", "bn"]) for (const width 
   const height = width > 600 ? 900 : 844;
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height } });
   await ctx.route("**/archive.org/**", (r) => r.abort());
-  if (MUTATE === "nov10" || MUTATE === "nov11") {
+  if (/^nov\d\d$/.test(MUTATE) && ARCHIVES.includes(MUTATE.slice(2))) {
     const gone = LINK(MUTATE.slice(2));
     const file = `app/${pagePath.split("/").pop()}`;
     const body = fs.readFileSync(file, "utf8");
@@ -53,7 +58,7 @@ for (const pagePath of PAGES) for (const lang of ["en", "bn"]) for (const width 
 }
 // The live offline worker keeps every archive out of its cache.
 const sw = fs.readFileSync("app/sw.js", "utf8");
-check("app/sw.js keeps /legacy-v10/ and /legacy-v11/ out of the live app's cache, as it does /legacy-v09/", /startsWith\("\/legacy-v09\/"\)/.test(sw) && /startsWith\("\/legacy-v10\/"\)/.test(sw) && /startsWith\("\/legacy-v11\/"\)/.test(sw));
+for (const v of ["v09", ...ARCHIVES]) check(`app/sw.js keeps /legacy-${v}/ out of the live app's cache`, sw.includes(`startsWith("/legacy-${v}/")`));
 await browser.close();
 console.log(`\n==== Legacy App links: ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
