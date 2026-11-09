@@ -30,7 +30,7 @@ const MUT = {
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 // Rows of tiles at ordinary text, measured on main v13.11 before this round and written by hand.
-const PLAIN_ROWS = { "320x640": 3, "390x844": 2, "768x1024": 1, "1280x800": 1, "844x390": 1 };
+const PLAIN_ROWS = { "320x640": 2, "390x844": 2, "768x1024": 1, "1280x800": 1, "844x390": 1 }; // UPDATED IN PLACE (J131, 9 Nov 2026): eight tiles (the Note moved to the bar), so 320px takes two rows, not three
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const setSelect = (page, id, v) => page.evaluate(([i, x]) => { const s = document.getElementById(i); s.value = String(x); s.dispatchEvent(new Event("change", { bubbles: true })); }, [id, v]);
 
@@ -82,7 +82,7 @@ const measure = (page) => page.evaluate(() => {
 const CASES = [[320, 640, "en"], [320, 640, "bn"], [390, 844, "en"], [390, 844, "bn"], [768, 1024, "en"], [768, 1024, "bn"], [1280, 800, "en"], [1280, 800, "bn"], [844, 390, "en"]];
 for (const [w, h, lang] of CASES) for (const size of ["100%", "150%", "200%"]) {
   const t = `${lang} ${w}x${h} ${size}`, { ctx, page } = await boot(lang, w, h, size), m = await measure(page);
-  check(`${t}: positive control, the nine tiles are there`, m.n === 9, String(m.n));
+  check(`${t}: positive control, the nine tiles are there`, m.n === 8, String(m.n)); // UPDATED IN PLACE (J131, 9 Nov 2026): the ONE 📝 Note moved from the tile row to the bar, so eight tiles
   check(`${t}: no tile's word is cut`, m.cut.length === 0, m.cut.join(", "));
   check(`${t}: tile words keep at least 7/10 of their size and never go below ordinary (${Math.min(...m.sizes).toFixed(1)}px of ${m.intended.toFixed(1)})`, m.sizes.every((s) => s >= Math.max(0.68 * 16, 0.7 * m.intended) - 0.1));
   check(`${t}: the tiles take at most 3 rows`, m.rows <= 3, String(m.rows));
