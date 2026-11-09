@@ -71,7 +71,7 @@ source = source
   .replace(/import \{ TENANT \} from "\.\/collections\.js";/, "const { TENANT } = globalThis.__dsCollections;")
   .replace(/import \{ createDocument, updateDocument \} from "\.\/envelope\.js";/, "const { createDocument, updateDocument } = globalThis.__dsEnvelope;")
   .replace(/import \{ safeWrite \} from "\.\/errors\.js";/, "const { safeWrite } = globalThis.__dsErrors;");
-if (MUTATE === "anykey") { const a = "export const isPlanKey = (k) => isDuaKey(k) ||"; assert.ok(source.includes(a)); source = source.replace(a, "export const isPlanKey = (k) => true ||"); }
+if (MUTATE === "anykey") { const a = "export const isPlanKey = isDuaKey;"; assert.ok(source.includes(a)); source = source.replace(a, "export const isPlanKey = () => true;"); }
 if (MUTATE === "clearwrites") { const a = "if (mark === null) delete marks[duaKey]; else marks[duaKey] = mark;"; assert.ok(source.includes(a)); source = source.replace(a, "marks[duaKey] = mark;"); }
 check("every import was replaced (the module under test is the real one)", () => { assert.notEqual(source, before); assert.ok(!/^import /m.test(source)); });
 const m = await import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`);
@@ -135,13 +135,20 @@ await acheck("PLAN KEYS (J104 line 23): Hisn and Qur'anic dua keys can be marked
     assert.equal((await m.setDuaMark(db, ctx, { duaKey: bad, mark: "today" })).refused, "bad-dua", bad);
   assert.equal(writeLog.length, before, "a refused key wrote something");
 });
-await acheck("the Rules limit is honoured: an EDIT or a SHARE of a Hisn or Qur'anic dua is refused here (the published Rules would deny it)", async () => {
+await acheck("EDITS and SHARES of a Hisn or Qur'anic dua are accepted now (the Rules were extended, J104 line 24): hide, title, share record", async () => {
   reset();
-  for (const k of ["hisn-27-5", "quran-7-23"]) {
-    assert.equal((await m.saveDuaEdit(db, ctx, { duaKey: k, hidden: true })).refused, "bad-dua");
-    assert.equal((await m.recordDuaShare(db, ctx, { duaKey: k, where: "email", whoFor: "public" })).refused, "bad-dua");
+  for (const k of ["hisn-27-5", "quran-7-23", "quran-2-285-286"]) {
+    assert.equal((await m.setDuaHidden(db, ctx, { duaKey: k, hidden: true })).ok, true, k);
+    assert.equal(store.get(`duaEdits/${T}__${k}`).hidden, true);
+    assert.ok(!("added" in store.get(`duaEdits/${T}__${k}`)), "added belongs to new- duas only");
+    assert.equal((await m.saveDuaEdit(db, ctx, { duaKey: k, title: { en: "x" } })).ok, true);
+    assert.equal((await m.recordDuaShare(db, ctx, { duaKey: k, where: "whatsapp", whoFor: "family" })).ok, true);
+    assert.equal((await m.saveDuaEdit(db, ctx, { duaKey: k, added: { ar: "x" } })).refused, "added-only-on-new");
   }
-  assert.equal(writeLog.length + reads.length, 0);
+  for (const bad of ["hisn-27", "hisn-27-5-1", "quran-7", "quran-7-23-24-25", "Hisn-27-5", "d123"]) {
+    assert.equal((await m.saveDuaEdit(db, ctx, { duaKey: bad, hidden: true })).refused, "bad-dua", bad);
+    assert.equal((await m.recordDuaShare(db, ctx, { duaKey: bad, where: "email", whoFor: "public" })).refused, "bad-dua", bad);
+  }
 });
 check("the key helpers turn the app's own references into valid plan keys: all 302 Hisn entries and all 21 Qur'anic duas", () => {
   const gr = JSON.parse(fs.readFileSync(path.join(root, "tools/hadith-data-pull/output/dua/groups.json"), "utf8"));
