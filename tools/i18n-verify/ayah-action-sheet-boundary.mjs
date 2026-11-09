@@ -187,8 +187,10 @@ check("Make a poster: hasPosterNote=false shows the sheet's own hint and a Take 
   // Updated in place 8 Oct 2026 (the Owner: "Take note button can be place on the above space"): Take Note is now a
   // button INSIDE the action row, and there is no separate hint line under the row any more. Updated again 9 Oct 2026
   // (decision 94, "we got 3 notes. It's confusing"): it is the ONE 📝 Note button itself, named "Take Note".
+  // UPDATED IN PLACE (J131, 9 Nov 2026): the Owner moved the ONE 📝 Note from the action row to the bar beside 📖 Full text.
   const row = noNote.slice(noNote.indexOf("data-ayah-sheet-actions"), noNote.indexOf("</div>", noNote.indexOf("data-ayah-sheet-actions")));
-  assert.ok(/data-ayah-sheet-note data-ayah-sheet-note-new aria-label="Take Note"/.test(row), "the one Note button is not named Take Note");
+  assert.ok(!row.includes("data-ayah-sheet-note"), "the Note button is still in the action row as well as the bar");
+  assert.ok(/data-ayah-sheet-note data-ayah-sheet-note-new aria-label="Take Note"/.test(noNote), "the one Note button is not named Take Note");
   assert.ok(!row.includes("✍"), "a separate ✍ Take Note is still in the row");
   assert.ok(!noNote.includes("ayah-sheet-hint-btn"), "the old separate Take Note line is still drawn");
   for (const val of [true, null, undefined]) {

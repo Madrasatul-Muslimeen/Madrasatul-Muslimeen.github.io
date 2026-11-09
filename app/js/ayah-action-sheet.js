@@ -260,7 +260,8 @@ export function openApproachList(select) {
 function headNoteHtml({ isSelf, noteWhy, hasPosterNote }) {
   const isNew = hasPosterNote === false;
   const label = isNew ? t("Take Note") : t("Note & more…");
-  return `<button type="button" class="ayah-sheet-headnote" data-ayah-sheet-note${isNew ? " data-ayah-sheet-note-new" : ""} aria-label="${escapeHtml(label)}" title="${escapeHtml(isSelf ? label : noteWhy)}"${isSelf ? "" : " disabled"}><span aria-hidden="true">📝</span> ${escapeHtml(t("Note"))}</button>`;
+  const title = !isSelf ? noteWhy : isNew ? t("You don't have a Note on this āyah yet.") : label;
+  return `<button type="button" class="ayah-sheet-headnote${isSelf ? "" : " is-disabled"}" aria-disabled="${isSelf ? "false" : "true"}" data-ayah-sheet-note${isNew ? " data-ayah-sheet-note-new" : ""} aria-label="${escapeHtml(label)}" title="${escapeHtml(title)}"><span aria-hidden="true">📝</span> ${escapeHtml(t("Note"))}</button>`;
 }
 
 /** Owner, 7 Oct 2026 (a photo of the Āyah card, the actions circled): "all these choices/ actions could be placed
@@ -294,6 +295,9 @@ function actionRowHtml({ isBookmarked, isSelf, noteWhy, hasPosterNote, onlyBookm
   let defs = actionRowDefs({ isBookmarked, isSelf, noteWhy, hasPosterNote });
   // PCF J26: Aʿūdhu billāh is not an āyah -- no audio, poster, Asma/QCR or folder filing of its own; the Bookmark and the Note stay.
   if (onlyBookmarkAndNote) defs = defs.filter((d) => /data-ayah-sheet-(bookmark|note)\b/.test(d.attr));
+  // MSA · QR J131 (the Owner, 9 Nov 2026): the ONE 📝 Note (decision 94) moved from this row to the bar, beside 📖 Full text. Only the opening
+  // sheet (Aʿūdhu billāh), whose bar has no tools, keeps it here.
+  else defs = defs.filter((d) => !/data-ayah-sheet-note\b/.test(d.attr));
   const buttons = defs.map((d) => `<button type="button" class="ayah-sheet-act${d.disabled ? " is-disabled" : ""}" aria-disabled="${d.disabled ? "true" : "false"}" ${d.attr} aria-label="${escapeHtml(d.label)}" title="${escapeHtml(d.title ? `${d.label} ${d.title}` : d.label)}"><span class="ayah-sheet-act-icon" aria-hidden="true">${d.icon}</span><span class="ayah-sheet-act-label" aria-hidden="true">${escapeHtml(d.short)}</span></button>`).join("");
   // The reasons a dimmed item gives (each printed once), and the poster's own "no Note yet" offer.
   const hints = [...new Set(defs.filter((d) => d.disabled && d.hint).map((d) => d.hint))].map((h) => `<p class="ayah-sheet-hint">${escapeHtml(h)}</p>`).join("");
