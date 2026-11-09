@@ -11,6 +11,7 @@
 //        teaching   hides the People page's "Hand the device to a child" box
 //        modules    removes Track my progress (topic and routine), the topic's bookmark star and the Continue chip
 //        hadith     breaks one claim per entry: Text language, Go to number, Studied, Next ›, a progress stage, ✓ Check this dua
+import fs from "node:fs";
 import { chromium, newContext, openPage, BASE as BASE_URL } from "./harness.mjs";
 
 let pass = 0, fail = 0, skip = 0;
@@ -81,7 +82,11 @@ if (want("start")) {
     await page.keyboard.press("Escape");
     // Home links the frozen versions
     const legacy = await page.evaluate(() => [...document.querySelectorAll(".nav-cat-home a.nav-legacy-link")].map((a) => a.textContent.trim()));
-    check(`[${tag}] The menu bar: Home ▾ links Legacy App v06 ↗ … v11 ↗`, ["v06", "v07", "v08", "v09", "v10", "v11"].every((v) => legacy.some((l) => l === `Legacy App - ${v} ↗`)), JSON.stringify(legacy));
+    // 9 Nov 2026: was a typed list ending at v11, so legacy-v12/ went unlinked; now every legacy-v1N/ folder on disk is required.
+    const onDisk = fs.readdirSync(".").filter((d) => /^legacy-v1\d$/.test(d)).map((d) => d.slice(7));
+    const wantV = ["v06", "v07", "v08", "v09", ...onDisk];
+    // 9 Nov 2026: the links sit inside ONE "Legacy App" button and read just "v06 ↗" … (the Owner: "place it under one button").
+    check(`[${tag}] The menu bar: Home ▾ → Legacy App holds ${wantV[0]} ↗ … ${wantV[wantV.length - 1]} ↗ (every archive on disk)`, onDisk.length >= 3 && wantV.every((v) => legacy.some((l) => l === `${v} ↗`)), JSON.stringify(legacy));
     // Bookmark sheet
     await summ("Bookmark").click(); await page.waitForTimeout(400);
     const sheet = await page.evaluate(() => { const c = document.querySelector(".nav-cat-bookmark .nav-cat-links"); const r = c.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), close: document.querySelector("[data-nav-bm-close]")?.textContent.trim() }; });
