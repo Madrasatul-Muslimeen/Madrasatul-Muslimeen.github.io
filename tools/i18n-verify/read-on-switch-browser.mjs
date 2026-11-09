@@ -6,6 +6,7 @@
 //   --mutate=showmushaf  the switch is not hidden in the Mushaf         -> the Mushaf check fails
 //   --mutate=nolabel     the label is not translated                    -> the Bangla label check fails
 //   --mutate=stuck       the switch can only turn Read on, never off    -> the off checks fail
+//   --mutate=wordkills   closing a Word Card wipes the Read on flow       -> the way-back return check fails
 //   --mutate=nostore     Read on is not remembered on this device       -> the remembered check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -22,6 +23,7 @@ const MUT = {
   showmushaf: ["sw.hidden = mushafToggle.checked;", "sw.hidden = false;"],
   nolabel: ['const word = t("Read on");', 'const word = "Read on";'],
   stuck: ["readMeaningOn = goingOn;\n      try { localStorage.setItem(READ_MEANING_KEY, goingOn", "readMeaningOn = true;\n      try { localStorage.setItem(READ_MEANING_KEY, goingOn"],
+  wordkills: ['quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected)', 'quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); pageViewContainer.innerHTML = ""; if (quranWordCardTrigger?.isConnected)'],
   nostore: ['localStorage.setItem(READ_MEANING_KEY, goingOn ? "1" : "0"); } catch { /* per device only */ }\n      paintReadMeaningBtn();\n      renderStudyScreen();', 'void 0; } catch { /* per device only */ }\n      paintReadMeaningBtn();\n      renderStudyScreen();'],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
