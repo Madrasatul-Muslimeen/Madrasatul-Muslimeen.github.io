@@ -7,7 +7,7 @@
 //   --mutate=nomeaning   renderStudyScreen ignores Meaning                 -> the flow checks fail
 //   --mutate=fshides     full screen's bare state hides 📖 again            -> the full-screen checks fail
 //   --mutate=nocontinue  the next page never joins                          -> the "and continue" check fails
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, goReadOn } from "./harness.mjs";
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -85,7 +85,7 @@ const flow = (page) => page.evaluate(() => {
 async function toMeaning(page) {
   for (let i = 0; i < 3; i++) {
     if (await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)) return;
-    await page.click("#readMeaningBtn"); await page.waitForTimeout(1200);
+    await goReadOn(page); await page.waitForTimeout(1200);
   }
 }
 for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {

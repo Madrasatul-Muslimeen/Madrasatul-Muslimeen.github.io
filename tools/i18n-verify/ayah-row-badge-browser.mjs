@@ -4,7 +4,7 @@
 // The number is still the button that opens the Āyah card; the Arabic starts below the row; nothing is cut or sideways.
 // At 360 / 390 / 768 / 1440, en and bn, text 100% and 200%.   --mutate=nolift  leaves the number on its own row -> FAIL.
 // Run from the repository root, serve.js on :8080.
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, goReadOn } from "./harness.mjs";
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => { if (ok && typeof ok.then === "function") throw new Error("promise"); if (ok) { pass++; console.log(`  PASS  ${n}`); } else { fail++; console.log(`  FAIL  ${n} ${d}`); } };
 const MUT = process.argv.includes("--mutate=nolift");
@@ -41,7 +41,7 @@ for (const [lang, width, pct] of cases) {
   check(`${tag} flow view: number and ⋮ on one level, ⋮ beside the number, Arabic below the row`, !!f && f.sameLevel && f.badgeBeforeMenu && f.arabicBelow && f.inHead, JSON.stringify(f));
   check(`${tag} flow view: no number row left above the Arabic; the number is the Āyah-card button; ≥ 4px between it and the ⋮`, !!f && f.strayRows === 0 && f.isButton && f.text.length > 0 && f.gap >= 4, JSON.stringify(f));
   // the Reading View
-  for (let i = 0; i < 3; i++) { if (await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)) break; await page.click("#readMeaningBtn"); await page.waitForTimeout(1300); }
+  for (let i = 0; i < 3; i++) { if (await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)) break; await goReadOn(page); await page.waitForTimeout(1300); }
   await page.waitForSelector(".meaning-ayah .meaning-ayah-head", { timeout: 15000 }).catch(() => {});
   const r = await rowOf(page, ".meaning-ayah .meaning-ayah-head");
   check(`${tag} Reading View: number and ⋮ on the title row, on one level, Arabic below it`, !!r && r.sameLevel && r.badgeBeforeMenu && r.arabicBelow && r.inHead, JSON.stringify(r));

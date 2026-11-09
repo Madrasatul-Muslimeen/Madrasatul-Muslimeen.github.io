@@ -2833,7 +2833,7 @@
      top-bar reference is to still say which Surah/āyāt this is in the BARE
      full-screen state, where the strip is otherwise empty apart from the
      full-screen icon. */
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readMeaningLayersSlot):not(#mushafPagePrevBtn):not(#mushafPageNextBtn) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readMeaningLayersSlot):not(#readOnSwitch):not(#mushafPagePrevBtn):not(#mushafPageNextBtn) { display: none; }
   body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn):not(#readMushafBtn):not(#readBarBookmarkBtn) { display: none; }
   /* 10 Oct 2026: 📖 Meaning stays in the bare full-screen state too (the Owner: "visible even in full screen Mushaf
      view"), beside ⤢. */
@@ -3017,13 +3017,18 @@
     }
     #readMeaningLayersSlot.ml-open .ml-items { display: flex; }
     #readMeaningLayersSlot .ml-items label { height: 40px; padding: 0 0.8rem; font-size: 0.85rem; }
-    .read-on-switch { display: inline-flex; align-items: center; gap: 0.4rem; height: 40px; padding: 0 0.7rem; border: 1px solid #c9d1e0; border-radius: 10px; background: #fff; color: #1F3A6E; font-size: 0.85rem; font-weight: 600; cursor: pointer; flex: 0 0 auto; }
-    .read-on-switch { position: relative; }
-    .read-on-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
-    .read-on-switch:has(input:checked) { background: #1F3A6E; color: #fff; }
-    .read-on-switch:focus-within { outline: 3px solid #B8862F; outline-offset: 2px; }
-    .read-on-switch[hidden] { display: none; }
   }
+  /* The Owner, 9 Nov 2026 (Demo 1): the "Read on" switch, at every width (it sits just before the Layers slot). */
+  .read-on-switch { display: inline-flex; align-items: center; gap: 0.4rem; height: 40px; padding: 0 0.7rem; border: 1px solid #c9d1e0; border-radius: 10px; background: #fff; color: #1F3A6E; font-size: 0.85rem; font-weight: 600; cursor: pointer; flex: 0 0 auto; }
+  .read-on-switch { position: relative; box-sizing: border-box; margin: 0; }
+  .read-on-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .read-on-switch:has(input:checked) { background: #1F3A6E; color: #fff; }
+  .read-on-switch:focus-within { outline: 3px solid #B8862F; outline-offset: 2px; }
+  .read-on-switch[hidden] { display: none; }
+  /* Measured 9 Nov 2026 (768px): the switch at full size pushed the bar onto a new line; compact it below 1024px, where the bar is tight. */
+  @media (max-width: 1023.98px) { .read-on-switch { padding: 0 0.45rem; font-size: 0.78rem; border-radius: 9px; } }
+  /* Same measurement, tablet: with the switch the bar needs ~20px more than a 600-899px row has; the Show button's count badge steps aside. */
+  @media (min-width: 600px) and (max-width: 899.98px) { #readMeaningLayersSlot .ml-count { display: none; } }
   #readMeaningLayersSlot label:has(input:focus-visible) { outline: 3px solid #B8862F; outline-offset: 2px; }
   .meaning-page-rule { text-align: center; font-size: 0.8rem; color: #7b6a45; letter-spacing: 0.04em; border-top: 1px dashed #d9cfb6; padding-top: 0.4rem; }
   /* PCF MSA J75 ("Page number twice", "Tiny line takes space"): the first page's label sits right under ↑ Previous page,
