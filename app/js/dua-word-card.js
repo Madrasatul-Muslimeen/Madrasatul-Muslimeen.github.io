@@ -23,6 +23,23 @@ export async function duaWordMeaning(lemma) {
   return { en: en || null, bn: Array.isArray(bn) ? bn.join("، ") || null : bn };
 }
 
+const ROOT_INDEX_URL = "../tools/hadith-data-pull/output/dua/root-index.json";
+let rootIndexPromise = null;
+/** Which other duas hold a word of the same root (tick 18, 9 Nov 2026), read once on the first Family level, never at startup. */
+export function loadDuaRootIndex({ fetchImpl = fetch, url = ROOT_INDEX_URL } = {}) {
+  if (!rootIndexPromise) {
+    rootIndexPromise = fetchImpl(url).then((r) => { if (!r.ok) throw new Error(`Root index (${r.status})`); return r.json(); });
+    rootIndexPromise.catch(() => { rootIndexPromise = null; });
+  }
+  return rootIndexPromise;
+}
+/** Pure: the words of `root` in duas OTHER than `dua`, as [{ dua, lemma }] in dua order. */
+export function otherDuasOfRoot(index, root, dua) {
+  const list = index?.roots?.[root];
+  if (!Array.isArray(list)) return [];
+  return list.filter((x) => x[0] !== Number(dua)).map(([d, lemma]) => ({ dua: d, lemma }));
+}
+const OTHER_DUAS_SHOWN = 40;
 const WIKTIONARY_URL = "../tools/hadith-data-pull/output/dua/wiktionary-meanings.json";
 let wiktionaryPromise = null;
 /** The dua-word Wiktionary file (tick 17 A, 9 Nov 2026), read once on the first WbW card, never at startup (I9). */
@@ -68,7 +85,7 @@ const arLine = (label, value, cls) => {
  * (kept as they are); `family` is the dua's own words as [{ i, text, grammar }]; `here` is this word's index in it;
  * `go(i)` opens another word of the dua, `back()` closes the card and returns to the dua's words.
  */
-export function duaWordCardBody({ grammar, grammarBlock, progressBlock, family = [], here = 0, go = null, back = null }) {
+export function duaWordCardBody({ grammar, grammarBlock, progressBlock, family = [], here = 0, go = null, back = null, dua = null }) {
   const [lemma, root, pos] = grammar;
   const box = el("div", "dua-wc");
   box.dataset.duaWc = "";
@@ -137,7 +154,32 @@ export function duaWordCardBody({ grammar, grammarBlock, progressBlock, family =
         }
         body.appendChild(row);
       }
-      body.appendChild(el("p", "dua-words-note", t("Words of the same root in other duas will come later.")));
+      // Tick 18 (9 Nov 2026): the same root in OTHER duas, from the root index (free, built from the grammar files).
+      const other = el("div", "dua-wc-other-duas");
+      other.dataset.duaWcOther = "";
+      body.appendChild(other);
+      if (!root) { other.appendChild(el("p", "dua-words-note", t("Words of the same root in other duas need a root, and this word has none yet."))); }
+      else {
+        other.appendChild(el("p", "dua-also-head", t("The same root in other duas")));
+        const slot = el("p", "hadith-note", t("Loading…"));
+        other.appendChild(slot);
+        loadDuaRootIndex().then((idx) => {
+          if (level !== "family" || !slot.isConnected) return;
+          const list = otherDuasOfRoot(idx, root, dua);
+          if (!list.length) { slot.textContent = t("No other dua has a word of this root."); slot.classList.add("dua-wc-noother"); return; }
+          const row = el("div", "dua-wc-kin dua-wc-other-row");
+          for (const x of list.slice(0, OTHER_DUAS_SHOWN)) {
+            const a = el("a", "dua-ref dua-wc-other", `${x.lemma} · ${t("Dua {n}", { n: num(x.dua) })}`);
+            a.href = `./dua-study.html?g=rasul&open=${x.dua}&back=1`;
+            a.lang = "ar"; a.dir = "rtl"; a.style.fontFamily = quranFontStack();
+            a.dataset.duaWcOtherDua = String(x.dua);
+            row.appendChild(a);
+          }
+          slot.replaceWith(row);
+          if (list.length > OTHER_DUAS_SHOWN) row.after(el("p", "dua-words-note", t("{n} more not shown.", { n: num(list.length - OTHER_DUAS_SHOWN) })));
+        }).catch(() => { if (slot.isConnected) slot.textContent = t("Could not load the other duas just now."); });
+        other.appendChild(el("p", "dua-words-note", t("Roots are a computer's guess, to be checked.")));
+      }
     } else if (level === "tasrif") {
       if (pos === "verb") body.appendChild(el("p", "hadith-note dua-wc-notas", t("The verb table for dua words is not built yet.")));
       else body.appendChild(el("p", "hadith-note dua-wc-notas", t("Not applicable: this word is not a verb, so it has no verb table.")));

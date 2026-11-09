@@ -7,6 +7,7 @@
 //   3. SHAPE vs THE PUBLISHED RULES: every document the writers create has exactly the keys the published block allows and
 //      requires (hasOnly / hasAll parsed out of firestore.rules), so a create the Rules would refuse fails here.
 // Run from the repository root.   --mutate=clearwrites  a cleared mark is written back as null  -> the clear check fails
+//   --mutate=anykey     every plan key is accepted -> the plan-key vocabulary checks fail
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -70,6 +71,7 @@ source = source
   .replace(/import \{ TENANT \} from "\.\/collections\.js";/, "const { TENANT } = globalThis.__dsCollections;")
   .replace(/import \{ createDocument, updateDocument \} from "\.\/envelope\.js";/, "const { createDocument, updateDocument } = globalThis.__dsEnvelope;")
   .replace(/import \{ safeWrite \} from "\.\/errors\.js";/, "const { safeWrite } = globalThis.__dsErrors;");
+if (MUTATE === "anykey") { const a = "export const isPlanKey = isDuaKey;"; assert.ok(source.includes(a)); source = source.replace(a, "export const isPlanKey = () => true;"); }
 if (MUTATE === "clearwrites") { const a = "if (mark === null) delete marks[duaKey]; else marks[duaKey] = mark;"; assert.ok(source.includes(a)); source = source.replace(a, "marks[duaKey] = mark;"); }
 check("every import was replaced (the module under test is the real one)", () => { assert.notEqual(source, before); assert.ok(!/^import /m.test(source)); });
 const m = await import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`);
@@ -121,6 +123,43 @@ await acheck("a request the Rules vocabulary does not know is REFUSED and reads 
     assert.equal((await m.setDuaMark(db, ctx, bad)).ok, false);
   assert.equal(writeLog.length + reads.length, 0);
   await assert.rejects(m.loadDuaPlan(db, { tenantId: T }), /ctx must carry/);
+});
+await acheck("PLAN KEYS (J104 line 23): Hisn and Qur'anic dua keys can be marked and starred; malformed ones are refused and write nothing", async () => {
+  reset();
+  assert.deepEqual((await m.setDuaMark(db, ctx, { duaKey: "hisn-27-5", mark: "memorised" })).marks, { "hisn-27-5": "memorised" });
+  assert.deepEqual((await m.setDuaMark(db, ctx, { duaKey: "quran-7-23", mark: "today" })).marks, { "hisn-27-5": "memorised", "quran-7-23": "today" });
+  assert.deepEqual((await m.setDuaImportant(db, ctx, { duaKey: "quran-2-285-286", on: true })).important, ["quran-2-285-286"]);
+  assert.deepEqual((await m.setDuaImportant(db, ctx, { duaKey: "hisn-1-1", on: true })).important, ["quran-2-285-286", "hisn-1-1"]);
+  const before = writeLog.length;
+  for (const bad of ["hisn-27", "hisn-27-5-1", "hisn-a-b", "hisn-1234-1", "quran-7", "quran-7-23-24-25", "quran-7:23", "Hisn-27-5", "d123", "h27:5", "q7:23", "../x", "hisn-27-5/"])
+    assert.equal((await m.setDuaMark(db, ctx, { duaKey: bad, mark: "today" })).refused, "bad-dua", bad);
+  assert.equal(writeLog.length, before, "a refused key wrote something");
+});
+await acheck("EDITS and SHARES of a Hisn or Qur'anic dua are accepted now (the Rules were extended, J104 line 24): hide, title, share record", async () => {
+  reset();
+  for (const k of ["hisn-27-5", "quran-7-23", "quran-2-285-286"]) {
+    assert.equal((await m.setDuaHidden(db, ctx, { duaKey: k, hidden: true })).ok, true, k);
+    assert.equal(store.get(`duaEdits/${T}__${k}`).hidden, true);
+    assert.ok(!("added" in store.get(`duaEdits/${T}__${k}`)), "added belongs to new- duas only");
+    assert.equal((await m.saveDuaEdit(db, ctx, { duaKey: k, title: { en: "x" } })).ok, true);
+    assert.equal((await m.recordDuaShare(db, ctx, { duaKey: k, where: "whatsapp", whoFor: "family" })).ok, true);
+    assert.equal((await m.saveDuaEdit(db, ctx, { duaKey: k, added: { ar: "x" } })).refused, "added-only-on-new");
+  }
+  for (const bad of ["hisn-27", "hisn-27-5-1", "quran-7", "quran-7-23-24-25", "Hisn-27-5", "d123"]) {
+    assert.equal((await m.saveDuaEdit(db, ctx, { duaKey: bad, hidden: true })).refused, "bad-dua", bad);
+    assert.equal((await m.recordDuaShare(db, ctx, { duaKey: bad, where: "email", whoFor: "public" })).refused, "bad-dua", bad);
+  }
+});
+check("the key helpers turn the app's own references into valid plan keys: all 302 Hisn entries and all 21 Qur'anic duas", () => {
+  const gr = JSON.parse(fs.readFileSync(path.join(root, "tools/hadith-data-pull/output/dua/groups.json"), "utf8"));
+  const hisn = gr.groups.find((g) => g.id === "occasions").parts.flatMap((p) => p.items.map((i) => i.h));
+  const qur = gr.groups.find((g) => g.id === "prophets").items.map((i) => i.ref);
+  assert.equal(hisn.length, 302); assert.equal(qur.length, 21);
+  assert.deepEqual(hisn.filter((h) => !m.isPlanKey(m.hisnPlanKey(h))), []);
+  assert.deepEqual(qur.filter((r) => !m.isPlanKey(m.quranPlanKey(r))), []);
+  assert.equal(new Set(hisn.map(m.hisnPlanKey)).size, hisn.length, "two Hisn entries share a key");
+  assert.equal(m.hisnPlanKey("27:5"), "hisn-27-5"); assert.equal(m.quranPlanKey("7:23"), "quran-7-23"); assert.equal(m.quranPlanKey("2:285-286"), "quran-2-285-286");
+  assert.equal(m.hisnPlanKey("x"), null); assert.equal(m.quranPlanKey("7"), null);
 });
 await acheck("a failed save is REPORTED (I15) and returns the entry, not a success", async () => {
   reset(); failNext = true;

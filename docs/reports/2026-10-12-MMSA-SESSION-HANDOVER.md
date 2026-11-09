@@ -3271,3 +3271,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v13.57** (2026-11-08): Qur'anic duas play and the hadith translation on the Dua poster (Dua J104 r14a).
 - **v13.58** (2026-11-08): the draft Hisn meanings and the r14a follow-ups (Dua J104 r14b).
 - **v13.59** (2026-11-09): the Dua saving writers (R6) and Wiktionary suggested meanings (Dua J104).
+- **v13.60** (2026-11-09): Family across duas and the Hisn/Qur'anic dua keys (Dua J104 tick 18 B, lines 23-24).
