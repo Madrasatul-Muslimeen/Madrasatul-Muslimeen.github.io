@@ -278,6 +278,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   wholeQuranLevelSentence: "{level}: Achieved {known} and {percent} of {total} words",
   learnNextTitle: "Learn next",
   practiseThisWord: "Practise this word",
+  menuLabel: "Menu",
   learnWord: "Learn",
   goToItsAyah: "Go to its āyah {ref}",
   learnNextLine: "Next up: {word} · {meaning} · {count} places",
@@ -1099,6 +1100,16 @@ function orderNoteHtml(level, text) {
   return note ? `<p class="word-card-ordernote" data-word-card-ordernote="${level}">${escapeHtml(String(note))}</p>` : "";
 }
 
+/** MSA · QR J125 (the Owner, 9 Nov 2026) -- the ☰ menu in the card's top-right corner. ⓘ and × sit to its left. It holds the
+ *  whole "Also in Bangla" block (the mark button, the Admin's / Mine list, the figures and the list switch). Open or shut is the
+ *  page's session flag (context.menuOpen), so a re-render after a tap inside the block keeps it open. */
+function menuButtonHtml(context, text) {
+  return `<button type="button" class="word-card-menu-btn" data-word-card-menu-toggle aria-haspopup="true" aria-expanded="${context.menuOpen ? "true" : "false"}" aria-controls="wordCardMenuPanel" aria-label="${escapeHtml(String(text.menuLabel ?? WORD_CARD_TEXT.menuLabel))}">☰</button>`;
+}
+function menuPanelHtml(context, text) {
+  return `<div class="word-card-menu-row" data-word-card-menu-row><div class="word-card-menu-panel" id="wordCardMenuPanel" role="group" aria-label="${escapeHtml(String(text.menuLabel ?? WORD_CARD_TEXT.menuLabel))}" data-word-card-menu-panel data-word-card-bangla${context.menuOpen ? "" : " hidden"}>${context.banglaHtml}</div></div>`;
+}
+
 /** J43 -- the ⓘ Legend balloon holds this level's can-do sentence and, where the level has one, its order note.
  *  J59 (21 Oct 2026, the Owner: "Move 'Legend' to the top bar … as 'i' button") -- the button is now a small square ⓘ in
  *  the header beside "This āyah ⋯" (its name, for a screen reader, is the label), and the balloon sits in its own
@@ -1739,16 +1750,16 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>
       <button type="button" class="word-card-search-btn" data-word-card-search-toggle aria-pressed="${searchOpen}" aria-label="${escapeHtml(text.searchButton)}">🔍</button>
       <button type="button" class="word-card-ayah-action-btn" data-word-card-ayah-action="${chapter.surahNumber}:${ayah.ayah}">${escapeHtml(text.ayahActionsButton)}</button>
-      ${legendButtonHtml(text)}
       <div class="word-card-head-word"><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${escapeHtml(refText(chapter.surahNumber, ayah.ayah, word.position))}</div></div>
       ${state.level === "wbw" ? headGlossHtml(word, context, text) + formsButtonHtml(layers, context, "head") : ""}
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
-      <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
+      ${legendButtonHtml(text)}
+      <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button>${context.banglaHtml ? menuButtonHtml(context, text) : ""}</header>
     ${legendBalloonHtml(state.level, text)}
+    ${context.banglaHtml ? menuPanelHtml(context, text) : ""}
     ${searchOpen ? searchRowHtml(context.search, text, formatNumber, refText) : ""}
     ${state.level === "wbw" ? meaningBarHtml(word, layers, context, text) : ""}
     ${state.level === "wbw" && context.formsOpen && layers.root ? formsCardHtml(word, layers, context, formatNumber) : ""}
-    ${context.banglaHtml ? `<div class="word-card-bangla" data-word-card-bangla>${context.banglaHtml}</div>` : ""}
     ${originBar(context.origin, text)}
     <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabsHtml(state.level, text)}</div>
     ${panelWithMarks}

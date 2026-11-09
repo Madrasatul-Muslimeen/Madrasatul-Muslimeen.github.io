@@ -108,7 +108,7 @@ const top = (page) => page.evaluate(() => {
     glossBesideTr: !!gloss && !!tr && Math.abs(R(gloss).mid - R(tr).mid) < 12,
     barH: R(bar)?.h ?? 0, translit: tr?.textContent.trim() ?? "", btnH: R(btn)?.h ?? 0, btnHit: hit(btn), btnCount: [...card.querySelectorAll("[data-word-card-forms]")].filter(shown).length,
     btnInHeader: !!btn && header.contains(btn), btnInBar: !!btn && !!bar?.contains(btn),
-    btnRow: !!tr && !!btn && Math.abs(R(tr).mid - R(btn).mid) < 12, btnOnTopRow: !!btn && !!close && Math.abs(R(btn).mid - close.mid) < 6,
+    btnRow: !!tr && !!btn && Math.abs(R(tr).mid - R(btn).mid) < 12, btnOnTopRow: !!btn && !!close && (Math.abs(R(btn).mid - close.mid) < 6 || (!!word && Math.abs(R(btn).mid - word.mid) < 14)), // UPDATED IN PLACE (J125): on a 480-544px card the header takes two rows (seven 40px tiles), and Forms ▸ sits beside the Arabic on the second
     glyphHits, glyphCut: !!word && (g.left < word.l - 0.5 || g.right > word.r + 0.5),
     clipped, over: document.documentElement.scrollWidth - innerWidth,
   };

@@ -81,7 +81,7 @@ for (const [w, h, lang] of [[1280, 900, "en"], [1280, 900, "bn"], [768, 1000, "e
     else check(`${tag} on a card under 328px (a 320-348px phone) it is on the row below, beside the word ("${m.label}")`, m.inHead && m.wordLine, JSON.stringify(m));
     check(`${tag} ...and adds no line: header ${m.headH}px, ${m.headWithout}px without it`, m.headH <= m.headWithout + 1, JSON.stringify(m));
     check(`${tag} a 40px target, a tap reaches it, inside the card, over no other control`, m.h >= 40 && m.w >= 40 && m.hit && m.inCard && m.overlaps === 0, JSON.stringify(m));
-    if (m.narrow) check(`${tag} on a narrow card it is the ← alone, 40px square (its tip keeps the words)${m.firstRow ? ", right after ⓘ" : ""}`, m.w === 40 && !m.textShown && m.title.length > 3 && (!m.firstRow || m.nextToInfo), JSON.stringify(m));
+    if (m.narrow) check(`${tag} on a narrow card it is the ← alone, 40px square (its tip keeps the words)${m.firstRow ? ", on the first row" : ""}`, m.w === 40 && !m.textShown && m.title.length > 3 && (!m.firstRow || m.sameLine) /* UPDATED IN PLACE (J125): ⓘ moved beside × / to the second row, so ← no longer sits right after it */, JSON.stringify(m));
     else check(`${tag} on a computer its words show`, m.textShown, JSON.stringify(m));
     await page.click("#quranWordCardMount [data-word-card-app-back]");
     let now = await headWord();

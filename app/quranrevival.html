@@ -5317,7 +5317,7 @@
   /* Measured: ‹ 🔍 [This āyah] word ROOT › × needs ~440px of card to leave the Arabic word 70px, so on a narrower card the
      header takes two rows -- ‹ 🔍 [This āyah] … › × on the first (the button stays beside 🔍), the word and its root centred on
      the second -- rather than squeezing the word to nothing. */
-  @container wordcard (max-width: 30rem) {
+  @container wordcard (max-width: 34rem) {
     .quran-word-card header { flex-wrap: wrap; row-gap: 0.25rem; }
     .quran-word-card header button.word-card-legend-btn { margin-inline-end: auto; } /* J59: was on "This āyah"; the ⓘ now sits beside it */
     .quran-word-card header > .word-card-head-word { order: 5; flex: 1 1 calc(100% - 6rem); min-width: 4.5rem; }
@@ -5355,6 +5355,40 @@
     .quran-word-card header { column-gap: 0.1rem; }
     .quran-word-card header button.word-card-ayah-action-btn { padding: 0 2px; max-width: 5.5rem; white-space: normal; line-height: 1.1; }
   }
+  /* MSA · QR J125 (the Owner, 9 Nov 2026): ☰ menu in the top-right corner, ⓘ and × to its left. The push to the right moves from
+     ⓘ to › (the first of the right-hand group); ← no longer pushes. Where the first row cannot hold seven 40px tiles
+     (a card up to 22rem, a 320-360px phone), ⓘ takes the second row, before the word. */
+  .quran-word-card header > [data-word-card-move="next"] { margin-inline-start: auto; }
+  .quran-word-card header button.word-card-legend-btn,
+  .quran-word-card header:has(> .word-card-app-back) button.word-card-legend-btn,
+  .quran-word-card header > button.word-card-app-back { margin-inline-end: 0; }
+  .quran-word-card header button.word-card-menu-btn { font-size: 1.15rem; border-color: #c9a24a; color: #c9a24a; }
+  .quran-word-card header button.word-card-menu-btn[aria-expanded="true"] { background: #c9a24a; color: #1c2a46; }
+  @container wordcard (max-width: 34rem) {
+    .quran-word-card header > [data-word-card-move="next"] { order: 3; margin-inline-start: auto; }
+    .quran-word-card header > button.word-card-legend-btn { order: 3; }
+    .quran-word-card header > [data-word-card-close] { order: 4; }
+    .quran-word-card header > button.word-card-menu-btn { order: 4; }
+    .quran-word-card header > button.word-card-forms-head { order: 6; } /* on the word's row, after it */
+  }
+  /* with ← in the header (a card up to 25rem) or without it (a card up to 22rem) ⓘ takes the second row, before the word */
+  @container wordcard (max-width: 25rem) {
+    .quran-word-card header:has(> .word-card-app-back) > button.word-card-legend-btn { order: 5; }
+    .quran-word-card header:has(> .word-card-app-back) > .word-card-head-word { order: 6; flex-basis: calc(100% - 9rem - 44px); }
+    .quran-word-card header:has(> .word-card-app-back) > .word-card-root-box { order: 7; }
+  }
+  @container wordcard (max-width: 22rem) {
+    .quran-word-card header > button.word-card-legend-btn { order: 5; }
+    .quran-word-card header > .word-card-head-word { order: 6; flex-basis: calc(100% - 6rem - 44px); }
+    .quran-word-card header > .word-card-root-box { order: 7; }
+    .quran-word-card header:has(> .word-card-app-back) > .word-card-head-word { flex-basis: calc(100% - 9rem - 44px); }
+  }
+  @container wordcard (min-width: 30rem) and (max-width: 34rem) {
+    .quran-word-card header > .word-card-head-word { flex: 1 1 calc(100% - 7.5rem); }
+  }
+  .word-card-menu-row { position: relative; height: 0; z-index: 6; }
+  #wordCardMenuPanel[hidden] { display: none; }
+  .word-card-menu-panel { position: absolute; inset-inline-end: 0; top: 0.3rem; width: min(100%, 24rem); max-height: 60vh; overflow-y: auto; box-sizing: border-box; padding: 0.6rem; border: 1px solid #c9a24a; border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-text); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); text-align: start; }
   /* PCF MSA J101: one meaning beside the Arabic, in the ROOT box's old place (WbW); on a narrow card it shares the word's
      second row, the word taking only its own width. */
   /* On the meaning box's own background (a chip), so its colours -- and each word part's -- read exactly as they did in
@@ -18940,6 +18974,7 @@
         wholeQuranLevelSentence: t("{level}: Achieved {known} and {percent} of {total} words"),
         learnNextTitle: t("Learn next"),
         practiseThisWord: t("Practise this word"),
+        menuLabel: t("Menu"),
         learnWord: t("Learn"),
         goToItsAyah: t("Go to its āyah {ref}"),
         learnNextLine: t("Next up: {word} · {meaning} · {count} places"),
@@ -19986,6 +20021,16 @@
     }
     // J43 -- the ⓘ Legend balloon. Plain DOM state (the balloon is always in the markup, hidden), so nothing is written.
     // A second tap, a tap anywhere outside the balloon, or Esc closes it.
+    // MSA · QR J125 -- the card's ☰ menu (holds the Bangla block). Session flag, so a re-render keeps it as it was.
+    let wordCardMenuOpen = false;
+    function setWordCardMenu(open) {
+      wordCardMenuOpen = !!open;
+      const mount = activeWordCardMount();
+      mount?.querySelector("[data-word-card-menu-toggle]")?.setAttribute("aria-expanded", String(wordCardMenuOpen));
+      const panel = mount?.querySelector("[data-word-card-menu-panel]");
+      if (panel) panel.hidden = !wordCardMenuOpen;
+    }
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && wordCardMenuOpen) { setWordCardMenu(false); activeWordCardMount()?.querySelector("[data-word-card-menu-toggle]")?.focus(); } });
     function setWordCardLegend(open) {
       const mount = activeWordCardMount();
       const btn = mount?.querySelector("[data-word-card-legend-toggle]");
@@ -19995,6 +20040,9 @@
       balloon.hidden = !open;
       // J59: the pointer sits under the ⓘ wherever the header has put it (one row or two, any width).
       if (open) {
+        // MSA · QR J125: ⓘ now sits in the right-hand group, so the balloon slides under it (kept inside the row) rather than staying at the left edge.
+        const rowEl = balloon.parentElement, rowRect = rowEl.getBoundingClientRect(), b0 = btn.getBoundingClientRect(), w0 = balloon.getBoundingClientRect().width;
+        balloon.style.left = `${Math.max(0, Math.min(rowRect.width - w0, b0.left + b0.width / 2 - rowRect.left - w0 / 2))}px`;
         const b = btn.getBoundingClientRect(), r = balloon.getBoundingClientRect();
         balloon.style.setProperty("--wc-legend-arrow", `${Math.max(8, Math.min(r.width - 24, b.left + b.width / 2 - r.left - 7))}px`);
       }
@@ -20014,6 +20062,9 @@
         fitWordCardFamily(more.closest("[data-word-card-content]") ?? activeWordCardMount());
         return;
       }
+      const menuToggle = event.target.closest("[data-word-card-menu-toggle]");
+      if (menuToggle) { setWordCardMenu(!wordCardMenuOpen); return; }
+      if (wordCardMenuOpen && !event.target.closest("[data-word-card-menu-panel]")) setWordCardMenu(false);
       const toggle = event.target.closest("[data-word-card-legend-toggle]");
       if (toggle) { setWordCardLegend(toggle.getAttribute("aria-expanded") !== "true"); return; }
       if (!event.target.closest("[data-word-card-legend-balloon]")) setWordCardLegend(false);
@@ -20078,7 +20129,7 @@
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: marksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Marks for this word")), banglaHtml: banglaHtmlFor(word), search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: marksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Marks for this word")), banglaHtml: banglaHtmlFor(word), menuOpen: wordCardMenuOpen, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       wireMarksRow(content, onMarkToggle); // PCF MSA J03 K2
       wireBanglaFor(content); // PCF MSA J119
       // J03 K3 "Study Next" (was "Read next"): Qur'an (this word's places), Dictionary, Scholars and Tafsīr under the card. The box is kept per
