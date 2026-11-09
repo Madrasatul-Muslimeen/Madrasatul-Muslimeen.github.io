@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "13.60",
+    "version": "13.61",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6665,8 +6665,20 @@
     {
       "version": "13.60",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v13.60 releases the Dua Lead's #1550 (Family across duas on the Dua Word Card) and #1569 (one dua-key vocabulary for marks, edits and shares, following the published Rules).",
+      "integration": {
+        "authorizedOn": "2026-11-09",
+        "integratedOn": "2026-11-09",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "13.61",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "v13.61: the Home menu's Legacy App links under ONE button, v12 added (legacy-v12/ was archived 31 Oct but never linked); CLAUDE.md records the 9 Nov reading-view rule.",
       "integration": {
         "authorizedOn": "2026-11-09",
         "integratedOn": "2026-11-09",
@@ -6675,8 +6687,9 @@
       }
     }
   ],
-  "nextUnallocated": "13.61",
+  "nextUnallocated": "13.62",
   "nextUnallocatedNote": [
+    "v13.61 was allocated to the Legacy App links under one button, with v12 (the Owner, 9 Nov), 2026-11-09.",
     "v13.60 was allocated to Family across duas and the Hisn/Qur'anic dua keys (Dua J104 tick 18 B, lines 23-24), 2026-11-09.",
     "v13.59 was allocated to the Dua saving writers (R6) and Wiktionary suggested meanings (Dua J104), 2026-11-09.",
     "v13.58 was allocated to the draft Hisn meanings and the r14a follow-ups (Dua J104 r14b), 2026-11-08.",
