@@ -455,7 +455,7 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals, 
       const name = String(names[level] ?? level);
       // PCF J38: a study mark on a ROOT reads "Root: studied N of 1,642 roots" -- no percent circle, no word count.
       if (unit === "roots") {
-        const rootsSentence = escapeHtml(String(text.rootsStudiedSentence ?? WORD_CARD_TEXT.rootsStudiedSentence)).replace("{level}", () => escapeHtml(name))
+        const rootsSentence = escapeHtml(String(text.rootsStudiedSentence ?? WORD_CARD_TEXT.rootsStudiedSentence)).replace("{level}", () => `<span class="word-progress-level-title">${escapeHtml(name)}</span>`)
           .replace("{known}", () => big(formatNumber(grouped(total.known))))
           .replace("{total}", () => big(formatNumber(grouped(total.total))));
         return `<p class="word-progress-whole-quran" data-whole-quran-level="${escapeHtml(level)}" data-whole-quran-unit="roots">${rootsSentence}</p>`;
@@ -464,7 +464,7 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals, 
       const pct = percentRounded(total.known, total.total);
       // Layout B (the Owner, 14 Oct): the known number in a filled gold disc.
       const disc = (v) => `<strong class="word-progress-whole-quran-num word-progress-known-disc">${escapeHtml(v)}</strong>`;
-      const sentence = escapeHtml(String(text.wholeQuranLevelSentence ?? WORD_CARD_TEXT.wholeQuranLevelSentence)).replace("{level}", () => escapeHtml(name))
+      const sentence = escapeHtml(String(text.wholeQuranLevelSentence ?? WORD_CARD_TEXT.wholeQuranLevelSentence)).replace("{level}", () => `<span class="word-progress-level-title">${escapeHtml(name)}</span>`)
         .replace("{known}", () => disc(formatNumber(grouped(total.known))))
         .replace("{percent}", () => percentCircle(pct, text, formatNumber))
         .replace("{total}", big(formatNumber(grouped(total.total))));
