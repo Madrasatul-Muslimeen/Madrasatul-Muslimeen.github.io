@@ -4268,6 +4268,10 @@
   .ln-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 52px; padding: 0.35rem 0.2rem; border-radius: 0.5rem; border: 1px solid #c9b3e6; background: #f1e9fb; color: #4b2a85; text-align: center; min-width: 0; font: inherit; cursor: pointer; }
   .ln-tile[aria-pressed="true"] { background: #4b2a85; color: #fff; border-color: #4b2a85; }
   .ln-showing { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; margin: 0 0 0.5rem; padding: 0.4rem 0.6rem; border: 1px dashed #a98bdc; border-radius: 0.5rem; color: #4b2a85; font-size: 0.85rem; }
+  /* MSA · QR J133: the level switch, five buttons in one row that shrinks (never wraps raggedly). */
+  .ln-levels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.3rem; margin: 0 0 0.6rem; }
+  .ln-level { min-height: 40px; min-width: 0; padding: 0 0.2rem; border: 1px solid #a98bdc; border-radius: 0.6rem; background: #fff; color: #4b2a85; font: inherit; font-size: 0.82rem; cursor: pointer; overflow-wrap: anywhere; }
+  .ln-level[aria-pressed="true"] { background: #4b2a85; color: #fff; border-color: #4b2a85; }
   .ln-seg { display: inline-flex; border: 1px solid #a98bdc; border-radius: 1rem; overflow: hidden; }
   .ln-seg button { min-height: 40px; padding: 0 0.75rem; border: 0; background: #fff; color: #4b2a85; font: inherit; font-size: 0.82rem; cursor: pointer; }
   .ln-seg button[aria-pressed="true"] { background: #4b2a85; color: #fff; }
@@ -7874,7 +7878,7 @@
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { loadLemmaDictionary, loadBanglaLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
     import { loadLemmaMeaningGroups, sameMeaningLemmas, meaningGroupOf } from "./js/lemma-meaning-groups.js";
-    import { loadLearnNext, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, stepRange, wordShare, formatShare, LEARN_NEXT_PAGE, vocabBadgeFigures, vocabStepFill } from "./js/learn-next.js";
+    import { loadLearnNext, loadLearnNextLevels, rowsForLevel, unitOfLevel, LEARN_NEXT_LEVELS, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, stepRange, wordShare, formatShare, LEARN_NEXT_PAGE, vocabBadgeFigures, vocabStepFill } from "./js/learn-next.js";
     // J53: a lemma is a KEY (Buckwalter marks like ^ kept as Latin); lemmaText() is how a reader sees it.
     import { lemmaText } from "./js/lemma-text.js";
     import { PRACTICE_KINDS, deckRows, buildRound, buildTest, buildWordRound, wordRoundWrites, tally, testPassed, practiceWrites, achievedWrites } from "./js/vocabulary.js";
@@ -20548,6 +20552,33 @@
       learnNextCtx = { tenantId, personId, confirmationRequired, data };
       return learnNextCtx;
     }
+    // MSA · QR J133: the sheet's level (WbW | Root | Family | Taṣrīf | Depth). WbW is the dictionary-word list the sheet
+    // always had; the other four list Families or roots (learn-next-levels.json, fetched on first leaving WbW).
+    let learnNextLevel = "wbw", learnNextLevelsData = null;
+    function learnNextLevelsAvailable() {
+      if (!meaningGroupsLive()) return ["wbw"];
+      return LEARN_NEXT_LEVELS.filter((l) => l !== "tasrif" || isTasrifLevelPersistenceReady());
+    }
+    function lnLevel() { return learnNextLevelsAvailable().includes(learnNextLevel) ? learnNextLevel : "wbw"; }
+    function lnRows() { return rowsForLevel(lnLevel(), learnNextCtx?.data, learnNextLevelsData); }
+    function lnIsKnown(row) {
+      const level = lnLevel();
+      if (level === "wbw") return learnNextIsKnown(row);
+      const c = learnNextCtx;
+      return !!lemmaProgressFor({ tenantId: c.tenantId, personId: c.personId, level, lemmaId: row.l, confirmationRequired: c.confirmationRequired }).countsAsKnown;
+    }
+    async function setLearnNextLevel(level) {
+      if (!learnNextLevelsAvailable().includes(level) || level === learnNextLevel) return;
+      const c = learnNextCtx;
+      if (level !== "wbw") {
+        try {
+          const [levels] = await Promise.all([loadLearnNextLevels(), primeAllLemmaProgress(db, { tenantId: c.tenantId, personId: c.personId, level })]);
+          learnNextLevelsData = levels;
+        } catch (error) { console.warn("Learn next level unavailable", error); return; }
+      }
+      learnNextLevel = level; learnNextStep = null; learnNextOnlyNew = false; learnNextShown = LEARN_NEXT_PAGE; learnNextScroll = 0;
+      renderLearnNextSheet();
+    }
     function learnNextIsKnown(row) {
       const c = learnNextCtx;
       if (activeBanglaSet(banglaState).has(row.l)) return true; // PCF MSA J119 (n119b = E): a word shared with Bangla counts as known
@@ -20581,6 +20612,8 @@
             openVocabulary({ mode: "menu", step: null, onlyNew: false }).then(() => vocabAction("review")).catch((error) => console.warn("Vocabulary", error));
             return;
           }
+          const lvl = e.target.closest("[data-ln-level]");
+          if (lvl) { setLearnNextLevel(lvl.dataset.lnLevel); return; }
           const tile = e.target.closest("[data-ln-tile]");
           if (tile) { const n = Number(tile.dataset.lnTile); learnNextStep = learnNextStep === n ? null : n; learnNextShown = LEARN_NEXT_PAGE; renderLearnNextSheet(); return; }
           const seg = e.target.closest("[data-ln-new]");
@@ -20608,30 +20641,38 @@
       const scroller = el.querySelector("[data-ln-scroll]");
       const keep = keepScroll && scroller ? scroller.scrollTop : 0;
       const grouped = (n) => num(Number(n).toLocaleString("en-US"));
-      const rows = c.data.rows;
-      const knownTotal = rows.reduce((n, r) => n + (learnNextIsKnown(r) ? 1 : 0), 0);
+      const level = lnLevel(), unit = unitOfLevel(level), isWbw = level === "wbw";
+      const rows = lnRows();
+      const knownTotal = rows.reduce((n, r) => n + (lnIsKnown(r) ? 1 : 0), 0);
       const range = learnNextStep ? stepRange(learnNextStep, learnNextOnlyNew) : null;
-      const view = visibleRows(rows, learnNextIsKnown, { hideKnown: learnNextHide, shown: learnNextShown, range });
+      const view = visibleRows(rows, lnIsKnown, { hideKnown: learnNextHide, shown: learnNextShown, range });
+      const levelNames = { wbw: t("WbW"), intermediate: rootTabName(), basic: t("Family"), tasrif: t("Taṣrīf"), depth: t("Depth") };
+      const levelSwitch = learnNextLevelsAvailable().length > 1
+        ? `<div class="ln-levels" role="group" aria-label="${escapeHtml(t("Arabic learning level"))}" data-ln-levels>${learnNextLevelsAvailable().map((l) => `<button type="button" class="ln-level" data-ln-level="${l}" aria-pressed="${l === level}">${escapeHtml(levelNames[l])}</button>`).join("")}</div>`
+        : "";
+      const unitWords = unit === "root" ? { first: (n) => t("the first {n} roots", { n }), span: (a, b) => t("roots {a}–{b}", { a, b }) }
+        : unit === "family" ? { first: (n) => t("the first {n} families", { n }), span: (a, b) => t("families {a}–{b}", { a, b }) }
+        : { first: (n) => t("the first {n} words", { n }), span: (a, b) => t("words {a}–{b}", { a, b }) };
       // J47: every tile is a toggle that opens the words in its step; tapping the open one closes it.
       const tiles = milestoneFigures(rows).map((m) => `<button type="button" class="ln-tile" data-ln-tile="${m.n}" aria-pressed="${learnNextStep === m.n}"><span class="ln-tile-n">${escapeHtml(t("First {n}", { n: grouped(m.n) }))}</span><b class="ln-tile-p">${escapeHtml(num(m.percent.toFixed(1)))}%</b></button>`).join("");
       let showing = `<p class="ln-showing" data-ln-showing>${escapeHtml(t("Showing the whole list, 100 at a time. Tap a step to open its words."))}</p>`;
       if (range) {
         const step = rows[learnNextStep - 1];
-        const what = learnNextOnlyNew ? t("words {a}–{b}", { a: grouped(range.from), b: grouped(range.to) }) : t("the first {n} words", { n: grouped(learnNextStep) });
+        const what = learnNextOnlyNew ? unitWords.span(grouped(range.from), grouped(range.to)) : unitWords.first(grouped(learnNextStep));
         const newCount = range.to - (stepRange(learnNextStep, true).from) + 1;
         showing = `<div class="ln-showing" data-ln-showing><span>${escapeHtml(t("Showing {what} · together {p}% of the Qur'an", { what, p: num(step.p.toFixed(1)) }))}</span>` +
           `<span class="ln-seg" role="group" aria-label="${escapeHtml(t("Which words"))}"><button type="button" data-ln-new="0" aria-pressed="${!learnNextOnlyNew}">${escapeHtml(t("All {n}", { n: grouped(learnNextStep) }))}</button>` +
           `<button type="button" data-ln-new="1" aria-pressed="${learnNextOnlyNew}"${newCount === learnNextStep ? " disabled" : ""}>${escapeHtml(t("Only the new {n}", { n: grouped(newCount) }))}</button></span></div>` +
-          `<div class="ln-vocab" role="group" aria-label="${escapeHtml(t("Vocabulary"))}"><button type="button" class="ln-vbtn" data-ln-vocab="learn">${escapeHtml(t("Learn"))}</button><button type="button" class="ln-vbtn" data-ln-vocab="practise">${escapeHtml(t("Practise"))}</button><button type="button" class="ln-vbtn" data-ln-vocab="test">${escapeHtml(t("Step test"))}</button></div>`;
+          (isWbw ? `<div class="ln-vocab" role="group" aria-label="${escapeHtml(t("Vocabulary"))}"><button type="button" class="ln-vbtn" data-ln-vocab="learn">${escapeHtml(t("Learn"))}</button><button type="button" class="ln-vbtn" data-ln-vocab="practise">${escapeHtml(t("Practise"))}</button><button type="button" class="ln-vbtn" data-ln-vocab="test">${escapeHtml(t("Step test"))}</button></div>` : "");
       }
       const list = view.rows.map((r) => {
-        const known = learnNextIsKnown(r);
+        const known = lnIsKnown(r);
         const other = learnNextMeaning(r, true);
         return `<button type="button" class="ln-row${known ? " ln-known" : ""}" data-ln-row="${r.r}">
           <span class="ln-rank">${escapeHtml(num(r.r))}</span>
-          <span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(lemmaText(r.l))}</span>
+          <span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(lemmaText(r.a ?? r.l))}</span>
           <span class="ln-mean"><span class="ln-mean-1">${escapeHtml(learnNextMeaning(r))}</span>${other ? ` <span class="ln-mean-2">· ${escapeHtml(other)}</span>` : ""}</span>
-          <span class="ln-count">${escapeHtml(grouped(r.n))}× <span class="ln-share" title="${escapeHtml(t("Learning this word adds {p}% of the Qur'an's words"))}">+${escapeHtml(num(formatShare(wordShare(r, c.data.total))))}%</span></span>
+          <span class="ln-count">${escapeHtml(grouped(r.n))}× <span class="ln-share" title="${escapeHtml(isWbw ? t("Learning this word adds {p}% of the Qur'an's words") : t("Learning this adds {p}% of the Qur'an's words"))}">+${escapeHtml(num(formatShare(wordShare(r, c.data.total))))}%</span></span>
           <span class="ln-sofar">${escapeHtml(t("{p}% so far", { p: num(r.p.toFixed(1)) }))}</span>
           ${known ? `<span class="ln-tick">${escapeHtml(t("✓ known"))}</span>` : ""}
         </button>`;
@@ -20640,12 +20681,13 @@
       el.setAttribute("aria-label", t("Learn next"));
       el.innerHTML = `<div class="ln-head"><button type="button" class="ln-back" data-ln-back>← ${escapeHtml(t("Back"))}</button><h2 class="ln-title">${escapeHtml(t("Learn next"))}</h2></div>
         <div class="ln-body" data-ln-scroll>
-          ${vocabBadgeHtml()}
+          ${levelSwitch}
+          ${isWbw ? vocabBadgeHtml() : ""}
           <p class="ln-note">${escapeHtml(t("The words that occur most often come first. Learn these and you will meet them everywhere in the Qur'an."))}</p>
-          <div class="ln-review" data-ln-review>${learnNextReviewHtml()}</div>
+          ${isWbw ? `<div class="ln-review" data-ln-review>${learnNextReviewHtml()}</div>` : ""}
           <div class="ln-tiles" role="group" aria-label="${escapeHtml(t("Steps"))}">${tiles}</div>
           ${showing}
-          <label class="ln-hide"><input type="checkbox" data-ln-hide${learnNextHide ? " checked" : ""}> <span>${escapeHtml(t("Hide words I know ({n} known)", { n: grouped(knownTotal) }))}</span></label>
+          <label class="ln-hide"><input type="checkbox" data-ln-hide${learnNextHide ? " checked" : ""}> <span>${escapeHtml(unit === "word" ? t("Hide words I know ({n} known)", { n: grouped(knownTotal) }) : unit === "root" ? t("Hide roots I have studied ({n} studied)", { n: grouped(knownTotal) }) : t("Hide families I know ({n} known)", { n: grouped(knownTotal) }))}</span></label>
           <div class="ln-list" data-ln-list>${list}</div>${more}
         </div>`;
       const next = el.querySelector("[data-ln-scroll]");
@@ -20708,7 +20750,7 @@
     }
     function closeLearnNextSheet() { const el = document.getElementById("learnNextSheet"); if (el) el.hidden = true; }
     async function openLearnNextRow(rank) {
-      const row = learnNextCtx?.data.rows[rank - 1];
+      const row = lnRows()[rank - 1];
       if (!row) return;
       learnNextScroll = document.querySelector("#learnNextSheet [data-ln-scroll]")?.scrollTop ?? 0;
       closeLearnNextSheet();
