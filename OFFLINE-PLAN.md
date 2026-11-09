@@ -130,6 +130,7 @@ download script.
 
 - **Audio** — 4 constants in `audio-player.js`. Needs your decision on which
   reciters (see §7).
+- **Owner's al-Wāqiʿah recording (MSA · QR J121)** — `tools/quran-data-pull/output/audio/waqiah.webm`, **13 MB**, served from this repository (so the SSD copy of the repo carries it), but **it is NOT available offline through the app's worker**: `sw.js` caches only `.json` under `/tools/quran-data-pull/output/`, so the 13 MB `.webm` is never kept in the browser and plays offline only from the SSD copy of the repository. The small timing file `waqiah-timestamps.json` is cached with the other Qur'an data.
 - **Mushaf** — 3 constants in `hifz-renderer.js` (layout JSON + 604 page
   fonts + the surah-header font).
 - **Asma posters** — 92 images, one list in `asma-posters.js`.

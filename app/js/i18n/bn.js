@@ -594,6 +594,7 @@ export const BN = {
   "Ibraheem Walk (English)": "Ibraheem Walk (ইংরেজি)",
   "Kevan Brighting (English, whole surah only)": "Kevan Brighting (ইংরেজি, শুধু সম্পূর্ণ সূরা)",
   "Shareef Bayezid Mahmud (Bangla)": "শরীফ বায়েজিদ মাহমুদ (বাংলা)",
+  "Owner's recording (Sūrah al-Wāqiʿah only)": "মালিকের রেকর্ডিং (শুধু সূরা আল-ওয়াক্বিআহ)", // ? MSA · QR J121
 
   // --- The wheel's own one-time intro button + settled caption -----------
   "Study Quran": "কুরআন অধ্যয়ন করুন", // ?
@@ -2729,6 +2730,8 @@ export const BN = {
   "Move folder": "ফোল্ডার সরান",
   // The Owner, 5 Oct 2026 -- Last read / Last played in the Bookmark menu.
   "Last read": "সর্বশেষ পড়া",
+  "Your last reads": "আপনার সর্বশেষ পড়াগুলো",
+  "No reads yet.": "এখনো কিছু পড়া হয়নি।",
   "Last played": "সর্বশেষ শোনা",
   "Nothing read yet": "এখনো কিছু পড়া হয়নি",
   "Nothing played yet": "এখনো কিছু শোনা হয়নি",

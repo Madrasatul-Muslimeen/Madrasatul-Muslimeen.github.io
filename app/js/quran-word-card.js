@@ -278,6 +278,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   wholeQuranLevelSentence: "{level}: Achieved {known} and {percent} of {total} words",
   learnNextTitle: "Learn next",
   practiseThisWord: "Practise this word",
+  learnWord: "Learn",
   goToItsAyah: "Go to its āyah {ref}",
   learnNextLine: "Next up: {word} · {meaning} · {count} places",
   percentCircleLabel: "{percent}%",
@@ -455,7 +456,7 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals, 
       const name = String(names[level] ?? level);
       // PCF J38: a study mark on a ROOT reads "Root: studied N of 1,642 roots" -- no percent circle, no word count.
       if (unit === "roots") {
-        const rootsSentence = escapeHtml(String(text.rootsStudiedSentence ?? WORD_CARD_TEXT.rootsStudiedSentence)).replace("{level}", () => escapeHtml(name))
+        const rootsSentence = escapeHtml(String(text.rootsStudiedSentence ?? WORD_CARD_TEXT.rootsStudiedSentence)).replace("{level}", () => `<span class="word-progress-level-title">${escapeHtml(name)}</span>`)
           .replace("{known}", () => big(formatNumber(grouped(total.known))))
           .replace("{total}", () => big(formatNumber(grouped(total.total))));
         return `<p class="word-progress-whole-quran" data-whole-quran-level="${escapeHtml(level)}" data-whole-quran-unit="roots">${rootsSentence}</p>`;
@@ -464,7 +465,7 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals, 
       const pct = percentRounded(total.known, total.total);
       // Layout B (the Owner, 14 Oct): the known number in a filled gold disc.
       const disc = (v) => `<strong class="word-progress-whole-quran-num word-progress-known-disc">${escapeHtml(v)}</strong>`;
-      const sentence = escapeHtml(String(text.wholeQuranLevelSentence ?? WORD_CARD_TEXT.wholeQuranLevelSentence)).replace("{level}", () => escapeHtml(name))
+      const sentence = escapeHtml(String(text.wholeQuranLevelSentence ?? WORD_CARD_TEXT.wholeQuranLevelSentence)).replace("{level}", () => `<span class="word-progress-level-title">${escapeHtml(name)}</span>`)
         .replace("{known}", () => disc(formatNumber(grouped(total.known))))
         .replace("{percent}", () => percentCircle(pct, text, formatNumber))
         .replace("{total}", big(formatNumber(grouped(total.total))));
@@ -546,6 +547,16 @@ function notApplicableHtml(progress, authority, text) {
   return `<p class="word-progress-state word-progress-na" data-word-progress-na>${escapeHtml(text.notApplicable ?? "Not applicable")}</p>${clear}`;
 }
 
+// MSA · QR J128 -- the three marks (Difficult / Need practice / Done) and "Learn" (was "Practise this word") are ONE row of
+// four, BELOW the Word Progress buttons. renderQuranWordCard sets this before it builds a level panel (a synchronous render).
+let markLearnRowHtml = "";
+function markLearnRow(word, context, text) {
+  const lemma = word?.morphology?.lemma;
+  if (!context.marksHtml && !lemma) return "";
+  const learn = lemma ? `<button type="button" class="word-card-practise mk-learn" data-vocab-practise-word data-lemma="${escapeHtml(lemma)}">${escapeHtml(String(text.learnWord ?? WORD_CARD_TEXT.learnWord))}</button>` : "";
+  return `<div class="word-card-markrow" data-word-card-marks>${context.marksHtml ?? ""}${learn}</div>`;
+}
+
 function progressBlock(progress, authority, coverage, text, formatNumber, wbw = {}) {
   if (!progress) return "";
   if (progress.loaded === false) {
@@ -593,6 +604,7 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
     <h3 class="word-progress-heading word-progress-heading-pc">${escapeHtml(text.recordHeading)}</h3>
     ${wbw.where ? `<p class="word-progress-where">${escapeHtml(wbw.where)}</p>` : ""}
     ${wbw.notApplicable ? notApplicableHtml(progress, authority, text) : `<div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("practising")}${stateButton("achieved")}</div>`}
+    ${markLearnRowHtml}
     ${progress.ask ? `<div class="word-progress-ask" data-word-progress-question role="group" aria-label="${escapeHtml(progress.ask.message)}"><p class="word-progress-state">${escapeHtml(progress.ask.message)}</p>${progress.ask.lines.length ? `<ul>${progress.ask.lines.map((l) => `<li>${escapeHtml(l)}</li>`).join("")}</ul>` : ""}<div class="word-progress-ask-buttons"><button type="button" data-word-progress-ask="change">${escapeHtml(progress.ask.change)}</button><button type="button" data-word-progress-ask="cancel">${escapeHtml(progress.ask.cancel)}</button></div></div>` : ""}
     ${progress.saving ? `<p class="word-progress-state" data-word-progress-saving role="status">${escapeHtml(text.saving ?? "Saving…")}</p>` : ""}
     ${reviewLine ? `<p class="word-progress-state" data-word-progress-review>${escapeHtml(reviewLine)}</p>` : ""}
@@ -1383,7 +1395,6 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       })}
       ${knownThroughLine(context.knownViaGroupLemma, text)}
       ${knownThroughLevelLine(context.knownViaLevel, text)}
-      ${word?.morphology?.lemma ? `<button type="button" class="word-card-practise" data-vocab-practise-word data-lemma="${escapeHtml(word.morphology.lemma)}">${escapeHtml(String(text.practiseThisWord ?? WORD_CARD_TEXT.practiseThisWord))}</button>` : ""}
       ${goToItsAyahButton(word, context, text, formatNumber)}
     </div></div>`;
   }
@@ -1719,6 +1730,11 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   const arabicHtml = showSegmentColour ? segmentedArabicHtml(layers.surfaceToken, context.wordSegments) : escapeHtml(layers.surfaceToken);
   const refText = (s, a, w) => (typeof context.displayRef === "function" ? String(context.displayRef(s, a, w)) : `${s}:${a}:${w}`);
   const searchOpen = !!context.search?.open;
+  // MSA · QR J128: the marks + Learn row lives in the Word Progress block; where that block is not drawn (progress not loaded
+  // or none at this level) the row still shows, at the top of the panel, so the marks are never missing.
+  markLearnRowHtml = markLearnRow(word, context, text);
+  let panelWithMarks = levelPanel(state.level, word, layers, context, text, formatNumber);
+  if (markLearnRowHtml && !panelWithMarks.includes("data-word-card-marks")) panelWithMarks = markLearnRowHtml + panelWithMarks;
   return `<section class="quran-word-card" role="region" aria-label="${escapeHtml(text.cardRegion)}" data-occurrence-id="${escapeHtml(occurrenceId)}"${showSegmentColour ? " data-stem-mark" : ""}>
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>
       <button type="button" class="word-card-search-btn" data-word-card-search-toggle aria-pressed="${searchOpen}" aria-label="${escapeHtml(text.searchButton)}">🔍</button>
@@ -1732,10 +1748,9 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
     ${searchOpen ? searchRowHtml(context.search, text, formatNumber, refText) : ""}
     ${state.level === "wbw" ? meaningBarHtml(word, layers, context, text) : ""}
     ${state.level === "wbw" && context.formsOpen && layers.root ? formsCardHtml(word, layers, context, formatNumber) : ""}
-    ${context.marksHtml ? `<div class="word-card-marks" data-word-card-marks>${context.marksHtml}</div>` : ""}
     ${context.banglaHtml ? `<div class="word-card-bangla" data-word-card-bangla>${context.banglaHtml}</div>` : ""}
     ${originBar(context.origin, text)}
     <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabsHtml(state.level, text)}</div>
-    ${levelPanel(state.level, word, layers, context, text, formatNumber)}
+    ${panelWithMarks}
   </section>`;
 }
