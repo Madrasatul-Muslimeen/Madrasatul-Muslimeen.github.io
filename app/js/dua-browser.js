@@ -572,7 +572,7 @@ export function showDuaWord(panel, words, span, tok, entry, dua, page, how = "",
     if (grammar) {
       // D24: the Dua Word Card, its levels over the same grammar and progress blocks.
       const spans = [...words.querySelectorAll(".dua-word")];
-      panel.appendChild(duaWordCardBody({ grammar, grammarBlock: duaGrammarBlock(grammar), family, here: pos ?? 0,
+      panel.appendChild(duaWordCardBody({ grammar, grammarBlock: duaGrammarBlock(grammar), family, here: pos ?? 0, dua,
         progressBlock: pos != null ? duaWordProgressBlock({ dua, pos, page }) : null,
         go: (i) => { if (i !== pos) spans[i]?.click(); },
         back: () => { span.setAttribute("aria-pressed", "false"); panel.hidden = true; span.focus({ preventScroll: true }); } }));

@@ -20,6 +20,7 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
+  noother: ["js/dua-word-card.js", "const list = otherDuasOfRoot(idx, root, dua);", "const list = [];"],
   nosuggest: ["js/dua-word-card.js", "        if (sug) {", "        if (false) {"],
   suggestalways: ["js/dua-word-card.js", "  return en ? null : (wik || null);", "  return wik || null;"],
   nolevels: ["js/dua-word-card.js", "  for (const id of DUA_WORD_LEVELS) {", "  for (const id of []) {"],
@@ -71,6 +72,11 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await P.click(`${P1} [data-dua-wc-level="family"]`);
   const kin = await P.evaluate((s) => [...document.querySelectorAll(`${s} [data-dua-wc-kin]`)].map((b) => b.dataset.duaWcKin), P1);
   check(`${tag} Family lists the other word of the same root (word 7) and not itself or other roots`, kin.join() === "7", kin.join());
+  // Tick 18 (9 Nov 2026): Family across duas -- the same root (فوض) in OTHER duas, each a link with a way back.
+  await P.waitForSelector(`${P1} [data-dua-wc-other-dua]`, { timeout: 8000 }).catch(() => {});
+  const others = await P.evaluate((s) => [...document.querySelectorAll(`${s} [data-dua-wc-other-dua]`)].map((a) => ({ d: a.dataset.duaWcOtherDua, href: a.getAttribute("href"), h: a.getBoundingClientRect().height })), P1);
+  check(`${tag} Family lists the same root in OTHER duas: links to other duas only (not dua 1), each with the way back, at least 40px tall`,
+    others.length >= 3 && others.every((o) => o.d !== "1" && o.href === `./dua-study.html?g=rasul&open=${o.d}&back=1` && o.h >= 40), JSON.stringify(others.slice(0, 3)));
   await P.click(`${P1} [data-dua-wc-kin="7"]`);
   await P.waitForSelector(`${P1}:not([hidden]) [data-dua-wc]`);
   check(`${tag} tapping a family word opens that word's card (word 7 is pressed)`, await P.evaluate(() => document.querySelector('[data-dua-card="1"] [data-dua-word="7"]').getAttribute("aria-pressed") === "true" && document.querySelector('[data-dua-card="1"] [data-dua-word="4"]').getAttribute("aria-pressed") === "false"));

@@ -1100,3 +1100,4 @@ total). Allocated by the MMSA Architect.
 13.57: Qur'anic duas play and the hadith translation on the Dua poster (Dua J104 r14a). Allocated by the MMSA Architect.
 13.58: the draft Hisn meanings and the r14a follow-ups (Dua J104 r14b). Allocated by the MMSA Architect.
 13.59: the Dua saving writers (R6) and Wiktionary suggested meanings (Dua J104). Allocated by the MMSA Architect.
+13.60: Family across duas and the Hisn/Qur'anic dua keys (Dua J104 tick 18 B, lines 23-24). Allocated by the MMSA Architect.

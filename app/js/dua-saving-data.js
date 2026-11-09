@@ -38,8 +38,29 @@ export const DUA_SHARE_WHERE = Object.freeze(["whatsapp", "facebook", "email", "
 export const DUA_SHARE_WHO_FOR = Object.freeze(["family", "students", "teachers", "masjidCommunity", "public", "other"]);
 
 const MAX_MARKS = 5000, MAX_PLACEMENTS = 50, MAX_ADDED = 20, MAX_TITLE = 300, MAX_OCCASION = 300;
-const DUA_KEY = /^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40})$/;
+const DUA_KEY = /^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40}|hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?)$/;
+/** The pattern the PUBLISHED Rules pin duaKey to on duaEdits and duaShares (J104 line 24, published 9 Nov 2026; a guard check compares it with firestore.rules). */
+export const DUA_KEY_PATTERN = DUA_KEY.source;
 export const isDuaKey = (k) => typeof k === "string" && DUA_KEY.test(k);
+/**
+ * DUA KEYS (PCF MSA J104 lines 23 and 24, the Owner's ticks of 9 Nov 2026): a Hadith dua keeps its number, a Hisn al-Muslim dua is
+ * `hisn-<chapter>-<entry>`, a Qur'anic dua is `quran-<surah>-<ayah>` or `quran-<surah>-<first ayah>-<last ayah>`, a dua the madrasah
+ * adds is `new-<id>`. A key is permanent once saved. The published Rules pin duaEdits and duaShares to this pattern; the keys inside a
+ * duaPlans `marks` map are not inspected by the Rules, so the same vocabulary is enforced HERE for marks and ★ as well.
+ */
+export const DUA_PLAN_KEY_FORMS = Object.freeze(["<number>", "new-<id>", "hisn-<chapter>-<entry>", "quran-<surah>-<ayah>[-<ayah>]"]);
+/** Plan keys, edit keys and share keys are now ONE vocabulary: the Rules accept the same pattern on all three (J104 lines 23 and 24). */
+export const isPlanKey = isDuaKey;
+/** Pure: a Hisn al-Muslim entry "27:5" -> "hisn-27-5" (null when it is not chapter:entry). */
+export function hisnPlanKey(h) {
+  const m = /^([0-9]{1,3}):([0-9]{1,3})$/.exec(String(h ?? ""));
+  return m ? `hisn-${m[1]}-${m[2]}` : null;
+}
+/** Pure: a Qur'anic dua reference "7:23" or "2:285-286" -> "quran-7-23" / "quran-2-285-286" (null otherwise). */
+export function quranPlanKey(ref) {
+  const m = /^([0-9]{1,3}):([0-9]{1,3})(?:-([0-9]{1,3}))?$/.exec(String(ref ?? ""));
+  return m ? `quran-${m[1]}-${m[2]}${m[3] ? `-${m[3]}` : ""}` : null;
+}
 const isNewKey = (k) => typeof k === "string" && k.startsWith("new-");
 const validId = (s) => typeof s === "string" && s.length > 0 && !s.includes("__") && !s.includes("/");
 
@@ -73,7 +94,7 @@ export async function loadDuaPlan(db, ctx, personId = ctx?.personId) {
 export async function setDuaMark(db, ctx, { personId = ctx?.personId, duaKey, mark } = {}) {
   requireCtx(ctx);
   if (!validId(personId)) return { ok: false, refused: "bad-person" };
-  if (!isDuaKey(duaKey)) return { ok: false, refused: "bad-dua" };
+  if (!isPlanKey(duaKey)) return { ok: false, refused: "bad-dua" };
   if (mark !== null && !DUA_MARKS.includes(mark)) return { ok: false, refused: "unknown-mark" };
   let marks = {};
   const res = await safeWrite(async () => {
@@ -93,7 +114,7 @@ export async function setDuaMark(db, ctx, { personId = ctx?.personId, duaKey, ma
 export async function setDuaImportant(db, ctx, { personId = ctx?.personId, duaKey, on } = {}) {
   requireCtx(ctx);
   if (!validId(personId)) return { ok: false, refused: "bad-person" };
-  if (!isDuaKey(duaKey)) return { ok: false, refused: "bad-dua" };
+  if (!isPlanKey(duaKey)) return { ok: false, refused: "bad-dua" };
   let important = [];
   const res = await safeWrite(async () => {
     const cur = await readPlan(db, ctx, personId);
