@@ -316,6 +316,34 @@ function handleQuranData(event) {
   return cacheFirstWithBackgroundRefresh(event, QURAN_CACHE_NAME, QURAN_MAX_AGE_MS);
 }
 
+// PCF MSA J120 O2, Architect review (9 Nov 2026): a reader who had Qur'an data
+// in an older per-version app cache (every release before this one kept it
+// there) would lose it at this update, because isCacheable() no longer carries
+// that path over and activate then deletes the old mm-app-* cache. So, once at
+// install, COPY those responses as they are into mm-quran-v1: no network, no
+// re-download, and a file mm-quran-v1 already holds is left alone. The copy is
+// stamped as old (0), so the first time a reader opens it online the daily
+// background refresh rechecks it; offline it is served as it is.
+async function moveQuranDataFromAppCaches() {
+  const names = (await caches.keys()).filter((n) => n.startsWith("mm-app-"));
+  if (!names.length) return 0;
+  const quran = await caches.open(QURAN_CACHE_NAME);
+  let moved = 0;
+  for (const n of names) {
+    const old = await caches.open(n);
+    for (const req of await old.keys()) {
+      if (!isQuranData(req) || await quran.match(req)) continue;
+      const res = await old.match(req);
+      if (!res || !res.ok) continue;
+      const headers = new Headers(res.headers);
+      headers.set(QF_CACHED_AT_HEADER, "0");
+      await quran.put(req, new Response(await res.arrayBuffer(), { status: res.status, statusText: res.statusText, headers }));
+      moved++;
+    }
+  }
+  return moved;
+}
+
 const CARRY_CONCURRENCY = 6;
 async function carryOverPreviousCache() {
   const names = (await caches.keys()).filter((n) => n.startsWith("mm-app-") && n !== CACHE_NAME);
@@ -341,7 +369,10 @@ async function carryOverPreviousCache() {
 }
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(carryOverPreviousCache().catch(() => 0));
+  event.waitUntil(Promise.all([
+    carryOverPreviousCache().catch(() => 0),
+    moveQuranDataFromAppCaches().catch(() => 0),
+  ]));
   // Architect review, 25 Sep 2026: NO skipWaiting() here. A new version waits
   // until the reader taps "Updated -- tap to reload" (sw-register.js sends
   // "skipWaiting") or closes every tab of the app. Taking over at once let an

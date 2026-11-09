@@ -7,6 +7,7 @@
 //   MUT=noready ...     mutation: "Ready" is never written                 -> the Ready checks fail
 //   MUT=nobooks ...     mutation: the ticked books are not downloaded     -> the offline Hadith book check fails
 //   MUT=quranlost ...   mutation: a release's clean-up deletes mm-quran-v1 -> the release-bump checks fail
+//   MUT=nomove ...      mutation: the update does not move Qur'an files out of an old app cache -> the move check fails
 //   MUT=nomanifest ...  mutation: quranrevival.html loses its manifest link -> the manifest checks fail
 //
 // What it proves, each in rendered, measured terms (never "no error" alone):
@@ -61,6 +62,7 @@ if (MUT === "noquran") mutate("app/js/offline-ready.js", /\.\.\.filesOf\(list\.p
 else if (MUT === "noready") mutate("app/js/offline-ready.js", /store\.set\(READY_KEY, \{ at, version: APP_VERSION, books: ticked\(\) \}\);\n\s*state\.textContent = t\("Ready ✓ \(updated \{when\}\)", \{ when: whenText\(at\) \}\);/g, "/* mutated */");
 else if (MUT === "nobooks") mutate("app/js/offline-ready.js", /for \(const b of chosen\) items\.push\(\.\.\.filesOf\(b\.dirs, "hadith"\)\);/g, "");
 else if (MUT === "quranlost") mutate("app/sw.js", /\(n\.startsWith\("mm-quran-"\) && n !== QURAN_CACHE_NAME\)/g, 'n.startsWith("mm-quran-")');
+else if (MUT === "nomove") mutate("app/sw.js", /    moveQuranDataFromAppCaches\(\)\.catch\(\(\) => 0\),\n/g, "");
 else if (MUT === "nomanifest") mutate("app/quranrevival.html", /<link rel="manifest" href="\.\/manifest\.webmanifest" \/>/g, "");
 else if (MUT) throw new Error(`unknown MUT=${MUT}`);
 
@@ -302,7 +304,7 @@ for (const [lang, width] of PASSES) {
 // =============================================================================
 // version.js is rewritten on disk (restored on exit), the worker updates and takes over, its activate step deletes
 // the old mm-app-<version>, and mm-quran-v1 must still hold every Qur'an file -- then, offline, a sūrah opens.
-if (!process.env.PASS || process.env.MUT === "quranlost") {
+if (!process.env.PASS || process.env.MUT === "quranlost" || process.env.MUT === "nomove") {
   console.log("\n=== 3b. A release keeps the Qur'an cache ===");
   const ctx = await newContext(browser, { allowServiceWorker: true, viewport: { width: 390, height: 900 }, appLang: "en" });
   await ctx.addInitScript(() => { try { localStorage.setItem("mm_offline_books", "[]"); } catch {} }); // app + Qur'an only
@@ -315,6 +317,17 @@ if (!process.env.PASS || process.env.MUT === "quranlost") {
   const before = await count(page);
   const oldApp = Object.keys(before).find((n) => n.startsWith("mm-app-"));
   check("release: got ready (app + Qur'an), the Qur'an cache holds every file", done0 && (before["mm-quran-v1"] || 0) >= 470, JSON.stringify(before));
+  // A reader from before J120 kept Qur'an data in the per-version app cache. Plant one file there ONLY (taken out of
+  // mm-quran-v1, with a marker body no server has), so the update can only fill mm-quran-v1 with it by moving it.
+  // A file the download really kept (so the count check below sees it come back, not a 471st file).
+  const PLANT = await page.evaluate(async () => new URL((await (await caches.open("mm-quran-v1")).keys()).map((r) => r.url).find((u) => /\/surahs\/[^/]*114[^/]*\.json$/.test(u)) || "").pathname);
+  const planted = await page.evaluate(async ([oldApp, url]) => {
+    const q = await caches.open("mm-quran-v1"); await q.delete(url);
+    const body = JSON.stringify({ planted: "old-app-cache-copy" });
+    await (await caches.open(oldApp)).put(url, new Response(body, { headers: { "content-type": "application/json" } }));
+    return !(await q.match(url)) && !!(await (await caches.open(oldApp)).match(url));
+  }, [oldApp, PLANT]);
+  check("release: positive control: a Qur'an file sits in the OLD app cache only, as before J120", planted && PLANT.includes("/surahs/"), PLANT);
   const vf = path.join(ROOT, "app/js/version.js"), keep = fs.readFileSync(vf, "utf8");
   const bumped = keep.replace(/APP_VERSION = "[\d.]+"/, 'APP_VERSION = "99.99"');
   fs.writeFileSync(vf, bumped);
@@ -335,6 +348,8 @@ if (!process.env.PASS || process.env.MUT === "quranlost") {
   const after = await count(page);
   check("release: the new worker (v99.99) took over and dropped the old app cache", tookOver === "ok" && !!after["mm-app-99.99"] && !after[oldApp], `${tookOver} ${JSON.stringify(after)}`);
   check("MUTATION TARGET (quranlost): release: mm-quran-v1 still holds every Qur'an file", (after["mm-quran-v1"] || 0) === before["mm-quran-v1"], `${before["mm-quran-v1"]} -> ${after["mm-quran-v1"]}`);
+  const movedBody = await page.evaluate(async (url) => { const r = await (await caches.open("mm-quran-v1")).match(url); return r ? r.text() : null; }, PLANT);
+  check("MUTATION TARGET (nomove): release: the Qur'an file from the old app cache is now in mm-quran-v1, moved without a download", movedBody === JSON.stringify({ planted: "old-app-cache-copy" }), String(movedBody).slice(0, 80));
   check("release: the Qur'an cache's name carries no version number", !Object.keys(after).some((n) => /^mm-quran-.*\d+\.\d+/.test(n)));
   // Empty the browser's own HTTP cache first, so offline only the worker's caches can answer (a file the download
   // fetched also sits in the HTTP cache, and Chromium answers from it offline, which would hide a lost cache).
