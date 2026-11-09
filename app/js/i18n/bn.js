@@ -4341,6 +4341,8 @@ export const BN = {
   "Reading View": "পড়ার দৃশ্য",
   "Reading View: translations and word by word": "পড়ার দৃশ্য: অনুবাদ ও শব্দে শব্দে",
   "ONE Ayah View": "এক আয়াত দৃশ্য",
+  "Read on": "পড়তে থাকুন",
+  "Read on: keep reading the next āyāt": "পরের আয়াতগুলো পড়তে থাকুন",
   "ONE Ayah View: one āyah to study": "এক আয়াত দৃশ্য: অধ্যয়নের জন্য এক আয়াত",
   "Show: English, Bangla, Word by Word": "দেখান: ইংরেজি, বাংলা, শব্দে শব্দে",
   // 10 Oct 2026: the Read bar's ⋯ (Text size, Bookmark, Notes, Mark complete, Writing sheet, Attach to Asma).
