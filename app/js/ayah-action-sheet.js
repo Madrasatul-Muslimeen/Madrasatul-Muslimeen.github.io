@@ -261,7 +261,7 @@ function headNoteHtml({ isSelf, noteWhy, hasPosterNote }) {
   const isNew = hasPosterNote === false;
   const label = isNew ? t("Take Note") : t("Note & more…");
   const title = !isSelf ? noteWhy : isNew ? t("You don't have a Note on this āyah yet.") : label;
-  return `<button type="button" class="ayah-sheet-headnote${isSelf ? "" : " is-disabled"}" aria-disabled="${isSelf ? "false" : "true"}" data-ayah-sheet-note${isNew ? " data-ayah-sheet-note-new" : ""} aria-label="${escapeHtml(label)}" title="${escapeHtml(title)}"><span aria-hidden="true">📝</span> ${escapeHtml(t("Note"))}</button>`;
+  return `<button type="button" class="ayah-sheet-headnote${isSelf ? "" : " is-disabled"}" aria-disabled="${isSelf ? "false" : "true"}" data-ayah-sheet-note${isNew ? " data-ayah-sheet-note-new" : ""} aria-label="${escapeHtml(label)}" title="${escapeHtml(title)}"><span aria-hidden="true">📝</span><span class="ayah-sheet-headnote-label"> ${escapeHtml(t("Note"))}</span></button>`;
 }
 
 /** Owner, 7 Oct 2026 (a photo of the Āyah card, the actions circled): "all these choices/ actions could be placed
