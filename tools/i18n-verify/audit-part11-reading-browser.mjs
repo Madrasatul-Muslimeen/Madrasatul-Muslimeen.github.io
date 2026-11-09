@@ -194,7 +194,7 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
   // updated in place, reason recorded: what is checked of the flow is unchanged.
   await flow("meaning+fullscreen", lang, width, null, async (t, page) => {
     await openRead(page);
-    const pressed = () => ev(page, () => document.String(document.getElementById("readOnCheck").checked));
+    const pressed = () => ev(page, () => String(document.getElementById("readOnCheck").checked));
     check(`${t}: POSITIVE CONTROL Meaning starts off`, (await pressed()) === "false");
     const base = await readLen(page);
     await ev(page, () => document.getElementById("readOnCheck").click());
