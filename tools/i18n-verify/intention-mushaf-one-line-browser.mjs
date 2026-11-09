@@ -19,13 +19,14 @@ for (const lang of ["en", "bn"]) for (const width of [360, 390, 768, 1440]) for 
   if (pct !== 100) await page.evaluate((p) => { document.documentElement.style.fontSize = p + "%"; }, pct);
   await page.click("#tabReadBtn"); await page.waitForTimeout(700);
   const card = () => page.evaluate(() => { const c = document.querySelector("#intentionHost [data-intention-card]"); if (!c) return null; const r = c.getBoundingClientRect(), t = c.querySelector(".intention-text").getBoundingClientRect(), b = c.querySelector("[data-intention-bismillah]").getBoundingClientRect(), l = c.querySelector(".intention-lab");
-    return { h: Math.round(r.height), textH: Math.round(t.height), lh: parseFloat(getComputedStyle(c.querySelector(".intention-text")).lineHeight) || 0, inside: r.left >= -1 && r.right <= innerWidth + 1, btnH: Math.round(b.height), lab: getComputedStyle(l).display !== "none", sideways: document.documentElement.scrollWidth > innerWidth + 1 }; });
+    return { full: (() => { const x = c.querySelector(".intention-text"); return x.scrollWidth <= x.clientWidth + 1 && x.scrollHeight <= x.clientHeight + 1 && getComputedStyle(x).textOverflow !== "ellipsis"; })(), h: Math.round(r.height), textH: Math.round(t.height), lh: parseFloat(getComputedStyle(c.querySelector(".intention-text")).lineHeight) || 0, inside: r.left >= -1 && r.right <= innerWidth + 1, btnH: Math.round(b.height), lab: getComputedStyle(l).display !== "none", sideways: document.documentElement.scrollWidth > innerWidth + 1 }; });
   const full = await card();
   await page.evaluate(() => { const m = document.getElementById("mushafToggle"); m.checked = true; m.dispatchEvent(new Event("change", { bubbles: true })); });
   await page.waitForTimeout(900);
   const one = await card();
   check(`${tag} Mushaf: the card is there`, !!one && !!full);
-  check(`${tag} Mushaf: ONE line (text no taller than 1.5 line-heights, card no taller than its button + 20px), inside the screen, no sideways scroll`, !!one && one.lh > 0 && one.textH <= one.lh * 1.5 && one.h <= one.btnH + 20 && one.inside && !one.sideways, JSON.stringify(one));
+  // MSA · QR J124 (Owner, 9 Nov): the text is no longer cut with "…" -- it wraps and shows IN FULL, still a slim strip (shorter than the full card).
+  check(`${tag} Mushaf: the text is shown IN FULL (not cut off), a slim strip (<= 130px; half the screen at 200% text), inside the screen, no sideways scroll`, !!one && !!full && one.full && one.h <= (pct === 100 ? 130 : 422) && one.inside && !one.sideways, JSON.stringify({ one, full }));
   check(`${tag} Mushaf: Bismillah is still a 44px target`, !!one && one.btnH >= 43.5, JSON.stringify(one));
   check(`${tag} Mushaf: the label is folded away; the full card (Āyah view) has it`, !!one && !one.lab && !!full && full.lab, JSON.stringify({ one, full }));
   await page.click("#intentionHost [data-intention-bismillah]").catch(() => {});

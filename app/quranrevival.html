@@ -23722,7 +23722,7 @@
     intentionStyleEl.textContent = INTENTION_CSS + `
 #intentionHost.intention-one-line .intention-card { display:flex; align-items:center; gap:.5rem; margin:.25rem 0; padding:.2rem .6rem; }
 #intentionHost.intention-one-line .intention-lab { display:none; }
-#intentionHost.intention-one-line .intention-text { flex:1 1 auto; min-width:0; margin:0; font-size:.88rem; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#intentionHost.intention-one-line .intention-text { flex:1 1 auto; min-width:0; margin:0; font-size:.84rem; line-height:1.3; white-space:normal; overflow-wrap:anywhere; } /* MSA · QR J124: the Owner's 9 Nov report -- the text was CUT with "…" before its Bismillah button; it now wraps and shows in full (the card is still far shorter than the full card) */
 #intentionHost.intention-one-line .intention-bismillah { flex:0 0 auto; }`; document.head.appendChild(intentionStyleEl);
     let intentionClosedThisOpening = false;
     const intentionPerson = () => selectedPersonId || null;
