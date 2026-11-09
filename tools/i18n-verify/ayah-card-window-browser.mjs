@@ -187,7 +187,7 @@ for (const look of ["night", "light"]) for (const lang of ["en", "bn"]) {
       const widths = new Set(tiles.map((t) => Math.round(t.getBoundingClientRect().width)));
       return { n: tiles.length, bad, widths: [...widths], sideways: s.scrollWidth - s.clientWidth };
     });
-    check(`${tag} wide: ${fit.n} action tiles, 40px+ targets, no label cut, select whole`, fit.n >= 9 && fit.bad.length === 0, JSON.stringify(fit));
+    check(`${tag} wide: ${fit.n} action tiles, 40px+ targets, no label cut, select whole`, fit.n >= 8 && /* J131: the Note moved to the bar */ fit.bad.length === 0, JSON.stringify(fit));
     check(`${tag} wide: the tiles are one tidy size and the card has no sideways scroll`, fit.widths.length === 1 && fit.sideways <= 1, JSON.stringify(fit));
     const rowsTidy = await P.evaluate(() => { const t = [...document.querySelectorAll("[data-ayah-sheet] .ayah-sheet-act")].map((e) => e.getBoundingClientRect()), row = document.querySelector("[data-ayah-sheet] .ayah-sheet-actrow").getBoundingClientRect(); const tops = [...new Set(t.map((b) => Math.round(b.top)))]; return tops.map((tp) => { const r = t.filter((b) => Math.round(b.top) === tp); return { n: r.length, fill: Math.abs(Math.max(...r.map((b) => b.right)) - row.right) < 2 }; }); });
     check(`${tag} wide: every row of tiles fills the row's width (no ragged wrap)`, rowsTidy.every((r) => r.fill), JSON.stringify(rowsTidy));

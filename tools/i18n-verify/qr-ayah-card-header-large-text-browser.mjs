@@ -71,27 +71,27 @@ const measure = (page) => page.evaluate(() => {
   let lines = 0, bottom = -Infinity;
   for (const b of boxes) { if (b.top >= bottom - 1) { lines++; bottom = b.bottom; } else bottom = Math.max(bottom, b.bottom); }
   const q = (s) => { const el = hd.querySelector(s); return el && el.getClientRects().length ? el.getBoundingClientRect() : null; };
-  const btns = [q("[data-ayah-sheet-homeback]"), q(".ayah-sheet-nav-pair"), q(".mm-min-btn"), q(".ayah-sheet-close")];
+  const btns = [q("[data-ayah-sheet-homeback]"), q(".ayah-sheet-nav-pair"), q(".ayah-sheet-close")] /* J131: 📝 Note shares the last line with 📖 Full text, not line one */;
   const ref = q(".ayah-sheet-ref");
   const lineOne = btns.every((b) => b) && btns.every((b) => b.top < btns[0].bottom - 1 && b.bottom > btns[0].top + 1) && (!ref || ref.top >= btns[0].bottom - 1);
   const outside = items.filter((el) => { const r = el.getBoundingClientRect(); return r.left < hr.left - 1 || r.right > hr.right + 1; }).map((el) => el.className.split(" ")[0]);
-  const glyphs = [".mm-min-btn", ".ayah-sheet-close"].map((s) => hd.querySelector(s)).filter(Boolean).every((b) => { const rg = document.createRange(); rg.selectNodeContents(b); const g = rg.getBoundingClientRect(), r = b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && g.left >= r.left - 1 && g.right <= r.right + 1; });
+  const glyphs = [".ayah-sheet-close"].map((s) => hd.querySelector(s)).filter(Boolean).every((b) => { const rg = document.createRange(); rg.selectNodeContents(b); const g = rg.getBoundingClientRect(), r = b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && g.left >= r.left - 1 && g.right <= r.right + 1; });
   return { stack: hd.classList.contains("ayah-head-stack"), lines, h: Math.round(hr.height), screen: innerHeight, win: !!hd.closest("[data-ayah-win]"), lineOne, outside, glyphs, n: items.length, hasMin: !!q(".mm-min-btn") };
 });
 
 const CASES = [[320, 640, "en"], [320, 640, "bn"], [390, 844, "en"], [390, 844, "bn"], [768, 1024, "en"], [1280, 800, "en"], [844, 390, "en"]];
 for (const [w, h, lang] of CASES) for (const size of ["100%", "150%", "200%"]) {
   const key = `${w}x${h} ${size}`, t = `${lang} ${key}`, { ctx, page } = await boot(lang, w, h, size);
-  await page.waitForFunction(() => document.querySelector("[data-ayah-sheet] .mm-min-btn"), null, { timeout: 5000 }).catch(() => {});
+  await page.waitForFunction(() => document.querySelector("[data-ayah-sheet] .ayah-sheet-headnote"), null, { timeout: 5000 }).catch(() => {});
   await page.waitForTimeout(300);
   const m = await measure(page);
-  check(`${t}: positive control, the header's buttons and reference are there (${m.n} items, – ${m.hasMin})`, m.n >= 5 && m.hasMin);
+  check(`${t}: positive control, the header's buttons and reference are there (${m.n} items, – ${m.hasMin})`, m.n >= 4 && !m.hasMin); // UPDATED IN PLACE (J131, 9 Nov 2026): the Owner took the – off the Āyah card and put the ONE 📝 Note beside 📖 Full text; the bar's buttons are ← ‹› Note ×.
   check(`${t}: the header takes at most 3 lines (${m.lines}; ${m.h}px of ${m.screen})`, m.lines <= 3);
   check(`${t}: every header item is inside the header`, m.outside.length === 0, m.outside.join(", "));
   check(`${t}: – and × keep 40px boxes with their glyphs inside`, m.glyphs);
   if (m.stack) check(`${t}: line one holds ← ‹ › – × and the reference is below it`, m.lineOne);
   if (MAIN_LINES[key] !== undefined && MAIN_LINES[key] <= 2) check(`${t}: a header of ${MAIN_LINES[key]} line(s) on main is left as it was (not stacked, ${m.lines} lines)`, !m.stack && m.lines === MAIN_LINES[key]);
-  if (lang === "en" && MAIN_PX[key]) check(`${t}: the header is shorter than on main (${m.h}px, was ${MAIN_PX[key]}px) and stacked`, m.stack && m.h <= MAIN_PX[key] - 20);
+  if (lang === "en" && MAIN_PX[key]) check(`${t}: the header is shorter than on main (${m.h}px, was ${MAIN_PX[key]}px) and stacked`, (m.stack || m.lines <= 2) && m.h <= MAIN_PX[key] - 20); // UPDATED IN PLACE (J131): with the – gone the header can fit two lines without stacking
   if (lang === "en" && w === 320 && size === "200%") check(`${t}: the header is at most 35% of the screen (${m.h}px of ${m.screen})`, m.h <= 0.35 * m.screen);
   if (size === "100%" && w === 320 && lang === "en") {
     // A± while the card is open: the header's sides are rem, so its width changes and it is fitted again.

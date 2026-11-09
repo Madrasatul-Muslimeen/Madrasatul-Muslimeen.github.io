@@ -255,6 +255,15 @@ export function openApproachList(select) {
   return wrap;
 }
 
+/** MSA · QR J131 (the Owner, 9 Nov 2026): a 📝 Note button in the bar beside 📖 Full text. The same door as the Note tile in the action row
+ *  (the same attributes, so the same wiring), shown disabled with its reason on a record that is not the reader's own. */
+function headNoteHtml({ isSelf, noteWhy, hasPosterNote }) {
+  const isNew = hasPosterNote === false;
+  const label = isNew ? t("Take Note") : t("Note & more…");
+  const title = !isSelf ? noteWhy : isNew ? t("You don't have a Note on this āyah yet.") : label;
+  return `<button type="button" class="ayah-sheet-headnote${isSelf ? "" : " is-disabled"}" aria-disabled="${isSelf ? "false" : "true"}" data-ayah-sheet-note${isNew ? " data-ayah-sheet-note-new" : ""} aria-label="${escapeHtml(label)}" title="${escapeHtml(title)}"><span aria-hidden="true">📝</span><span class="ayah-sheet-headnote-label"> ${escapeHtml(t("Note"))}</span></button>`;
+}
+
 /** Owner, 7 Oct 2026 (a photo of the Āyah card, the actions circled): "all these choices/ actions could be placed
     below the Ayah name/ number in a row." So every one-tap action is a small icon button in ONE row straight under
     the header -- the short word under the icon, the full name as its tooltip and its spoken name. ONE array, so a
@@ -286,6 +295,9 @@ function actionRowHtml({ isBookmarked, isSelf, noteWhy, hasPosterNote, onlyBookm
   let defs = actionRowDefs({ isBookmarked, isSelf, noteWhy, hasPosterNote });
   // PCF J26: Aʿūdhu billāh is not an āyah -- no audio, poster, Asma/QCR or folder filing of its own; the Bookmark and the Note stay.
   if (onlyBookmarkAndNote) defs = defs.filter((d) => /data-ayah-sheet-(bookmark|note)\b/.test(d.attr));
+  // MSA · QR J131 (the Owner, 9 Nov 2026): the ONE 📝 Note (decision 94) moved from this row to the bar, beside 📖 Full text. Only the opening
+  // sheet (Aʿūdhu billāh), whose bar has no tools, keeps it here.
+  else defs = defs.filter((d) => !/data-ayah-sheet-note\b/.test(d.attr));
   const buttons = defs.map((d) => `<button type="button" class="ayah-sheet-act${d.disabled ? " is-disabled" : ""}" aria-disabled="${d.disabled ? "true" : "false"}" ${d.attr} aria-label="${escapeHtml(d.label)}" title="${escapeHtml(d.title ? `${d.label} ${d.title}` : d.label)}"><span class="ayah-sheet-act-icon" aria-hidden="true">${d.icon}</span><span class="ayah-sheet-act-label" aria-hidden="true">${escapeHtml(d.short)}</span></button>`).join("");
   // The reasons a dimmed item gives (each printed once), and the poster's own "no Note yet" offer.
   const hints = [...new Set(defs.filter((d) => d.disabled && d.hint).map((d) => d.hint))].map((h) => `<p class="ayah-sheet-hint">${escapeHtml(h)}</p>`).join("");
@@ -513,7 +525,6 @@ export function renderAyahActionSheetHtml({
       <div class="ayah-sheet-handle" aria-hidden="true"></div>
       ${ladderHtml}
       <div class="ayah-sheet-header">
-        ${intro ? "" : `<button type="button" class="ayah-sheet-homeback" data-ayah-sheet-close data-ayah-sheet-homeback aria-label="${escapeHtml(t("Back"))}" title="${escapeHtml(t("Back"))}">←</button>`}<!-- PCF MSA J72: a way back to where the card was opened -->
         <span class="ayah-sheet-ref">${escapeHtml(ref)}</span>
         <span class="ayah-sheet-head-tools"${intro?.opening ? " hidden" : ""}>
           <span class="ayah-sheet-nav-pair">
@@ -521,7 +532,9 @@ export function renderAyahActionSheetHtml({
             <button type="button" class="ayah-sheet-nav" data-ayah-sheet-step="1" aria-label="${escapeHtml(t("Next āyah"))}" title="${escapeHtml(t("Next āyah"))}"${canNext ? "" : " disabled"}>›</button>
           </span>
           <button type="button" class="ayah-sheet-noteview" data-ayah-sheet-noteview aria-label="${escapeHtml(t("See this āyah's full text"))}" title="${escapeHtml(t("See this āyah's full text"))}"><span aria-hidden="true">📖</span> ${escapeHtml(t("Full text"))}</button>
+          ${intro?.opening ? "" : headNoteHtml({ isSelf, noteWhy, hasPosterNote })}
         </span>
+        ${intro ? "" : `<button type="button" class="ayah-sheet-homeback" data-ayah-sheet-close data-ayah-sheet-homeback aria-label="${escapeHtml(t("Back"))}" title="${escapeHtml(t("Back"))}">←</button>`}<!-- PCF MSA J72: a way back to where the card was opened -->
         <button type="button" class="ayah-sheet-close" data-ayah-sheet-close aria-label="${escapeHtml(t("Close"))}">×</button>
       </div>
       ${introHtml}

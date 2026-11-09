@@ -105,10 +105,10 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1708, 1049], [3
       return { shown: !!sh && getComputedStyle(o).display !== "none" && sh.getClientRects().length > 0, ref: sh?.querySelector(".ayah-sheet-ref")?.textContent ?? "", min: !!mb && mb.width >= 40 && mb.height >= 40, beside: !!mb && !!cb && cb.left - mb.right >= -1 && cb.left - mb.right <= 12, chip: !!document.querySelector('[data-mm-min-chip="ayah"]') }; });
     let c = await card();
     check(`${tag}: POSITIVE CONTROL the Āyah card opens`, c.shown, JSON.stringify(c));
-    check(`${tag}: the Āyah card's – sits right beside its ×, 40px+`, c.min && c.beside, JSON.stringify(c));
+    check(`${tag}: the Āyah card has NO – (the Owner took it out, J131, 9 Nov 2026; ← sits beside × instead)`, !c.min, JSON.stringify(c));
     await P.evaluate(() => document.querySelector("#ayahActionSheetOverlay .mm-min-btn")?.click()); await P.waitForTimeout(300);
     c = await card();
-    check(`${tag}: the – hides the card and leaves its chip`, !c.shown && c.chip, JSON.stringify(c));
+    check(`${tag}: pressing the page's bottom Study button still steps the card aside, leaving its chip (J81, unchanged)`, await (async () => { await P.evaluate(() => document.querySelector('#tabStudyBtn')?.click()); await P.waitForTimeout(400); const d = await card(); return !d.shown && d.chip; })(), JSON.stringify(await card()));
     // (The Read view is on the single āyah 22:3, so its own number is the āyah on screen to tap.)
     const badge = await P.evaluate(() => { const b = document.querySelector('[data-ayah-num-badge="22:3"]'); b?.click(); return !!b; }); await P.waitForTimeout(900);
     c = await card();
