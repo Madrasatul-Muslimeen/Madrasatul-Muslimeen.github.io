@@ -18,6 +18,7 @@ import { renderAsmaPoster } from "./asma-poster.js";
 import { STATUS_COLORS } from "./mastery-wheel.js";
 import { statusLabel } from "./unit-keys.js";
 import { t, num, asmaName } from "./i18n.js";
+import { asmaPosterNeedsInternet } from "./asma-poster.js";
 import { langText } from "./lang.js";
 import { getAppLang } from "./prefs.js";
 import { confirmStateLabel } from "./labels.js";
@@ -332,5 +333,11 @@ export function renderAsmaScreensaverSlide(poster, fallbackName) {
     "screensaver") changes only the size, and `interactive` makes each reference a button or a link into the Hadith
     library (off where the whole poster is itself one button). Call fitAsmaPosters() once it is on screen. */
 export function renderAsmaPosterHtml(entry, variant = "standalone", opts = {}) {
-  return renderAsmaPoster(entry, variant, opts);
+  // PCF MSA J120 O5: the poster's true look needs its web fonts (Tinos, Noto Naskh Arabic), which come from the internet and
+  // are not in the offline copy. So with no connection AND the fonts not already loaded on this page, a quiet line says so
+  // in words; if they did load earlier the poster is exact and says nothing (the words appear only when true). Not on the
+  // screensaver.
+  const note = variant !== "screensaver" && asmaPosterNeedsInternet()
+    ? `<span class="ahp-offline-note" role="status">${escapeHtml(t("Posters need the internet"))}</span>` : "";
+  return renderAsmaPoster(entry, variant, opts) + note;
 }
