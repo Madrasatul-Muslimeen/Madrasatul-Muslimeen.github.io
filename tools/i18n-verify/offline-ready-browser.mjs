@@ -10,6 +10,7 @@
 //   MUT=quranlost ...   mutation: a release's clean-up deletes mm-quran-v1 -> the release-bump checks fail
 //   MUT=nomove ...      mutation: the update does not move Qur'an files out of an old app cache -> the move check fails
 //   MUT=nomanifest ...  mutation: quranrevival.html loses its manifest link -> the manifest checks fail
+//   MUT=noown ...       mutation: the tap does not keep the reader's own copy (J120 O4) -> the own-copy checks fail
 //
 // What it proves, each in rendered, measured terms (never "no error" alone):
 //   1. The manifest is linked from every reader page msa.json lists, parses as JSON, names start_url/scope /app/,
@@ -62,7 +63,8 @@ const restoreAll = () => { while (restores.length) restores.pop()(); };
 process.on("exit", restoreAll);
 for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { restoreAll(); process.exit(1); });
 if (MUT === "noquran") mutate("app/js/offline-ready.js", /\.\.\.filesOf\(list\.parts\.quran\.dirs, list\.parts\.quran\.cache\),/g, "");
-else if (MUT === "noready") mutate("app/js/offline-ready.js", /store\.set\(READY_KEY, \{ at, version: APP_VERSION, books: ticked\(\) \}\);\n\s*state\.textContent = t\("Ready ✓ \(updated \{when\}\)", \{ when: whenText\(at\) \}\);/g, "/* mutated */");
+else if (MUT === "noready") mutate("app/js/offline-ready.js", /store\.set\(READY_KEY, keep\);\n\s*state\.textContent = t\("Ready ✓ \(updated \{when\}\)", \{ when: whenText\(at\) \}\);/g, "/* mutated */");
+else if (MUT === "noown") mutate("app/js/offline-ready.js", /const ownResult = await keepOwn\(own, ownNote\);/g, "const ownResult = null;");
 else if (MUT === "onlydua") mutate("app/js/offline-ready.js", /export const allBookIds = \(list\) => list\.books\.map\(\(b\) => b\.id\);/g, "export const allBookIds = (list) => list.books.filter((b) => b.default).map((b) => b.id);");
 else if (MUT === "nobooks") mutate("app/js/offline-ready.js", /for \(const b of chosen\) items\.push\(\.\.\.filesOf\(b\.dirs, "hadith"\)\);/g, "");
 else if (MUT === "quranlost") mutate("app/sw.js", /\(n\.startsWith\("mm-quran-"\) && n !== QURAN_CACHE_NAME\)/g, 'n.startsWith("mm-quran-")');
@@ -237,6 +239,30 @@ for (const [lang, width] of PASSES) {
   const [d, tot] = (after.prog.match(/^([\d০-৯]+)[^\d০-৯]+([\d০-৯]+)/) || []).slice(1);
   check(`${tag}: the progress reaches every file (N of N) and the bar is full`, !!d && d === tot && after.bar[0] === after.bar[1], `${after.prog} ${after.bar}`);
   check(`${tag}: storage.persist() was asked once, on the tap`, after.persist === 1, String(after.persist));
+  // J120 O4: the same tap kept a copy of the reader's own Notes, folders, Records and Bookmarks (the Firestore reads
+  // went out through the real data layer; that they then answer offline is proven against the real SDK and the real
+  // Rules in tools/firestore-emulator/offline-own-data-real-function.rules.test.mjs -- this stub has no on-device copy).
+  {
+    const o = await page.evaluate(() => ({
+      own: document.getElementById("offlineOwn")?.textContent || "",
+      note: document.getElementById("offlineOwnNote")?.hidden === false ? document.getElementById("offlineOwnNote").textContent : "",
+      log: (window.__fsLog || []).map((r) => `${r.kind}:${r.col}`),
+      stamp: (() => { try { return JSON.parse(localStorage.getItem("mm_offline_ready")); } catch { return null; } })(),
+    }));
+    const OWN = lang === "bn" ? /^আপনার নিজের কপি: ([০-৯]+)টি নোট, ([০-৯]+)টি ফোল্ডার, ([০-৯]+)টি রেকর্ড, ([০-৯]+)টি বুকমার্ক ✓$/
+      : /^Your own copy: (\d+) Notes, (\d+) folders, (\d+) Records, (\d+) Bookmarks ✓$/;
+    const m = o.own.match(OWN);
+    const toN = (x) => Number(String(x).replace(/[০-৯]/g, (c) => "০১২৩৪৫৬৭৮৯".indexOf(c)));
+    const c = (o.stamp && o.stamp.own && o.stamp.own.counts) || null;
+    check(`${tag}: MUTATION TARGET (noown): it says how many of your own Notes, folders, Records and Bookmarks it kept`, !!m, o.own);
+    check(`${tag}: MUTATION TARGET (noown): the counts shown are the ones remembered with Ready`, !!m && !!c &&
+      toN(m[1]) === c.notes && toN(m[2]) === c.folders && toN(m[3]) === c.records && toN(m[4]) === c.bookmarks, JSON.stringify(c));
+    const read = (k) => o.log.includes(k);
+    check(`${tag}: MUTATION TARGET (noown): the tap read the reader's Notes, folders, filings, links, Records and Bookmarks`,
+      ["getDocs:notes", "getDocs:noteFolders", "getDocs:notePlacements", "getDocs:noteSources", "getDocs:records", "getDoc:bookmarks"].every(read),
+      ["getDocs:notes", "getDocs:noteFolders", "getDocs:notePlacements", "getDocs:noteSources", "getDocs:records", "getDoc:bookmarks"].filter((k) => !read(k)).join(", "));
+    check(`${tag}: it says, in words, what is NOT kept (older versions, pictures)`, (lang === "bn" ? /পুরোনো সংস্করণ/ : /Older versions of a Note/).test(o.note), o.note);
+  }
   check(`${tag}: the space used is reported after (storage.estimate)`, MB.test(after.space), after.space);
   const kept = await page.evaluate(async () => {
     const out = {};

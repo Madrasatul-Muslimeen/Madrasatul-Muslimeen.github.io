@@ -4994,4 +4994,14 @@ export const BN = {
   "This Note also changed elsewhere: the later change is its text, and the other is kept as an older version.": "এই নোটটি অন্য কোথাও-ও বদলেছে: পরের পরিবর্তনটিই এর লেখা, আর অন্যটি পুরোনো সংস্করণ হিসেবে রাখা আছে।",
   // PCF MSA J120 O3b: a copy made offline (its tags are not kept on the device).
   "Kept on this device — it will be saved when you are online. Its tags are not copied while offline.": "এই ডিভাইসে রাখা আছে — ইন্টারনেট ফিরলে সংরক্ষিত হবে। ইন্টারনেট ছাড়া এর ট্যাগগুলো কপি হয় না।",
+  // PCF MSA J120 O4: the reader's own copy kept by "Get ready for offline" (offline-ready.js, offline-own-data.js).
+  "The same tap also keeps a copy of your own Notes, folders, Records and Bookmarks.": "একই চাপে আপনার নিজের নোট, ফোল্ডার, রেকর্ড আর বুকমার্কের একটি কপিও রাখা হয়।",
+  "Sign in to keep a copy of your own Notes, folders, Records and Bookmarks too.": "আপনার নিজের নোট, ফোল্ডার, রেকর্ড আর বুকমার্কের কপিও রাখতে সাইন ইন করুন।",
+  "Keeping your own Notes, folders, Records and Bookmarks…": "আপনার নিজের নোট, ফোল্ডার, রেকর্ড আর বুকমার্ক রাখা হচ্ছে…",
+  "Keeping your own Notes, folders, Records and Bookmarks… ({done} of {total})": "আপনার নিজের নোট, ফোল্ডার, রেকর্ড আর বুকমার্ক রাখা হচ্ছে… ({total}টির {done}টি)",
+  "Your own copy: {notes} Notes, {folders} folders, {records} Records, {bookmarks} Bookmarks ✓": "আপনার নিজের কপি: {notes}টি নোট, {folders}টি ফোল্ডার, {records}টি রেকর্ড, {bookmarks}টি বুকমার্ক ✓",
+  "Older versions of a Note, and pictures inside Notes, open with no internet only for Notes you have opened on this device before.": "নোটের পুরোনো সংস্করণ আর নোটের ভেতরের ছবি ইন্টারনেট ছাড়া খোলে কেবল সেই নোটগুলোর, যেগুলো এই ডিভাইসে আগে খোলা হয়েছে।",
+  "There were too many to keep them all; the rest need the internet.": "সবগুলো রাখার পক্ষে সংখ্যা বেশি ছিল; বাকিগুলোর জন্য ইন্টারনেট লাগবে।",
+  "Your own copy is not complete yet.": "আপনার নিজের কপি এখনও সম্পূর্ণ হয়নি।",
+  "Your own copy could not be kept for: {parts}. Tap the button again to try them.": "আপনার নিজের কপি রাখা যায়নি: {parts}। আবার চেষ্টা করতে বোতামটি আবার চাপুন।",
 };

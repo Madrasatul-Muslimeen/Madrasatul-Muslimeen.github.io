@@ -20,6 +20,10 @@
 // serves these files offline exactly as if it had kept them itself. The Mushaf page fonts (mm-qf-fonts-v1) are NOT
 // downloaded here: their permission requires a weekly refresh and never offering them as a separate download, so
 // they stay fetched page by page, as before. No recitation audio (the Owner's answer on J120).
+//
+// O4 (PCF MSA J120): after the files, the same tap keeps a copy of the signed-in reader's own Notes, folders, Records
+// and Bookmarks in Firestore's on-device database (offline-own-data.js), and says how many of each it kept. "Ready ✓"
+// is written only when both halves finished; the counts are remembered with it.
 import { t, num } from "./i18n.js";
 import { getAppLang } from "./prefs.js";
 import { APP_VERSION } from "./version.js";
@@ -174,6 +178,47 @@ function bookName(b) {
   return b.title.en;
 }
 
+/** The word for one kind of the reader's own documents, in a failure line. */
+function ownKindName(kind) {
+  const names = { notes: "Notes", folders: "Folders", filings: "Folders", links: "Notes", sections: "Folders",
+    tags: "Tags", tagLinks: "Tags", noteLinks: "Notes", records: "Records", bookmarks: "Bookmarks" };
+  return t(names[kind] || "Notes");
+}
+
+/** "Your own copy: 12 Notes, 3 folders, 40 Records, 5 Bookmarks ✓ (kept {when})". */
+function showOwn(own, ownNote, kept) {
+  const c = kept.counts || {};
+  own.textContent = t("Your own copy: {notes} Notes, {folders} folders, {records} Records, {bookmarks} Bookmarks ✓", {
+    notes: num(c.notes || 0), folders: num(c.folders || 0), records: num(c.records || 0), bookmarks: num(c.bookmarks || 0),
+  });
+  ownNote.hidden = false;
+  ownNote.textContent = t("Older versions of a Note, and pictures inside Notes, open with no internet only for Notes you have opened on this device before.")
+    + (kept.capped && kept.capped.length ? " " + t("There were too many to keep them all; the rest need the internet.") : "");
+}
+
+/** O4: keeps the signed-in reader's own copy. Returns the result, or null when no one is signed in. */
+async function keepOwn(own, ownNote) {
+  let mod, fb, ctxMod;
+  try {
+    [mod, fb, ctxMod] = await Promise.all([import("./offline-own-data.js"), import("./firebase-init.js"), import("./session-context.js")]);
+  } catch (err) {
+    return { counts: {}, failed: [{ kind: "notes", why: String(err && err.message || err) }], capped: [] };
+  }
+  const context = ctxMod.getActiveContext();
+  const personIds = mod.ownDataPeople(context);
+  if (!personIds.length || !(fb.auth && fb.auth.currentUser)) {
+    own.textContent = t("Sign in to keep a copy of your own Notes, folders, Records and Bookmarks too.");
+    return null;
+  }
+  own.textContent = t("Keeping your own Notes, folders, Records and Bookmarks…");
+  const result = await mod.keepOwnDataOffline(fb.db, { tenantId: context.tenantId, personIds }, (p) => {
+    own.textContent = t("Keeping your own Notes, folders, Records and Bookmarks… ({done} of {total})", { done: num(p.done), total: num(p.total) });
+  });
+  if (!result.failed.length) showOwn(own, ownNote, { counts: result.counts, capped: result.capped });
+  else own.textContent = t("Your own copy is not complete yet.");
+  return result;
+}
+
 /** Mounts the section into `host` (the My account card). Only on a page carrying MSA's install line: another app
  *  built from this source (QR) has its own worker and file list, so the section stays empty there. */
 export function mountOfflineSection(host) {
@@ -204,7 +249,11 @@ export function mountOfflineSection(host) {
   const space = el("p", { class: "offline-muted", id: "offlineSpace" });
   const failedBox = el("p", { class: "offline-failed", id: "offlineFailed", role: "alert" });
   failedBox.hidden = true;
-  box.append(fs, need, btn, prog, state, space, failedBox);
+  // O4: the reader's own Notes, folders, Records and Bookmarks.
+  const own = el("p", { id: "offlineOwn" }, t("The same tap also keeps a copy of your own Notes, folders, Records and Bookmarks."));
+  const ownNote = el("p", { class: "offline-muted", id: "offlineOwnNote" });
+  ownNote.hidden = true;
+  box.append(fs, need, btn, prog, state, own, ownNote, space, failedBox);
   host.appendChild(box);
 
   if (!("caches" in window) || !("serviceWorker" in navigator)) {
@@ -214,6 +263,7 @@ export function mountOfflineSection(host) {
   }
   const ready = store.get(READY_KEY);
   if (ready && ready.at) state.textContent = t("Ready ✓ (updated {when})", { when: whenText(ready.at) });
+  if (ready && ready.own) showOwn(own, ownNote, ready.own);
 
   let list = null;
   const showNeed = () => { if (list) need.textContent = t("Space it will use: {size}", { size: mbText(planFor(list, allBookIds(list)).bytes) }); };
@@ -276,15 +326,28 @@ export function mountOfflineSection(host) {
           + (persisted ? "" : " " + t("The browser may clear it if the device runs short of space."));
       }
     } catch { /* the estimate is a nicety */ }
+    // O4: the reader's own copy, after the files (so the app itself is kept first), whatever the files' result.
+    const ownResult = await keepOwn(own, ownNote);
+    const ownFailed = ownResult && ownResult.failed.length ? ownResult.failed : [];
     if (result.failed.length) {
       const names = result.failed.slice(0, 3).map((f) => decodeURIComponent(f.url.replace(location.origin, "")) + (f.why ? ` (${f.why})` : "")).join("; ");
       state.textContent = t("Not ready yet.");
       failedBox.hidden = false;
       failedBox.textContent = t("{n} file(s) could not be downloaded: {names}. Tap the button again to try them.", { n: num(result.failed.length), names })
         + (result.failed.length > 3 ? " " + t("and {n} more", { n: num(result.failed.length - 3) }) : "");
-    } else {
+    }
+    if (ownFailed.length) {
+      state.textContent = t("Not ready yet.");
+      failedBox.hidden = false;
+      const parts = ownFailed.map((f) => `${ownKindName(f.kind)} (${f.why})`).join("; ");
+      failedBox.textContent = (failedBox.textContent ? failedBox.textContent + " " : "")
+        + t("Your own copy could not be kept for: {parts}. Tap the button again to try them.", { parts });
+    }
+    if (!result.failed.length && !ownFailed.length) {
       const at = Date.now();
-      store.set(READY_KEY, { at, version: APP_VERSION, books: allBookIds(list) });
+      const keep = { at, version: APP_VERSION, books: allBookIds(list) };
+      if (ownResult) keep.own = { at, counts: ownResult.counts, capped: ownResult.capped };
+      store.set(READY_KEY, keep);
       state.textContent = t("Ready ✓ (updated {when})", { when: whenText(at) });
     }
     btn.disabled = false;
