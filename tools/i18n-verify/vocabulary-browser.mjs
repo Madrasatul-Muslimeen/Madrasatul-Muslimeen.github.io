@@ -45,12 +45,12 @@ const MUT = {
   writewrong: ["app/js/vocabulary.js", "return tally(answers).rightRanks.map(", "return tally(answers).rightRanks.concat(tally(answers).wrongRanks).map("],
   noask: ["app/quranrevival.html", "askMark: passed && achievedWrites", "askMark: false && achievedWrites"],
   lowtest: ["app/js/vocabulary.js", "export const PASS_RATIO = 0.9;", "export const PASS_RATIO = 0.3;"],
-  nobackcard: ["app/quranrevival.html", "if (act === \"close\") { const wasWord", "if (act === \"close\") { document.getElementById(\"quranWordCardMount\").innerHTML = \"\"; const wasWord"],
+  nobackcard: ["app/quranrevival.html", "if (quranWordCardState.occurrenceId) { await hydrateWordCardLemmaExtras(); renderPersistentWordCard(); }", "if (quranWordCardState.occurrenceId) { await hydrateWordCardLemmaExtras(); renderPersistentWordCard(); } document.getElementById(\"quranWordCardMount\").innerHTML = \"\";"], // re-anchored v14.05: clear the card AFTER the close redraw, so Back finds no card
   bnleak: ["app/js/i18n/bn.js", "\"Pick the Arabic\": \"আরবি বাছুন\",", ""],
   nocardsync: ["app/quranrevival.html", "if (quranWordCardState.occurrenceId) { await hydrateWordCardLemmaExtras(); renderPersistentWordCard(); }", ""],
-  caret: ["app/quranrevival.html", '<span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(lemmaText(r.l))}</span>', '<span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(r.l)}</span>'],
+  caret: ["app/quranrevival.html", '<span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(lemmaText(r.a ?? r.l))}</span>', '<span class="ln-ar" lang="ar" dir="rtl">${escapeHtml(r.a ?? r.l)}</span>'], // re-anchored v14.05 (J133: r.a ?? r.l)
   vocaret: ["app/quranrevival.html", '<span class="vo-lw-ar" lang="ar" dir="rtl">${escapeHtml(lemmaText(r.l))}</span>', '<span class="vo-lw-ar" lang="ar" dir="rtl">${escapeHtml(r.l)}</span>'],
-  palegreen: ["app/quranrevival.html", ".vo-lw.vo-known { background: #d7efdf;", ".vo-lw.vo-known { background: #eef7f0;"],
+  palegreen: ["app/quranrevival.html", ".ln-row.ln-known { background: #d7efdf;", ".ln-row.ln-known { background: #eef7f0;"], // re-anchored v14.05: the check reads the Learn next row (.ln-row.ln-known), not .vo-lw
   lowpurple: ["app/quranrevival.html", ".ln-vbtn { flex: 1 1 6rem; min-height: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #4b2a85; background: #4b2a85;", ".ln-vbtn { flex: 1 1 6rem; min-height: 44px; padding: 0 0.7rem; border-radius: 0.5rem; border: 1px solid #4b2a85; background: #5b3a95;"],
 };
 if (MUTATE && !MUT[MUTATE] && !PURE_MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -328,9 +328,10 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
   await page.waitForSelector("#quranWordCardMount .quran-word-card", { timeout: 8000 }).catch(() => {});
   await sleep(page, 1200);
   const btn = await page.evaluate(() => { const b = document.querySelector("#quranWordCardMount .word-card-practise"); if (!b) return null; const c = getComputedStyle(b); const probe = document.createElement("span"); b.closest(".quran-word-card").appendChild(probe); probe.style.color = "var(--wc-purple-ink)"; probe.style.backgroundColor = "var(--wc-purple-bg)"; const want = [getComputedStyle(probe).color, getComputedStyle(probe).backgroundColor]; probe.remove(); return { h: b.getBoundingClientRect().height, ok: c.color === want[0] && c.backgroundColor === want[1], got: [c.color, c.backgroundColor], want }; });
-  check(`${tag} the WbW level has a purple "Practise this word" button, 44px+, painted in the card's purple token (equal, not merely readable)`, !!btn && btn.h >= 44 && btn.ok, JSON.stringify(btn));
+  // UPDATED IN PLACE (J135, 9 Nov 2026, the Owner): the Word card has no separate Learn/Practise button any more; the 📖 Learn MARK (Difficult · Learn · Learned) starts the same ten-question round when it is switched on.
+  check(`${tag} the Word card has the Learn mark and no separate practise button`, await page.evaluate(() => !!document.querySelector("#quranWordCardMount [data-mark-key=\"practice\"]") && !document.querySelector("#quranWordCardMount .word-card-practise")), JSON.stringify(btn));
   const level0 = await page.evaluate(() => document.querySelector("#quranWordCardMount [data-word-card-panel]")?.dataset.wordCardPanel);
-  await page.evaluate(() => document.querySelector("#quranWordCardMount .word-card-practise")?.click());
+  await page.evaluate(() => document.querySelector("#quranWordCardMount [data-mark-key=\"practice\"]")?.click());
   await page.waitForSelector("#vocabSheet .vo-card", { timeout: 15000 }).catch(() => {});
   // UPDATED IN PLACE for PCF MSA J56 (the Owner, 20 Oct 2026: "Only 3 questions! Can you make it to 10?"): ten
   // questions -- a flashcard, then Pick the meaning / Pick the Arabic / In its āyah three times, each āyah question at a

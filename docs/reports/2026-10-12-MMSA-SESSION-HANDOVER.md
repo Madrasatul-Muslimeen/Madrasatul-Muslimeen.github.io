@@ -3308,3 +3308,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.02** (2026-11-09): the Owner's al-Wāqiʿah recording as a reciter (MSA · QR J121, #1566).
 - **v14.03** (2026-11-09): four Quran Study fixes: Word card marks row (J128), intention strip wraps (J124), level titles (J126), Last read (J123).
 - **v14.04** (2026-11-09): Word Card ☰ menu (J125) and the Āyah card bar: no –, ← beside ×, 📝 Note beside 📖 (J131).
+- **v14.05** (2026-11-10): Word Card marks Difficult · Learn · Learned, Learn next level switch, Bangla switch OFF per new word (MSA · QR J135, J133, J134).

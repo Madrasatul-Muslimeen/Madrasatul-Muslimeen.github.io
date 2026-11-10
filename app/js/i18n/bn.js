@@ -2670,6 +2670,7 @@ export const BN = {
   // PCF MSA J48 -- Vocabulary (Learn, Practise, Step test).
   "Vocabulary": "শব্দভান্ডার",
   "Learn": "শিখুন",
+  "Learned": "শেখা হয়েছে",
   "Practise": "অনুশীলন",
   "Step test": "ধাপের পরীক্ষা",
   "Practise this word": "এই শব্দটি অনুশীলন করুন",
@@ -2712,6 +2713,14 @@ export const BN = {
   "Showing the whole list, 100 at a time. Tap a step to open its words.": "পুরো তালিকা দেখানো হচ্ছে, একবারে ১০০টি। কোনো ধাপের শব্দ দেখতে সেটিতে চাপুন।",
   "words {a}–{b}": "শব্দ {a}–{b}",
   "the first {n} words": "প্রথম {n}টি শব্দ",
+  // MSA · QR J133 -- the Learn next sheet follows the Word Card's level.
+  "the first {n} roots": "প্রথম {n}টি মূল",
+  "roots {a}–{b}": "মূল {a}–{b}",
+  "the first {n} families": "প্রথম {n}টি পরিবার",
+  "families {a}–{b}": "পরিবার {a}–{b}",
+  "Learning this adds {p}% of the Qur'an's words": "এটি শিখলে কুরআনের শব্দের {p}% যোগ হয়",
+  "Hide roots I have studied ({n} studied)": "আমার পড়া মূল লুকান ({n}টি পড়া)",
+  "Hide families I know ({n} known)": "আমার জানা পরিবার লুকান ({n}টি জানা)",
   "Showing {what} · together {p}% of the Qur'an": "দেখানো হচ্ছে {what} · একসাথে কুরআনের {p}%",
   "Which words": "কোন শব্দগুলো",
   "All {n}": "সব {n}টি",
