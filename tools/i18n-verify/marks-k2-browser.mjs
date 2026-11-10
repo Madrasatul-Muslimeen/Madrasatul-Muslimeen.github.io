@@ -28,7 +28,7 @@ const MUT = {
   nocard: [HTML, 'marksHtml: isOpeningSheet ? "" :', 'marksHtml: "" && '],
   nosave: [HTML, "      if (!c || marksBusy.has(unitKey)) return;", "      return;"],
   wrongkey: [HTML, "const res = type === \"qword\" ? await setWordKey(db, c, { ...base, position: Number(w) }) : await setAyahKey(db, c, base);", "const res = await setAyahKey(db, c, { ...base, ayah: Number(a) + 1 });"],
-  noword: [HTML, "marksHtml: marksRowFor(`qword:", "marksHtml: '' && marksRowFor(`qword:"],
+  noword: [HTML, "marksHtml: wordMarksRowFor(`qword:", "marksHtml: '' && wordMarksRowFor(`qword:"], // re-anchored J136: the row is built by wordMarksRowFor
   noinner: [UI, 'const bands = [["hard", 150, 174], ["practice", 126, 148], ["done", 104, 124]];', 'const bands = [["hard", 150, 174], ["practice", 126, 148]];'],
   nogo: [UI, "const go = () => { const p = pieces[Number(g.dataset.mkGo)]; if (p) onGo?.(p); };", "const go = () => {};"],
   small: [UI, ".mk-btn { min-height:40px;", ".mk-btn { min-height:26px; padding:0 .8rem; line-height:1;"],
@@ -125,11 +125,13 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   await page.waitForFunction((i) => document.querySelector(`#readView [data-word-occurrence="${i}"]`), occ, { timeout: 8000 });
   await ev(page, (i) => document.querySelector(`#readView [data-word-occurrence="${i}"]`).click(), occ);
   await page.waitForSelector(`.quran-word-card[data-occurrence-id="${occ}"]`, { timeout: 8000 });
-  await page.waitForSelector(".quran-word-card [data-marks-row]", { timeout: 6000 }).catch(() => {});
-  m = await marksState(page);
-  check(`${tag} (3) the Word card shows the three marks, Done pressed`, m.length === 3 && !m[0].on && !m[1].on && m[2].on, JSON.stringify(m));
+  // UPDATED IN PLACE (MSA · QR J136, 10 Nov 2026): the Word card's row is the five "Mark the Word" buttons (js/word-effort.js), not the
+  // three marks of the Āyah card; the seeded Done mark reads as Learned Easy, and Difficult is its own button. The saved keys are unchanged.
+  await page.waitForSelector(".quran-word-card [data-word-marks-row]", { timeout: 6000 }).catch(() => {});
+  m = await ev(page, () => [...document.querySelectorAll(".quran-word-card [data-word-mark]")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => ({ id: b.dataset.wordMark, on: b.getAttribute("aria-pressed") === "true" })));
+  check(`${tag} (3) the Word card shows the five marks, Learned Easy (the old Done) pressed`, m.length === 5 && m.map((x) => x.id).join() === "known,difficult,learn,easy,very" && m.filter((x) => x.on).map((x) => x.id).join() === "easy", JSON.stringify(m));
   const wb = (await writesOf(page)).length;
-  await ev(page, () => [...document.querySelectorAll('.quran-word-card [data-mark-key="hard"]')].find((b) => b.getBoundingClientRect().width > 0)?.click());
+  await ev(page, () => [...document.querySelectorAll('.quran-word-card [data-word-mark="difficult"]')].find((b) => b.getBoundingClientRect().width > 0)?.click());
   await page.waitForFunction((n) => (window.__stubWriteData || []).filter((x) => x.col === "ayahKeyMarks").length > n, wb, { timeout: 5000 }).catch(() => {});
   w = (await writesOf(page)).slice(wb);
   check(`${tag} (3) Difficult on a word saves entries.qword:1:1:1 = [done, hard]`, w.length === 1 && w[0].includes("qword:1:1:1") && w[0].includes('"done","hard"'), JSON.stringify(w));

@@ -8,6 +8,7 @@
     "hadith-subjects": "firebase emulators:exec --only firestore --project demo-quranrevival-hadith-subjects-v1 --config hadith-subjects-v1.firebase.json \"node --test hadith-subjects-v1.rules.test.mjs\"",
     "bangla-words": "firebase emulators:exec --only firestore --project demo-mmsa-bangla-words --config bangla-words.firebase.json \"node --test bangla-words.rules.test.mjs\"",
     "bangla-words-mutate": "firebase emulators:exec --only firestore --project demo-mmsa-bangla-words --config bangla-words.firebase.json \"node bangla-words.mutate.mjs\"",
+    "word-effort": "firebase emulators:exec --only firestore --project demo-mmsa-word-effort --config word-effort.firebase.json \"node --test word-effort.rules.test.mjs\"",
     "dua-saving": "firebase emulators:exec --only firestore --project demo-mmsa-dua-saving --config dua-saving.firebase.json \"node --test dua-saving.rules.test.mjs\"",
     "dua-saving-mutate": "firebase emulators:exec --only firestore --project demo-mmsa-dua-saving --config dua-saving.firebase.json \"node dua-saving.mutate.mjs\"",
     "dua-keys": "firebase emulators:exec --only firestore --project demo-mmsa-dua-saving --config dua-saving.firebase.json \"node --test dua-keys.rules.test.mjs\"",
