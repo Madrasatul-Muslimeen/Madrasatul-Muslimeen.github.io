@@ -4,8 +4,9 @@ Session `session_01PL2xbMP1cjoPSSKucQC1FD`, took over from 96L at 7:35 pm. `main
 Governance on main: brief-integrity 15/0, programme-ledger 8/0, mutations 49/0 (full clone needed: `git fetch --unshallow origin main`
 plus `claude/pensive-knuth-2pu3jj`, `claude/phase4-wiring`). Nothing deployed to Firestore. QR v14.15 and v14.16 live (PCA).
 
-**PCA is now 33L `session_01PL2xbJwqVTMZPjUinGStBV`. Send every "PCA ▸" line to that id EXPLICITLY, never "@parent"
-(our parent is the stopped 32L).** QR Lead 45L: `session_01PL2xbNQXvPVEr281Nr5aMU`.
+**PCA is now 34L `session_01PL2xbMuD5EbaWRuvuMUick` (since 10:58 pm; 32L and 33L have stopped). Send every "PCA ▸" line
+to that id EXPLICITLY, never "@parent".** QR Lead is now 46L: `session_01PL2xbKuYcFzuK32jDvmAXJ` (45L stopped; its handover
+`docs/reports/2026-11-10-qr-lead-handover-16.md`).
 
 ## Released this session
 - **v14.15** (#1615, 7:56 pm): J120 O4. `app/js/offline-own-data.js` (new): Get ready for offline also reads the reader's own Notes
@@ -29,6 +30,9 @@ plus `claude/pensive-knuth-2pu3jj`, `claude/phase4-wiring`). Nothing deployed to
 1. **J120 is done (O1–O6).** Waits on the Owner: n120r (phone save), n120q, n120p. QR Lead 45L was asked to look at qr-verify checks red
    on a QR build of plain main v14.18 in this sandbox (pages 32 with asma.html 404, fatiha-opening 18, title-fit 6, approach-window 6,
    quran-ldog 6, asma-screensaver 4, student 4, front, asma): identical with and without O6, so not O6's; their answer may show a real defect.
+   **Settled 11:05 pm:** those reds were my own sandbox (see Lessons). qr-verify run-all on a QR build of main v14.19 with the port free:
+   all green except upgrade-browser (needs a QR clone) and student-browser 481/4 (old, identical on clean main; 46L to look).
+   QR's worker keeps offline-line.js (install list and warm), proven by 46L's qr-offline-line-browser (#1626): 10/0, noshell 10/0, none 6/4.
    Optional: a pointer in Get ready for offline, "Recitation: choose sūrahs in Quran Study".
 2. **J136 E1:** only when the Owner says "J136 published": copy `docs/proposals/word-effort.DEPLOYMENT-candidate.rules` into
    `firestore.rules` byte for byte, set `WORD_EFFORT_RULES_PUBLISHED = true` in `app/js/word-effort.js`, re-run word-effort,
@@ -39,6 +43,8 @@ plus `claude/pensive-knuth-2pu3jj`, `claude/phase4-wiring`). Nothing deployed to
 5. **18 Nov (G02, pro1118):** K switches on by itself; the PCA copies B1 into QR. Until then "PCA ▸ released vX.YY" at each release.
 
 ## Lessons
+- **Stop `node serve.js` (port 8082) before `qr-verify/run-all.sh`**: serve-app.mjs uses 8082 too, dies with EADDRINUSE, and every QR
+  check then measures MSA's source (asma.html 404, dozens of false reds). Read `build/qr-logs/serve.log` first.
 - **Merge pinned to the commit you tested** (`expectedHeadSha`, full 40 characters). #1618's head changed between review and merge;
   the unpinned merge shipped a version I had not tested and my notes described the one I had.
 - Re-run a Lead's suites yourself on main + the branch; a "green" report from another sandbox can hide environment-red checks.
