@@ -1110,3 +1110,4 @@ total). Allocated by the MMSA Architect.
 14.05: Word Card marks Difficult · Learn · Learned, Learn next level switch, Bangla switch OFF per new word (MSA · QR J135, J133, J134). Allocated by the MMSA Architect.
 14.06: a saved whole-list Bangla switch in the Bangla list panel (MSA · QR J134 follow-up); Study Next boxes redraw on a language switch (J130 d). Allocated by the MMSA Architect.
 14.07: the new Note's folder chip at finger size (MSA · QR J130 a follow-up). Allocated by the MMSA Architect.
+14.08: Get ready for offline keeps every Hadith and Dua book (J120 2 D). Allocated by the MMSA Architect.

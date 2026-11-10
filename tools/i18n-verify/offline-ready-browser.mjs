@@ -5,7 +5,8 @@
 //   ONE=1 ...           one pass only (English, 390px) -- what the mutations use
 //   MUT=noquran ...     mutation: the download skips the Qur'an files     -> the offline sūrah check fails
 //   MUT=noready ...     mutation: "Ready" is never written                 -> the Ready checks fail
-//   MUT=nobooks ...     mutation: the ticked books are not downloaded     -> the offline Hadith book check fails
+//   MUT=nobooks ...     mutation: the books are not downloaded            -> the offline Hadith book check fails
+//   MUT=onlydua ...     mutation: only the default book (Duas) is downloaded, the J120 E behaviour -> the all-books checks fail
 //   MUT=quranlost ...   mutation: a release's clean-up deletes mm-quran-v1 -> the release-bump checks fail
 //   MUT=nomove ...      mutation: the update does not move Qur'an files out of an old app cache -> the move check fails
 //   MUT=nomanifest ...  mutation: quranrevival.html loses its manifest link -> the manifest checks fail
@@ -14,13 +15,15 @@
 //   1. The manifest is linked from every reader page msa.json lists, parses as JSON, names start_url/scope /app/,
 //      display standalone, and its icons exist at the sizes it states (read off each PNG's own header).
 //   2. In My account, at 390px and 1280px, in English and Bangla: the section shows the space it will use BEFORE
-//      anything starts, Duas is ticked by default; one tap (with al-Muwatta' ticked too) runs a progress bar to
+//      anything starts (every book's total), every Hadith and Dua book is listed with its size and NONE has a tick
+//      box (the Owner, J120 n120b, 10 Nov 2026: "2.D", all of them; updated in place from E, "each reader
+//      chooses", which this suite used to prove); one tap downloads every book's every file and runs a progress bar to
 //      "N of N files" and ends "Ready ✓ (updated …)", remembered across a reload; storage.persist() was asked on
 //      the tap and not before (the startup path is unchanged, I9).
 //   3. Then with the network cut (context.setOffline(true)): index.html opens Quran Study with its Mastery Wheel;
 //      a sūrah never opened before (77, al-Mursalāt) shows its first āyah's real meaning; Dua Study shows its
-//      groups (real Arabic text); and the ticked Hadith book (al-Muwatta') opens to a chapter's real Arabic text.
-//   4. The section at 320/390/768/1280px in both languages: the button and every book row at least 40px tall,
+//      groups (real Arabic text); and a Hadith book (al-Muwatta') opens to a chapter's real Arabic text.
+//   4. The section at 320/390/768/1280px in both languages: the button and every book row (17) at least 40px tall,
 //      nothing cut or wider than the card, the progress row inside the card. Screenshots are written to
 //      $SHOTS (default: the system temp folder) to be LOOKED at.
 //   5. The two generated lists are current (install-links.mjs --check, build-offline-files.mjs --check).
@@ -60,6 +63,7 @@ process.on("exit", restoreAll);
 for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { restoreAll(); process.exit(1); });
 if (MUT === "noquran") mutate("app/js/offline-ready.js", /\.\.\.filesOf\(list\.parts\.quran\.dirs, list\.parts\.quran\.cache\),/g, "");
 else if (MUT === "noready") mutate("app/js/offline-ready.js", /store\.set\(READY_KEY, \{ at, version: APP_VERSION, books: ticked\(\) \}\);\n\s*state\.textContent = t\("Ready ✓ \(updated \{when\}\)", \{ when: whenText\(at\) \}\);/g, "/* mutated */");
+else if (MUT === "onlydua") mutate("app/js/offline-ready.js", /export const allBookIds = \(list\) => list\.books\.map\(\(b\) => b\.id\);/g, "export const allBookIds = (list) => list.books.filter((b) => b.default).map((b) => b.id);");
 else if (MUT === "nobooks") mutate("app/js/offline-ready.js", /for \(const b of chosen\) items\.push\(\.\.\.filesOf\(b\.dirs, "hadith"\)\);/g, "");
 else if (MUT === "quranlost") mutate("app/sw.js", /\(n\.startsWith\("mm-quran-"\) && n !== QURAN_CACHE_NAME\)/g, 'n.startsWith("mm-quran-")');
 else if (MUT === "nomove") mutate("app/sw.js", /    moveQuranDataFromAppCaches\(\)\.catch\(\(\) => 0\),\n/g, "");
@@ -69,6 +73,15 @@ else if (MUT) throw new Error(`unknown MUT=${MUT}`);
 const msa = JSON.parse(fs.readFileSync(path.join(ROOT, "app/apps/msa.json"), "utf8"));
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const MUWATTA = "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1";
+// What "all of them" (J120 2 D) means, read off the list itself rather than retyped: every book id, every Hadith-cache
+// URL (the shared files plus every book's, each once), and the whole download's bytes, as planFor counts them.
+const OFFLINE_LIST = JSON.parse(fs.readFileSync(path.join(ROOT, "app/offline-files.json"), "utf8"));
+const ALL_BOOK_IDS = OFFLINE_LIST.books.map((b) => b.id);
+const urlsOf = (dirs) => dirs.flatMap((d) => d.files.map(([name, bytes]) => [d.base + name, bytes]));
+const ALL_HADITH_URLS = new Set([...urlsOf(OFFLINE_LIST.parts.hadithCommon.dirs), ...OFFLINE_LIST.books.flatMap((b) => urlsOf(b.dirs))].map(([u]) => u));
+const ALL_BYTES = (() => { const m = new Map(); for (const [u, b] of [...urlsOf(OFFLINE_LIST.parts.app.dirs), ...urlsOf(OFFLINE_LIST.parts.quran.dirs),
+  ...urlsOf(OFFLINE_LIST.parts.hadithCommon.dirs), ...OFFLINE_LIST.books.flatMap((x) => urlsOf(x.dirs))]) m.set(u, b); return [...m.values()].reduce((a, b) => a + b, 0); })();
+const ALL_MB_EN = `${(ALL_BYTES / 1048576).toFixed(1)} MB`;
 const SURAH77 = JSON.parse(fs.readFileSync(path.join(ROOT, "tools/quran-data-pull/output/surahs/surah_077.json"), "utf8")).ayahs[0].translations;
 // Opening words of al-Muwatta' chapter 3's narrations (after the chain, marked "*"), as the Hadith list shows them.
 const CH3_SNIPPETS = JSON.parse(fs.readFileSync(path.join(ROOT, "tools/hadith-data-pull/output/openiti-release/split", MUWATTA_URI(), "ch-3.json"), "utf8")).hadiths
@@ -185,19 +198,20 @@ for (const [lang, width] of PASSES) {
   const before = await page.evaluate(() => ({
     need: document.getElementById("offlineNeed")?.textContent || "",
     btn: document.getElementById("offlineReadyBtn")?.textContent || "",
-    dua: document.querySelector('input[data-offline-book="dua"]')?.checked,
-    others: [...document.querySelectorAll("input[data-offline-book]")].filter((i) => i.dataset.offlineBook !== "dua" && i.checked).length,
-    rows: document.querySelectorAll("input[data-offline-book]").length,
+    boxes: document.querySelectorAll("#offlineReady input").length,
+    ids: [...document.querySelectorAll("#offlineBooks [data-offline-book]")].map((e) => e.dataset.offlineBook),
+    rows: document.querySelectorAll("#offlineBooks li.offline-book").length,
     sizes: [...document.querySelectorAll(".offline-book-size")].map((s) => s.textContent),
   }));
   const MB = lang === "bn" ? /[০-৯]+\.[০-৯] MB/ : /\d+\.\d MB/;
   check(`${tag}: the space it will use is shown BEFORE starting`, (lang === "bn" ? /জায়গা লাগবে/ : /Space it will use/).test(before.need) && MB.test(before.need), before.need);
   check(`${tag}: the button reads in the reader's language`, before.btn === (lang === "bn" ? "ইন্টারনেট ছাড়া ব্যবহারের জন্য প্রস্তুত করুন" : "Get ready for offline"), before.btn);
-  check(`${tag}: Duas is ticked by default, no other book`, before.dua === true && before.others === 0, JSON.stringify(before));
-  check(`${tag}: one row per book (Duas, HadeethEnc, 15 books), each with its size in MB`, before.rows === 17 && before.sizes.every((s) => MB.test(s)), JSON.stringify(before.sizes.slice(0, 3)));
-  await page.locator(`input[data-offline-book="${MUWATTA}"]`).check({ timeout: 5000 }).catch(() => {});
-  const need2 = await page.evaluate(() => document.getElementById("offlineNeed").textContent);
-  check(`${tag}: ticking al-Muwatta' raises the space it will use`, need2 !== before.need, `${before.need} -> ${need2}`);
+  // J120 2 D (updated in place: these three replaced "Duas is ticked by default" and "ticking al-Muwatta' raises
+  // the space", which proved answer E, each reader chooses).
+  check(`${tag}: there is no tick box to choose books (J120 2 D: all of them)`, before.boxes === 0, String(before.boxes));
+  check(`${tag}: one row per book, every book in the list (Duas, HadeethEnc, 15 books), each with its size in MB`,
+    before.rows === 17 && before.rows === ALL_BOOK_IDS.length && ALL_BOOK_IDS.every((id) => before.ids.includes(id)) && before.sizes.length === 17 && before.sizes.every((s) => MB.test(s)), JSON.stringify(before.sizes.slice(0, 3)));
+  check(`${tag}: MUTATION TARGET (onlydua): the space it will use is every book's (${ALL_MB_EN} in all)`, ALL_BYTES > 200 * 1048576 && before.need.endsWith(lang === "bn" ? ALL_MB_EN.replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]) : ALL_MB_EN), before.need);
 
   const t0 = Date.now();
   await page.click("#offlineReadyBtn");
@@ -230,6 +244,12 @@ for (const [lang, width] of PASSES) {
     return out;
   });
   const appCache = Object.keys(kept).find((n) => n.startsWith("mm-app-"));
+  const hadithKept = await page.evaluate(async () => (await (await caches.open("mm-hadith-v1")).keys()).map((r) => new URL(r.url).pathname));
+  const missingHadith = [...ALL_HADITH_URLS].filter((u) => !hadithKept.includes(u));
+  check(`${tag}: MUTATION TARGET (onlydua): mm-hadith-v1 holds EVERY Hadith and Dua file (${ALL_HADITH_URLS.size}, all ${ALL_BOOK_IDS.length} books)`,
+    ALL_HADITH_URLS.size > 7000 && missingHadith.length === 0, `${missingHadith.length} missing, e.g. ${missingHadith.slice(0, 2).join(", ")}`);
+  const readyBooks = (() => { try { return JSON.parse(after.stamp).books; } catch { return null; } })();
+  check(`${tag}: Ready records every book`, Array.isArray(readyBooks) && readyBooks.length === ALL_BOOK_IDS.length, JSON.stringify(readyBooks && readyBooks.length));
   check(`${tag}: the files are in the worker's own caches (mm-app-<version>, mm-quran-v1, mm-hadith-v1, mm-ext-v1)`,
     !!appCache && kept[appCache] > 300 && kept["mm-quran-v1"] >= 470 && kept["mm-hadith-v1"] > 500 && kept["mm-ext-v1"] >= 3, JSON.stringify(kept));
   check(`${tag}: no Qur'an file sits in the per-version app cache (a release would drop it)`,
@@ -294,7 +314,7 @@ for (const [lang, width] of PASSES) {
       await p.screenshot({ path: path.join(SHOTS, `offline-hadith-${lang}-${width}.png`) });
       await p.close();
     }
-    check(`${tag}: MUTATION TARGET (nobooks): OFFLINE the ticked Hadith book (al-Muwatta') opens to a chapter's real Arabic text`, ok, detail);
+    check(`${tag}: MUTATION TARGET (nobooks): OFFLINE a Hadith book (al-Muwatta') opens to a chapter's real Arabic text`, ok, detail);
   }
   await ctx.close();
 }
@@ -307,7 +327,7 @@ for (const [lang, width] of PASSES) {
 if (!process.env.PASS || process.env.MUT === "quranlost" || process.env.MUT === "nomove") {
   console.log("\n=== 3b. A release keeps the Qur'an cache ===");
   const ctx = await newContext(browser, { allowServiceWorker: true, viewport: { width: 390, height: 900 }, appLang: "en" });
-  await ctx.addInitScript(() => { try { localStorage.setItem("mm_offline_books", "[]"); } catch {} }); // app + Qur'an only
+  // J120 2 D: there is no book choice any more, so this pass downloads everything, as a reader's tap does.
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await waitFor(page, () => !!navigator.serviceWorker?.controller, null, 15000);
   const ok0 = await openMyAccount(page);
@@ -316,7 +336,7 @@ if (!process.env.PASS || process.env.MUT === "quranlost" || process.env.MUT === 
   const count = (pg) => pg.evaluate(async () => { const o = {}; for (const n of await caches.keys()) o[n] = (await (await caches.open(n)).keys()).length; return o; });
   const before = await count(page);
   const oldApp = Object.keys(before).find((n) => n.startsWith("mm-app-"));
-  check("release: got ready (app + Qur'an), the Qur'an cache holds every file", done0 && (before["mm-quran-v1"] || 0) >= 470, JSON.stringify(before));
+  check("release: got ready (app, Qur'an, every book), the Qur'an cache holds every file", done0 && (before["mm-quran-v1"] || 0) >= 470, JSON.stringify(before));
   // A reader from before J120 kept Qur'an data in the per-version app cache. Plant one file there ONLY (taken out of
   // mm-quran-v1, with a marker body no server has), so the update can only fill mm-quran-v1 with it by moving it.
   // A file the download really kept (so the count check below sees it come back, not a 471st file).
@@ -390,7 +410,7 @@ if (!process.env.ONE && !process.env.PASS) {
       const box = document.getElementById("offlineReady");
       const r = (e) => e.getBoundingClientRect();
       const btn = r(document.getElementById("offlineReadyBtn"));
-      const rows = [...box.querySelectorAll("label.offline-book")].map((l) => r(l).height);
+      const rows = [...box.querySelectorAll("li.offline-book")].map((l) => r(l).height);
       const outside = [...box.querySelectorAll("*")].filter((e) => { const b = r(e); return b.width > 0 && (b.left < sheet.left - 0.5 || b.right > sheet.right + 0.5); }).map((e) => e.id || e.className || e.tagName);
       const cut = [...box.querySelectorAll("*")].filter((e) => e.clientWidth > 0 && e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflowX !== "visible").map((e) => e.id || e.className || e.tagName);
       const prog = r(document.getElementById("offlineProgress"));
