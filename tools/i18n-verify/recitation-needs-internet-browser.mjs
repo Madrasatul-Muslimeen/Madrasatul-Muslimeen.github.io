@@ -1,9 +1,8 @@
-// PCF MSA J120 O5 (the QR Lead's part): with no internet, Quran Study's recitation Play and the Asma poster say so in words.
-//   Run from the repository root with serve.js up:  node tools/i18n-verify/needs-internet-lines-browser.mjs
+// PCF MSA J120 O5 (the QR Lead's part 1): with no internet, Quran Study's recitation Play says so in words.
+//   Run from the repository root with serve.js up:  node tools/i18n-verify/recitation-needs-internet-browser.mjs
 //   MUT=noaudio ...   mutation: audio-player.js ignores being offline      -> the "Recitation needs the internet" checks fail
-//   MUT=noposter ...  mutation: the poster never adds its offline note     -> the "Posters need the internet" checks fail
 //   MUT=nobn ...      mutation: the two Bangla strings are removed         -> the Bangla checks fail
-// Positive controls: ONLINE, a failed Play keeps the old "Couldn't play" words and the poster has no note.
+// Positive control: ONLINE, a failed Play keeps the old "Couldn't play" words.
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 import path from "node:path";
@@ -27,12 +26,11 @@ function mutate(rel, re, to) {
   restores.push(() => fs.writeFileSync(f, keep));
 }
 if (MUT === "noaudio") mutate("app/js/audio-player.js", /const offline = typeof navigator !== "undefined" && navigator\.onLine === false;/g, "const offline = false;");
-if (MUT === "noposter") mutate("app/js/asma-renderer.js", /const offline = typeof navigator !== "undefined" && navigator\.onLine === false && variant !== "screensaver";/g, "const offline = false;");
-if (MUT === "nobn") mutate("app/js/i18n/bn.js", /^  "(Recitation needs the internet\.|Posters need the internet)": .*\n/gm, "");
+if (MUT === "nobn") mutate("app/js/i18n/bn.js", /^  "Recitation needs the internet\.": .*\n/gm, "");
 
 const EXPECT = {
-  en: { rec: "Recitation needs the internet.", poster: "Posters need the internet" },
-  bn: { rec: "তিলাওয়াত শুনতে ইন্টারনেট লাগে।", poster: "পোস্টার দেখতে ইন্টারনেট লাগে" },
+  en: { rec: "Recitation needs the internet." },
+  bn: { rec: "তিলাওয়াত শুনতে ইন্টারনেট লাগে।" },
 };
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 try {
@@ -56,26 +54,9 @@ try {
       }, offlineMode);
       const onlineMsg = await play(false);
       check(`${tag} online control: a failed Play keeps the old "Couldn't play" words`, typeof onlineMsg === "string" && !/^threw/.test(onlineMsg) && !/internet|ইন্টারনেট/.test(onlineMsg) && /Couldn.t play|বাজানো যায়নি/.test(onlineMsg), String(onlineMsg));
-      await page.click("#tabExploreBtn");
-      await page.waitForTimeout(700);
-      await page.click("#explorePaletteAsmaBtn");
-      await page.waitForFunction(() => document.querySelectorAll("#asmaXSingleSelect option").length > 1, null, { timeout: 8000 }).catch(() => {});
-      await page.selectOption("#asmaXSingleSelect", "1");
-      await page.waitForFunction(() => !!document.getElementById("asmaXPosterPanel"), null, { timeout: 6000 }).catch(() => {});
-      const onlineNote = await page.evaluate(() => !!document.querySelector(".ahp-offline-note"));
-      check(`${tag} online control: the poster has no offline note`, onlineNote === false);
       await ctx.setOffline(true);
       const offMsg = await play(true);
       check(`${tag} offline: a failed Play says "${EXPECT[lang].rec}"`, offMsg === EXPECT[lang].rec, String(offMsg));
-      await page.selectOption("#asmaXSingleSelect", "2");
-      await page.waitForFunction(() => !!document.querySelector(".ahp-offline-note"), null, { timeout: 4000 }).catch(() => {});
-      const note = await page.evaluate(() => {
-        const n = document.querySelector(".ahp-offline-note"); if (!n) return null;
-        const r = n.getBoundingClientRect();
-        return { text: n.textContent.trim(), role: n.getAttribute("role"), w: r.width, h: r.height, right: r.right, vw: innerWidth, over: document.documentElement.scrollWidth - document.documentElement.clientWidth };
-      });
-      check(`${tag} offline: the poster shows "${EXPECT[lang].poster}"`, note?.text === EXPECT[lang].poster, JSON.stringify(note));
-      check(`${tag} offline: the note is on screen, inside the width, no sideways scroll`, !!note && note.w > 0 && note.h > 0 && note.right <= note.vw + 1 && note.over <= 0, JSON.stringify(note));
       await ctx.close();
     }
   }
