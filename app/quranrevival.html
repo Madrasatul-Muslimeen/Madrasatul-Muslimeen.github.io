@@ -8245,6 +8245,9 @@
       // for the Bangla catalogue explicitly -- i18n.js already finished
       // loading in English by the time someone switches at runtime.
       await ensureCatalogueReady();
+      // MSA · QR J130: the "Study Next" boxes are drawn once per word / āyah and kept across redraws, so they kept the
+      // words they were drawn with (a Bangla "পরবর্তী অধ্যয়ন" under an English card). Dropped here; the redraws below draw them again.
+      wordReadNext = null; ayahReadNext = null;
       translateStatic();
       renderNav(lastRenderedRoles, lastRenderedViewAsRole);
       renderPersonSelectOptions();
