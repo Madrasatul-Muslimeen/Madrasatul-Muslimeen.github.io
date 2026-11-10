@@ -124,6 +124,7 @@ const noteTitleOf = (note) => note.title?.trim() || t("(untitled)");
  *   isRetired(note)
  *   when(ts), dateLocale()
  *   revise({ note, expectedRevisionId, title, bodyHtml })  -> the new revisionId; throws Error("Stale Note revision.") when stale
+ *   keptOnDevice?(noteId, revisionId)  true when that revision is only kept on this device for now (offline, J120 O3)
  *   afterRevise(note)  the page re-renders its own list
  *   status(msg)        a page-level sentence
  *   refresh()          reload the page's data (after a conflict)
@@ -304,6 +305,7 @@ export function createNoteViews(host) {
       saved: t("Saved"),
       unsaved: t("Not saved yet — will try again"),
       conflict: t("This Note changed on another device. Your text is kept on this device — copy it before reloading."),
+      kept: t("Kept on this device — it will be saved when you are online."),
     }[kind] || "";
     v.editStatusEl.textContent = text;
     v.editStatusEl.hidden = !text || !v.ed;
@@ -367,8 +369,11 @@ export function createNoteViews(host) {
     const latest = v.ed === e ? readEditor(v) : cur;
     if (latest.title === cur.title && latest.bodyHtml === cur.bodyHtml) clearDraft(e.noteId);
     else { writeEditDraft(e, latest); e.idleTimer = setTimeout(() => flushEdit(e), NOTE_IDLE_MS); }
+    // PCF MSA J120 O3: offline the page keeps the save in its outbox (note-outbox.js) and says so; it is saved when online.
+    const kept = host.keptOnDevice?.(e.noteId, newRevisionId) === true;
+    if (kept) host.status(t("Kept on this device — it will be saved when you are online."));
     if (v.ed === e) {
-      setEditStatus(v, "saved");
+      setEditStatus(v, kept ? "kept" : "saved");
       if (note) { v.el.querySelector("[data-pane-meta]").textContent = paneMetaText(note); paintVersionLine(v, note); }
     }
     host.afterRevise(note);
