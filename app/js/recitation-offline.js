@@ -88,7 +88,13 @@ export async function saveRecitation({ reciterId, surah, ayahCount, onProgress =
   const all = readSaved();
   all[reciterId] = { ...(all[reciterId] ?? {}), [surah]: { bytes, at: Date.now() } };
   writeSaved(all);
+  tellWorker();
   return bytes;
+}
+
+/** The worker serves only files it knows are saved (app/sw.js savedAudio): tell it the set changed. Best effort. */
+function tellWorker() {
+  try { navigator.serviceWorker?.controller?.postMessage({ type: "audio-saved-changed" }); } catch { /* no worker: nothing to tell */ }
 }
 
 /** Take one sūrah's files out again. */
@@ -99,4 +105,5 @@ export async function removeRecitation({ reciterId, surah, ayahCount, cacheStora
   if (!cacheStorage) return;
   const cache = await cacheStorage.open(RECITATION_CACHE);
   await Promise.all(urls.map((u) => cache.delete(u)));
+  tellWorker();
 }

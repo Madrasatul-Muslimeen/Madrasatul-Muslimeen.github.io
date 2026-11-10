@@ -7,6 +7,8 @@
 //   MUT=nolist ...    mutation: a finished save is not remembered                  -> the "listed as saved" checks fail
 //   MUT=noerr ...     mutation: a failed file does not stop the save (sūrah listed anyway) -> the "cannot be reached" checks fail
 //   MUT=noremove ...  mutation: Remove leaves the files in the cache               -> the "removed" checks fail
+//   MUT=nosetguard .. mutation: the worker steps in for EVERY recitation request   -> the "not saved goes straight to the network" check fails
+//   MUT=notell ...    mutation: the save never tells the worker                     -> the offline playback checks fail (the worker does not know it is saved)
 // archive.org is not reachable here, so it is answered by this suite with a real playable WAV (named .mp3, as the
 // app asks for) and a Range answer. WHETHER archive.org itself answers CORS and Range could not be measured from this
 // sandbox (no route to it); Playwright also adds the CORS header to what a route fulfils. That is said, not claimed:
@@ -48,9 +50,13 @@ function mutate(rel, re, to) {
 const restoreAll = () => { while (restores.length) restores.pop()(); };
 process.on("exit", restoreAll);
 for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { restoreAll(); process.exit(1); });
-if (MUT === "nosw") mutate("app/sw.js", /if \(isRecitationAudio\(request\)\) \{/g, "if (false) {");
+// nosw and nolist re-anchored by the Architect 97L (review of #1622): the worker now steps in only for saved files, and the
+// save tells the worker afterwards, so the original anchors no longer matched.
+if (MUT === "nosw") mutate("app/sw.js", /if \(isRecitationAudio\(request\) && \(savedAudio === null \|\| savedAudio\.has\(request\.url\)\)\) \{/g, "if (false) {");
 else if (MUT === "norange") mutate("app/sw.js", /if \(!m \|\| \(m\[1\] === "" && m\[2\] === ""\)\) return hit;/g, "return hit;");
-else if (MUT === "nolist") mutate("app/js/recitation-offline.js", /  writeSaved\(all\);\n  return bytes;/g, "  return bytes;");
+else if (MUT === "nolist") mutate("app/js/recitation-offline.js", /  writeSaved\(all\);\n  tellWorker\(\);\n  return bytes;/g, "  tellWorker();\n  return bytes;");
+else if (MUT === "nosetguard") mutate("app/sw.js", /isRecitationAudio\(request\) && \(savedAudio === null \|\| savedAudio\.has\(request\.url\)\)/g, "isRecitationAudio(request)");
+else if (MUT === "notell") mutate("app/js/recitation-offline.js", /navigator\.serviceWorker\?\.controller\?\.postMessage\(\{ type: "audio-saved-changed" \}\);/g, "/* mutated */");
 else if (MUT === "noremove") mutate("app/js/recitation-offline.js", /await Promise\.all\(urls\.map\(\(u\) => cache\.delete\(u\)\)\);/g, "");
 else if (MUT === "noerr") mutate("app/js/recitation-offline.js", /  if \(firstError\) throw firstError;\n/g, "");
 
@@ -64,8 +70,10 @@ function wav() {
   return buf;
 }
 const AUDIO = wav();
-let net = true; // the "network": false makes every archive.org request fail, as a real cut does (context.setOffline does not stop routed requests)
+let net = true;
+const viaWorker = new Set(); // archive.org URLs the WORKER fetched (route.request().serviceWorker() is set), as opposed to the page itself // the "network": false makes every archive.org request fail, as a real cut does (context.setOffline does not stop routed requests)
 const withCors = (route) => {
+  try { if (route.request().serviceWorker()) viaWorker.add(route.request().url()); } catch { /* not a worker request */ }
   if (!net) return route.abort();
   const range = /^bytes=(\d+)-(\d*)$/.exec(route.request().headers()["range"] || "");
   const h = { "access-control-allow-origin": "*", "accept-ranges": "bytes", "content-type": "audio/wav" };
@@ -139,6 +147,12 @@ try {
       await page.click("#tabStudyOptionsBtn"); await page.waitForTimeout(500);
       check(`${tag} the saved sūrah is still listed after a reload`, (await page.$$(".recit-off-list li")).length === 1);
     }
+
+    // ---- the Architect's guard: online, a sūrah that was NOT saved goes straight to the network, never through the worker
+    viaWorker.clear();
+    const onlineOther = await play(page, OTHER);
+    check(`${tag} positive control: online, a file that was not saved still plays`, onlineOther.played, JSON.stringify(onlineOther));
+    check(`${tag} MUTATION TARGET (nosetguard): online, the worker does NOT step in for a recitation that was not saved`, !viaWorker.has(OTHER), JSON.stringify([...viaWorker]));
 
     // ---- the network cut
     await ctx.setOffline(true); net = false;

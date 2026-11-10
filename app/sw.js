@@ -396,6 +396,11 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
     return;
   }
+  // J120 O6: the page saved or removed a sūrah's recitation (recitation-offline.js): read the saved set again.
+  if (data.type === "audio-saved-changed") {
+    event.waitUntil(refreshSavedAudio());
+    return;
+  }
   // Architect review: the first open of a page happens BEFORE this worker
   // controls it, so nothing that page loaded passed through the fetch handler
   // and the SECOND open still went to the network. The page sends the list of
@@ -454,6 +459,17 @@ self.addEventListener("activate", (event) => {
 // it plays AND seeks offline); a file that is not saved goes to the network exactly as if no worker existed. Its own cache
 // like the Qur'an data one: NEVER emptied by a release, since the reader chose what is in it.
 const AUDIO_CACHE_NAME = "mm-audio-v1";
+// Architect 97L review: the worker steps in ONLY for a file that is saved (the set below, read from the cache when the
+// worker starts and again whenever the page says it saved or removed a sūrah). Recitation that was never saved goes to
+// the network exactly as before this change, with no worker in the way, so online playback is untouched. While the
+// set is still being read (the first moments after the worker starts), it checks the cache as before.
+let savedAudio = null;
+function refreshSavedAudio() {
+  return caches.open(AUDIO_CACHE_NAME).then((c) => c.keys())
+    .then((keys) => { savedAudio = new Set(keys.map((r) => r.url)); })
+    .catch(() => { savedAudio = null; });
+}
+refreshSavedAudio();
 function isRecitationAudio(request) {
   return request.method === "GET" && /^https:\/\/archive\.org\/download\/.+\.mp3$/i.test(request.url);
 }
@@ -550,7 +566,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (isRecitationAudio(request)) {
+  if (isRecitationAudio(request) && (savedAudio === null || savedAudio.has(request.url))) {
     event.respondWith(handleRecitationAudio(request));
     return;
   }
