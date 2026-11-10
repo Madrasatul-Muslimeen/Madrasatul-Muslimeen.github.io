@@ -70,13 +70,16 @@ async function readView(page) {
 // whole sūrah, so the first āyah's ⋮ on screen is opened and that tile pressed. Everything after the dialog opens is unchanged.
 const tapBm = async (page) => {
   await page.evaluate(() => { window.__stubWriteData = []; const n = document.getElementById("bmSavedNotice"); if (n) n.hidden = true; });
-  // A fresh ⋮ each time: any sheet left open is closed first. The tile is pressed with a DOM click, NOT a pointer tap, on
-  // purpose: in whole-sūrah mode the first āyah's ⋮ sheet opens upward with no room (clipped by #readScroll at 390px, under the
-  // Read bar at 1280px; measured 10 Nov 2026 and reported to the QR Lead with MSA · QR J132, Quran Study's Read bar). That
-  // reachability defect is the Read view's to fix; this suite proves the multi-person save, which starts once the dialog opens.
+  // A fresh ⋮ each time: any sheet left open is closed first. UPDATED IN PLACE 10 Nov 2026 (MSA · QR, the sheet-room round): the āyah's own ⋮ is
+  // the one INSIDE the reading area (#readScroll); since J132 the first ⋮ on the page is the Read bar's Study-only one, which has no
+  // bookmark tile. And the tile is now pressed with a REAL pointer click: the sheet used to open upward into room that was not there
+  // (clipped by #readScroll at 390px, under the Read bar at 1280px, so a finger could not press it), which is why this suite used a DOM
+  // click; read-sheet-room-browser proves the reachability, and this suite proves it again by pressing the tile the way a finger does.
   await page.keyboard.press("Escape"); await page.waitForTimeout(150);
-  await page.locator(".ayah-quick-btn:visible").first().click(); await page.waitForTimeout(300);
-  const pressed = await page.evaluate(() => { const e = [...document.querySelectorAll(".qm-sheet [data-qm-unit-bookmark]")].find((x) => x.getBoundingClientRect().width > 0); if (e) e.click(); return !!e; });
+  await page.locator("#readScroll .ayah-quick-btn:visible").first().click(); await page.waitForTimeout(300);
+  const tile = page.locator(".qm-sheet [data-qm-unit-bookmark]:visible").first();
+  const pressed = (await tile.count()) > 0;
+  if (pressed) await tile.click();
   if (!pressed) throw new Error("the ⋮ sheet has no whole-unit bookmark tile on screen");
 };
 const tick = (page, sel, ids) => page.evaluate(([s, list]) => {
