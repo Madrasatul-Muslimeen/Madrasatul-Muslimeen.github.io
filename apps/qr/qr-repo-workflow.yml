@@ -10,6 +10,12 @@
 # 6-7 hours and dropped some runs, so QR fell two releases behind. It now looks EVERY HOUR; a scheduled run
 # builds only when MSA main's version differs from what quranrevival.github.io serves, so most runs take seconds.
 #
+# 10 Nov 2026 (G02 item B1, PCA J86 pro1110d; the Owner's yes): QR rebuilds itself and the PCA leaves the
+# release chain, so the workflow now CHECKS ITS OWN DEPLOY: after publishing, the `confirm` job waits up to 10
+# minutes for https://quranrevival.github.io/app/js/qr-version.js to show the version just built; if it does not,
+# it starts this workflow ONCE more (retry=1), and a retry that still does not show it fails red. PREPARED IN MSA
+# ON 10 NOV, COPIED INTO QR ON 18 NOV (the Pro-plan switch-on); until then QR runs the copy without `confirm`.
+#
 # Turning it on (step 5, after the Owner has looked at the built QR side by side with today's):
 #   QR repository → Settings → Pages → Source: "GitHub Actions", then run this workflow.
 # THE WAY BACK (minutes): Settings → Pages → Source: "Deploy from a branch", main, / (root). Today's frozen QR
@@ -26,6 +32,10 @@ on:
         description: "MSA commit or branch to build (default: main)"
         required: false
         default: "main"
+      retry:
+        description: "Set by the confirm job only: this run is the one re-run after a deploy that did not show"
+        required: false
+        default: "0"
   # The Owner, 30 Oct 2026: QR updates itself from MSA's main (at :17, off the busy :00).
   # 2 Nov 2026 (PCA J86): every hour, because GitHub delays and drops scheduled runs; the check job skips
   # the build when QR already serves MSA main's version. A scheduled run has no inputs, so the checkout
@@ -64,6 +74,8 @@ jobs:
     if: needs.check.outputs.go == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      version: ${{ steps.qr.outputs.version }}
     steps:
       - name: Check out MSA's one source
         uses: actions/checkout@v4
@@ -75,13 +87,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Prove MSA's source still builds MSA unchanged, then build QR
+      - id: qr
+        name: Prove MSA's source still builds MSA unchanged, then build QR
         working-directory: msa
         run: |
           set -euo pipefail
           node tools/apps/apps-build-check.mjs
           node tools/apps/build-app.mjs qr --out=../_site
-          echo "Built from MSA $(git rev-parse --short HEAD), version $(grep -o 'APP_VERSION = "[0-9.]*"' app/js/version.js)"
+          v=$(grep -o 'APP_VERSION = "[0-9.]*"' app/js/version.js | grep -o '[0-9][0-9.]*')
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Built from MSA $(git rev-parse --short HEAD), version $v"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
@@ -94,3 +109,27 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+  confirm:
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write
+    steps:
+      - name: The live site must show the version just built (one re-run if not)
+        env:
+          WANT: ${{ needs.build.outputs.version }}
+          RETRY: ${{ inputs.retry || '0' }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+          got=""
+          for i in $(seq 1 20); do
+            got=$(curl -fsSL "https://quranrevival.github.io/app/js/qr-version.js?t=$(date +%s)" | grep -o 'APP_VERSION = "[0-9.]*"' | head -1 | grep -o '[0-9][0-9.]*' || true)
+            echo "try $i: live ${got:-unknown}, built $WANT"
+            [ -n "$WANT" ] && [ "$got" = "$WANT" ] && { echo "QR serves v$WANT."; exit 0; }
+            sleep 30
+          done
+          if [ "$RETRY" = "1" ]; then echo "::error::QR still serves ${got:-unknown}, not v$WANT, after one re-run."; exit 1; fi
+          echo "::warning::QR serves ${got:-unknown}, not v$WANT: starting this workflow once more."
+          gh workflow run build-from-msa.yml --repo "$GITHUB_REPOSITORY" -f msa_ref=main -f retry=1
