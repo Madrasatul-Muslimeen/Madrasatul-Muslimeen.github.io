@@ -1,12 +1,16 @@
 // MSA · QR J136 (the Owner, 10 Nov 2026: "Approved with recommended") -- "Mark the Word" on the REAL Word card.
 // (1) five buttons, the seeded marks pressed (Learned Easy = the old Done), names in English and Bangla.
 // (2) "How hard was it, in this sūrah": the four degrees with count and %, from the seeded marks and effort.
-// (3) UNTIL THE OWNER PUBLISHES THE RULES: Very Hard and Already Known say in words that they cannot be saved yet, write NOTHING,
+// (3) THE REFUSAL PATH (the day the flag is false): Very Hard and Already Known say in words that they cannot be saved yet, write NOTHING,
 //     and stay unpressed; Difficult / Learn / Learned Easy still save, as the old keys, with no `effort` field sent.
+//     UPDATED IN PLACE 11 Nov 2026 (QR Lead 46L): the Owner PUBLISHED the Rules, so the repository's flag is now TRUE. This section
+//     therefore runs against a copy of word-effort.js with the flag forced to false (the refusal path must keep working).
+// (3b) THE PUBLISHED PATH: with the real file, Very Hard saves `hard` AND effort "very", Already Known saves effort "known", and
+//     neither shows the "cannot be saved yet" note.
 // (4) the Marks wheel lights the inner band blue (Already Known) and purple (Very Hard) from the stored effort.
 // Run from the repo root, serve.js on :8080. --mutate=NAME must make the suite FAIL:
 //   nonote    the "cannot be saved yet" line is never shown          -> (3)
-//   flagtrue  the flag is true: Very Hard tries to save effort       -> (3)
+//   flagfalse the real flag is false: Very Hard cannot be saved       -> (3b)
 //   notally   the table is not drawn                                 -> (2)
 //   noband    the wheel ignores the effort map                       -> (4)
 //   bnleak    the Bangla note is missing                             -> (3)
@@ -21,7 +25,7 @@ const check = (name, ok, detail = "") => {
 const HTML = "app/quranrevival.html", EFF = "app/js/word-effort.js", UI = "app/js/marks-ui.js", BN = "app/js/i18n/bn.js";
 const MUT = {
   nonote: [HTML, "wordEffortNote = { unitKey, text: t(", "wordEffortNote = { unitKey: '', text: t("],
-  flagtrue: [EFF, "export const WORD_EFFORT_RULES_PUBLISHED = false;", "export const WORD_EFFORT_RULES_PUBLISHED = true;"],
+  flagfalse: [EFF, "export const WORD_EFFORT_RULES_PUBLISHED = true;", "export const WORD_EFFORT_RULES_PUBLISHED = false;"],
   notally: [HTML, 'const detailsHtml = `<details class="we-details"', 'const detailsHtml = "" && `<details class="we-details"'],
   noband: [UI, "const eff = effort?.[p.key] === \"known\"", "const eff = null && effort?.[p.key] === \"known\""],
   bnleak: [BN, '  "This mark cannot be saved yet: the new saving rule has not been published in Firebase. Difficult, Learn and Learned Easy save as before.": ', '  "x-unused": '],
@@ -38,19 +42,22 @@ const writesOf = (page) => ev(page, () => (window.__stubWriteData || []).filter(
 const rowState = (page) => ev(page, () => [...document.querySelectorAll(".quran-word-card [data-word-mark]")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => ({ id: b.dataset.wordMark, on: b.getAttribute("aria-pressed") === "true", name: b.querySelector(".we-name")?.textContent.trim(), h: Math.round(b.getBoundingClientRect().height) })));
 const NAMES = { en: ["Already Known", "Difficult", "Learn", "Learned Easy", "Very Hard"], bn: ["আগে থেকেই জানা", "কঠিন", "শিখুন", "সহজে শেখা", "খুব কঠিন"] };
 
+async function routeMutation(ctx) {
+  const [file, a, b] = MUT[MUTATE];
+  await ctx.route(`**/${file}*`, async (r) => {
+    const src = fs.readFileSync(file, "utf8");
+    if (!src.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`);
+    await r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: src.split(a).join(b) });
+  });
+}
 for (const [lang, width, height] of [["en", 390, 844], ["en", 1440, 900], ["bn", 390, 844]]) {
   const tag = `[${lang} ${width}]`;
   console.log(`\n=== Mark the Word ${tag} ===`);
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height }, extraSeedJs: SEED + "window.__stubApplyBatches = true;" });
   await ctx.route("**/archive.org/**", (r) => r.abort());
-  if (MUTATE) {
-    const [file, a, b] = MUT[MUTATE];
-    await ctx.route(`**/${file}*`, async (r) => {
-      const src = fs.readFileSync(file, "utf8");
-      if (!src.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`);
-      await r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: src.split(a).join(b) });
-    });
-  }
+  // the refusal path runs on a copy with the flag forced false (see the header); a mutation then overrides it, except flagfalse (3b only)
+  await ctx.route(`**/${EFF}*`, async (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: fs.readFileSync(EFF, "utf8").replace("export const WORD_EFFORT_RULES_PUBLISHED = true;", "export const WORD_EFFORT_RULES_PUBLISHED = false;") }));
+  if (MUTATE && MUTATE !== "flagfalse") await routeMutation(ctx);
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
   await settle(page, 1200);
@@ -115,6 +122,45 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 1440, 900], ["bn",
   const bands = await ev(page, () => { const g = (k) => document.querySelector(`#wheelContainer .mk-piece[data-mk-key="${k}"]`); const eff = (k) => [...(g(k)?.querySelectorAll(".mk-eff-known.on, .mk-eff-very.on") ?? [])].map((p) => p.getAttribute("class")); return { very: eff("qword:1:1:2"), known: eff("qword:1:1:4"), plain: eff("qword:1:1:3"), legend: document.querySelector("[data-mk-legend]")?.innerText ?? "" }; });
   check(`${tag} (4) the wheel lights Very Hard's inner band purple, Already Known's blue, a plain Difficult word neither`, bands.very.length >= 1 && bands.very.every((c) => /mk-eff-very/.test(c)) && bands.known.length >= 1 && bands.known.every((c) => /mk-eff-known/.test(c)) && bands.plain.length === 0, JSON.stringify(bands));
   check(`${tag} (4) the legend names both new colours`, lang === "bn" ? /আগে থেকেই জানা/.test(bands.legend) && /খুব কঠিন/.test(bands.legend) : /Already Known/.test(bands.legend) && /Very Hard/.test(bands.legend), JSON.stringify(bands.legend));
+  await page.close(); await ctx.close();
+}
+// (3b) THE PUBLISHED PATH, with the real word-effort.js (the flagfalse mutation breaks it).
+{
+  const tag = "[en 390 published]";
+  console.log(`\n=== Mark the Word ${tag} ===`);
+  const ctx = await newContext(browser, { banner: false, viewport: { width: 390, height: 844 }, extraSeedJs: SEED + "window.__stubApplyBatches = true;" });
+  await ctx.route("**/archive.org/**", (r) => r.abort());
+  if (MUTATE === "flagfalse") await routeMutation(ctx);
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+  await settle(page, 1200);
+  if (!(await ev(page, () => !document.getElementById("readView").hidden))) {
+    if (!(await ev(page, () => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await page.click("#tabStudyBtn"); await settle(page, 200); }
+    await page.click("#tabReadBtn");
+    await page.waitForFunction(() => !document.getElementById("readView").hidden && document.getElementById("ayahPanels").textContent.trim().length > 20, null, { timeout: 8000 });
+    await settle(page, 300);
+  }
+  await ev(page, () => { const el = document.getElementById("ayahSelect"); el.value = "1"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+  await settle(page, 700);
+  await ev(page, () => { const t = document.getElementById("wbwShowToggle"); if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); } });
+  await settle(page, 500);
+  const occ = "quran-word-occurrence:v1:1:1:1";
+  await page.waitForFunction((i) => document.querySelector(`#readView [data-word-occurrence="${i}"]`), occ, { timeout: 8000 });
+  await ev(page, (i) => document.querySelector(`#readView [data-word-occurrence="${i}"]`).click(), occ);
+  await page.waitForSelector(`.quran-word-card[data-occurrence-id="${occ}"]`, { timeout: 8000 });
+  await page.waitForSelector(".quran-word-card [data-word-marks-row]", { timeout: 6000 }).catch(() => {});
+  const w0 = (await writesOf(page)).length;
+  const tap = async (id) => { await ev(page, (x) => [...document.querySelectorAll(`.quran-word-card [data-word-mark="${x}"]`)].find((b) => b.getBoundingClientRect().width > 0)?.click(), id); await settle(page, 600); };
+  await tap("very");
+  let w = (await writesOf(page)).slice(w0);
+  let note = await ev(page, () => document.querySelector(".quran-word-card [data-word-effort-note]")?.textContent.trim() ?? "");
+  check(`${tag} (3b) Very Hard SAVES: the key hard (replacing Learned Easy) and effort "very" for the word, in one write`, w.length === 1 && w[0].includes('"entries.qword:1:1:1":["hard"]') && w[0].includes('"effort.qword:1:1:1":"very"'), JSON.stringify(w));
+  check(`${tag} (3b) ...and shows no "cannot be saved yet" note`, note === "", JSON.stringify(note));
+  const m2 = await rowState(page);
+  check(`${tag} (3b) ...and Very Hard is pressed`, m2.filter((x) => x.on).map((x) => x.id).includes("very"), JSON.stringify(m2));
+  await tap("known");
+  w = (await writesOf(page)).slice(w0);
+  check(`${tag} (3b) Already Known SAVES effort "known" (the second write)`, w.length === 2 && w[1].includes('"effort.qword:1:1:1":"known"'), JSON.stringify(w));
   await page.close(); await ctx.close();
 }
 await browser.close();

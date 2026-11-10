@@ -31,7 +31,7 @@ async function acheck(name, fn) {
 
 // ---- mutants: [name, file, regex, replacement]. Every one must make the suite FAIL. ----------------------------------------
 const MUTANTS = {
-  "flag-true": ["word-effort.js", /WORD_EFFORT_RULES_PUBLISHED = false;/, "WORD_EFFORT_RULES_PUBLISHED = true;"],
+  "flag-false": ["word-effort.js", /WORD_EFFORT_RULES_PUBLISHED = true;/, "WORD_EFFORT_RULES_PUBLISHED = false;"],
   "no-refuse": ["ayah-keys-data.js", /if \(wantsEffortField && !WORD_EFFORT_RULES_PUBLISHED\) return \{ ok: false, refused: "rules-not-published" \};/, ""],
   "very-not-hard": ["word-effort.js", /if \(markId === "very"\) \{ add\("hard"\)/, "if (markId === \"very\") { /*x*/"],
   "known-keeps-hard": ["word-effort.js", /if \(markId === "known"\) \{ drop\("hard"\); e = "known"; \}/, "if (markId === \"known\") { e = \"known\"; }"],
@@ -63,14 +63,18 @@ const load = (text) => import(`data:text/javascript;base64,${Buffer.from(text).t
 
 // ---- the real, pure module (and a copy with the flag flipped, to test the day after the Owner publishes) ------------------------
 const effortText = read("word-effort.js");
-const W = await load(effortText);
+// UPDATED IN PLACE 11 Nov 2026 (QR Lead 46L): the Owner PUBLISHED the Rules, so the repository's flag is now TRUE. `W` stays the
+// "Rules not published" copy (the flag forced false) because the refusal path must keep working and keep being tested;
+// `WREAL` is the file exactly as it is, for the checks about the repository's own flag.
+const WREAL = await load(effortText);
+const W = await load(effortText.replace(/WORD_EFFORT_RULES_PUBLISHED = (false|true);/, "WORD_EFFORT_RULES_PUBLISHED = false;"));
 const WPUB = await load(effortText.replace(/WORD_EFFORT_RULES_PUBLISHED = (false|true);/, "WORD_EFFORT_RULES_PUBLISHED = true;"));
 
 check("the module imports nothing (it is pure)", () => assert.ok(!/^\s*import\s/m.test(effortText)));
-check("the safe default: the Rules are NOT published, so the flag is false in the repository", () => {
+check("the flag in the repository is TRUE, because the Owner published the Rules (11 Nov 2026) and firestore.rules carries `effort`", () => {
   const real = fs.readFileSync(path.join(appJs, "word-effort.js"), "utf8");
-  assert.match(real, /export const WORD_EFFORT_RULES_PUBLISHED = false;/);
-  assert.equal(W.WORD_EFFORT_RULES_PUBLISHED, false);
+  assert.match(real, /export const WORD_EFFORT_RULES_PUBLISHED = true;/);
+  assert.equal(WREAL.WORD_EFFORT_RULES_PUBLISHED, true);
 });
 check("the five marks, in the Owner's order, with their kinds", () => {
   assert.deepEqual(W.WORD_MARKS.map((m) => m.id), ["known", "difficult", "learn", "easy", "very"]);
@@ -375,10 +379,11 @@ function block(text, name) {
 }
 const live = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
 const candText = fs.readFileSync(path.join(root, "docs/proposals/word-effort.candidate.rules"), "utf8");
-check("firestore.rules is UNTOUCHED by this round: it still has no `effort`", () => {
-  assert.ok(!/effort/i.test(block(live, "ayahKeyMarks")), "the published block mentions effort: was the candidate published? then flip the flag in the same release");
+check("firestore.rules carries `effort` in the ayahKeyMarks block (the Owner published it, 11 Nov 2026), and the flag is true with it", () => {
+  assert.ok(/'effort'/.test(block(live, "ayahKeyMarks")), "the published block does not carry effort: the flag is true, so every Already Known / Very Hard save would be DENIED");
+  assert.equal(WREAL.WORD_EFFORT_RULES_PUBLISHED, true);
 });
-check("the candidate differs from the published ayahKeyMarks block ONLY by the effort lines (undo them and the two are identical)", () => {
+check("the candidate IS the published ayahKeyMarks block (the Owner published it; effort lines and all, comments aside)", () => {
   const norm = (text) => text.split("\n").filter((l) => l.trim() && !/^\s*\/\//.test(l)).join("\n");
   let c = block(candText, "ayahKeyMarks");
   assert.ok(c.includes("'entries', 'effort',"), "POSITIVE CONTROL: the field-list change was not found");
@@ -388,7 +393,8 @@ check("the candidate differs from the published ayahKeyMarks block ONLY by the e
   const fn = c.match(/\n\s*function effortOk\(\) \{[^}]*\}\n/);
   assert.ok(fn, "POSITIVE CONTROL: effortOk() was not found");
   c = c.replace(fn[0], "\n");
-  assert.equal(norm(c), norm(block(live, "ayahKeyMarks")), "the candidate changes something other than the effort lines");
+  assert.equal(norm(block(candText, "ayahKeyMarks")), norm(block(live, "ayahKeyMarks")), "the published block is not the candidate's");
+  assert.ok(norm(c).length > 0, "POSITIVE CONTROL: undoing the effort lines left something");
 });
 check("the candidate keeps every guard: delete closed, key binding, createdBy frozen, tenant/scope/surah frozen, person-in-tenant", () => {
   const c = block(candText, "ayahKeyMarks");

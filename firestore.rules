@@ -2953,7 +2953,7 @@ service cloud.firestore {
 
       function ayahKeysShapeOk() {
         return d().keys().hasOnly([
-                 'tenantId', 'scope', 'surah', 'entries',
+                 'tenantId', 'scope', 'surah', 'entries', 'effort',
                  'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
                ])
             && d().keys().hasAll([
@@ -2965,9 +2965,20 @@ service cloud.firestore {
             && d().surah is int && d().surah >= 1 && d().surah <= 114
             && markKey == d().tenantId + '__' + d().scope + '__' + string(d().surah)
             && d().entries is map
+            && effortOk()
             && d().schemaVersion is number
             && d().createdAt is timestamp && d().updatedAt is timestamp
             && d().createdBy is string && d().createdBy.size() > 0;
+      }
+
+      // PCF MSA J136 (10 Nov 2026) -- the ONE new, OPTIONAL field: `effort`, a map from a word's unit key to the degree of
+      // effort the reader says it took ('known', 'easy', 'very'). Absent on every document written so far, so every
+      // existing document stays valid. Rules cannot inspect one key of an arbitrarily keyed map, so the client validates
+      // the keys and the three words (app/js/word-effort.js); the Rules bound the SHAPE and the SIZE (the longest
+      // sura, Al-Baqarah, has 6,144 words, so 7,000 cannot be reached by honest use).
+      function effortOk() {
+        return !('effort' in d())
+            || (d().effort is map && d().effort.size() <= 7000);
       }
 
       // Who may write the document of `scope` in `tenantId`.
