@@ -23702,3 +23702,16 @@ The Owner's offline plan O5 (J120): "every part that truly needs the internet sa
 - **Checks** (re-run by the Architect on main v14.16 + the branch): new `needs-internet-lines-browser` 20/0 (en/bn at 390 and 1280, online controls keep the old wording); mutations `noaudio` 4, `noposter` 8, `nobn` 4 red; asma-poster-browser 102/0; stub-parity 4/0, apps-build-check 53/0. The Lead also reported offline-line 180/0, asma-explore-name-poster 36/0, asma-name-nav-poster 140/0.
 - **Next**: O6 (recitation per sūrah offline, the Owner's answer G), the QR Lead's.
 - Nothing deployed to Firestore.
+
+## v14.18 — 10 Nov 2026 — The Asma poster says it needs the internet (PCF MSA J120 O5, QR part 2 of 2), and a correction to v14.17
+
+**Correction to v14.17.** The v14.17 entry above says it carried the Asma poster note. It did not. The QR Lead split PR #1618 into recitation only (`dd30995c`) after the Architect had reviewed its earlier head (`c9958811`, both parts); the merge was not pinned to the reviewed commit, so it took the new head. **v14.17 shipped only the recitation line** ("Recitation needs the internet.", `app/js/audio-player.js`, one `bn.js` string, suite `recitation-needs-internet-browser`). The v14.17 entry is left as written (history) and corrected here. Lesson: merge with `expectedHeadSha` set to the full commit that was tested.
+
+**v14.18** (PR #1620, QR Lead 45L, branch from main v14.16, merged as 303f9476 pinned to the tested head 438f6c99):
+
+- **`app/js/asma-poster.js`**: new `asmaPosterNeedsInternet()`: true only when `navigator.onLine` is false AND the poster's web font (Tinos, from fonts.googleapis.com, which the worker does not keep) is not loaded on the page; the note's style (`.ahp-offline-note`).
+- **`app/js/asma-renderer.js`**: `renderAsmaPosterHtml()` adds the quiet status note "Posters need the internet" under the poster when that is true (not on the screensaver). A poster whose fonts loaded earlier is exact and says nothing.
+- **`app/js/i18n/bn.js`**: one string.
+- **Checks** (the Architect, on main v14.17 + #1620): `asma-poster-needs-internet-browser` 16/0, mutations `noposter` 8, `alwaysnote` 4, `nobn` 2 red; asma-poster-browser 102/0. And the suite of what v14.17 actually shipped, re-run now: `recitation-needs-internet-browser` 8/0, mutations `noaudio` 4, `nobn` 2 red.
+- **Next**: O6 (recitation per sūrah offline), the QR Lead's; a short design comes first.
+- Nothing deployed to Firestore.
