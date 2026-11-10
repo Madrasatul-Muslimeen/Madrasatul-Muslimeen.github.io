@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.12",
+    "version": "14.13",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6833,8 +6833,20 @@
     {
       "version": "14.12",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "MSA J120 O3: a Note written or changed offline is kept on the device and replayed through the same note-foundation functions when online; no Rules change; released by the Architect 95L.",
+      "integration": {
+        "authorizedOn": "2026-11-10",
+        "integratedOn": "2026-11-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "14.13",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "MSA · QR follow-up round by the QR Lead 45L (#1610): the ⋮ sheet inside the reading area is placed in the visible band so every tile can be pressed, and the Study pickers show their longest option whole.",
       "integration": {
         "authorizedOn": "2026-11-10",
         "integratedOn": "2026-11-10",
@@ -6843,8 +6855,9 @@
       }
     }
   ],
-  "nextUnallocated": "14.13",
+  "nextUnallocated": "14.14",
   "nextUnallocatedNote": [
+    "v14.13 was allocated to Read view ⋮ sheet room and Study picker widths, 2026-11-10.",
     "v14.12 was allocated to Notes offline: kept on the device, saved when online (J120 O3), 2026-11-10.",
     "v14.11 was allocated to Practising words get a light violet tint (QR Lead), 2026-11-10.",
     "v14.10 was allocated to Mark the Word, five marks on the Word card (MSA · QR J136), 2026-11-10.",
