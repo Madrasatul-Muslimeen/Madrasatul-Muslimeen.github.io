@@ -3755,6 +3755,7 @@ export const BN = {
   "Fewer (auto)": "যেগুলো কম (স্বয়ংক্রিয়)",
   "Known": "জানা",
   "still to learn": "শেখা বাকি",
+  "Words you are practising are always marked in light violet.": "যে শব্দগুলো আপনি অনুশীলন করছেন, সেগুলো সবসময় হালকা বেগুনি রঙে চিহ্নিত থাকে।",
   "Always marks the words you know, in green.": "সবসময় জানা শব্দগুলো সবুজে চিহ্নিত হয়।",
   "Always marks the words you still have to learn, in amber.": "সবসময় শেখা বাকি শব্দগুলো কমলা রঙে চিহ্নিত হয়।",
   "Marks whichever is fewer: you know half or more of the Qur'an, so the words still to learn are marked, in amber.": "যেগুলো সংখ্যায় কম সেগুলো চিহ্নিত হয়: আপনি কুরআনের অর্ধেক বা তার বেশি শব্দ জানেন, তাই শেখা বাকি শব্দগুলো কমলা রঙে চিহ্নিত হচ্ছে।",
