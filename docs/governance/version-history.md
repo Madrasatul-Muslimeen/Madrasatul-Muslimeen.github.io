@@ -1119,3 +1119,4 @@ total). Allocated by the MMSA Architect.
 14.14: Notes offline part 2 (PCF MSA J120 O3b). Allocated by the MMSA Architect.
 14.15: Your own records ready offline (PCF MSA J120 O4). Allocated by the MMSA Architect.
 14.16: One calm Offline line (PCF MSA J120 O5). Allocated by the MMSA Architect.
+14.17: Recitation and posters say they need the internet (PCF MSA J120 O5, QR part). Allocated by the MMSA Architect.
