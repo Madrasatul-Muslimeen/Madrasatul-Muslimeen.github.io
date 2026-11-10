@@ -234,8 +234,11 @@ for (const lang of ["en", "bn"]) for (const w of [390, 1280]) {
     const words = await page.evaluate(() => [...document.querySelectorAll("[data-edit-status], [data-pane-status], #pageStatusMsg, #qr-write-failure-banner")].map((e) => e.textContent.trim()).filter(Boolean).join(" | "));
     console.log(`  INFO  ${tag} Notes pane edit, offline, words on screen: ${JSON.stringify(words)}`);
     check(`${tag} Notes pane edit: offline, it does NOT claim "saved on this device" (a transaction)`, (await notice(page)) === null);
-    check(`${tag} Notes pane edit: offline, the reader is told it is not saved yet`, /Not saved yet|এখনও সংরক্ষিত হয়নি/.test(words), JSON.stringify(words));
-    check(`${tag} Notes pane edit: the typed text is kept on the device (draft) for the retry`, await page.evaluate(() => Object.keys(localStorage).some((k) => /draft/i.test(k) && /typed offline/.test(localStorage.getItem(k) || ""))));
+    // UPDATED IN PLACE (PCF MSA J120 O3, Notes offline): the refused transaction is now KEPT in the device's outbox
+    // (js/note-outbox.js) and saved when the line is back, so the words say exactly that instead of "Not saved yet",
+    // and the typed text is in the outbox rather than only a retry draft. notes-offline-browser.mjs proves the replay.
+    check(`${tag} Notes pane edit: offline, the reader is told it is kept on this device and will be saved when online`, /Kept on this device — it will be saved when you are online\.|এই ডিভাইসে রাখা আছে — ইন্টারনেট ফিরলে সংরক্ষিত হবে।/.test(words), JSON.stringify(words));
+    check(`${tag} Notes pane edit: the typed text is kept on the device (the Notes outbox) to be saved when online`, await page.evaluate(() => /typed offline/.test(localStorage.getItem("mmsa.noteOutbox.v1") || "")));
     await ctx.close();
   }
 }
