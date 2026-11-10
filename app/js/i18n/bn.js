@@ -5004,4 +5004,11 @@ export const BN = {
   "There were too many to keep them all; the rest need the internet.": "সবগুলো রাখার পক্ষে সংখ্যা বেশি ছিল; বাকিগুলোর জন্য ইন্টারনেট লাগবে।",
   "Your own copy is not complete yet.": "আপনার নিজের কপি এখনও সম্পূর্ণ হয়নি।",
   "Your own copy could not be kept for: {parts}. Tap the button again to try them.": "আপনার নিজের কপি রাখা যায়নি: {parts}। আবার চেষ্টা করতে বোতামটি আবার চাপুন।",
+  // PCF MSA J120 O5: the Offline line at the top of every page (offline-line.js).
+  "Offline: working from this device": "ইন্টারনেট নেই: এই ডিভাইস থেকে কাজ চলছে",
+  "Back online — saving your changes…": "আবার অনলাইনে — আপনার পরিবর্তনগুলো সংরক্ষণ হচ্ছে…",
+  "All saved ✓": "সব সংরক্ষিত ✓",
+  "Signing in needs the internet. Connect, then tap Sign in again.": "সাইন ইন করতে ইন্টারনেট লাগে। সংযোগ দিয়ে আবার সাইন ইন চাপুন।",
+  "Outside websites need the internet. This link will open when you are online.": "বাইরের ওয়েবসাইটের জন্য ইন্টারনেট লাগে। অনলাইনে থাকলে এই লিংক খুলবে।",
+  "Back online. {n} Note(s) written offline will be saved when you open Notes or Mapping My Journey.": "আবার অনলাইনে। ইন্টারনেট ছাড়া লেখা {n}টি নোট সংরক্ষিত হবে যখন আপনি নোট বা আমার যাত্রার মানচিত্র খুলবেন।",
 };

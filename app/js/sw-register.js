@@ -153,6 +153,14 @@ export function registerServiceWorker() {
     const whenIdle = () => (window.requestIdleCallback ? window.requestIdleCallback(mountZab, { timeout: 2000 }) : setTimeout(mountZab, 500));
     if (document.readyState === "complete") whenIdle(); else window.addEventListener("load", whenIdle, { once: true });
   }
+  // PCF MSA J120 O5: one calm "Offline" line at the top. Its code is fetched ONLY when the device is offline (now, or
+  // later on the browser's `offline` event), so a page that stays online costs nothing (I9).
+  if (!inWindow && !embedded) {
+    const mountLine = () => import("./offline-line.js").then((m) => m.mountOfflineLine()).catch((err) => console.warn("Offline line not mounted:", err.message));
+    if (navigator.onLine === false) {
+      if (document.body) mountLine(); else document.addEventListener("DOMContentLoaded", mountLine, { once: true });
+    } else window.addEventListener("offline", mountLine, { once: true });
+  }
   if (!("serviceWorker" in navigator)) return;
   if (!isSecureEnough() || isDisabled()) {
     if ("serviceWorker" in navigator) unregisterAny();
@@ -183,7 +191,8 @@ export function registerServiceWorker() {
       });
       return navigator.serviceWorker.ready;
     }).then((reg) => {
-      reg?.active?.postMessage({ type: "warm", urls: loadedAppFiles() });
+      // J120 O5: the Offline line's code is kept too, so it can open the first time the line drops.
+      reg?.active?.postMessage({ type: "warm", urls: [...loadedAppFiles(), new URL("./offline-line.js", import.meta.url).href] });
       warmLaterFiles(reg);
     }).catch((err) => {
       // Best-effort, like every other progressive-enhancement feature in
