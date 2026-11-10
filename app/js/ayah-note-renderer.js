@@ -132,6 +132,7 @@ export function renderQuickMenu(unitKey, {
   hasNote = false, isBookmarked = false, showBookmark = true,
   showTextTools = false, isWbwOn = false, isRootsOn = false, isDerivativesOn = false,
   sheet = false, showWriting = false, showAsma = false, unitBookmark = null, extraTiles = "",
+  studyBlock = "", studyOnly = false,
 } = {}) {
   // PCF MSA J114 (the Owner, 6 Nov 2026, option B): Quran Study's ONE ⋮ beside the āyah. Four round tiles for what is done most
   // (Play, Notes, Bookmark, QCR), then a tidy list (Copy, Share, Writing sheet, Attach to Asma), then the reading chips. Every
@@ -145,7 +146,8 @@ export function renderQuickMenu(unitKey, {
     <div class="ayah-quick-wrap" data-unit-key="${escapeHtml(unitKey)}">
       <button type="button" class="ayah-quick-btn${hasNote ? " has-note" : ""}" data-qm-toggle title="${t("Quick actions")}" aria-label="${t("Quick actions")}" aria-haspopup="true">⋮</button>
       <div class="quick-menu qm-sheet">
-        <div class="qm-tiles">
+        ${studyBlock}
+        ${studyOnly ? `<div class="qm-tiles">${extraTiles}</div>` : `<div class="qm-tiles">
           ${tile("data-qm-play", "▶", t("Play"))}
           ${tile(`data-qm-note${hasNote ? "" : " data-qm-note-new"}`, "📝", hasNote ? t("Notes") : t("Take Note"))}
           ${hasNote ? tile("data-qm-note-add", "＋", t("New Note")) : ""}
@@ -169,7 +171,7 @@ export function renderQuickMenu(unitKey, {
           <div class="qm-sub" data-qm-sub="share">${langCheckboxRows("qm-lang-share", hasNote)}
             <button type="button" class="qm-go-btn" data-qm-share-go>${t("Share")}</button>
           </div>
-        </div>
+        </div>`}
       </div>
     </div>`;
   }

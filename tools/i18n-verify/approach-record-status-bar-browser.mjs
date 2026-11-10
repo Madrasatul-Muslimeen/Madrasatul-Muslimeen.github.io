@@ -5,6 +5,12 @@
 //   node tools/i18n-verify/approach-record-status-bar-browser.mjs   (from the repo root, serve.js on :8080)
 //
 // Every expected value is written by hand from the issue.
+//
+// UPDATED IN PLACE, MSA · QR J132 (the Owner, 10 Nov 2026: "Study moves to dot"): the gold pill, the picker row and Study ▾ are no longer
+// ON the Read bar at any width; the three buttons are the Approach | Record | Status TILES in the Study group at the top of the bar's ⋮
+// sheet. So section 1 now asserts (a) the old pill is NOT on screen at any width and (b) the three tiles are equal, uncut, finger-sized,
+// inside the screen and readable; section 2 presses the same three things through their tiles. The pill's own palette / divider / line
+// position checks are retired with the pill (it still exists, hidden, as the button the tiles press).
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
 
@@ -29,8 +35,8 @@ const LABELS = {
 const WIDTHS = [320, 340, 360, 390, 412, 768, 1280];
 
 async function start(lang, width) {
-  // legacyTools: drives the retired ⋯ path (PCF MSA J114 ONE menu)
-  const ctx = await newContext(browser, { legacyTools: true, appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width >= 768 ? 1024 : 844 }, extraSeedJs: SEED });
+  // MSA · QR J132: no legacyTools now: the three buttons are driven through the ⋮ sheet's tiles, the route a reader has
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width >= 768 ? 1024 : 844 }, extraSeedJs: SEED });
   await ctx.route(MUSHAF_JSON_URL, (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MUSHAF) }));
   await ctx.route(`${MUSHAF_FONT_BASE}**`, (r) => r.abort("failed"));
   await ctx.route(SURAH_HEADER_FONT_URL, (r) => r.abort("failed"));
@@ -40,13 +46,16 @@ async function start(lang, width) {
 /** PCF MSA J99 (the Owner, 25 Oct 2026: "put those 3 buttons inside the dots on the card"): below 600px the three live in
  *  the Read bar's ⋯ card, so a check opens the card first, as a reader does. Updated in place, reason recorded. */
 async function openCardFor(page, sel) {
+  if (sel === BAR.read) { await openSheet(page); return; }
   const inCard = await page.evaluate((s) => { const e = document.querySelector(s); const m = document.getElementById("readToolsMenu"); return !!e && !!m && m.contains(e) && !m.classList.contains("open"); }, sel);
   if (inCard) { await page.click("#readToolsBtn"); await page.waitForTimeout(250); }
 }
 async function closeCard(page) {
+  if (await page.evaluate((q) => document.querySelector(q)?.classList.contains("open"), SHEET)) { await page.keyboard.press("Escape"); await page.evaluate((q) => document.querySelector(q)?.classList.remove("open"), SHEET); await page.waitForTimeout(150); }
   if (await page.evaluate(() => document.getElementById("readToolsMenu")?.classList.contains("open"))) { await page.keyboard.press("Escape"); await page.waitForTimeout(150); }
 }
 async function click(page, sel) {
+  if (TILE[sel]) { await openSheet(page); await page.click(`${SHEET} ${TILE[sel]}`, { timeout: 4000 }); return; } // J132: the real route to each button is its tile
   for (let i = 0; i < 4; i++) {
     await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
     await openCardFor(page, sel);
@@ -73,20 +82,26 @@ async function openRead(page, mushaf) {
   await page.waitForTimeout(800);
   if (mushaf) await page.waitForFunction(() => Number.isFinite(Number(document.getElementById("mushafPageRef")?.dataset.page)), null, { timeout: 10000 }).catch(() => {});
 }
-const BAR = { read: "#readApproachBar" };
+const BAR = { read: "#readQuickMenuSlot .qm-study-tiles" };
+const TILE = { "#readBarTakeBtn": '[data-qm-act="approach"]', "#readBarRecordBtn": '[data-qm-act="record"]', "#readBarStatusBtn": '[data-qm-act="status"]' };
+const SHEET = "#readQuickMenuSlot .quick-menu";
+async function openSheet(page) {
+  if (await page.evaluate((q) => !document.querySelector(q)?.classList.contains("open"), SHEET)) { await page.click("#readQuickMenuSlot .ayah-quick-btn"); await page.waitForTimeout(300); }
+}
 const measure = (page, sel) => page.evaluate((sel) => {
   const bar = document.querySelector(sel); if (!bar) return null;
   const R = (e) => e.getBoundingClientRect();
   const btns = [...bar.querySelectorAll("button")];
+  const tileMode = bar.classList.contains("qm-study-tiles");
   const cs = getComputedStyle(bar);
   const lines = (b) => Math.round(R(b).height - 0) && Math.round((R(b).height - parseFloat(getComputedStyle(b).paddingTop) - parseFloat(getComputedStyle(b).paddingBottom)) / parseFloat(getComputedStyle(b).lineHeight));
   const rgb = (s) => (s.match(/[\d.]+/g) || []).map(Number);
   const L = ([r, g, b]) => { const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
   const ratio = (a, b) => { const x = L(a), y = L(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
-  const bg = rgb(cs.backgroundColor);
+  const bg = rgb(tileMode ? getComputedStyle(btns[0]).backgroundColor : cs.backgroundColor);
   return {
-    shown: R(bar).width > 0 && R(bar).height > 0 && cs.display !== "none",
-    n: btns.length, labels: btns.map((b) => b.textContent.trim()),
+    shown: R(bar).width > 0 && R(bar).height > 0 && cs.display !== "none" && btns.every((b) => R(b).width > 0),
+    n: btns.length, labels: btns.map((b) => tileMode ? b.getAttribute("aria-label") : b.textContent.trim()),
     widths: btns.map((b) => R(b).width), heights: btns.map((b) => R(b).height),
     cut: btns.some((b) => b.scrollWidth > b.clientWidth + 1),
     lines: btns.map(lines), left: R(bar).left, right: R(bar).right, vw: innerWidth,
@@ -103,14 +118,10 @@ function assertLayout(tag, lang, width, m) {
   if (!m) return;
   check(`${tag}: three buttons of equal width (±2px)`, Math.max(...m.widths) - Math.min(...m.widths) <= 2, JSON.stringify(m.widths));
   check(`${tag}: no label cut`, !m.cut, JSON.stringify(m));
-  check(`${tag}: each label at most two lines`, m.lines.every((l) => l <= 2), JSON.stringify(m.lines));
   check(`${tag}: every button at least 36px tall`, m.heights.every((h) => h >= 35.5), JSON.stringify(m.heights));
   check(`${tag}: inside the screen, no sideways scroll`, m.left >= -0.5 && m.right <= m.vw + 0.5 && m.over <= 0, JSON.stringify({ l: m.left, r: m.right, over: m.over }));
   check(`${tag}: label colour reads on its background (>=4.5:1)`, m.contrast.every((c) => c >= 4.5), JSON.stringify(m.contrast));
-  // Architect review, 30 Sep 2026: the issue asks for "a 1.5px gold divider
-  // between buttons". In the Read bar an id rule (border: 0) removed them and
-  // no check noticed; the screenshot did.
-  check(`${tag}: a 1.5px gold (#d8c68a) divider between each pair of buttons`, m.dividers.length === 2 && m.dividers.every(([w, st, c]) => w >= 1 && st === "solid" && c === "rgb(216, 198, 138)"), JSON.stringify(m.dividers));
+  // (the 1.5px gold divider between pill buttons is retired with the pill, MSA · QR J132)
 }
 
 // ---- 1. Layout, every width, both languages, three views
@@ -126,10 +137,8 @@ for (const lang of ["en", "bn"]) {
     await openCardFor(page, BAR.read);
     const m = await measure(page, BAR.read);
     assertLayout(`[${lang} ${width}] Read Mushaf view`, lang, width, m);
-    check(`[${lang} ${width}] Read: the bar is on its own line below the page reference`, await page.evaluate(() => document.getElementById("readApproachBar").getBoundingClientRect().top >= document.getElementById("mushafPageRef").getBoundingClientRect().bottom - 1), "");
+    check(`[${lang} ${width}] J132: the gold pill, the picker row and Study ▾ are NOT on the bar (their controls are in the ⋮ sheet's Study group)`, await page.evaluate(() => ["readApproachBar", "readPickers", "readQuickRow"].every((id) => (document.getElementById(id)?.getBoundingClientRect().width ?? 0) === 0)));
     check(`[${lang} ${width}] #readApproachCapsule is gone`, await page.evaluate(() => !document.getElementById("readApproachCapsule")));
-    const pal = await page.evaluate(() => { const c = getComputedStyle(document.getElementById("readApproachBar")); return [c.backgroundColor, c.borderTopColor]; });
-    check(`[${lang} ${width}] Read palette: gold border #d8c68a on #fdf6e3`, pal[0] === "rgb(253, 246, 227)" && pal[1] === "rgb(216, 198, 138)", JSON.stringify(pal));
     await closeCard(page);
     if (width === 320 && lang === "bn" || width === 390 && lang === "en" || width === 1280 && lang === "en") await page.screenshot({ path: `/tmp/bar-read-mushaf-${lang}-${width}.png` });
     // UPDATED IN PLACE (Note view retirement, step b): the Note view's approach bar is deleted with the view; the bar that

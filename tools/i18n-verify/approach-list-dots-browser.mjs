@@ -14,7 +14,7 @@
 //   4. Escape and the backdrop close it; no sideways overflow at 320;
 //   5. the list's text passes 4.5:1 on Night and Light.
 //   --mutate-plain  draws every dot plain: check 2 must fail.
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, STUDY_TILES, clickStudyTile } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
@@ -68,6 +68,7 @@ async function installSyntheticMushafFixture(ctx) {
 }
 
 async function clickSafely(page, selector, attempts = 4) {
+  if (STUDY_TILES[selector]) return clickStudyTile(page, selector); // MSA · QR J132: the Record button is a tile in the ⋮ Study group now
   let lastErr;
   for (let i = 0; i < attempts; i++) {
     await page.evaluate(() => {
@@ -130,7 +131,7 @@ for (const lang of ["en", "bn"]) {
     await installSyntheticMushafFixture(ctx);
     const { page } = await openPage(ctx, "/app/quranrevival.html");
     await openMushafSurah3(page);
-    await page.waitForFunction(() => { const c = document.getElementById("readBarRecordBtn"); return !!c && c.getBoundingClientRect().width > 0; }, null, { timeout: 12000 }).catch(() => {});
+    await page.waitForFunction(() => { const c = document.querySelector("#readQuickMenuSlot .ayah-quick-btn"); return !!c && c.getBoundingClientRect().width > 0; /* J132: the ⋮ that holds the Record tile */ }, null, { timeout: 12000 }).catch(() => {});
     await clickSafely(page, "#readBarRecordBtn");
     await page.waitForFunction(() => !!document.querySelector("#pageApproachSelect"), null, { timeout: 8000 }).catch(() => {});
     await page.selectOption("#pageApproachSelect", "recite");

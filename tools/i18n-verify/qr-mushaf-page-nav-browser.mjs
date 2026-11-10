@@ -108,11 +108,16 @@ for (const width of [1280, 390]) {
   await page.waitForTimeout(600);
   const m = await page.evaluate(() => {
     const vis = (id) => { const e = document.getElementById(id); if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden"; };
-    return { reading: document.getElementById("readView")?.offsetParent !== null, list: vis("readListBtn"), quick: vis("readQuickRow") && ["readQuickNoteBtn", "readQuickTrackBtn", "readQuickApproachBtn"].every(vis) };
+    // UPDATED IN PLACE, MSA · QR J132 (the Owner, 10 Nov 2026: "Study moves to dot"): the bottom Study row is gone; the bare full screen keeps the bar's ⋮, whose sheet holds
+    // Notes (Take Note), Record and Approach tiles. So: the old row is NOT shown, the ⋮ is, and its open sheet carries the three.
+    const dots = document.querySelector("#readQuickMenuSlot .ayah-quick-btn"); const opened = !!dots && dots.getBoundingClientRect().width > 0;
+    if (opened) dots.click();
+    const q = (sel) => { const e = document.querySelector(sel); return !!e && e.getBoundingClientRect().width > 0; };
+    return { reading: document.getElementById("readView")?.offsetParent !== null, list: vis("readListBtn"), quick: !vis("readQuickRow") && opened && q("#readQuickMenuSlot [data-qm-note]") && q('#readQuickMenuSlot [data-qm-act="record"]') && q('#readQuickMenuSlot [data-qm-act="approach"]') };
   });
   check(`${tag} POSITIVE CONTROL: Study -> Read opened the Read view`, m.reading, JSON.stringify(m));
   check(`${tag} part 3: ☰ Surah list is on the bar`, m.list, JSON.stringify(m));
-  check(`${tag} part 3: Notes / Record / Approach are on the bare full screen`, m.quick, JSON.stringify(m));
+  check(`${tag} part 3: Notes / Record / Approach are in the ⋮ sheet on the bare full screen`, m.quick, JSON.stringify(m));
   await page.click("#readListBtn").catch(() => {}); await page.waitForTimeout(800);
   check(`${tag} part 3: ☰ opens the Surah list`, await page.evaluate(() => !document.getElementById("readContentsMount")?.hidden));
   await ctx.close();

@@ -453,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v14.08 on `main`** (10 Nov 2026, shown as "v14.08-10.11.26". **PCF MSA J120 2 D, the Owner's answer of 10 Nov 3:04 pm ("2.D", all of them):** My account → "Get ready for offline" now keeps EVERY Hadith and Dua book (17 books, 216.8 MB with the app and the Qur'an); the tick boxes are gone, each book is listed with its size, and the space it will use is shown before starting. `app/offline-files.json` regenerated (it was stale on main). `offline-ready-browser` updated in place (the answer-E checks replaced, new mutation `onlydua`). Built and released by the Architect 94L. Checks: see the CHANGELOG entry. Nothing deployed to Firestore.)
+**Current milestone: v14.09 on `main`** (10 Nov 2026, shown as "v14.09-10.11.26". **PCF MSA · QR J132, one Read bar (the Owner, 10 Nov: n132a build, n132d A, n132b "Study moves to dot … make space for play, nav buttons", n132c B):** in Quran Study's Read view the picker row, the gold Take an Approach | Record | Status pill and Study ▾ leave the bar at every width and become ONE labelled Study group at the top of the ⋮ sheet (unit / sūrah / āyah pickers and the three Approach tiles); ⏮ ⏭ ▶ ■, Read on, Mushaf and ⤢ stay in the bar; the bare full screen and Read on keep a ⋮. Built by QR Lead 44L (#1601), reviewed and released by the Architect 94L. Checks: see the CHANGELOG entry. Nothing deployed to Firestore.)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

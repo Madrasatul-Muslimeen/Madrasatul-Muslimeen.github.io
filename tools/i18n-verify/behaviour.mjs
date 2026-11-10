@@ -3025,7 +3025,9 @@ console.log("\n=== 34. Shell round 22: pickers on the reading screen ===");
   const stateOf = () => page.evaluate(() => {
     const shown = (s) => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display !== "none"; };
     return { banner: shown("body > h1"), nav: shown("#topNav"), dock: shown("#dock"),
-             pickers: shown("#readPickers"), play: shown("#readPlayBtn"), quran: shown("#studyScreen") };
+             // UPDATED IN PLACE, MSA · QR J132 (the Owner, 10 Nov 2026: "Study moves to dot"): the picker row is not on the bar in ANY state now (the pickers
+             // are in the ⋮ sheet's Study group), so "the bar's controls are showing" is read from its ⏮ instead; states 1 and 2 show it, bare hides it.
+             pickers: shown("#readBar #prevUnitBtn"), play: shown("#readPlayBtn"), quran: shown("#studyScreen") };
   });
   const s0 = await stateOf();
   // Fix round -- the cycle is walked by the ⤢ button now, not by tapping the
@@ -3736,40 +3738,41 @@ console.log("\n=== 39. Shell round 27: the four fixes ===");
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await setUnit(page, "range");
   await openRead(page);
+  // UPDATED IN PLACE, MSA · QR J132: the Read bar's picker row is gone; the From / To / Ayah pickers are the mirrors in the ⋮ sheet's Study group, so a Range
+  // is read there (the sheet is opened first). The unit type takes its own line in the sheet by design (its words are the longest); the others share the next.
+  await page.click("#readQuickMenuSlot .ayah-quick-btn"); await page.waitForTimeout(400);
   const range = await page.evaluate(() => {
-    const shown = (id) => {
-      const el = document.getElementById(id);
-      return !!el && !el.hidden && el.getBoundingClientRect().width > 0;
-    };
-    const row = document.getElementById("readPickers");
-    const cells = [...row.querySelectorAll("select")].filter((el) => !el.hidden);
-    const tops = cells.map((c) => Math.round(c.getBoundingClientRect().top));
+    const m = [...document.querySelectorAll("#readQuickMenuSlot [data-qm-place]")];
+    const shown = (id) => { const el = m.find((e) => e.dataset.qmPlace === id); return !!el && !el.hidden && el.getBoundingClientRect().width > 0; };
+    const row = document.querySelector("#readQuickMenuSlot .qm-places");
+    const cells = m.filter((el) => !el.hidden && el.getBoundingClientRect().width > 0);
+    const rest = cells.filter((c) => c.dataset.qmPlace !== "readUnitTypeSelect");
+    const tops = rest.map((c) => Math.round(c.getBoundingClientRect().top));
     return {
       ayah: shown("readAyahSelect"), from: shown("readRangeFromSelect"), to: shown("readRangeToSelect"),
-      cells: cells.map((c) => c.id),
+      cells: cells.map((c) => c.dataset.qmPlace),
       oneLine: new Set(tops).size === 1,
       overflow: row.scrollWidth > row.clientWidth + 1,
-      numWidth: Math.round(document.getElementById("readRangeToSelect").getBoundingClientRect().width),
+      numWidth: Math.round(document.querySelector('#readQuickMenuSlot [data-qm-place="readRangeToSelect"]').getBoundingClientRect().width),
     };
   });
   check("39a a Range shows From and To", range.from && range.to, JSON.stringify(range));
   check("39a ...and NOT a third Ayah picker beside them", !range.ayah, JSON.stringify(range.cells));
-  check("39a ...all on one line, nothing overflowing", range.oneLine && !range.overflow, JSON.stringify(range));
+  check("39a ...sūrah, From and To on one line under the unit type, nothing overflowing", range.oneLine && !range.overflow, JSON.stringify(range));
 
   // A three-digit ayah must not be clipped -- the owner's "3 digits show
   // cut-off, looks odd". Surah 2 has 286, so its pickers really carry three
   // digits; measured against what the widest option needs.
+  await page.selectOption('#readQuickMenuSlot [data-qm-place="readSurahSelect"]', "2"); await page.waitForTimeout(1800); // forwarded to the real picker; the sheet opens again
   const wide = await page.evaluate(async () => {
-    const s = document.getElementById("readSurahSelect");
-    s.value = "2"; s.dispatchEvent(new Event("change"));
-    await new Promise((r) => setTimeout(r, 1400));
-    const sel = document.getElementById("readRangeToSelect");
+    const sel = document.querySelector('#readQuickMenuSlot [data-qm-place="readRangeToSelect"]');
     const last = sel.options[sel.options.length - 1]; // the surah's own last ayah: three digits in surah 2
-    sel.value = last.value; sel.dispatchEvent(new Event("change"));
-    await new Promise((r) => setTimeout(r, 700));
+    sel.value = last.value; sel.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 900));
+    const now = document.querySelector('#readQuickMenuSlot [data-qm-place="readRangeToSelect"]'); // the sheet was drawn again by the pick
     // What the text alone needs, measured in the select's own font.
     const probe = document.createElement("span");
-    const cs = getComputedStyle(sel);
+    const cs = getComputedStyle(now);
     probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${cs.font}`;
     probe.textContent = last.textContent;
     document.body.appendChild(probe);
@@ -3777,7 +3780,7 @@ console.log("\n=== 39. Shell round 27: the four fixes ===");
     probe.remove();
     // A <select> spends roughly 18px on its arrow plus its own padding.
     const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 18;
-    return { box: sel.getBoundingClientRect().width, needs: needs + pad, value: last.textContent };
+    return { box: now.getBoundingClientRect().width, needs: needs + pad, value: last.textContent };
   });
   check("39a a three-digit ayah is not cut off",
         wide.box >= wide.needs, `${Math.round(wide.box)}px box, needs ${Math.round(wide.needs)}px`);
@@ -5594,7 +5597,8 @@ console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder p
         JSON.stringify(bmWritesAfterFirst));
 
   // Move to a different āyah so bookmark #2 is genuinely new, not a toggle-off of #1.
-  await page.selectOption("#readAyahSelect", "2");
+  // J132: the bar's picker row is off screen (its mirrors are in the ⋮ sheet); the real āyah picker takes the choice the way the sheet's mirror forwards it
+  await page.evaluate((v) => { const e = document.getElementById("readAyahSelect"); e.value = v; e.dispatchEvent(new Event("change", { bubbles: true })); }, "2");
   await page.waitForTimeout(200);
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
@@ -5615,7 +5619,8 @@ console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder p
         JSON.stringify(newBmWrites));
 
   // Cancelling still makes no write at all -- the popover's own escape hatch, unchanged by adding the folder picker.
-  await page.selectOption("#readAyahSelect", "3");
+  // J132: the bar's picker row is off screen (its mirrors are in the ⋮ sheet); the real āyah picker takes the choice the way the sheet's mirror forwards it
+  await page.evaluate((v) => { const e = document.getElementById("readAyahSelect"); e.value = v; e.dispatchEvent(new Event("change", { bubbles: true })); }, "3");
   await page.waitForTimeout(200);
   const writesBeforeCancel = (await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"))).filter((w) => w.col === "bookmarks").length;
   // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its

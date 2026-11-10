@@ -8,8 +8,9 @@
 //   node tools/i18n-verify/qr-mushaf-large-text-browser.mjs [--mutate=NAME] [--record | --main]   (serve.js on :8080, repo root)
 //   no-ref     the reference never takes its own line    -> "the page reference shows its words" FAILS at 150/200%
 //   always     the reference moves when only partly cut  -> "a long reference keeps its line" FAILS at 100% on phones
-//   no-wrap    the three keep equal cells                -> "every word of Notes / Record / Approach shows" FAILS at 200%
-//   no-pad     the reading ignores the taller row        -> "the last line can scroll above the row" FAILS at 360 200% en
+//   (no-wrap and no-pad were mutations of the Notes / Record / Approach row, which J132 took off the bare screen: retired with the row;
+//    `row-back` below is the mutation that proves its absence is asserted)
+//   row-back   the row is shown again                   -> "carries NO Notes / Record / Approach row" FAILS
 //   no-run     fitReadBareBar is never run               -> words and reach FAIL
 import { execSync } from "node:child_process";
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -25,16 +26,18 @@ const RECORD = process.argv.includes("--record"), ON_MAIN = RECORD || process.ar
 const MUT = {
   "no-ref": ['body.classList.add("qr-ref-own-line");', "void 0;", 1],
   "always": ["&& text.clientWidth < 3.5 * (parseFloat(getComputedStyle(text).fontSize) || 12)", "", 1],
-  "no-wrap": ["body.rq-wrap #readQuickRow .rq-btn { flex: 1 1 auto; }", "", 1],
-  "no-pad": ["#readScroll { padding-bottom: var(--rq-h, 52px); }", "#readScroll { }", 1],
+  "row-back": ["#readPickers, #readBar #readApproachBar, #readBar #readQuickRow, body.immersive-read #readBar #readQuickRow { display: none !important; }", "#readPickers, #readBar #readApproachBar { display: none !important; }", 1],
   "no-run": ["      fitReadBareBar();\n", "", 1],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const SHOT_DIR = process.env.SHOT_DIR || "";
-// Recorded from unfixed main v12.139 (--record) at 100%: [reference width, Notes/Record/Approach row height or 0].
+// UPDATED IN PLACE, MSA · QR J132 (the Owner, 10 Nov 2026: "Study moves to dot"): the bare full screen no longer carries the Notes / Record / Approach row
+// (nor Study ▾): they are tiles in the ⋮ sheet, which the bare bar keeps (the 40px ⋮ takes some of the room the row's absence gives). So the row's height is 0 everywhere.
+// Recorded from the J132 build (the old values, from unfixed main v12.139: 90/88/88/118/118/352/578/324/345 wide, 53px row on phones, are in git history).
+// [reference width, Notes/Record/Approach row height or 0].
 const PLAIN = {
-  "320x640 en": [90, 53], "360x740 en": [88, 53], "360x740 bn": [88, 53], "390x844 en": [118, 53], "390x844 bn": [118, 53],
-  "768x1024 en": [352, 0], "1280x800 en": [578, 0], "740x360 en": [324, 0], "740x360 bn": [345, 0],
+  "320x640 en": [86, 0], "360x740 en": [84, 0], "360x740 bn": [84, 0], "390x844 en": [114, 0], "390x844 bn": [114, 0],
+  "768x1024 en": [422, 0], "1280x800 en": [738, 0], "740x360 en": [394, 0], "740x360 bn": [406, 0],
 };
 const MAIN = ON_MAIN ? execSync("git show origin/main:app/quranrevival.html", { maxBuffer: 1 << 26 }).toString() : "";
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -95,6 +98,7 @@ for (const [w, h, lang] of [[320, 640, "en"], [360, 740, "en"], [360, 740, "bn"]
     check(`${tag}: POSITIVE CONTROL the Mushaf page shows in the bare full screen, its reference filled in`, m.mushaf && m.bare && m.words.length > 0, JSON.stringify(m));
     check(`${tag}: the page reference shows its words ("${m.words}")`, !m.refCut, `text ${m.textW}px`);
     check(`${tag}: the page reference can be tapped, inside the screen`, m.refReach);
+    check(`${tag}: J132 the bare full screen carries NO Notes / Record / Approach row (they are tiles in the ⋮ sheet)`, m.nBtns === 0 && m.rowH === 0, JSON.stringify({ n: m.nBtns, h: m.rowH }));
     if (m.nBtns) {
       check(`${tag}: every word of Notes / Record / Approach shows`, m.btnCut.length === 0, m.btnCut.join(" "));
       check(`${tag}: Notes / Record / Approach are inside the screen and can be tapped`, m.btnOut.length === 0, m.btnOut.join(" "));
