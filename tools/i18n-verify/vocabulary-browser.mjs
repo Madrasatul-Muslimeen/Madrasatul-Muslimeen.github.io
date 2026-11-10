@@ -121,6 +121,8 @@ if (PURE_MUT[MUTATE]) { console.log(`\n${pass} passed, ${fail} failed`); process
 
 // ---------------------------------------------------------------- BROWSER
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
+// QR Lead 46L: a throw anywhere below used to leave Chromium running and print only a stack; now it is counted as a FAIL, the browser is closed, and the suite exits 1 at once.
+process.on("uncaughtException", async (err) => { console.log(`  FAIL  suite stopped early: ${String(err?.message ?? err).split("\n")[0]}`); await browser.close().catch(() => {}); process.exit(1); });
 const writes = (page, n = 0) => page.evaluate((n) => (window.__stubWriteData || []).slice(n).filter((w) => w.col === "quranLemmaProgress").map((w) => ({ id: w.id, state: w.data?.state ?? w.data?.learner?.state ?? JSON.stringify(w.data) })), n);
 const wcount = (page) => page.evaluate(() => (window.__stubWriteData || []).length);
 const sleep = (page, ms) => page.waitForTimeout(ms);
@@ -328,10 +330,11 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
   await page.waitForSelector("#quranWordCardMount .quran-word-card", { timeout: 8000 }).catch(() => {});
   await sleep(page, 1200);
   const btn = await page.evaluate(() => { const b = document.querySelector("#quranWordCardMount .word-card-practise"); if (!b) return null; const c = getComputedStyle(b); const probe = document.createElement("span"); b.closest(".quran-word-card").appendChild(probe); probe.style.color = "var(--wc-purple-ink)"; probe.style.backgroundColor = "var(--wc-purple-bg)"; const want = [getComputedStyle(probe).color, getComputedStyle(probe).backgroundColor]; probe.remove(); return { h: b.getBoundingClientRect().height, ok: c.color === want[0] && c.backgroundColor === want[1], got: [c.color, c.backgroundColor], want }; });
+  // UPDATED IN PLACE (v14.10, J136 "Mark the Word", 10 Nov 2026): the Learn mark is now [data-word-mark="learn"] (the five-mark row), no longer [data-mark-key="practice"]; same behaviour, new selector.
   // UPDATED IN PLACE (J135, 9 Nov 2026, the Owner): the Word card has no separate Learn/Practise button any more; the 📖 Learn MARK (Difficult · Learn · Learned) starts the same ten-question round when it is switched on.
-  check(`${tag} the Word card has the Learn mark and no separate practise button`, await page.evaluate(() => !!document.querySelector("#quranWordCardMount [data-mark-key=\"practice\"]") && !document.querySelector("#quranWordCardMount .word-card-practise")), JSON.stringify(btn));
+  check(`${tag} the Word card has the Learn mark and no separate practise button`, await page.evaluate(() => !!document.querySelector("#quranWordCardMount [data-word-mark=\"learn\"]") && !document.querySelector("#quranWordCardMount .word-card-practise")), JSON.stringify(btn));
   const level0 = await page.evaluate(() => document.querySelector("#quranWordCardMount [data-word-card-panel]")?.dataset.wordCardPanel);
-  await page.evaluate(() => document.querySelector("#quranWordCardMount [data-mark-key=\"practice\"]")?.click());
+  await page.evaluate(() => document.querySelector("#quranWordCardMount [data-word-mark=\"learn\"]")?.click());
   await page.waitForSelector("#vocabSheet .vo-card", { timeout: 15000 }).catch(() => {});
   // UPDATED IN PLACE for PCF MSA J56 (the Owner, 20 Oct 2026: "Only 3 questions! Can you make it to 10?"): ten
   // questions -- a flashcard, then Pick the meaning / Pick the Arabic / In its āyah three times, each āyah question at a
