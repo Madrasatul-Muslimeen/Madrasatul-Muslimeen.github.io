@@ -35,7 +35,7 @@
 .note-pane-title { margin: 0.7rem 0 0.2rem; font-size: 1.25rem; overflow-wrap: anywhere; }
 .note-pane-meta { margin: 0 0 0.4rem; font-size: 0.8rem; color: #666; } /* audit part 37: #777 was 4.48:1 on white */
 .note-pane-chips { margin: 0 0 0.6rem; }
-.note-pane-chips .folder-chip { border: 1px solid #c9d3e6; cursor: pointer; font-size: 0.8rem; min-height: 32px; padding: 0.2rem 0.7rem; }
+.note-pane-chips .folder-chip { border: 1px solid #c9d3e6; cursor: pointer; font-size: 0.8rem; min-height: 40px; padding: 0.2rem 0.7rem; } /* v14.07: 40px finger target (was 32px; MSA · QR J130 a, folderChip32) */
 .note-pane-body { line-height: 1.5; overflow-wrap: anywhere; }
 /* Siyagah round 5 -- edit mode (Owner decision 42.3). Edit is the LAST thing on the header row to fold into the menu. */
 .note-pane-bar.edit-folded > [data-pane-edit-toggle] { display: none; }
