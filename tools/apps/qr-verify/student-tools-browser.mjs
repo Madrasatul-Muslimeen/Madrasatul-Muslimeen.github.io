@@ -32,7 +32,7 @@ let pass = 0, fail = 0;
 //   appVersion  #appVersion is #888 on white, 3.54:1, on the signed-out page
 //   signInBtn   the signed-out page's "Sign in with Google" is 27px tall
 const FOR_QR_LEAD = []; // QR Lead PR (J85): #appVersion (now #666, 5.74:1) and #signInBtn (now 40px) fixed and removed
-const FOR_ARCHITECT = ["folderChip32"]; // MSA · QR J130 (a): shared new-Note editor draws its 📁 folder chip 32px tall (88x32); not QR-only code, so not for the QR Lead
+const FOR_ARCHITECT = []; // MSA · QR J130 (a) found folderChip32 (the new-Note editor's 📁 folder chip 88x32); fixed in v14.07 (note-window.css, 40px) and removed
 const seenKnown = new Set();
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);

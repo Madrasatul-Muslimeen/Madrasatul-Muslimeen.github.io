@@ -315,6 +315,15 @@ async function relabel(t, p, errors, lang) {
   await settle(p, 1000);
   await judge(t, p, "Notes pane after relabelReadNotePane()", to, "#readNotePane", "#readNotePane", {});
 }
+/** RETIRED 10 Nov 2026 (MSA · QR J130 (a), the Architect 93L): the Notes pane (#readNotePane) has no route since J114, by the Owner's choice
+    (PCF MSA J114 n114b, 7 Nov: "2.F", the ⋮'s Note tile opens the existing Note in Mapping My Journey and offers a new blank Note; the pane
+    is not offered). relabel() above stays as it was, NOT run. This check is what keeps the retirement honest: it FAILS the day a route to
+    the pane comes back (the old button on screen again), and then relabel() must be run again instead of this. */
+async function relabelRetired(t, p) {
+  await readAyah(p);
+  const btn = await ev(p, () => { const b = document.querySelector("#readNotesBtn"); return b ? b.getBoundingClientRect().width : -1; });
+  check(`${t}: RETIRED relabel (J114 n114b F): the old Notes button is still not on screen, so the Notes pane has no route (else run relabel() again)`, btn <= 0, `#readNotesBtn width ${btn}`);
+}
 /** A toast on screen at the moment of the switch (the "Saved for ..." notice). */
 async function toast(t, p, errors, lang) {
   const to = OTHER(lang);
@@ -410,7 +419,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await flow("chip", lang, width, chip, { note: true });
     await flow("toast", lang, width, toast);
     await flow("popfn", lang, width, popfn);
-    await flow("relabel", lang, width, relabel);
+    await flow("relabel", lang, width, relabelRetired); // MSA · QR J130 (a), the Architect 93L: relabel RETIRED, see relabelRetired()
     await flow("typing", lang, width, typing, { note: true });
   }
   await flow("menus", lang, width, menus, { signedOut: true });
