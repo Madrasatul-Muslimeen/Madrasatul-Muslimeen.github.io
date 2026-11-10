@@ -23036,7 +23036,19 @@
         if (!src) { m.hidden = true; continue; }
         if (m.options.length !== src.options.length || m.options[0]?.textContent !== src.options[0]?.textContent) m.innerHTML = src.innerHTML;
         m.value = src.value; m.hidden = src.hidden; m.setAttribute("aria-label", src.getAttribute("aria-label") || "");
+        fitPlaceWidth(m);
       }
+    }
+    /** MSA · QR (the Architect 95L, 10 Nov 2026): the āyah picker's 4.5rem cut "Bismillah" to "Bismilla" at 390 and 1280. Each mirror gets room for its
+        LONGEST option, measured with the select's own computed font, padding and border, plus the drop-down arrow, never more than its row. */
+    function fitPlaceWidth(m) {
+      if (!m.options.length) { m.style.minWidth = ""; return; }
+      const cs = getComputedStyle(m);
+      const c2d = (fitPlaceWidth.ctx ||= document.createElement("canvas").getContext("2d"));
+      c2d.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      const longest = Math.max(0, ...[...m.options].map((o) => c2d.measureText(o.textContent).width));
+      const extra = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth) + 26; // 26: the drop-down arrow
+      m.style.minWidth = `min(${Math.ceil(longest + extra)}px, 100%)`;
     }
     /** A pick made in the sheet re-renders the screen (and this ⋮), so the sheet is opened again for a moment after: changing the unit
         type brings new pickers, and the reader should not have to open ⋮ again for each one. */
@@ -23054,10 +23066,29 @@
         the Zab bar, and scrolls inside itself when that side is still short (the same rule ⋯ More tools had, placeReadTools). */
     function fitQuickSheet(wrap) {
       const m = wrap.querySelector(".quick-menu.qm-sheet"), btn = wrap.querySelector(".ayah-quick-btn"); if (!m || !btn) return;
-      m.style.maxHeight = m.style.top = m.style.bottom = "";
+      m.style.maxHeight = m.style.top = m.style.bottom = m.style.position = m.style.left = m.style.right = "";
       const b = btn.getBoundingClientRect(); let floor = window.innerHeight - 8;
       for (const id of ["dock", "zabBar"]) { const el = document.getElementById(id); if (!el || !el.getClientRects().length) continue; const d = el.getBoundingClientRect(); if (d.top > b.bottom && d.top < floor + 4) floor = d.top - 4; }
       const below = floor - (b.bottom + 6), above = b.top - 6 - 8, need = m.scrollHeight + 2;
+      // MSA · QR (the Architect 95L, 10 Nov 2026; found by 94L on Whole Sūrah's first āyah): a ⋮ INSIDE the reading area sits in scrolling
+      // boxes (#readScroll and the āyah's own) that CLIP a sheet placed beside it, and under the Read bar above them; at 390px the Bookmark
+      // tiles were behind #readScroll, at 1280px behind the Read bar, so a finger could not press them. Such a sheet is placed in VIEWPORT
+      // coordinates (position: fixed, which those boxes do not clip), inside the visible band between the Read bar and the dock/Zab bar:
+      // below the ⋮ when it fits there, else above, else filling the whole band (over the ⋮, which Escape or a tap outside closes).
+      if (wrap.closest("#readScroll")) {
+        let ceil = 8;
+        const bar = document.getElementById("readBar");
+        if (bar && bar.getClientRects().length) { const d = bar.getBoundingClientRect(); if (d.bottom > ceil && d.bottom <= b.top + 1) ceil = d.bottom + 4; }
+        const roomBelow = floor - (b.bottom + 6), roomAbove = (b.top - 6) - ceil, band = floor - ceil;
+        m.style.position = "fixed"; m.style.right = "auto";
+        const w = m.offsetWidth; m.style.left = `${Math.round(Math.min(Math.max(8, b.right - w), Math.max(8, window.innerWidth - w - 8)))}px`;
+        let top, room;
+        if (need <= roomBelow) { top = b.bottom + 6; room = roomBelow; }
+        else if (need <= roomAbove) { top = b.top - 6 - need; room = roomAbove; }
+        else { top = ceil; room = band; }
+        m.style.top = `${Math.round(top)}px`; m.style.bottom = "auto"; m.style.maxHeight = `${Math.max(120, Math.round(Math.min(need, room)))}px`;
+        return;
+      }
       if (need <= below) return;
       if (below >= above) { m.style.maxHeight = `${Math.max(120, Math.round(below))}px`; return; }
       m.style.top = "auto"; m.style.bottom = `${Math.round(btn.offsetHeight + 6)}px`; m.style.maxHeight = `${Math.max(120, Math.round(Math.min(need, above)))}px`;
