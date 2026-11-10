@@ -171,9 +171,12 @@
     import "./js/palette-keys.js"; // audit part 154: keyboard focus in / back / out of the ⋯ menus
     import { createFirestoreSettingsStore } from "./js/note-user-settings-fs.js";
     import {
-      createStudyNote, reviseStudyNote, retireStudyNote, notesForStudyUnit, recordJournalEvidence,
+      createStudyNote, reviseStudyNote, retireStudyNote, notesForStudyUnit, recordJournalEvidence, journalEvidenceFor, PROVENANCE_STUDY_NOTE,
     } from "./js/study-note-service.js";
-    import { NOTE_STATUS, listNoteRevisions, listNoteTagsForOwnerPage, listNoteTagLinksForOwnerPage, createNoteTag as createTag, tagNote, untagNote } from "./js/note-foundation.js";
+    // PCF MSA J120 O3b: a Note written or changed here offline is kept on the device and saved by the same functions when online.
+    import { keepCreate, keepRevise, keptOnDevice, overlayPending, replayOutbox, onReplayed, offlineNow, isOfflineFailure, hasPending, pendingForNote } from "./js/note-outbox.js";
+    import { studyNoteSource } from "./js/study-note-binding.js";
+    import { NOTE_STATUS, newNoteEntityId, listNoteRevisions, listNoteTagsForOwnerPage, listNoteTagLinksForOwnerPage, createNoteTag as createTag, tagNote, untagNote } from "./js/note-foundation.js";
     import { isDawahReady } from "./js/dawah-readiness.js";
     import { isSiyagahSectionsReady } from "./js/siyagah-sections-readiness.js";
     import { createDawahPage } from "./js/dawah-data.js";
@@ -497,6 +500,9 @@
         const { rows, truncated } = await notesForStudyUnit(db, {
           tenantId: activeTenantId, ownerPersonId: selectedPersonId, unitKey,
         });
+        // J120 O3b: a waiting offline edit's text, and a Note made on this unit offline, as this device holds them.
+        const added = overlayPending(rows.map((r) => r.note), null, { tenantId: activeTenantId, ownerPersonId: selectedPersonId });
+        for (const n of added.notes) if (n.unitKey === unitKey && !rows.some((r) => r.note.noteId === n.noteId)) rows.push({ source: null, note: n });
         currentRows = rows;
         truncatedMsg.style.display = truncated ? "block" : "none";
       } catch (err) {
@@ -509,6 +515,7 @@
       await tagsDone;
       renderNotesList();
       noteViews.sync(); // a window whose Note was removed closes; the rest show what was just loaded
+      replayNoteOutbox(); // J120 O3b: anything written offline goes now, if the line is up
       if (autoDawahRequested && !autoDawahAttempted) {
         autoDawahAttempted = true;
         maybeAutoMakeDawahPage();
@@ -580,22 +587,96 @@
       // nothing to say -- the Note itself is what matters and it is saved.
     }
 
+    // =====================================================================
+    // PCF MSA J120 O3b -- NOTES OFFLINE on this screen (js/note-outbox.js), the same outbox Mapping My Journey uses.
+    // A save refused for want of the server (offline, or "unavailable" while the browser says it is online) is kept on
+    // this device with its Journaling evidence, shown as kept, and sent when the line is back (the 'online' event, and
+    // every load while online) through the same functions: createPermanentNote/createNoteSource/updatePermanentNoteContent,
+    // then recordJournalEvidence(). Any other failure reaches the reader as before (I15).
+    // =====================================================================
+    /** One revision of `note`, online or not. Resolves { commit, evidence, kept }; online it is reviseStudyNote() as before. */
+    async function reviseHere({ note, expectedRevisionId, title, bodyHtml }) {
+      const at = new Date();
+      const weekStartsOn = currentTenantDoc?.weekStartsOn ?? 6;
+      const base = { tenantId: activeTenantId, noteId: note.noteId, expectedRevisionId, title, bodyHtml, actorUid: auth.currentUser.uid };
+      const keep = () => {
+        const revisionId = newNoteEntityId();
+        const evidence = journalEvidenceFor({ tenantId: activeTenantId, personId: selectedPersonId, unitKey, at, weekStartsOn,
+          commit: { noteId: note.noteId, revisionId, previousRevisionId: expectedRevisionId, revisionReason: "content-update" } });
+        const id = keepRevise({ ...base, ownerPersonId: selectedPersonId, revisionId, evidence });
+        return { commit: { noteId: note.noteId, revisionId: id, previousRevisionId: expectedRevisionId }, evidence: null, kept: true };
+      };
+      if (offlineNow()) return keep();
+      // A save waiting for this Note goes first, so this one builds on it rather than on a revision the server never saw.
+      if (pendingForNote(note.noteId).length) {
+        await replayNoteOutbox();
+        if (pendingForNote(note.noteId).length && offlineNow()) return keep();
+      }
+      try {
+        const result = await reviseStudyNote(db, { ...base, personId: selectedPersonId, unitKey, weekStartsOn, at });
+        return { ...result, kept: false };
+      } catch (error) {
+        if (isOfflineFailure(error)) return keep();
+        throw error;
+      }
+    }
+    function replayNoteOutbox() {
+      const uid = auth.currentUser?.uid;
+      if (!uid || offlineNow() || !hasPending({ actorUid: uid })) return null;
+      return replayOutbox(db, { actorUid: uid }).catch((err) => { reportWriteFailure(err, { collection: TENANT.NOTES, action: "noteOutboxReplay" }); });
+    }
+    window.addEventListener("online", () => { replayNoteOutbox(); });
+    onReplayed(({ saved, failed }) => {
+      let older = false, notRecorded = null;
+      for (const e of saved) {
+        if (e.kind === "folder") continue;
+        const row = currentRows.find((r) => r.note.noteId === e.noteId);
+        if (row) Object.assign(row.note, { currentRevisionId: e.finalRevisionId, title: e.title, bodyHtml: e.bodyHtml });
+        if (e.keptOlder) older = true;
+        if (e.journal?.blocked && notRecorded === null) notRecorded = e.journal.reason ?? "";
+      }
+      for (const { error } of failed) reportWriteFailure(error, { collection: TENANT.NOTES, action: "noteOutboxReplay" });
+      if (failed.length) showPageStatus(t("A Note written offline could not be saved: {why}", { why: failed[0].error?.message || String(failed[0].error) }));
+      else if (older) showPageStatus(t("This Note also changed elsewhere: the later change is its text, and the other is kept as an older version."));
+      else if (notRecorded !== null) showPageStatus(t("Saved. Journaling activity was not recorded ({reason}).", { reason: notRecorded }));
+      else if (saved.some((e) => e.kind !== "folder")) showPageStatus(t("Your Notes written offline are now saved."));
+      if (saved.length && !editingNoteId) { try { renderNotesList(); noteViews.sync(); } catch (err) { console.error(err); } }
+    });
+
     newSaveBtn.addEventListener("click", async () => {
       if (!unitKey || !isSelfSelected()) return;
       const title = newTitleInput.value.trim();
       const bodyHtml = newBodyEditor.innerHTML.trim();
       if (!bodyHtml) { newBodyEditor.focus(); return; }
+      // J120 O3b: the ids are minted first, so a save the server never answered is kept on the device under the same ids
+      // (note-outbox.js) and sent when online -- createStudyNote()'s own two writes, then its Journaling evidence.
       const outcome = await safeWrite(
-        () => createStudyNote(db, {
-          tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
-          unitKey, title, bodyHtml, actorUid: auth.currentUser.uid,
-          weekStartsOn: currentTenantDoc?.weekStartsOn ?? 6,
-        }),
+        async () => {
+          const at = new Date();
+          const weekStartsOn = currentTenantDoc?.weekStartsOn ?? 6;
+          const ids = { noteId: newNoteEntityId(), revisionId: newNoteEntityId(), sourceLinkId: newNoteEntityId() };
+          const owner = { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, actorUid: auth.currentUser.uid };
+          const keep = () => {
+            const evidence = journalEvidenceFor({ tenantId: activeTenantId, personId: selectedPersonId, unitKey, at, weekStartsOn,
+              commit: { noteId: ids.noteId, revisionId: ids.revisionId, previousRevisionId: null, revisionReason: "created" } });
+            keepCreate({ ...owner, ...ids, title, bodyHtml, unitKey, evidence,
+              source: studyNoteSource({ unitKey, relationshipKind: "origin", provenanceKind: PROVENANCE_STUDY_NOTE, approachId: null }) });
+            return { kept: true };
+          };
+          if (offlineNow()) return keep();
+          try {
+            return await createStudyNote(db, { ...owner, unitKey, title, bodyHtml, weekStartsOn, at, ...ids });
+          } catch (error) {
+            if (isOfflineFailure(error)) return keep();
+            throw error;
+          }
+        },
         { collection: TENANT.NOTES, action: "createStudyNote", noDeviceCopy: true }
       );
       if (!outcome.ok) return;
       newNoteForm.style.display = "none";
       newNoteBtn.style.display = "inline-block";
+      if (outcome.result.kept) { showPageStatus(t("Kept on this device — it will be saved when you are online.")); await refreshView(); return; }
       showPageStatus(t("Note saved."));
       await afterCreateOrRevise(outcome.result.evidence);
       await refreshView();
@@ -628,14 +709,17 @@
         const newTitle = body.querySelector("[data-edit-title]").value.trim();
         const newBody = body.querySelector("[data-edit-body]").innerHTML.trim();
         const outcome = await safeWrite(
-          () => reviseStudyNote(db, {
-            tenantId: activeTenantId, personId: selectedPersonId, noteId: note.noteId, unitKey,
-            expectedRevisionId: note.currentRevisionId, title: newTitle, bodyHtml: newBody,
-            actorUid: auth.currentUser.uid, weekStartsOn: currentTenantDoc?.weekStartsOn ?? 6,
-          }),
+          () => reviseHere({ note, expectedRevisionId: note.currentRevisionId, title: newTitle, bodyHtml: newBody }),
           { collection: TENANT.NOTES, action: "reviseStudyNote", noDeviceCopy: true }
         );
         if (!outcome.ok) return false;
+        if (outcome.result.kept) {
+          // J120 O3b: kept on this device; the page shows the kept text (overlayPending) and it is saved when online.
+          showPageStatus(t("Kept on this device — it will be saved when you are online."));
+          editingNoteId = null;
+          await refreshView();
+          return true;
+        }
         showPageStatus(t("Saved as a new revision ({revisionId}).", { revisionId: outcome.result.commit.revisionId }));
         await afterCreateOrRevise(outcome.result.evidence);
         editingNoteId = null;
@@ -729,15 +813,13 @@
       when: (ts) => { const d = ts?.toDate ? ts.toDate() : null; return d ? d.toLocaleString(dateLocale()) : ""; },
       dateLocale,
       revise: async ({ note, expectedRevisionId, title, bodyHtml }) => {
-        const result = await reviseStudyNote(db, {
-          tenantId: activeTenantId, personId: selectedPersonId, noteId: note.noteId, unitKey,
-          expectedRevisionId, title, bodyHtml,
-          actorUid: auth.currentUser.uid, weekStartsOn: currentTenantDoc?.weekStartsOn ?? 6,
-        });
+        const result = await reviseHere({ note, expectedRevisionId, title, bodyHtml });
+        if (result.kept) return result.commit.revisionId; // J120 O3b: kept on this device (keptOnDevice says so to the window)
         try { await afterCreateOrRevise(result.evidence); }
         catch (err) { console.error("[journal evidence]", err); showPageStatus(t("Saved. Journaling activity was not recorded ({reason}).", { reason: err?.message ?? "" })); }
         return result.commit.revisionId;
       },
+      keptOnDevice: (noteId, revisionId) => keptOnDevice(noteId, revisionId), // J120 O3b
       afterRevise: () => { if (!editingNoteId) renderNotesList(); },
       status: showPageStatus,
       refresh: () => refreshView(),

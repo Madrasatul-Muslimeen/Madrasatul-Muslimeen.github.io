@@ -48,6 +48,13 @@ export const PROVENANCE_PROMOTED_QUICK_NOTE = "promoted-ayah-note";
 function evidenceFor({ tenantId, personId, unitKey, commit, at, weekStartsOn }) {
   return journalEvidenceArgs({ tenantId, personId, unitKey, commit, at, weekStartsOn, weekKeyFor });
 }
+/**
+ * PCF MSA J120 O3b -- the same evidence arguments createStudyNote()/reviseStudyNote() return, for a commit a page
+ * keeps on the device while offline (ids minted there, `at` the time it was written). Nothing is written here.
+ */
+export function journalEvidenceFor({ tenantId, personId, unitKey, commit, at = new Date(), weekStartsOn = 0 } = {}) {
+  return evidenceFor({ tenantId, personId, unitKey, commit, at, weekStartsOn });
+}
 
 /**
  * Creates a permanent Note about one Study Unit and returns
@@ -67,11 +74,15 @@ export async function createStudyNote(db, {
   actorUid,
   at = new Date(),
   weekStartsOn = 0,
+  // PCF MSA J120 O3b: optional ids minted by the page first, so a save the server never answered can be kept on the
+  // device under the SAME ids (and asked about before it is sent again). Omitted, each is minted as before.
+  noteId = undefined, revisionId = undefined, sourceLinkId = undefined,
 } = {}) {
-  const source = studyNoteSource({ unitKey, relationshipKind, provenanceKind, approachId });
+  const source = studyNoteSource({ unitKey, relationshipKind, provenanceKind, approachId, sourceLinkId });
 
   const created = await createPermanentNote(db, {
     tenantId, ownerPersonId, ownerUid, title, bodyHtml, source, actorUid,
+    ...(noteId !== undefined ? { noteId } : {}), ...(revisionId !== undefined ? { revisionId } : {}),
   });
 
   // `previousRevisionId: null` is what makes this a creation to

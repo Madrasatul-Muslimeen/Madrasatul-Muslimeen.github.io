@@ -602,10 +602,10 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     import { attachStudyNoteToUnit, createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
     import { getAyahNotes, ayahNoteHtml } from "./js/ayah-notes.js";
     // PCF MSA J120 O3: a Note written or changed offline is kept on the device and saved by the same functions when online.
-    import { reviseKeepingOffline, keptOnDevice, keepCreate, overlayPending, replayOutbox, onReplayed, offlineNow, hasPending } from "./js/note-outbox.js";
+    import { reviseKeepingOffline, keptOnDevice, keepCreate, keepFolder, pendingFolders, overlayPending, replayOutbox, onReplayed, offlineNow, isOfflineFailure, hasPending } from "./js/note-outbox.js";
     import { studyNoteSource } from "./js/study-note-binding.js";
     import { createFirestoreSettingsStore } from "./js/note-user-settings-fs.js";
-    import { NOTE_STATUS, FINALISED_REFUSAL, createNoteFolder, createNotePlacement, createPermanentNote, listNoteRevisions, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
+    import { NOTE_STATUS, FINALISED_REFUSAL, createNoteFolder, createNotePlacement, createPermanentNote, listNoteRevisions, newNoteEntityId, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
     import {
       ownerFolderTreePagedSharded, folderContents,
       renameFolder, reorderFolder, moveFolder, reorderFiling,
@@ -1161,6 +1161,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       const loadedTags = await tagsPromise;
       if (myRefresh !== refreshToken) return; // superseded by a later refresh already
       folderTree = tree;
+      showKeptFolders(); // J120 O3b: a system folder made offline, before the Notes filed in it arrive
       sections = loadedSections.slice().sort(byOrder);
       tags = loadedTags.tags; tagLinks = loadedTags.links;
       noteLinks = loadedLinks;
@@ -1200,7 +1201,10 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     window.addEventListener("online", () => { replayNoteOutbox(); });
     onReplayed(({ saved, failed }) => {
       let older = false;
+      // J120 O3b: a folder made offline is on the server now (or another device's was used): read the tree again.
+      if (saved.some((e) => e.kind === "folder")) refreshAll().catch((err) => console.error(err));
       for (const e of saved) {
+        if (e.kind === "folder") continue;
         const note = allNotes.find((n) => n.noteId === e.noteId) ?? unitMadeHere.find((n) => n.noteId === e.noteId);
         if (note) Object.assign(note, { currentRevisionId: e.finalRevisionId, title: e.title, bodyHtml: e.bodyHtml });
         if (e.keptOlder) older = true;
@@ -1211,15 +1215,44 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       if (saved.length) { try { renderCurrentView(); } catch (err) { console.error(err); } }
     });
     /**
-     * A NEW Note made while offline: kept on the device (the Note, its study-unit link when `unitKey`, its filing in
-     * `folderId`), each with its id minted now, and saved when online. Returns what the online write would have.
+     * A NEW Note, online or not (J120 O3, O3b). Online it is the same writes as before -- createStudyNote() when
+     * `unitKey`, else createPermanentNote(), then createNotePlacement() for each of `filings` ([{ folderId, order }]) --
+     * with every id minted HERE first. Offline, or refused for want of the server while the browser says it is online
+     * (code "unavailable"), what has not landed is kept on the device under those same ids (note-outbox.js keepCreate),
+     * so the replay asks about each before sending it and nothing is made twice. Any other failure is thrown, as before
+     * (I15); once the Note itself is saved, the thrown sentence says so (`filedFail`).
+     * Returns { created: { noteId, revisionId }, placementIds, kept }.
      */
-    function keepNewNoteOffline({ ownerArgs, unitKey = null, approachId = null, title, bodyHtml, folderId, order }) {
-      const source = unitKey ? studyNoteSource({ unitKey, approachId }) : null;
-      const kept = keepCreate({ ...ownerArgs, title, bodyHtml, source, folderId, order, unitKey });
-      showPageStatus(t("Kept on this device — it will be saved when you are online."));
-      return { created: { noteId: kept.noteId, revisionId: kept.revisionId }, placementId: kept.placementId };
+    async function createNoteKeepingOffline({ ownerArgs, unitKey = null, approachId = null, title, bodyHtml, filings, filedFail }) {
+      const ids = { noteId: newNoteEntityId(), revisionId: newNoteEntityId(), sourceLinkId: unitKey ? newNoteEntityId() : null };
+      const placements = filings.map((f) => ({ folderId: f.folderId, order: f.order ?? 0, placementId: newNoteEntityId() }));
+      const answer = (kept) => ({ created: { noteId: ids.noteId, revisionId: ids.revisionId }, placementIds: placements.map((p) => p.placementId), kept });
+      const done = { placed: {} };
+      const keep = () => {
+        const source = unitKey ? studyNoteSource({ unitKey, approachId }) : null;
+        keepCreate({ ...ownerArgs, ...ids, title, bodyHtml, source, placements, unitKey, done });
+        showPageStatus(t("Kept on this device — it will be saved when you are online."));
+        return answer(true);
+      };
+      if (offlineNow()) return keep();
+      try {
+        if (unitKey) await createStudyNote(db, { ...ownerArgs, unitKey, title, bodyHtml, approachId, noteId: ids.noteId, revisionId: ids.revisionId, sourceLinkId: ids.sourceLinkId });
+        else await createPermanentNote(db, { ...ownerArgs, title, bodyHtml, noteId: ids.noteId, revisionId: ids.revisionId });
+        done.note = true; if (unitKey) done.source = true;
+        for (const p of placements) {
+          await createNotePlacement(db, { ...ownerArgs, noteId: ids.noteId, folderId: p.folderId, order: p.order, placementId: p.placementId });
+          done.placed[p.placementId] = true;
+        }
+      } catch (error) {
+        if (isOfflineFailure(error)) return keep();
+        if (!done.note) throw error;
+        const wrapped = new Error(`${filedFail}: ${error?.message ?? error}`);
+        wrapped.cause = error; wrapped.code = error?.code;
+        throw wrapped;
+      }
+      return answer(false);
     }
+    const KEPT_SENTENCE = () => t("Kept on this device — it will be saved when you are online.");
 
     /** Every real folder document behind `folderTree` (roots + orphaned + cyclic + tooDeep), flattened for folderNoteCounts() -- never the page's OWN virtual system-folder placeholders (mergedRoots()), which folderId: null would collide against inside buildFolderTree()'s own id-keyed map. */
     function rawFolderList(tree) {
@@ -1737,8 +1770,9 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       versions: {
         list: (note) => listNoteRevisions(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId: note.noteId }),
         // "Bring this version back" is a NEW revision through the same save as an edit (never an overwrite or a delete).
-        restore: (note, rev) => updatePermanentNoteContent(db, {
-          tenantId: activeTenantId, noteId: note.noteId, expectedRevisionId: note.currentRevisionId, title: rev.title, bodyHtml: rev.bodyHtml,
+        // J120 O3b: online it is updatePermanentNoteContent() exactly as before; offline it is kept on the device and saved when online.
+        restore: (note, rev) => reviseKeepingOffline(db, {
+          tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId: note.noteId, expectedRevisionId: note.currentRevisionId, title: rev.title, bodyHtml: rev.bodyHtml,
           revisionReason: "version-restore", actorUid: auth.currentUser.uid,
         }),
       },
@@ -2138,18 +2172,39 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       noteViews.sync();
     }
 
-    /** Creates the real folder document for a still-virtual system role, once, the first time a write genuinely needs it to exist. */
+    /**
+     * Creates the real folder document for a still-virtual system role, once, the first time a write genuinely needs it to exist.
+     * PCF MSA J120 O3b: offline (or refused for want of the server) the folder is KEPT on this device under the id minted
+     * here (note-outbox.js keepFolder) and made with the same createNoteFolder() when online, before the Note filed in it.
+     * Meanwhile this page shows it as the real folder it will be (showKeptFolders). Any other failure reaches the reader (I15).
+     */
     async function ensureRealFolder(node) {
-      if (node.folderId) return node.folderId;
-      const outcome = await safeWrite(
-        () => createNoteFolder(db, {
-          tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
-          name: SYSTEM_ROLE_LABEL[node.semanticRole](), semanticRole: node.semanticRole,
-          order: SYSTEM_FOLDER_ROLES.indexOf(node.semanticRole), actorUid: auth.currentUser.uid,
-        }),
-        { collection: TENANT.NOTE_FOLDERS, action: "createNoteFolder(system)" }
-      );
+      if (node.folderId) {
+        // A folder still only on this device goes to the server first, so a filing made online now has a folder to go in.
+        if (!offlineNow() && pendingFolders({ tenantId: activeTenantId, ownerPersonId: selectedPersonId }).some((f) => f.folderId === node.folderId)) await replayNoteOutbox();
+        return node.folderId;
+      }
+      const args = {
+        tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+        name: SYSTEM_ROLE_LABEL[node.semanticRole](), semanticRole: node.semanticRole,
+        order: SYSTEM_FOLDER_ROLES.indexOf(node.semanticRole), actorUid: auth.currentUser.uid,
+      };
+      const folderId = newNoteEntityId();
+      const keep = () => { const id = keepFolder({ ...args, folderId }); showKeptFolders(); return id; };
+      const outcome = await safeWrite(async () => {
+        if (offlineNow()) return keep();
+        try { return await createNoteFolder(db, { ...args, folderId }); } catch (error) { if (isOfflineFailure(error)) return keep(); throw error; }
+      }, { collection: TENANT.NOTE_FOLDERS, action: "createNoteFolder(system)" });
       return outcome.ok ? outcome.result : null;
+    }
+    /** J120 O3b: every system folder kept on this device and not yet in the tree is shown as the real folder it will be. */
+    function showKeptFolders() {
+      if (!folderTree.roots) folderTree.roots = [];
+      for (const f of pendingFolders({ tenantId: activeTenantId, ownerPersonId: selectedPersonId })) {
+        if (f.parentFolderId || !isSystemFolderRole(f.semanticRole) || folderTree.roots.some((r) => r.folderId === f.folderId || r.semanticRole === f.semanticRole)) continue;
+        folderTree.roots.push({ folderId: f.folderId, tenantId: f.tenantId, ownerPersonId: f.ownerPersonId, name: f.name, parentFolderId: null,
+          semanticRole: f.semanticRole, order: f.order, status: NOTE_STATUS.ACTIVE, children: [], keptOnDevice: true });
+      }
     }
 
     async function fileNoteInFolder(note, targetNode) {
@@ -2572,22 +2627,18 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       if (!folderId) return null;
       const order = nextOrder(notesInFolder(node).map((r) => r.placement));
       const ownerArgs = { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, actorUid: auth.currentUser.uid };
-      // J120 O3: offline the new Note and its filing are kept on the device (the full load below shows it) and saved when online.
-      const outcome = offlineNow() ? { ok: true, result: keepNewNoteOffline({ ownerArgs, title, bodyHtml, folderId, order }).created.noteId } : await safeWrite(async () => {
-        const created = await createPermanentNote(db, { ...ownerArgs, title, bodyHtml });
-        try {
-          await createNotePlacement(db, { ...ownerArgs, noteId: created.noteId, folderId, order });
-        } catch (error) {
-          const wrapped = new Error(`The Note was saved, but filing it in this folder failed: ${error?.message ?? error}`);
-          wrapped.cause = error; wrapped.code = error?.code;
-          throw wrapped;
-        }
-        return created.noteId;
+      // J120 O3: offline (O3b: or refused for want of the server) the new Note and its filing are kept on the device (the
+      // full load below shows it) and saved when online -- createPermanentNote() then createNotePlacement(), as before.
+      const outcome = await safeWrite(async () => {
+        const made = await createNoteKeepingOffline({ ownerArgs, title, bodyHtml, filings: [{ folderId, order }], filedFail: "The Note was saved, but filing it in this folder failed" });
+        lastNewNoteKept = made.kept;
+        return made.created.noteId;
       }, { collection: TENANT.NOTE_PLACEMENTS, action: "createPermanentNote+createNotePlacement" });
       if (!outcome.ok) return null;
       await refreshAll();
       return outcome.result;
     }
+    let lastNewNoteKept = false; // J120 O3b: whether createNoteInFolder()'s last Note is only on this device for now
 
     /**
      * Note-pane round 2 (item 15) -- ⋯ Make a copy: a NEW Note with the same title (marked "copy") and text,
@@ -2602,23 +2653,26 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       const tagIds = tagsReady() ? tagLinks.filter((l) => l.noteId === note.noteId).map((l) => l.tagId) : [];
       const title = t("{title} (copy)", { title: noteTitleOf(note) });
       const ownerArgs = { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, actorUid: auth.currentUser.uid };
+      // J120 O3b: offline (or refused for want of the server) the copy and every filing are kept on the device and made
+      // when online with the same createPermanentNote() and createNotePlacement(). Its TAGS are not copied then (a tag
+      // link is its own write, not kept on the device), and the page says so in words.
+      let keptCopy = false;
       const outcome = await safeWrite(async () => {
-        const created = await createPermanentNote(db, { ...ownerArgs, title, bodyHtml: note.bodyHtml ?? "" });
+        const filings = folderIds.map((folderId) => { const node = findNodeByIdOrRole(mergedRoots(), folderId, null); return { folderId, order: node ? nextOrder(notesInFolder(node).map((r) => r.placement)) : 0 }; });
+        const made = await createNoteKeepingOffline({ ownerArgs, title, bodyHtml: note.bodyHtml ?? "", filings, filedFail: "The copy was saved, but filing or tagging it failed" });
+        keptCopy = made.kept;
+        if (keptCopy) return made.created.noteId;
         try {
-          for (const folderId of folderIds) {
-            const node = findNodeByIdOrRole(mergedRoots(), folderId, null);
-            await createNotePlacement(db, { ...ownerArgs, noteId: created.noteId, folderId, order: node ? nextOrder(notesInFolder(node).map((r) => r.placement)) : 0 });
-          }
-          for (const tagId of tagIds) await tagNote(db, { ...ownerArgs, noteId: created.noteId, tagId });
+          for (const tagId of tagIds) await tagNote(db, { ...ownerArgs, noteId: made.created.noteId, tagId });
         } catch (error) {
           const wrapped = new Error(`The copy was saved, but filing or tagging it failed: ${error?.message ?? error}`);
           wrapped.cause = error; wrapped.code = error?.code;
           throw wrapped;
         }
-        return created.noteId;
+        return made.created.noteId;
       }, { collection: TENANT.NOTE_PLACEMENTS, action: "createPermanentNote+createNotePlacement" });
       if (!outcome.ok) return null;
-      showPageStatus(t('A copy was made: "{title}".', { title }));
+      showPageStatus(keptCopy ? (tagIds.length ? t("Kept on this device — it will be saved when you are online. Its tags are not copied while offline.") : KEPT_SENTENCE()) : t('A copy was made: "{title}".', { title }));
       await refreshAll();
       return outcome.result;
     }
@@ -2639,7 +2693,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       // Part C3: "New from template" -- the template's body was cleaned by the Note sanitiser when it was saved; the title is plain text.
       const noteId = await createNoteInFolder(node, tpl ? tpl.title : "", tpl ? sanitizeNoteHtml(tpl.bodyHtml) : "");
       if (!noteId) return;
-      showPageStatus(offlineNow() ? t("Kept on this device — it will be saved when you are online.") : t('New note created in {folder}.', { folder: folderDisplayName(node) })); // J120 O3
+      showPageStatus(lastNewNoteKept ? KEPT_SENTENCE() : t('New note created in {folder}.', { folder: folderDisplayName(node) })); // J120 O3
       if (v && v.kind === "window") { openNoteWindow(noteId, { folderId: node.folderId ?? null }); return; }
       openNotePane(noteId, folderNotesEl.querySelector(`[data-note-id="${CSS.escape(noteId)}"] [data-note-open]`));
     }
@@ -4376,17 +4430,12 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       const ownerArgs = { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, actorUid: auth.currentUser.uid };
       // PCF MSA J68: from the Read view the host sends the first title ("Quran 22:3 - Al-Hajj:"); else the āyah's own label.
       const label = noteTitleParam || unitLabel();
-      const offlineOrder = nextOrder(notesInFolder(node).map((r) => r.placement));
-      const outcome = offlineNow() ? { ok: true, result: (() => { const k = keepNewNoteOffline({ ownerArgs, unitKey: unitKeyParam, title: label, bodyHtml: "", folderId, order: offlineOrder }); return { noteId: k.created.noteId, revisionId: k.created.revisionId }; })() } : await safeWrite(async () => {
-        const { note } = await createStudyNote(db, { ...ownerArgs, unitKey: unitKeyParam, title: label });
-        try {
-          await createNotePlacement(db, { ...ownerArgs, noteId: note.noteId, folderId, order: nextOrder(notesInFolder(node).map((r) => r.placement)) });
-        } catch (error) {
-          const wrapped = new Error(`The Note was saved, but filing it in this folder failed: ${error?.message ?? error}`);
-          wrapped.cause = error; wrapped.code = error?.code;
-          throw wrapped;
-        }
-        return note;
+      // J120 O3/O3b: createStudyNote() then createNotePlacement(); offline (or refused for want of the server) kept on the device.
+      let keptUnitNote = false;
+      const outcome = await safeWrite(async () => {
+        const made = await createNoteKeepingOffline({ ownerArgs, unitKey: unitKeyParam, title: label, bodyHtml: "", filings: [{ folderId, order: nextOrder(notesInFolder(node).map((r) => r.placement)) }], filedFail: "The Note was saved, but filing it in this folder failed" });
+        keptUnitNote = made.kept;
+        return made.created;
       }, { collection: TENANT.NOTE_PLACEMENTS, action: "createStudyNote+createNotePlacement" });
       btn.disabled = false;
       if (!outcome.ok) return;
@@ -4395,7 +4444,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         title: label, bodyHtml: "", status: NOTE_STATUS.ACTIVE, currentRevisionId: outcome.result.revisionId, unitKey: unitKeyParam };
       unitMadeHere.push(made);
       if (!allNotes.some((n) => n.noteId === made.noteId)) allNotes.push(made);
-      showPageStatus(offlineNow() ? t("Kept on this device — it will be saved when you are online.") : t('New note created in {folder}.', { folder: folderDisplayName(node) })); // J120 O3
+      showPageStatus(keptUnitNote ? KEPT_SENTENCE() : t('New note created in {folder}.', { folder: folderDisplayName(node) })); // J120 O3
       await renderUnitView();
       openNotePane(made.noteId, viewUnit.querySelector(`[data-note-id="${CSS.escape(made.noteId)}"] [data-note-open]`));
       // Ready to write at once, as the demo shows: the same ✏️ Edit the reader would press.
@@ -4558,18 +4607,11 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
       const order = nextOrder(notesInFolder(node).map((r) => r.placement));
       // J05: the binding takes approach_NN only (studyNoteSource); any other shape is left off, never a failed Note.
       const approachOk = /^approach_\d{2}$/.test(newApproachId ?? "") ? newApproachId : null;
-      const outcome = offlineNow() ? { ok: true, result: keepNewNoteOffline({ ownerArgs, unitKey: newUnitKey || null, approachId: approachOk, title, bodyHtml: body, folderId, order }) } : await safeWrite(async () => {
-        const created = newUnitKey ? (await createStudyNote(db, { ...ownerArgs, unitKey: newUnitKey, title, bodyHtml: body, approachId: /^approach_\d{2}$/.test(newApproachId ?? "") ? newApproachId : null })).note
-          : await createPermanentNote(db, { ...ownerArgs, title, bodyHtml: body });
-        let placementId;
-        try {
-          placementId = await createNotePlacement(db, { ...ownerArgs, noteId: created.noteId, folderId, order });
-        } catch (error) {
-          const wrapped = new Error(`The Note was saved, but filing it in this folder failed: ${error?.message ?? error}`);
-          wrapped.cause = error; wrapped.code = error?.code;
-          throw wrapped;
-        }
-        return { created, placementId };
+      // J120 O3/O3b: createStudyNote() (or createPermanentNote()) then createNotePlacement(); offline, or refused for want
+      // of the server, kept on the device under the same ids and saved when online.
+      const outcome = await safeWrite(async () => {
+        const made = await createNoteKeepingOffline({ ownerArgs, unitKey: newUnitKey || null, approachId: approachOk, title, bodyHtml: body, filings: [{ folderId, order }], filedFail: "The Note was saved, but filing it in this folder failed" });
+        return { created: made.created, placementId: made.placementIds[0] };
       }, { collection: TENANT.NOTE_PLACEMENTS, action: newUnitKey ? "createStudyNote+createNotePlacement" : "createPermanentNote+createNotePlacement" });
       if (!outcome.ok) { toOpener({ type: "mmsa-new-note-ready", ok: false }); return; }
       const { created, placementId } = outcome.result;
