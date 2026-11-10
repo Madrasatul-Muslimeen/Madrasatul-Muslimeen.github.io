@@ -3309,3 +3309,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.03** (2026-11-09): four Quran Study fixes: Word card marks row (J128), intention strip wraps (J124), level titles (J126), Last read (J123).
 - **v14.04** (2026-11-09): Word Card ☰ menu (J125) and the Āyah card bar: no –, ← beside ×, 📝 Note beside 📖 (J131).
 - **v14.05** (2026-11-10): Word Card marks Difficult · Learn · Learned, Learn next level switch, Bangla switch OFF per new word (MSA · QR J135, J133, J134).
+- **v14.06** (2026-11-10): a saved whole-list Bangla switch in the Bangla list panel (MSA · QR J134 follow-up).
