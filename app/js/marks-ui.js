@@ -134,14 +134,18 @@ export function marksLegendHtml(lang = "en") {
 /** CSS for everything above, in the page's own colours; one place, appended once by the page. */
 export const MARKS_CSS = `
 .marks-row { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem .6rem; margin:.4rem 0; }
-.marks-row-label { font-size:.82rem; color:var(--muted,#8fa0c2); }
+.marks-row { --mk-label:#c9d3ea; --mk-hard:#ef7a64; --mk-practice:#e5b04a; --mk-done:#58c08c; --mk-on:#0e1630; }
+[data-card-look="light"] .marks-row { --mk-label:#46536b; --mk-hard:#b3321d; --mk-practice:#7a5410; --mk-done:#1b6f45; --mk-on:#ffffff; }
+.marks-row-label { font-size:.82rem; color:var(--mk-label); }
 .marks-row-buttons { display:flex; flex-wrap:wrap; gap:.4rem; }
 .mk-btn { min-height:40px; padding:.3rem .8rem; border-radius:999px; border:1.5px solid currentColor; background:transparent; font:inherit; font-size:.9rem; cursor:pointer; }
 .mk-btn:disabled { opacity:.55; cursor:default; }
-.mk-hard { color:#c8553d; } .mk-practice { color:#b9770e; } .mk-done { color:#2e8b57; }
-.mk-hard[aria-pressed="true"] { background:#c8553d; color:#fff; border-color:#c8553d; }
-.mk-practice[aria-pressed="true"] { background:#b9770e; color:#fff; border-color:#b9770e; }
-.mk-done[aria-pressed="true"] { background:#2e8b57; color:#fff; border-color:#2e8b57; }
+/* MSA · QR J136 (Architect 94L, 10 Nov 2026): the marks-row text met only 2.6-4.3:1 (global-approach-card-browser, 8 fails). One palette per card look,
+   every text colour 4.5:1 or better on its own card (a palette belongs to a SURFACE): light tones on the Night card, deep tones on the Light card. */
+.marks-row .mk-hard { color:var(--mk-hard); } .marks-row .mk-practice { color:var(--mk-practice); } .marks-row .mk-done { color:var(--mk-done); }
+.marks-row .mk-hard[aria-pressed="true"] { background:var(--mk-hard); color:var(--mk-on); border-color:var(--mk-hard); }
+.marks-row .mk-practice[aria-pressed="true"] { background:var(--mk-practice); color:var(--mk-on); border-color:var(--mk-practice); }
+.marks-row .mk-done[aria-pressed="true"] { background:var(--mk-done); color:var(--mk-on); border-color:var(--mk-done); }
 .mk-wheel-wrap { width:100%; flex:1 1 100%; min-width:0; }
 .mk-wheel-for { display:block; width:100%; box-sizing:border-box; margin:.25rem 0 .1rem; text-align:center; overflow-wrap:anywhere; }
 .mk-wheel { width:100%; max-width:420px; height:auto; display:block; margin:0 auto; }
