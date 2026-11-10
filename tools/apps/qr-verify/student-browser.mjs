@@ -178,18 +178,19 @@ async function flows(auth, lang, [w, h]) {
   await settle(page, 1000);
   const vis = (sel) => page.evaluate((q) => { const e = document.querySelector(q); return !!e && e.getBoundingClientRect().width > 0; }, sel);
   // MSA · QR J130 (b): since J114 (ONE ⋮ menu) the three study buttons on a phone are tiles in the ⋮ sheet (the ⋯ card is retired from sight), so
-  // open the ⋮ sheet and press the tile; at 600px and up they are still on the Read bar.
+  // open the ⋮ sheet and press the tile.
+  // UPDATED IN PLACE (v14.09, PCF MSA J132, QR Lead 46L): the Read bar no longer carries Take / Record / Status at any width (#readApproachBar is hidden
+  // everywhere); the three tiles are in the ⋮ sheet at every width. So the sheet path below now runs at 1280 too, where the old "bar shows" check failed.
   const sheetTile = (act) => `#readQuickMenuSlot .qm-sheet [data-qm-act="${act}"]`;
   const pressStudy = async (barSel, act) => {
-    if (w >= 600) { await page.click(barSel); return; }
     if (!(await vis(sheetTile(act)))) { await page.click("#readQuickMenuSlot .ayah-quick-btn"); await settle(page, 400); }
     await page.click(sheetTile(act));
   };
-  if (w < 600) {
-    check(`${tag}: POSITIVE CONTROL on a phone the three study buttons are tiles in the closed ⋮ sheet`, !(await vis(sheetTile("status"))) && (await page.evaluate(() => ["approach", "record", "status"].every((a) => !!document.querySelector(`#readQuickMenuSlot [data-qm-act="${a}"]`)))));
+  {
+    check(`${tag}: POSITIVE CONTROL the three study buttons are tiles in the closed ⋮ sheet`, !(await vis(sheetTile("status"))) && (await page.evaluate(() => ["approach", "record", "status"].every((a) => !!document.querySelector(`#readQuickMenuSlot [data-qm-act="${a}"]`)))));
     await page.click("#readQuickMenuSlot .ayah-quick-btn"); await settle(page, 400);
   }
-  check(`${tag}: the Take / Record / Status ${w < 600 ? "tiles show in the ⋮ sheet" : "bar shows"}`, w < 600 ? (await vis(sheetTile("approach"))) && (await vis(sheetTile("record"))) && (await vis(sheetTile("status"))) : (await vis("#readBarTakeBtn")) && (await vis("#readBarRecordBtn")) && (await vis("#readBarStatusBtn")));
+  check(`${tag}: the Take / Record / Status tiles show in the ⋮ sheet`, (await vis(sheetTile("approach"))) && (await vis(sheetTile("record"))) && (await vis(sheetTile("status"))));
   // Know Your Status
   await pressStudy("#readBarStatusBtn", "status"); await settle(page, 1200);
   const st = await page.evaluate(() => ({ open: !document.getElementById("myStatusMount").hidden, text: document.getElementById("myStatusBody").innerText.length, close: document.getElementById("myStatusCloseBtn").getBoundingClientRect().width > 0 }));
