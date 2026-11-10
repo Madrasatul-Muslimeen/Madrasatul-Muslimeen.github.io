@@ -550,6 +550,16 @@
      it just has a visible card edge to overflow now. */
   .opt-card select { max-width: 100%; }
   .opt-note { font-size: 0.75rem; color: #777; margin: 0.3rem 0 0; }
+  /* PCF MSA J120 O6: recitation saved for offline, one sūrah at a time (Listening card). */
+  .recit-off { margin-top: 0.8rem; padding-top: 0.6rem; border-top: 1px solid #e3e6ee; }
+  .recit-off h5 { margin: 0 0 0.2rem; font-size: 0.9rem; }
+  .recit-off-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.4rem; }
+  .recit-off-row select { flex: 1 1 10rem; min-width: 0; max-width: 100%; min-height: 40px; }
+  .recit-off-row button, .recit-off-list button { min-height: 40px; padding: 0 0.8rem; }
+  .recit-off-status { font-size: 0.85rem; margin: 0.4rem 0 0; overflow-wrap: anywhere; }
+  .recit-off-status[data-kind="error"] { color: #8a1c1c; }
+  .recit-off-list { list-style: none; margin: 0.5rem 0 0; padding: 0; }
+  .recit-off-list li { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between; padding: 0.25rem 0; border-top: 1px solid #eef0f5; overflow-wrap: anywhere; }
   .opt-note[hidden] { display: none; }
   /* Shell round 14: the summary strip that used to sit here is GONE, on the
      owner's own ask -- "don't need to show the above choices in words below
@@ -7534,6 +7544,7 @@
           <h4>Listening</h4>
           <div id="audioControls"></div>
           <div id="drillControls"></div>
+          <div id="recitationOfflineBox" class="recit-off"></div>
         </div>
 
         <!-- Shell round 14 (15 Aug 2026): the summary strip used to sit here
@@ -8048,6 +8059,7 @@
     } from "./js/audio-player.js";
     import { translateStatic, t, num, parseNum, surahName, ensureCatalogueReady } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
+    import { recitationUrls, savedFor, saveRecitation, removeRecitation, estimateBytes, mbText as recitationMbText } from "./js/recitation-offline.js";
     import { isZabReady } from "./js/zab-readiness.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
 
@@ -27330,7 +27342,63 @@
     // on one line. No "Recitation" heading (this section has its own), and no
     // Stop: Stop lives on the reading screen, where the listener actually is.
     // -----------------------------------------------------------------------
+    // -----------------------------------------------------------------------
+    // PCF MSA J120 O6 (the Owner's answer G): recitation saved for offline, ONE SŪRAH AT A TIME, for one reciter. The
+    // reader picks the sūrah and taps Save; a saved sūrah is listed with its size and a Remove. What is saved plays and
+    // seeks with no internet (the worker serves it, sw.js handleRecitationAudio). The reciter is the first ticked one
+    // whose audio can be saved. A failed save is said in words here (I15), never only in the console.
+    // -----------------------------------------------------------------------
+    let recitOfflineBusy = false;
+    let recitOfflineStatus = null; // { kind: "info" | "error", text }
+    let recitOfflineSurah = null;
+    function recitOfflineReciterId() {
+      const pool = [...(drillSelectedReciterIds ?? []), currentReciterId].filter((id) => RECITERS[id]);
+      return pool.find((id) => recitationUrls(id, 1, 1)) ?? null;
+    }
+    function recitOfflineAyahCount(surah) { return surahIndex.find((x) => x.surahNumber === surah)?.ayahCount ?? 0; }
+    function renderRecitationOffline() {
+      const box = document.getElementById("recitationOfflineBox");
+      if (!box) return;
+      const rid = recitOfflineReciterId();
+      if (recitOfflineSurah === null) recitOfflineSurah = currentSurahNum;
+      const surah = recitOfflineSurah;
+      const count = recitOfflineAyahCount(surah);
+      const saved = rid ? savedFor(rid) : {};
+      const savedNums = Object.keys(saved).map(Number).sort((a, b) => a - b);
+      const sig = JSON.stringify([rid, surah, savedNums, recitOfflineBusy, recitOfflineStatus, getAppLang()]);
+      if (box.dataset.sig === sig) return;
+      box.dataset.sig = sig;
+      const reciterName = rid ? t(RECITERS[rid].label) : "";
+      const head = `<h5>${t("Recitation for offline")}</h5>`;
+      if (!rid) { box.innerHTML = head + `<p class="opt-note">${t("The reciters ticked above cannot be saved for offline.")}</p>`; return; }
+      const isSaved = !!saved[surah];
+      box.innerHTML = head +
+        `<p class="opt-note">${t("Choose the sūrahs you want to listen to with no internet. Saved for {reciter}; about 1 MB for each minute of recitation.", { reciter: reciterName })}</p>` +
+        `<div class="recit-off-row"><select id="recitOfflineSurah" aria-label="${t("Surah")}">${surahIndex.map((x) => `<option value="${x.surahNumber}"${x.surahNumber === surah ? " selected" : ""}>${surahDisplayName(x.surahNumber)}</option>`).join("")}</select>` +
+        (isSaved
+          ? `<button type="button" id="recitOfflineRemove">${t("Remove from this device")}</button>`
+          : `<button type="button" id="recitOfflineSave"${recitOfflineBusy ? " disabled" : ""}>${t("Save for offline")} (${t("about")} ${recitationMbText(estimateBytes(count))})</button>`) + `</div>` +
+        `<p class="recit-off-status" id="recitOfflineStatus" role="${recitOfflineStatus?.kind === "error" ? "alert" : "status"}" data-kind="${recitOfflineStatus?.kind ?? ""}">${recitOfflineStatus ? escapeHtml(recitOfflineStatus.text) : ""}</p>` +
+        (savedNums.length ? `<ul class="recit-off-list" aria-label="${t("Saved for offline")}">${savedNums.map((n) => `<li><span>${surahDisplayName(n)} · ${recitationMbText(saved[n].bytes)}</span><button type="button" data-recit-remove="${n}">${t("Remove")}</button></li>`).join("")}</ul>` : "");
+      document.getElementById("recitOfflineSurah").addEventListener("change", (e) => { recitOfflineSurah = Number(e.target.value); recitOfflineStatus = null; renderRecitationOffline(); });
+      document.getElementById("recitOfflineSave")?.addEventListener("click", async () => {
+        if (recitOfflineBusy) return;
+        recitOfflineBusy = true; recitOfflineStatus = { kind: "info", text: t("Saving…") }; renderRecitationOffline();
+        try {
+          const bytes = await saveRecitation({ reciterId: rid, surah, ayahCount: count, onProgress: (d, n) => {
+            const el = document.getElementById("recitOfflineStatus"); if (el) el.textContent = t("Saving… {done} of {total}", { done: num(d), total: num(n) });
+          } });
+          recitOfflineStatus = { kind: "info", text: t("Saved for offline: {name} ({size}).", { name: surahDisplayName(surah), size: recitationMbText(bytes) }) };
+        } catch (err) { recitOfflineStatus = { kind: "error", text: err?.message || t("Could not save this recitation.") }; }
+        recitOfflineBusy = false; renderRecitationOffline();
+      });
+      const removeIt = async (n) => { await removeRecitation({ reciterId: rid, surah: n, ayahCount: recitOfflineAyahCount(n) }); recitOfflineStatus = { kind: "info", text: t("Removed: {name}.", { name: surahDisplayName(n) }) }; renderRecitationOffline(); };
+      document.getElementById("recitOfflineRemove")?.addEventListener("click", () => removeIt(surah));
+      box.querySelectorAll("[data-recit-remove]").forEach((b) => b.addEventListener("click", () => removeIt(Number(b.dataset.recitRemove))));
+    }
+
     function renderListeningControls() {
+      renderRecitationOffline();
       const reciters = Object.values(RECITERS).filter((r) => reciterIsReady(r.id) && reciterOffersSurah(r.id, currentSurahNum)); // a one-sūrah recording is offered only on its own sūrah (MSA · QR J121)
       if (drillSelectedReciterIds === null) drillSelectedReciterIds = [currentReciterId].filter((id) => reciterSupportsSingleAyah(id));
 
@@ -27389,6 +27457,7 @@
           : drillSelectedReciterIds.filter((x) => x !== id);
         adoptFirstTickedReciter();
         warmSegmentedTimestamps(); // a real gesture that precedes Play
+        renderRecitationOffline();
       });
       drillRepeatSelect.addEventListener("change", () => { drillRepeatCount = Number(drillRepeatSelect.value); });
       drillModeSelect.addEventListener("change", () => { drillMode = drillModeSelect.value; });
