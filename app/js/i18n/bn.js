@@ -3217,6 +3217,8 @@ export const BN = {
   "Take Note": "নোট নিন",
   "Approaches on this āyah: {done} of {total} started": "এই আয়াতে {total}টির মধ্যে {done}টি পদ্ধতি শুরু হয়েছে",
   "Āyah status": "আয়াতের অবস্থা",
+  "Hide progress data": "অগ্রগতির তথ্য লুকান",
+  "Show progress data": "অগ্রগতির তথ্য দেখান",
   "Status of this āyah": "এই আয়াতের অবস্থা",
   "See on the wheel": "চাকায় দেখুন",
   "Known {known} of {total} words": "{total}-এর মধ্যে {known}টি শব্দ জানা",

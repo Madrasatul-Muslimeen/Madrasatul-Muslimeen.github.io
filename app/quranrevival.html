@@ -3067,6 +3067,8 @@
   .meaning-ayah-head > .ayah-num-badge + .ayah-quick-wrap { margin-left: 0; }
   /* PCF MSA J110 / inbox qr46lstripe01 (the Owner ticked A, 11 Nov 2026): the āyah's STATUS stripe sits in the free gap between its name and its number.
      A button shows only when that status exists. 22px painted, 40px to press (the chip's own padding), so the row stays a finger-size target. */
+  .word-progress-data-switch { display: block; min-height: 40px; margin: 0 0 0.35rem auto; padding: 0.35rem 0.8rem; border: 1px solid #c9b88a; border-radius: 999px; background: #fffaf0; color: #5a4210; font: inherit; font-size: 0.85rem; cursor: pointer; }
+  .word-progress-data-switch:focus-visible { outline: 3px solid #B8862F; outline-offset: 1px; }
   .ayah-stripe { display: inline-flex; align-items: center; margin-left: auto; flex: 0 1 auto; min-width: 0; }
   .meaning-ayah-head > .ayah-stripe + .ayah-num-badge { margin-left: 0; }
   .ayah-stripe-chip { flex: none; min-width: 30px; min-height: 40px; padding: 9px 2px; border: 0; background: none; display: grid; place-items: center; font: inherit; cursor: pointer; }
@@ -7943,7 +7945,7 @@
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
     import { claimKeyFor, LEMMA_WIDE_LEVELS } from "./js/quran-lemma-levels.js";
     import { BANGLA_TRANSLIT_NOTE } from "./js/quran-translit-bn.js";
-    import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, fitWordCardFamilyRows, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
+    import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, fitWordCardFamilyRows, WORD_CARD_POS_SEGMENTS, progressDataOn, setProgressDataOn } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, occurrenceRefsForClaimKey, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { wbwClaimKey, isFormKey } from "./js/quran-word-form-key.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
@@ -19020,6 +19022,8 @@
         saving: t("Saving…"),
         recordHeading: t("Record your Progress"),
         statusHeading: t("Know Your Status"),
+        progressDataHide: t("Hide progress data"),
+        progressDataShow: t("Show progress data"),
         wordNumberLabel: t("word {n}"),
         ringLabel: t("{percent} of the words of the Qur'an known"),
         ringUnknown: t("Share of the words of the Qur'an known: not loaded yet"),
@@ -21371,6 +21375,7 @@
       // Round 6 -- the 🔍 Search row. Only Search / Enter / a Try chip fetch the word list.
       const practiseBtn = event.target.closest("[data-vocab-practise-word]");
       if (practiseBtn) { openVocabWordRound(practiseBtn.dataset.lemma).catch((error) => console.warn("Vocabulary unavailable", error)); return; }
+      if (event.target.closest("[data-word-progress-data-toggle]")) { setProgressDataOn(!progressDataOn()); renderPersistentWordCard(); return; } // J129
       if (event.target.closest("[data-learn-next-open]")) { openLearnNextWord().catch((error) => console.warn("Learn next unavailable", error)); return; } // J82: the next word's card, not the list
       const searchToggle = event.target.closest("[data-word-card-search-toggle]");
       if (searchToggle) {
