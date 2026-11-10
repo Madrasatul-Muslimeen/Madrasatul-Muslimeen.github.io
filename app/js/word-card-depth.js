@@ -58,6 +58,7 @@ const S = {
   secNahw: { en: "Grammar in This Āyah (Naḥw)", bn: "এই আয়াতের ব্যাকরণ (নাহু)" },
   secChoice: { en: "Word Choice & Distinctions", bn: "শব্দচয়ন ও পার্থক্য" },
   secClassical: { en: "Classical Arabic Usage", bn: "ধ্রুপদী আরবি ব্যবহার" },
+  conjFormOnly: { en: "Form {n} of {root}.", bn: "{root}-এর ফর্ম {n}।" },
   conjRule: { en: "Form {n} of {root} for every person.", bn: "{root}-এর ফর্ম {n}, সব পুরুষের জন্য।" },
   conjHelp: { en: "Endings in colour; the gold row is the one in this āyah; ✦ = found in the Qur'an.", bn: "শেষাংশ রঙিন; সোনালি সারিটি এই আয়াতের; ✦ = কুরআনে পাওয়া যায়।" },
   conjPast: { en: "Past", bn: "অতীত" },
@@ -707,9 +708,13 @@ function conjSection(word, features, ctx) {
   const entry = lemma ? ctx.verbForms[lemma] : null;
   if (!entry) return need("conjNotListed");
   const result = conjugate({ root: entry.r, form: entry.f, pastVowel: entry.pv ?? null, presentVowel: entry.sv ?? null });
-  if (!result.supported) return need(CONJ_REASON[result.reason] ?? "conjWeak");
   const rootAr = [...toArabic(entry.r)].join(" ");
   const formLabel = lang === "bn" ? formatNumber(entry.f) : (FORM_NAMES[entry.f]?.roman ?? String(entry.f));
+  // PCF MSA J122 (the Owner, 11 Nov 2026: "I see many times the form is missing for verbs. Recheck your existing work on Verb Form."):
+  // the Form was drawn ONLY with the table, so a root the engine cannot do safely (a weak letter, a hamza, a doubled letter: 711 of the
+  // 1,475 packaged verbs) lost its Form as well, although verb-forms.json records the Form of every one. The Form is data, not a guess:
+  // say it first, then say why there is no table. The table itself is still never invented.
+  if (!result.supported) return line("rule", lang, esc(fill(pick("conjFormOnly", lang), { n: formLabel, root: "\u0000" })).replace("\u0000", AR(rootAr)), "word-card-form-only") + need(CONJ_REASON[result.reason] ?? "conjWeak");
   const out = basic
     ? [line("rule", lang, `${basicBarHtml(word, ctx)} ${esc(fill(pick("conjBasicRule", lang), { root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjBasicHelp", lang))}</span>`)]
     : [line("rule", lang, `${basicBarHtml(word, ctx)} ${esc(fill(pick("conjRule", lang), { n: formLabel, root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjHelp", lang))}</span>`)];

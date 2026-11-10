@@ -167,7 +167,9 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
     await page.evaluate(() => { const s = document.querySelector('[data-word-card-sec="conj"]'); if (s) s.open = true; });
     c = await conj(page);
     check(`${L}: 2:8:4 (weak root) has no table`, c && Object.keys(c.tables).length === 0);
-    check(`${L}: 2:8:4 says why, tagged needs-a-source`, c && c.lines.length === 1 && c.lines[0][0] === "needs" && c.lines[0][1].includes(lang === "bn" ? "দুর্বল অক্ষর" : "weak letter"), JSON.stringify(c?.lines));
+    // UPDATED IN PLACE (PCF MSA J122, 11 Nov 2026, the Owner: "I see many times the form is missing for verbs"): a root with no table now still
+    // names its Form, FIRST (يَقُولُ is Form I), and THEN says why there is no table, tagged needs-a-source. It used to be the "needs" line alone.
+    check(`${L}: 2:8:4 names its Form first, then says why there is no table, tagged needs-a-source`, c && c.lines.length === 2 && c.lines[0][0] === "rule" && (lang === "bn" ? /ফর্ম ১/.test(c.lines[0][1]) : /Form I of/.test(c.lines[0][1])) && c.lines[1][0] === "needs" && c.lines[1][1].includes(lang === "bn" ? "দুর্বল অক্ষর" : "weak letter"), JSON.stringify(c?.lines));
     check(`${L}: I9 -- still one request`, verbReq.length === 1, String(verbReq.length));
 
     // A passive verb: 2:4:4 أُنزِلَ.
