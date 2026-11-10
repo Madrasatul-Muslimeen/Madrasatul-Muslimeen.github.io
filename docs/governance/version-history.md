@@ -1113,3 +1113,4 @@ total). Allocated by the MMSA Architect.
 14.08: Get ready for offline keeps every Hadith and Dua book (J120 2 D). Allocated by the MMSA Architect.
 14.09: Quran Study one Read bar, Study in the ⋮ (MSA · QR J132). Allocated by the MMSA Architect.
 14.10: Mark the Word, five marks on the Word card (MSA · QR J136). Allocated by the MMSA Architect.
+14.11: Practising words get a light violet tint (QR Lead). Allocated by the MMSA Architect.
