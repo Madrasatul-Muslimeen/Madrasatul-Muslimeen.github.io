@@ -5354,11 +5354,12 @@
      header takes two rows -- ‹ 🔍 [This āyah] … › × on the first (the button stays beside 🔍), the word and its root centred on
      the second -- rather than squeezing the word to nothing. */
   @container wordcard (max-width: 34rem) {
-    .quran-word-card header { flex-wrap: wrap; row-gap: 0.25rem; }
+    /* PCF MSA J127: 0.25rem -> 0.5rem. With ‹ › together at the start, "This āyah" sits 42px further right, right above the centred
+       Arabic word, and the tall marks of a word such as نَعْبُدُ touched it (word-card-j101-top-browser, 520px). */
+    .quran-word-card header { flex-wrap: wrap; row-gap: 0.5rem; }
     .quran-word-card header button.word-card-legend-btn { margin-inline-end: auto; } /* J59: was on "This āyah"; the ⓘ now sits beside it */
     .quran-word-card header > .word-card-head-word { order: 5; flex: 1 1 calc(100% - 6rem); min-width: 4.5rem; }
     .quran-word-card header > .word-card-root-box { order: 6; }
-    .quran-word-card header > [data-word-card-move="next"] { order: 3; }
     .quran-word-card header > [data-word-card-close] { order: 4; }
     /* QR Lead (23 Oct 2026): the card's way back, ← alone, sits beside ⓘ (the push to the right moves from ⓘ to it). */
     .quran-word-card header:has(> .word-card-app-back) button.word-card-legend-btn { margin-inline-end: 0; }
@@ -5394,15 +5395,16 @@
   /* MSA · QR J125 (the Owner, 9 Nov 2026): ☰ menu in the top-right corner, ⓘ and × to its left. The push to the right moves from
      ⓘ to › (the first of the right-hand group); ← no longer pushes. Where the first row cannot hold seven 40px tiles
      (a card up to 22rem, a 320-360px phone), ⓘ takes the second row, before the word. */
-  .quran-word-card header > [data-word-card-move="next"] { margin-inline-start: auto; }
+  /* PCF MSA J127 (the Owner, 11 Nov 2026: "J127:A"): ‹ and › sit together at the start of the row, so the push to the right moves from › to
+     ⓘ (the first of the right-hand group) again. */
+  .quran-word-card header button.word-card-legend-btn { margin-inline-start: auto; }
   .quran-word-card header button.word-card-legend-btn,
   .quran-word-card header:has(> .word-card-app-back) button.word-card-legend-btn,
   .quran-word-card header > button.word-card-app-back { margin-inline-end: 0; }
   .quran-word-card header button.word-card-menu-btn { font-size: 1.15rem; border-color: #c9a24a; color: #c9a24a; }
   .quran-word-card header button.word-card-menu-btn[aria-expanded="true"] { background: #c9a24a; color: #1c2a46; }
   @container wordcard (max-width: 34rem) {
-    .quran-word-card header > [data-word-card-move="next"] { order: 3; margin-inline-start: auto; }
-    .quran-word-card header > button.word-card-legend-btn { order: 3; }
+    .quran-word-card header > button.word-card-legend-btn { order: 3; margin-inline-start: auto; }
     .quran-word-card header > [data-word-card-close] { order: 4; }
     .quran-word-card header > button.word-card-menu-btn { order: 4; }
     .quran-word-card header > button.word-card-forms-head { order: 6; } /* on the word's row, after it */
@@ -5418,6 +5420,16 @@
     .quran-word-card header > .word-card-head-word { order: 6; flex-basis: calc(100% - 6rem - 44px); }
     .quran-word-card header > .word-card-root-box { order: 7; }
     .quran-word-card header:has(> .word-card-app-back) > .word-card-head-word { flex-basis: calc(100% - 9rem - 44px); }
+  }
+  /* PCF MSA J127: where ⓘ has gone to the second row (the two rules just above), the first row has no push of its own, so the row
+     would spread out and ‹ › would come apart. The push to the right goes to × (the first of the right-hand group left on that row). */
+  @container wordcard (max-width: 22rem) {
+    .quran-word-card header > button.word-card-legend-btn { margin-inline-start: 0; }
+    .quran-word-card header > [data-word-card-close] { margin-inline-start: auto; }
+  }
+  @container wordcard (max-width: 25rem) {
+    .quran-word-card header:has(> .word-card-app-back) > button.word-card-legend-btn { margin-inline-start: 0; }
+    .quran-word-card header:has(> .word-card-app-back) > [data-word-card-close] { margin-inline-start: auto; }
   }
   @container wordcard (min-width: 30rem) and (max-width: 34rem) {
     .quran-word-card header > .word-card-head-word { flex: 1 1 calc(100% - 7.5rem); }

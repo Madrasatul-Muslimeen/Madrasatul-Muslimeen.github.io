@@ -1745,13 +1745,14 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   markLearnRowHtml = markLearnRow(word, context, text);
   let panelWithMarks = levelPanel(state.level, word, layers, context, text, formatNumber);
   if (markLearnRowHtml && !panelWithMarks.includes("data-word-card-marks")) panelWithMarks = markLearnRowHtml + panelWithMarks;
+  // PCF MSA J127 (the Owner, 11 Nov 2026: "J127:A"): the two navigation buttons, ‹ ›, sit TOGETHER at the start of the header row.
   return `<section class="quran-word-card" role="region" aria-label="${escapeHtml(text.cardRegion)}" data-occurrence-id="${escapeHtml(occurrenceId)}"${showSegmentColour ? " data-stem-mark" : ""}>
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>
+      <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" class="word-card-search-btn" data-word-card-search-toggle aria-pressed="${searchOpen}" aria-label="${escapeHtml(text.searchButton)}">🔍</button>
       <button type="button" class="word-card-ayah-action-btn" data-word-card-ayah-action="${chapter.surahNumber}:${ayah.ayah}">${escapeHtml(text.ayahActionsButton)}</button>
       <div class="word-card-head-word"><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${escapeHtml(refText(chapter.surahNumber, ayah.ayah, word.position))}</div></div>
       ${state.level === "wbw" ? headGlossHtml(word, context, text) + formsButtonHtml(layers, context, "head") : ""}
-      <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       ${legendButtonHtml(text)}
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button>${context.banglaHtml ? menuButtonHtml(context, text) : ""}</header>
     ${legendBalloonHtml(state.level, text)}
