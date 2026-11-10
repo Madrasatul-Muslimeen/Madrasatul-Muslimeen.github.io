@@ -41,7 +41,7 @@ for (let n = 1; n <= 114 && Object.values(need).some((v) => v > 0); n++) {
 }
 if (picks.length !== Object.values(want).reduce((x, y) => x + y, 0)) throw new Error(`fixture: found ${picks.length} samples`);
 const LANGS = arg("lang") ? [arg("lang")] : ["en", "bn"];
-const WIDTHS = arg("width") ? [Number(arg("width"))] : [390, 1280];
+const WIDTHS = arg("width") ? [Number(arg("width"))] : [320, 390, 768, 1280];
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 try {
   for (const lang of LANGS) for (const width of WIDTHS) {
@@ -76,7 +76,7 @@ try {
         const m = await page.evaluate(() => {
           const p = document.querySelector('#quranWordCardMount [data-word-card-panel="tasrif"]');
           const lines = [...p.querySelectorAll('[data-word-card-dline="rule"]')].map((e) => e.textContent.replace(/\s+/g, " ").trim());
-          return { lines, formOnly: [...p.querySelectorAll(".word-card-form-only")].map((e) => e.textContent.replace(/\s+/g, " ").trim()), need: p.querySelectorAll(".word-card-need").length, table: !!p.querySelector("[data-word-card-conj-grid], .word-card-conj-wrap"), inView: (() => { const r = p.getBoundingClientRect(); return r.right <= innerWidth + 0.5; })() };
+          return { lines, formOnly: [...p.querySelectorAll(".word-card-form-only")].map((e) => e.textContent.replace(/\s+/g, " ").trim()), need: p.querySelectorAll(".word-card-need").length, table: !!p.querySelector("[data-word-card-conj-grid], .word-card-conj-wrap"), inView: (() => { const r = p.getBoundingClientRect(); return r.right <= innerWidth + 0.5; })(), formInside: [...p.querySelectorAll(".word-card-form-only")].every((e) => { const r = e.getBoundingClientRect(), pr = p.getBoundingClientRect(); return r.width > 0 && r.left >= pr.left - 0.5 && r.right <= pr.right + 0.5 && e.scrollWidth <= e.clientWidth + 1; }), scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth };
         });
         const bnDigit = String(k.form).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]);
         const formText = lang === "bn" ? new RegExp(`ফর্ম ${bnDigit}`) : new RegExp(`Form ${ROMAN[k.form]}\\b`);
@@ -87,7 +87,8 @@ try {
         } else {
           check(`${tag} ${label}: the Form comes with the "needs a source" line, and NO table is invented`, m.formOnly.length === 1 && m.need >= 1 && !m.table, JSON.stringify({ formOnly: m.formOnly, need: m.need, table: m.table }));
         }
-        check(`${tag} ${label}: the panel stays inside the screen`, m.inView);
+        check(`${tag} ${label}: the panel stays inside the screen, with no sideways scroll`, m.inView && m.scroll <= 0, JSON.stringify({ inView: m.inView, scroll: m.scroll }));
+        if (k.kind !== "supported") check(`${tag} ${label}: the Form line is whole: inside the panel, not cut`, m.formInside, JSON.stringify(m.formInside));
         await page.evaluate(() => document.querySelector("[data-word-card-close]")?.click()); await page.waitForTimeout(250);
       }
       check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|archive\.org|quran\.com|favicon/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
