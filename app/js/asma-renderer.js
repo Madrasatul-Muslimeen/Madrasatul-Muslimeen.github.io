@@ -332,5 +332,9 @@ export function renderAsmaScreensaverSlide(poster, fallbackName) {
     "screensaver") changes only the size, and `interactive` makes each reference a button or a link into the Hadith
     library (off where the whole poster is itself one button). Call fitAsmaPosters() once it is on screen. */
 export function renderAsmaPosterHtml(entry, variant = "standalone", opts = {}) {
-  return renderAsmaPoster(entry, variant, opts);
+  // PCF MSA J120 O5: the poster draws with fonts fetched from the internet, so with no connection it says so in words
+  // (a quiet line under it) rather than showing a plain-looking poster with no explanation. Not on the screensaver.
+  const offline = typeof navigator !== "undefined" && navigator.onLine === false && variant !== "screensaver";
+  const note = offline ? `<span class="ahp-offline-note" role="status">${escapeHtml(t("Posters need the internet"))}</span>` : "";
+  return renderAsmaPoster(entry, variant, opts) + note;
 }

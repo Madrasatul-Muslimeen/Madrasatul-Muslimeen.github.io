@@ -539,6 +539,8 @@ export const BN = {
   "Couldn't load Mushaf page data ({reason}).": "মুসহাফের পৃষ্ঠার তথ্য লোড করা যায়নি ({reason})।",
   "Couldn't load this page's data.": "এই পৃষ্ঠার তথ্য লোড করা যায়নি।",
   "Couldn't play this audio: {reason}.": "এই অডিওটি বাজানো যায়নি: {reason}।",
+  "Recitation needs the internet.": "তিলাওয়াত শুনতে ইন্টারনেট লাগে।",
+  "Posters need the internet": "পোস্টার দেখতে ইন্টারনেট লাগে",
   // Shell round 26 -- a failure now NAMES what failed (which reciter, which
   // ayah), so "it didn't play" becomes something that can be acted on rather
   // than looking like the whole app is broken. The reciter's own name inside

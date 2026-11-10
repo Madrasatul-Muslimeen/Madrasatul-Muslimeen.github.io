@@ -125,6 +125,7 @@ const CSS = `
 .ahp-ref button:focus-visible,.ahp-ref a:focus-visible{outline:2px solid #f4501a;outline-offset:1px;border-radius:3px}
 .ahp-ref .ahp-unlinked{white-space:nowrap}
 .ahp-ref .ahp-none{color:#8a8473;font-style:italic}
+.ahp-offline-note{display:block;box-sizing:border-box;margin:0.4rem auto 0;padding:0.3rem 0.6rem;max-width:100%;font:600 0.85rem/1.3 system-ui,sans-serif;text-align:center;background:#eef1f6;color:#1f3a6e;border:1px solid #c9d3e3;border-radius:6px}
 .ahp-ar.ahp-ar-none{font-family:'Tinos','Times New Roman',serif;font-weight:400;font-size:3.4cqw;font-style:italic;color:#8a8473;-webkit-text-stroke:0;direction:ltr}
 `;
 let cssDone = false;

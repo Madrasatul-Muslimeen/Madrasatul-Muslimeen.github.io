@@ -403,9 +403,13 @@ function playbackTarget() {
  */
 function reportFailure(reason, meta = {}) {
   const target = playbackTarget();
-  const message = target
-    ? t("Couldn't play {what}: {reason}.", { what: target, reason })
-    : t("Couldn't play this audio: {reason}.", { reason });
+  // PCF MSA J120 O5: with no internet the reason is not a broken file, so say so plainly (and in Bangla).
+  const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+  const message = offline
+    ? t("Recitation needs the internet.")
+    : target
+      ? t("Couldn't play {what}: {reason}.", { what: target, reason })
+      : t("Couldn't play this audio: {reason}.", { reason });
   const err = new Error(message);
   err.reported = true;
   err.mediaFailure = true;
