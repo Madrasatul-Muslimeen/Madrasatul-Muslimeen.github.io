@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.07",
+    "version": "14.08",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6773,8 +6773,20 @@
     {
       "version": "14.07",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "MSA · QR J130 (a) follow-up: the new-Note editor's folder chip goes from 32px to 40px; the lang-switch relabel flow is retired (the Owner's J114 n114b F) behind a guard that fails if the old Notes button returns.",
+      "integration": {
+        "authorizedOn": "2026-11-10",
+        "integratedOn": "2026-11-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "14.08",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "MSA J120 2 D: all Hadith and Dua books in the offline download, the Owner's answer of 10 Nov; offline-ready.js, bn.js, offline-files.json regenerated, offline-ready-browser updated in place.",
       "integration": {
         "authorizedOn": "2026-11-10",
         "integratedOn": "2026-11-10",
@@ -6783,8 +6795,9 @@
       }
     }
   ],
-  "nextUnallocated": "14.08",
+  "nextUnallocated": "14.09",
   "nextUnallocatedNote": [
+    "v14.08 was allocated to Get ready for offline keeps every Hadith and Dua book (J120 2 D), 2026-11-10.",
     "v14.07 was allocated to the new Note's folder chip at finger size (MSA · QR J130 a follow-up), 2026-11-10.",
     "v14.06 was allocated to a saved whole-list Bangla switch in the Bangla list panel (MSA · QR J134 follow-up), 2026-11-10.",
     "v14.05 was allocated to Word Card marks Difficult · Learn · Learned, Learn next level switch, Bangla switch OFF per new word (MSA · QR J135, J133, J134), 2026-11-10.",

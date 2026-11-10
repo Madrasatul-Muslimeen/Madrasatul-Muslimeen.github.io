@@ -23596,3 +23596,14 @@ One Architect round (93L), after QR Lead 43L's MSA · QR J130 (a) (#1597, tools 
 - **`lang-switch-browser`'s `relabel` flow is retired**: the Notes pane (`#readNotePane`) has no route since the Owner chose J114 n114b "2.F" (7 Nov: the ⋮'s Note tile opens the existing Note in Mapping My Journey). `relabel()` stays in the file, not run; in its place `relabelRetired()` checks that `#readNotesBtn` is still not on screen and FAILS the day a route comes back (then `relabel()` must run again). lang-switch --only=relabel 4/0.
 - **Tests on the release tree**: behaviour 974/1 (14a, as main); student-tools full 1900/0; journey-note-windows 254/0; journey-three-panel 464/0; apps-build-check 53/0; QR build OK.
 - Shared note CSS changed: change notice to the PCA (QR builds from MSA, so it carries it). Nothing deployed to Firestore.
+
+## v14.08 — 10 Nov 2026 — Offline: "Get ready for offline" keeps every Hadith and Dua book (PCF MSA J120 2 D)
+
+The Owner, 10 Nov 2026 3:04 pm (MSA chat, recorded in J120): "J120: 1.A, 2.D, 3.G". D = all Hadith and Dua books in the offline download, no per-book choice (was E, each reader ticks books, taken as the recommended answer on 9 Nov). Built by the Architect 94L (#1600).
+
+- **`app/js/offline-ready.js`**: the fieldset of tick boxes becomes a plain list (`ul.offline-books > li.offline-book[data-offline-book]`, 40px rows: name, Arabic title, size). New export `allBookIds(list)`; the download is `planFor(list, allBookIds(list))`, and "Ready" records every book. The old saved choice `mm_offline_books` is no longer read (left in place, harmless).
+- **`app/js/i18n/bn.js`**: the intro line ("… every Hadith and Dua book …") and the legend ("Hadith and Dua books kept offline (all of them)") reworded, English and Bangla.
+- **`app/offline-files.json`** regenerated: `build-offline-files.mjs --check` was red on main (app file sizes had grown since v13.62; that check is not in the verify workflow).
+- **`tools/i18n-verify/offline-ready-browser.mjs`**, updated in place with reasons: "Duas is ticked by default" and "ticking al-Muwatta' raises the space" (answer E) replaced by: no tick box; 17 rows, every book id in the list; the space shown equals every book's total (read off offline-files.json, in each language's digits); `mm-hadith-v1` holds every one of the 7,748 Hadith and Dua files; Ready records 17 books. The release pass no longer narrows the download.
+- **Checks**: offline-ready-browser 169/1, then 170/0 once the list was regenerated (4 passes, en/bn × 390/1280: each downloads 8,541 files, 216.8 MB, in about 60 s; then, offline, the app, sūrah 77, Dua Study and al-Muwatta' open; layout at 320/390/768/1280 in both languages, screenshots looked at). Mutations: `onlydua` (only the default book) 35/4, the three all-books checks red; `nobooks` 31/8, the offline Hadith check red.
+- Nothing deployed to Firestore.
