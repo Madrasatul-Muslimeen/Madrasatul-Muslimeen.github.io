@@ -14,7 +14,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 export const BANGLA_TEXT = Object.freeze({
   mark: "Also in Bangla", marked: "In Bangla", heading: "Bangla list", admin: "Admin's", mine: "Mine",
   adminNote: "admin marks", readOnly: "read only", yours: "yours", listHeading: "Words also in Bangla ({n})",
-  listSwitch: "Use the Bangla word list", wordSwitch: "{word} in the list", deviceOnly: "Saved on this device only for now.",
+  listSwitch: "Use the Bangla word list", savedSwitch: "Count Bangla words as known and on the Wheel", savedSwitchLabel: "Bangla words count as known and on the Wheel", wordSwitch: "{word} in the list", deviceOnly: "Saved on this device only for now.",
   count: "{words} words, {percent}% of the Qur'an's words", empty: "No words in this list yet.",
 });
 const fill = (s, vars) => String(s).replace(/\{(\w+)\}/g, (_, k) => esc(vars?.[k] ?? ""));
@@ -24,7 +24,7 @@ const fill = (s, vars) => String(s).replace(/\{(\w+)\}/g, (_, k) => esc(vars?.[k
  *  state   normalised Bangla state; lemma  this word's lemma id; bn  its Bangla meaning (for the tag)
  *  canAdmin  may this reader change the admin's list; figures  banglaFigures(); rows  [{l,b,n,ar?}] the words in force; text  BANGLA_TEXT, translated
  */
-export function banglaBlockHtml({ state, lemma, bn = "", canAdmin = false, figures = null, rows = [], text = BANGLA_TEXT, tag = "", open = false } = {}) {
+export function banglaBlockHtml({ state, lemma, bn = "", canAdmin = false, figures = null, rows = [], text = BANGLA_TEXT, tag = "", open = false, listOn = null } = {}) {
   if (!state || !lemma) return "";
   const T = { ...BANGLA_TEXT, ...text };
   const editable = canEditList(state.list, canAdmin) && state.on;
@@ -39,6 +39,7 @@ export function banglaBlockHtml({ state, lemma, bn = "", canAdmin = false, figur
       ${tag ? `<span class="bnw-tag" lang="bn" data-bangla-tag>${esc(tag)}</span>` : ""}
     </div>
     <div class="bnw-row" role="group" aria-label="${esc(T.heading)}"><span class="bnw-lab">${esc(T.heading)}</span>${seg(LIST_ADMIN, T.admin)}${seg(LIST_MINE, T.mine)}<span class="bnw-sub">${esc(who)}</span></div>
+    ${listOn === null ? "" : `<div class="bnw-row bnw-saved" data-bangla-saved-row><span class="bnw-lab">${esc(T.savedSwitch)}</span><button type="button" class="bnw-sw" data-bangla-saved-onoff aria-pressed="${listOn === true}" aria-label="${esc(T.savedSwitchLabel)}"></button></div>`}
     ${count ? `<div class="bnw-count" data-bangla-count>${count}</div>` : ""}
     <details class="bnw-list" data-bangla-details${open ? " open" : ""}>
       <summary><span>${fill(T.listHeading, { n: state.on ? state[state.list].length : 0 })}</span><button type="button" class="bnw-sw" data-bangla-onoff aria-pressed="${state.on}" aria-label="${esc(T.listSwitch)}"></button></summary>
@@ -60,8 +61,11 @@ export function wireBanglaWheelSwitches(root, onSwitch) {
 const inListSet = (state, l) => state.on && new Set(state[state.list]).has(l);
 
 /** One delegated listener. onWord(lemma, on), onList(id), onOnOff(on). A click on the summary's switch never toggles the details. */
-export function wireBanglaBlock(root, { onWord, onList, onOnOff } = {}) {
+export function wireBanglaBlock(root, { onWord, onList, onOnOff, onSaved } = {}) {
   root?.querySelectorAll?.("[data-bangla-block]").forEach((block) => block.addEventListener("click", (e) => {
+    // J134 follow-up (the MSA Architect 93L, A): the SAVED whole-list setting (banglaState.on), which the Wheel and "known" read.
+    const saved = e.target.closest("[data-bangla-saved-onoff]");
+    if (saved) { e.preventDefault(); e.stopPropagation(); onSaved?.(saved.getAttribute("aria-pressed") !== "true"); return; }
     const sw = e.target.closest("[data-bangla-onoff]");
     if (sw) { e.preventDefault(); e.stopPropagation(); onOnOff?.(sw.getAttribute("aria-pressed") !== "true"); return; }
     const w = e.target.closest("[data-bangla-word]");
@@ -75,6 +79,8 @@ export const BANGLA_CSS = `
 .bnw{display:flex;flex-direction:column;gap:6px;margin:6px 0}
 .bnw-row{display:flex;flex-wrap:nowrap;gap:5px;align-items:center}
 .bnw-lab{font-size:.85rem;opacity:.85;white-space:nowrap}
+.bnw-saved{justify-content:space-between}
+.bnw-saved .bnw-lab{white-space:normal;min-width:0}
 .bnw-mark{min-height:44px;padding:4px 16px;border-radius:999px;border:2px solid #5fb3ff;background:transparent;color:#8fcaff;font:inherit;font-weight:700;cursor:pointer;text-align:start}
 .bnw-mark[aria-pressed="true"]{background:#5fb3ff;color:#0b1826}
 .bnw-seg{min-height:40px;padding:2px 10px;border-radius:8px;border:1px solid #2c4262;background:#0b1826;color:#e9eef5;font:inherit;font-weight:600;cursor:pointer}
