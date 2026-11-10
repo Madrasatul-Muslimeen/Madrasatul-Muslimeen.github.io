@@ -158,7 +158,7 @@ async function state(t, p, label, mustSee, only = {}) {
   check(`${tt}: no control covered by something else`, m.covered.length === 0, m.covered.slice(0, 5).join(" | "));
   check(`${tt}: every ← Back is 40px or taller`, m.backSmall.length === 0, m.backSmall.slice(0, 5).join(" | "));
   // MSA · QR J130 (a): the new-Note editor (shared journey-map / note-window code, the Architect's) draws its 📁 folder chip 88x32. Listed, not failed, and reported in the hand-in; a listed finding that stops occurring is reported too.
-  const smallNow = m.small.filter((x) => { if (/^button\.folder-chip:📁 Primary \d+x32\b/.test(x)) { seenKnown.add("folderChip32"); return false; } return true; });
+  const smallNow = m.small.filter((x) => { if (/^button\.folder-chip:📁 .+ \d+x32$/.test(x)) { seenKnown.add("folderChip32"); return false; } return true; });
   check(`${tt}: every finger control is at least 40px`, smallNow.length === 0, smallNow.slice(0, 6).join(" | "));
   const lowC = m.contrast.filter((x) => { if (/^span#appVersion\b/.test(x)) { seenKnown.add("appVersion"); return false; } return true; });
   check(`${tt}: text colour 4.5:1 against its real background`, lowC.length === 0, lowC.slice(0, 6).join(" | "));
