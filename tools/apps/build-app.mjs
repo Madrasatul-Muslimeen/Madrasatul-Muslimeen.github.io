@@ -121,7 +121,7 @@ function rules(base, s) {
   // Exact counts: each cache's name, its clean-up test, and (for the fonts) one comment.
   // A cache renamed or added in sw.js must be counted here, or an app would keep MSA's name.
   // app: 3 since the J120 review (9 Nov 2026): moveQuranDataFromAppCaches() also reads the old app caches, so an app's worker moves out of ITS old caches.
-  const CACHES = { '"': { app: 3, "qf-fonts": 3, ext: 2, mushaf: 2, hadith: 2, quran: 2 }, "`": { app: 1, "qf-fonts": 0, ext: 0, mushaf: 0, hadith: 0, quran: 0 } };
+  const CACHES = { '"': { app: 3, "qf-fonts": 3, ext: 2, mushaf: 2, hadith: 2, quran: 2, audio: 2 }, "`": { app: 1, "qf-fonts": 0, ext: 0, mushaf: 0, hadith: 0, quran: 0, audio: 0 } };
   // msa.json's "caches" names every cache sw.js keeps (PCF MSA J120 O2 added "quran"); the counts here must cover exactly those.
   if (JSON.stringify(Object.keys(CACHES['"'])) !== JSON.stringify(base.caches)) throw new Error(`app/apps/msa.json "caches" (${JSON.stringify(base.caches)}) is not the list build-app.mjs counts (${JSON.stringify(Object.keys(CACHES['"']))})`);
   for (const [q, names] of Object.entries(CACHES)) {
@@ -134,6 +134,9 @@ function rules(base, s) {
   for (const [q, name] of [["`", "app"], ['"', "ext"], ['"', "hadith"], ['"', "quran"]]) {
     add((p) => p === "app/js/offline-ready.js", `${q}${base.cachePrefix}-${name}-`, `${q}${s.cachePrefix}-${name}-`, { exact: 1 }, `offline cache "${name}" in offline-ready.js`);
   }
+
+  // PCF MSA J120 O6: recitation saved for offline (recitation-offline.js) writes into the worker's "audio" cache, so it names it too.
+  add((p) => p === "app/js/recitation-offline.js", `"${base.cachePrefix}-audio-`, `"${s.cachePrefix}-audio-`, { exact: 1 }, `offline cache "audio" in recitation-offline.js`);
 
   // PCF MSA J120 O1: MSA's install line (its manifest link, home-screen icon and theme colour) is on every MSA reader page
   // (tools/offline/install-links.mjs). It is MSA's own, so every other app's pages lose it; the theme colour and manifest

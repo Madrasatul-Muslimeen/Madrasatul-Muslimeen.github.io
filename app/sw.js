@@ -396,6 +396,11 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
     return;
   }
+  // J120 O6: the page saved or removed a sūrah's recitation (recitation-offline.js): read the saved set again.
+  if (data.type === "audio-saved-changed") {
+    event.waitUntil(refreshSavedAudio());
+    return;
+  }
   // Architect review: the first open of a page happens BEFORE this worker
   // controls it, so nothing that page loaded passed through the fetch handler
   // and the SECOND open still went to the network. The page sends the list of
@@ -438,7 +443,8 @@ self.addEventListener("activate", (event) => {
             (n.startsWith("mm-ext-") && n !== EXT_SDK_CACHE_NAME) ||
             (n.startsWith("mm-mushaf-") && n !== MUSHAF_CACHE_NAME) ||
             (n.startsWith("mm-hadith-") && n !== HADITH_CACHE_NAME) ||
-            (n.startsWith("mm-quran-") && n !== QURAN_CACHE_NAME)
+            (n.startsWith("mm-quran-") && n !== QURAN_CACHE_NAME) ||
+            (n.startsWith("mm-audio-") && n !== AUDIO_CACHE_NAME)
           )
           .map((n) => caches.delete(n))
       );
@@ -446,6 +452,48 @@ self.addEventListener("activate", (event) => {
     })()
   );
 });
+
+// Recitation saved for offline (PCF MSA J120 O6, the Owner's answer G): the reader chooses sūrahs in Quran Study and
+// recitation-offline.js puts each file, as a plain full Response, in this cache. THIS worker answers an archive.org
+// recitation request from it when the file is saved, and slices it for the Range requests an <audio> element makes (so
+// it plays AND seeks offline); a file that is not saved goes to the network exactly as if no worker existed. Its own cache
+// like the Qur'an data one: NEVER emptied by a release, since the reader chose what is in it.
+const AUDIO_CACHE_NAME = "mm-audio-v1";
+// Architect 97L review: the worker steps in ONLY for a file that is saved (the set below, read from the cache when the
+// worker starts and again whenever the page says it saved or removed a sūrah). Recitation that was never saved goes to
+// the network exactly as before this change, with no worker in the way, so online playback is untouched. While the
+// set is still being read (the first moments after the worker starts), it checks the cache as before.
+let savedAudio = null;
+function refreshSavedAudio() {
+  return caches.open(AUDIO_CACHE_NAME).then((c) => c.keys())
+    .then((keys) => { savedAudio = new Set(keys.map((r) => r.url)); })
+    .catch(() => { savedAudio = null; });
+}
+refreshSavedAudio();
+function isRecitationAudio(request) {
+  return request.method === "GET" && /^https:\/\/archive\.org\/download\/.+\.mp3$/i.test(request.url);
+}
+async function handleRecitationAudio(request) {
+  let hit = null;
+  try { hit = await caches.match(request.url, { cacheName: AUDIO_CACHE_NAME }); } catch { hit = null; }
+  if (!hit) return fetch(request);
+  const m = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("range") || "");
+  if (!m || (m[1] === "" && m[2] === "")) return hit;
+  const blob = await hit.blob();
+  const size = blob.size;
+  const start = m[1] === "" ? Math.max(0, size - Number(m[2])) : Number(m[1]);
+  const end = m[1] === "" || m[2] === "" ? size - 1 : Math.min(Number(m[2]), size - 1);
+  if (start >= size || end < start) return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}` } });
+  return new Response(blob.slice(start, end + 1), {
+    status: 206,
+    headers: {
+      "content-type": hit.headers.get("content-type") || "audio/mpeg",
+      "content-range": `bytes ${start}-${end}/${size}`,
+      "content-length": String(end - start + 1),
+      "accept-ranges": "bytes",
+    },
+  });
+}
 
 // Audit part 53 (PCF MSA J29): background refreshes wait for a quiet page.
 // Every fetch event -- cacheable or not, so the page's own Firestore calls
@@ -515,6 +563,11 @@ self.addEventListener("fetch", (event) => {
 
   if (isQuranData(request)) {
     event.respondWith(handleQuranData(event));
+    return;
+  }
+
+  if (isRecitationAudio(request) && (savedAudio === null || savedAudio.has(request.url))) {
+    event.respondWith(handleRecitationAudio(request));
     return;
   }
 

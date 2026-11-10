@@ -30,12 +30,13 @@ const MUT = {
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const SHOT_DIR = process.env.SHOT_DIR || "";
 // At ordinary text, on main v12.138 (--record), written by hand: [Read left, Read's place in the drawer + 1000, Play width, Mode width, head height].
+// Updated in place 10 Nov 2026 (PCF MSA J120 O6): Study options -> Listening gained the "Recitation for offline" section (a sūrah picker, a Save button, a note), so Read's place in the drawer (the 2nd number) is lower by exactly its height; every other value (Read left, Play and Mode widths, head height) is main's, unchanged.
 // main's own values, except Read's place in the drawer where the duplicate "(whole surah only)" had wrapped to a line of its
 // own (bn 360/390, en 768, en 740): one line shorter now. With --mutate=no-dup every value here equals main's exactly.
 const PLAIN = {
-  "en 360x740": [106, 2278, 102, 215, 56], "bn 360x740": [128, 2233, 91, 215, 56], "en 390x844": [106, 2278, 117, 245, 56], "bn 390x844": [128, 2201, 106, 245, 56],
-  "en 768x1024": [570, 1975, 69, 401, 56], "bn 768x1024": [586, 1960, 66, 395, 56], "en 1280x800": [1031, 1914, 69, 811, 56], "bn 1280x800": [1046, 1935, 66, 805, 56],
-  "en 740x360": [542, 1975, 69, 373, 56], "bn 740x360": [558, 1983, 66, 367, 56], "en 844x390": [646, 1960, 69, 477, 56],
+  "en 360x740": [106, 2438, 102, 215, 56], "bn 360x740": [128, 2348, 91, 215, 56], "en 390x844": [106, 2438, 117, 245, 56], "bn 390x844": [128, 2316, 106, 245, 56],
+  "en 768x1024": [570, 2089, 69, 401, 56], "bn 768x1024": [586, 2074, 66, 395, 56], "en 1280x800": [1031, 2013, 69, 811, 56], "bn 1280x800": [1046, 2034, 66, 805, 56],
+  "en 740x360": [542, 2089, 69, 373, 56], "bn 740x360": [558, 2097, 66, 367, 56], "en 844x390": [646, 2074, 69, 477, 56],
 };
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 

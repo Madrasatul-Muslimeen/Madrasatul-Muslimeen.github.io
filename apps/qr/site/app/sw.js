@@ -14,6 +14,9 @@
 //   qr-qf-fonts-v1    Quran Foundation's Mushaf page fonts, on first use, refreshed weekly (MMSA's mm-qf-fonts-v1).
 //   qr-ext-v1         the Firebase SDK files (www.gstatic.com/firebasejs/10.12.2/), on first use (MMSA's mm-ext-v1).
 //   qr-mushaf-v1      the Mushaf layout and surah-header font, on first use, refreshed daily (MMSA's mm-mushaf-v1).
+//   qr-audio-v1       recitation the reader chose to save for offline, one sūrah at a time (PCF MSA J120 O6, MMSA's
+//                     mm-audio-v1); served from here for archive.org recitation requests, Range included; never emptied
+//                     by a release.
 //   qr-hadith-v1      the hadith files a reader opened (J02 S1d: Hadith's home is MMSA, so QR reads them from
 //                     madrasatul-muslimeen.github.io); kept across versions, refreshed in the background.
 // Activate deletes the old qr-app- cache, and a qr-qf-fonts-/qr-ext-/qr-mushaf- cache only if its own format is
@@ -387,6 +390,7 @@ self.addEventListener("activate", (event) => {
       else if (key.startsWith("qr-qf-fonts-") && key !== QF_FONT_CACHE_NAME) await caches.delete(key);
       else if (key.startsWith("qr-ext-") && key !== EXT_SDK_CACHE_NAME) await caches.delete(key);
       else if (key.startsWith("qr-mushaf-") && key !== MUSHAF_CACHE_NAME) await caches.delete(key);
+      else if (key.startsWith("qr-audio-") && key !== AUDIO_CACHE_NAME) await caches.delete(key);
     }
     await self.clients.claim();
   })());
@@ -398,6 +402,8 @@ self.addEventListener("message", (event) => {
   if (data.type === "SKIP_WAITING" || data.type === "skipWaiting") { self.skipWaiting(); return; }
   // QR's checks ask a worker which version it is (the script address no longer carries it).
   if (data.type === "GET_VERSION") { event.ports?.[0]?.postMessage(APP_VERSION); return; }
+  // J120 O6: the page saved or removed a sūrah's recitation: read the saved set again.
+  if (data.type === "audio-saved-changed") { event.waitUntil(refreshSavedAudio()); return; }
   // MMSA's sw-register.js: the files a page loaded before this worker controlled it, to keep now (MMSA's "warm").
   if (data.type === "warm" && Array.isArray(data.urls)) {
     event.waitUntil((async () => {
@@ -419,11 +425,40 @@ self.addEventListener("message", (event) => {
   }
 });
 
+// Recitation saved for offline (PCF MSA J120 O6): same rule as MMSA's worker (app/sw.js handleRecitationAudio).
+const AUDIO_CACHE_NAME = "qr-audio-v1";
+// Architect 97L review: step in ONLY for a saved file (set read at start and on the page's "audio-saved-changed");
+// recitation never saved goes to the network exactly as before. Same rule as app/sw.js.
+let savedAudio = null;
+function refreshSavedAudio() {
+  return caches.open(AUDIO_CACHE_NAME).then((c) => c.keys())
+    .then((keys) => { savedAudio = new Set(keys.map((r) => r.url)); })
+    .catch(() => { savedAudio = null; });
+}
+refreshSavedAudio();
+const isRecitationAudio = (request) => request.method === "GET" && /^https:\/\/archive\.org\/download\/.+\.mp3$/i.test(request.url);
+async function handleRecitationAudio(request) {
+  let hit = null;
+  try { hit = await caches.match(request.url, { cacheName: AUDIO_CACHE_NAME }); } catch { hit = null; }
+  if (!hit) return fetch(request);
+  const m = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("range") || "");
+  if (!m || (m[1] === "" && m[2] === "")) return hit;
+  const blob = await hit.blob();
+  const size = blob.size;
+  const start = m[1] === "" ? Math.max(0, size - Number(m[2])) : Number(m[1]);
+  const end = m[1] === "" || m[2] === "" ? size - 1 : Math.min(Number(m[2]), size - 1);
+  if (start >= size || end < start) return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}` } });
+  return new Response(blob.slice(start, end + 1), { status: 206, headers: {
+    "content-type": hit.headers.get("content-type") || "audio/mpeg", "content-range": `bytes ${start}-${end}/${size}`,
+    "content-length": String(end - start + 1), "accept-ranges": "bytes" } });
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (isQuranFoundationFont(req)) { event.respondWith(cacheFirstWithBackgroundRefresh(event, QF_FONT_CACHE_NAME, QF_FONT_MAX_AGE_MS)); return; }
   if (isFirebaseSdk(req)) { event.respondWith(handleFirebaseSdk(req)); return; }
   if (isMushafAsset(req)) { event.respondWith(cacheFirstWithBackgroundRefresh(event, MUSHAF_CACHE_NAME, MUSHAF_MAX_AGE_MS)); return; }
+  if (isRecitationAudio(req) && (savedAudio === null || savedAudio.has(req.url))) { event.respondWith(handleRecitationAudio(req)); return; }
   if (req.method === "GET" && req.url.startsWith(HADITH_HOME)) { event.respondWith(hadithFile(event)); return; }
   if (req.method !== "GET") return;
   const url = new URL(req.url);

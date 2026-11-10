@@ -3322,3 +3322,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.16** (2026-11-10): One calm Offline line (PCF MSA J120 O5).
 - **v14.17** (2026-11-10): Recitation and posters say they need the internet (PCF MSA J120 O5, QR part).
 - **v14.18** (2026-11-10): The Asma poster says it needs the internet (PCF MSA J120 O5, QR part 2).
+- **v14.19** (2026-11-10): Recitation saved for offline per sūrah (PCF MSA J120 O6).
