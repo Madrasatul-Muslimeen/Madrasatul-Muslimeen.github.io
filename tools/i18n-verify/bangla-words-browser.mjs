@@ -21,7 +21,7 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  nosave: ["try { storage.setItem(BANGLA_STORAGE_KEY, JSON.stringify(normaliseBanglaState(state))); return true; }", "try { return true; }", "app/js/bangla-words.js"],
+  nosave: ["try { storage.setItem(BANGLA_STORAGE_KEY_V2, JSON.stringify(normaliseBanglaState(state))); return true; }", "try { return true; }", "app/js/bangla-words.js"],
   smallswitch: [".bnw-sw{width:52px;height:40px;", ".bnw-sw{width:52px;height:26px;", "app/js/bangla-words-ui.js"],
   // J134 (9 Nov 2026): the switch is OFF for every new word.
   keepon: ["      banglaSwitchWordId = id; banglaCardOn = false;", "      banglaSwitchWordId = id;", "app/quranrevival.html"],
@@ -48,7 +48,7 @@ async function openCard(ctx) {
   return page;
 }
 const tap = (loc) => loc.click({ timeout: 3000 }).catch(() => {}); // a mutated page may leave a control disabled: the CHECK must fail, not the run
-const state = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("mm_bangla_words.v1") || "null") ?? { admin: [], on: null, list: null, mine: [] }); // never null: a mutation that stops saving must FAIL a check, not crash the run
+const state = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("mm_bangla_words.v2") || localStorage.getItem("mm_bangla_words.v1") || "null") ?? { admin: [], on: null, list: null, mine: [] }); // never null: a mutation that stops saving must FAIL a check, not crash the run
 
 for (const [w, h, lang] of [[1280, 900, "en"], [390, 844, "en"], [390, 844, "bn"]]) {
   const tag = `[${lang} ${w}]`;
@@ -127,7 +127,7 @@ for (const [w, h, lang] of [[1280, 900, "en"], [390, 844, "en"], [390, 844, "bn"
   check(`${tag} the saved switch is a finger-size control inside the screen`, !!sbox && sbox.height >= 40 && sbox.x >= 0 && sbox.x + sbox.width <= w + 1, JSON.stringify(sbox));
   const cardBefore = await cardSw().getAttribute("aria-pressed");
   await tap(ss()); await page2.waitForTimeout(300);
-  check(`${tag} tapping it turns the saved setting off, on the existing key (no new key)`, (await state(page2)).on === false && (await ss().getAttribute("aria-pressed")) === "false" && (await page2.evaluate(() => Object.keys(localStorage).filter((k) => /bangla/i.test(k)).join(",") === "mm_bangla_words.v1")));
+  check(`${tag} tapping it turns the saved setting off, on the v2 key (Stage 1 of the Owner's J119 answers, 11 Nov: saving moved to a NEW key; v1 is only read)`, (await state(page2)).on === false && (await ss().getAttribute("aria-pressed")) === "false" && (await page2.evaluate(() => Object.keys(localStorage).filter((k) => /bangla/i.test(k)).sort().join(",").includes("mm_bangla_words.v2"))));
   check(`${tag} the card's own switch is untouched by it`, (await cardSw().getAttribute("aria-pressed")) === cardBefore);
   await page2.reload(); await page2.waitForTimeout(800);
   const page3 = await openCard(ctx);
