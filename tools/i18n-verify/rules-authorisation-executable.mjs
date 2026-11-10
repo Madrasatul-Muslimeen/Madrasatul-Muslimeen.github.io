@@ -622,13 +622,26 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     assert.deepEqual(own(required).filter((f) => !writes.has(f)), []);
   });
   check("AYAH KEYS UPDATE: the data layer updates only `entries.<unit key>` paths, and the candidate lets `entries` and the envelope move", () => {
+    // UPDATED IN PLACE (MSA · QR J136, 10 Nov 2026): there are now TWO update calls. toggleKey()'s is unchanged (one entries path). The new
+    // setWordMarks()'s writes the word's entries path and, ONLY when WORD_EFFORT_RULES_PUBLISHED is true, an `effort.<unit key>` path; that
+    // field is allowed by docs/proposals/word-effort.candidate.rules, not by the published Rules, and the next check holds the flag to that.
     const calls = akSrc.match(/updateDocument\(/g) || [];
-    assert.equal(calls.length, 1, `expected one updateDocument call, found ${calls.length}`);
-    assert.ok(akSrc.includes("{ [`entries.${unitKey}`]: keys }"), "the update writes something other than one entries path");
+    assert.equal(calls.length, 2, `expected two updateDocument calls (toggleKey, setWordMarks), found ${calls.length}`);
+    assert.ok(akSrc.includes("{ [`entries.${unitKey}`]: keys }"), "toggleKey writes something other than one entries path");
+    assert.ok(akSrc.includes("const fields = { [`entries.${unitKey}`]: next };"), "setWordMarks writes something other than the entries path first");
+    assert.ok(akSrc.includes("const writeEffort = WORD_EFFORT_RULES_PUBLISHED &&"), "the effort write is no longer gated by WORD_EFFORT_RULES_PUBLISHED");
+    assert.equal((akSrc.match(/`effort\.\$\{unitKey\}`/g) || []).length, 1, "the effort path must be written in exactly one place");
     const block = matchBlock(akRules, "ayahKeyMarks/");
     for (const frozen of ["tenantId", "scope", "surah", "createdBy"]) {
       assert.match(block, new RegExp(`d\\(\\)\\.${frozen} == resource\\.data\\.${frozen}`), `${frozen} is not frozen on update`);
     }
+  });
+  // MSA · QR J136: the flag and the published Rules must agree. The data layer may send `effort` only if production allows it.
+  check("AYAH KEYS EFFORT: WORD_EFFORT_RULES_PUBLISHED is true ONLY if the published ayahKeyMarks block allows `effort` (the Owner publishes; the flag follows)", () => {
+    const flag = /export const WORD_EFFORT_RULES_PUBLISHED = true;/.test(read("app/js/word-effort.js"));
+    const publishedHasEffort = /'effort'/.test(matchBlock(read("firestore.rules"), "ayahKeyMarks/"));
+    assert.ok(!flag || publishedHasEffort, "the flag says the Rules are published, but firestore.rules' ayahKeyMarks block does not allow `effort`: every Already Known / Very Hard save would be DENIED in production");
+    assert.ok(/CANDIDATE, NOT PUBLISHED/.test(read("docs/proposals/word-effort.candidate.rules")) || publishedHasEffort, "the candidate no longer says it is unpublished");
   });
   check("AYAH KEYS DELETE: the candidate has no delete and the data layer has no delete", () => {
     assert.match(matchBlock(akRules, "ayahKeyMarks/"), /allow delete: if false;/);

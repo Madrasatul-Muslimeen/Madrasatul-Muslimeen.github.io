@@ -2,16 +2,16 @@
 // Word Progress buttons; nothing of the marks sits above the tabs any more. Run from the repo root, node serve.js on :8080.
 //   node tools/i18n-verify/word-card-marks-row-browser.mjs [--mutate=top|stack|rename]
 //   --mutate=top     the marks row is rendered above the tabs again       -> "below the Progress buttons" FAILS
-//   --mutate=stack   the three marks stack (display: block)  -> the one-row check FAILS (re-anchored v14.05 for J135's one-column row)
-//   --mutate=rename  the buttons keep the Āyah card's names                -> "Learn / Learned" FAILS
+//   --mutate=stack   the five buttons go five across on a phone (J136; was: the three marks stack) -> the tidy-grid check FAILS (needs --width <= 520)
+//   --mutate=rename  the five buttons lose their names (J136: names come from word-effort.js) -> the names check FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 const PAGE = "app/quranrevival.html", JS = "app/js/quran-word-card.js";
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   top: [JS, "    ${originBar(context.origin, text)}\n", "    ${context.marksHtml ? `<div class=\"word-card-markrow\" data-word-card-marks>${context.marksHtml}</div>` : \"\"}\n    ${originBar(context.origin, text)}\n"],
-  stack: [PAGE, ".word-card-markrow .marks-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));", ".word-card-markrow .marks-row { grid-column: 1 / -1; display: block; grid-template-columns: repeat(3, minmax(0, 1fr));"],
-  rename: [PAGE, 'function wordMarkNames() { return { practice: t("Learn"), done: t("Learned") }; }', 'function wordMarkNames() { return {}; }'],
+  stack: ["app/js/word-effort.js", "@media (max-width:520px) { .we-buttons { grid-template-columns:repeat(3,minmax(0,1fr)); }", "@media (max-width:520px) { .we-buttons { grid-template-columns:repeat(5,minmax(0,1fr)); }"],
+  rename: ["app/js/word-effort.js", '<span class="we-name">${esc(m.names[lang] || m.names.en)}</span>', '<span class="we-name"></span>'],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error("unknown mutation");
 let pass = 0, fail = 0;
@@ -38,17 +38,24 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 768, 1024, 1280,
   const m = await page.evaluate(() => {
     const root = document.querySelector("#quranWordCardMount .quran-word-card"); if (!root) return null;
     const row = root.querySelector(".word-card-markrow"); if (!row) return { noRow: true };
-    const btns = [...row.querySelectorAll("button")].map((b) => { const r = b.getBoundingClientRect(); return { t: b.textContent.trim(), top: Math.round(r.top), h: Math.round(r.height), l: r.left, rt: r.right, cls: b.className }; });
+    const names = [...row.querySelectorAll("[data-word-mark] .we-name")].map((n) => n.textContent.trim());
+    const btns = [...row.querySelectorAll("[data-word-mark]")].map((b) => { const r = b.getBoundingClientRect(); return { t: b.textContent.trim(), top: Math.round(r.top), h: Math.round(r.height), l: r.left, rt: r.right, cls: b.className }; });
     const st = root.querySelector(".word-progress-states")?.getBoundingClientRect();
     const rowR = row.getBoundingClientRect(), card = root.getBoundingClientRect();
     const tabs = root.querySelector('[role="tablist"]')?.getBoundingClientRect();
-    return { btns, statesBottom: st ? Math.round(st.bottom) : null, rowTop: Math.round(rowR.top), rowL: rowR.left, rowR: rowR.right, cardL: card.left, cardR: card.right, tabsTop: tabs ? Math.round(tabs.top) : null, overflow: [...row.querySelectorAll("button")].some((b) => b.scrollWidth > b.clientWidth + 1) };
+    return { names, btns, statesBottom: st ? Math.round(st.bottom) : null, rowTop: Math.round(rowR.top), rowL: rowR.left, rowR: rowR.right, cardL: card.left, cardR: card.right, tabsTop: tabs ? Math.round(tabs.top) : null, overflow: [...row.querySelectorAll("button")].some((b) => b.scrollWidth > b.clientWidth + 1) };
   });
   if (!m || m.noRow) { check(`${tag} the row is there`, false, JSON.stringify(m)); await ctx.close(); continue; }
   const names = m.btns.map((b) => b.t);
-  // UPDATED IN PLACE (J135, 9 Nov 2026, the Owner): the Word Mark row is ONLY Difficult · Learn · Learned (no separate Learn button).
-  check(`${tag} three buttons: Difficult · Learn · Learned`, m.btns.length === 3 && names.every((t) => t) && /^(Learn|শিখুন)$/.test(names[1]) && /^(Learned|শেখা হয়েছে)$/.test(names[2]), names.join(" | "));
-  check(`${tag} all three in ONE row`, new Set(m.btns.map((b) => b.top)).size === 1, m.btns.map((b) => b.top).join(","));
+  // UPDATED IN PLACE (MSA · QR J136, 10 Nov 2026, the Owner's "Approved with recommended"): the Word Mark row is now FIVE buttons,
+  // Already Known · Difficult · Learn · Learned Easy · Very Hard (js/word-effort.js). Before this the row was three (J135).
+  // Each button's accessible text is its name plus a small caption, so the NAME is read from .we-name.
+  const nm = m.names;
+  const EN = ["Already Known", "Difficult", "Learn", "Learned Easy", "Very Hard"];
+  check(`${tag} five buttons: Already Known · Difficult · Learn · Learned Easy · Very Hard`, m.btns.length === 5 && nm.length === 5 && (lang === "en" ? EN.every((x, i) => nm[i] === x) : nm.every((x) => x && !/^[A-Za-z ]+$/.test(x))), nm.join(" | "));
+  const widths = m.btns.map((b) => Math.round(b.rt - b.l));
+  const perRow = Object.values(m.btns.reduce((a, b) => (a[b.top] = (a[b.top] || 0) + 1, a), {}));
+  check(`${tag} a tidy grid: equal-width buttons${width <= 520 ? ", at most 3 to a row" : ""}`, Math.max(...widths) - Math.min(...widths) <= 2 && (width > 520 || Math.max(...perRow) <= 3), `widths ${widths} per row ${perRow}`);
   check(`${tag} below the Word Progress buttons (not above the tabs)`, m.statesBottom !== null && m.rowTop >= m.statesBottom - 1 && (m.tabsTop === null || m.rowTop > m.tabsTop), `states ${m.statesBottom} row ${m.rowTop} tabs ${m.tabsTop}`);
   check(`${tag} each button at least 40px tall, inside the card, text not clipped`, m.btns.every((b) => b.h >= 40 && b.l >= m.cardL - 1 && b.rt <= m.cardR + 1) && !m.overflow, JSON.stringify(m.btns.map((b) => [b.h, Math.round(b.l), Math.round(b.rt)])) + " " + m.cardL + "-" + m.cardR);
   if (width === 320 || width === 390 || width === 1280) { await page.evaluate(() => document.querySelector(".word-card-markrow")?.scrollIntoView({ block: "center" })); await page.waitForTimeout(150); await page.screenshot({ path: `/tmp/j128-${lang}-${width}-${MUTATE || "ok"}.png` }); }

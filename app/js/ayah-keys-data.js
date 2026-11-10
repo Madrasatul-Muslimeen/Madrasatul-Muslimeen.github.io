@@ -33,6 +33,7 @@ import { createDocument, updateDocument } from "./envelope.js";
 import { safeWrite } from "./errors.js";
 import { buildUnitKey } from "./unit-keys.js";
 import { isKeyId, MADRASAH_SCOPE } from "./ayah-keys.js";
+import { WORD_EFFORT_RULES_PUBLISHED, isEffortWord } from "./word-effort.js";
 
 /** Every field this module can ever put on an ayahKeyMarks document (the Rules candidate must allow all of them). */
 export const AYAH_KEY_WRITES = Object.freeze([
@@ -43,6 +44,13 @@ export const AYAH_KEY_WRITES = Object.freeze([
 export const HADITH_KEY_WRITES = Object.freeze([
   "tenantId", "scope", "collection", "entries",
 ]);
+
+/**
+ * MSA · QR J136: the optional `effort` map ("known" | "easy" | "very" per word). It is NOT in AYAH_KEY_WRITES because the published
+ * Rules do not allow it yet (docs/proposals/word-effort.candidate.rules): setWordMarks() writes it only when
+ * WORD_EFFORT_RULES_PUBLISHED is true, and the Rules-vs-data-layer check keeps this list separate until the Owner publishes.
+ */
+export const AYAH_KEY_EFFORT_WRITES = Object.freeze(["effort"]);
 
 const docKey = (tenantId, scope, part) => `${tenantId}__${scope}__${part}`;
 
@@ -74,6 +82,13 @@ function hadithNumber(n) {
 async function readEntries(db, col, id) {
   const snap = await getDoc(doc(db, col, id));
   return snap.exists() ? { ...(snap.data().entries || {}) } : {};
+}
+
+/** Reads one document's `entries` AND `effort` (copies; {} each when absent). One read. */
+async function readEntriesAndEffort(db, col, id) {
+  const snap = await getDoc(doc(db, col, id));
+  const data = snap.exists() ? snap.data() : {};
+  return { entries: { ...(data.entries || {}) }, effort: { ...(data.effort || {}) } };
 }
 
 /** Switches `keyId` on or off for `unitKey` in document `col/id`, creating it with `fields` on the first mark. */
@@ -110,9 +125,10 @@ export async function loadSurahKeys(db, ctx, surah) {
   requireSurah(surah);
   const [madrasah, mine] = await Promise.all([
     readEntries(db, TENANT.AYAH_KEY_MARKS, docKey(ctx.tenantId, MADRASAH_SCOPE, surah)),
-    readEntries(db, TENANT.AYAH_KEY_MARKS, docKey(ctx.tenantId, ctx.personId, surah)),
+    readEntriesAndEffort(db, TENANT.AYAH_KEY_MARKS, docKey(ctx.tenantId, ctx.personId, surah)),
   ]);
-  return { madrasah, mine };
+  // MSA · QR J136: `mineEffort` is the person's own effort map (word unit key -> "known" | "easy" | "very"); still two reads.
+  return { madrasah, mine: mine.entries, mineEffort: mine.effort };
 }
 
 /**
@@ -145,6 +161,43 @@ export async function setWordKey(db, ctx, { scope, surah, ayah, position, keyId,
   if (!validScope(scope)) return { ok: false, refused: "bad-scope" };
   return toggleKey(db, ctx, TENANT.AYAH_KEY_MARKS, docKey(ctx.tenantId, scope, surah),
     { tenantId: ctx.tenantId, scope, surah }, buildUnitKey.qword(surah, ayah, position), keyId, !!on, "set word key");
+}
+
+/**
+ * MSA · QR J136 -- save ALL of one word's marks at once: its key ids (`keys`, the whole next list) and its effort word
+ * (`effort`: "known" | "easy" | "very" | null). One document, one update.
+ *   * `effort` is written only when WORD_EFFORT_RULES_PUBLISHED; if the request needs it before then ("known" or "very"),
+ *     NOTHING is read or written and `{ ok: false, refused: "rules-not-published" }` comes back, so the page can say so in words.
+ *   * Clearing a result writes `null` (never a deletion, I4/D6).
+ */
+export async function setWordMarks(db, ctx, { scope, surah, ayah, position, keys, effort = null } = {}) {
+  requireCtx(ctx);
+  if (!validSurah(surah) || !validPos(ayah)) return { ok: false, refused: "bad-ayah" };
+  if (!validPos(position)) return { ok: false, refused: "bad-word" };
+  if (!validScope(scope)) return { ok: false, refused: "bad-scope" };
+  if (!Array.isArray(keys) || !keys.every(isKeyId)) return { ok: false, refused: "unknown-key" };
+  if (effort !== null && !isEffortWord(effort)) return { ok: false, refused: "unknown-effort" };
+  const wantsEffortField = effort === "known" || effort === "very";
+  if (wantsEffortField && !WORD_EFFORT_RULES_PUBLISHED) return { ok: false, refused: "rules-not-published" };
+  const unitKey = buildUnitKey.qword(surah, ayah, position);
+  const id = docKey(ctx.tenantId, scope, surah);
+  const next = [...new Set(keys)];
+  const res = await safeWrite(async () => {
+    const ref = doc(db, TENANT.AYAH_KEY_MARKS, id);
+    const snap = await getDoc(ref);
+    const hadEffort = snap.exists() ? (snap.data().effort || {})[unitKey] : null;
+    const writeEffort = WORD_EFFORT_RULES_PUBLISHED && (effort !== null || hadEffort);
+    if (!snap.exists() && next.length === 0 && effort === null) return; // nothing to hold: no document is made for an empty state
+    const fields = { [`entries.${unitKey}`]: next };
+    if (writeEffort) fields[`effort.${unitKey}`] = effort;
+    if (snap.exists()) {
+      await updateDocument(db, TENANT.AYAH_KEY_MARKS, id, fields);
+    } else {
+      const base = { tenantId: ctx.tenantId, scope, surah, entries: { [unitKey]: next } };
+      await createDocument(db, TENANT.AYAH_KEY_MARKS, id, writeEffort ? { ...base, effort: { [unitKey]: effort } } : base, ctx.uid);
+    }
+  }, { collection: TENANT.AYAH_KEY_MARKS, docId: id, action: "set word marks" });
+  return res.ok ? { ok: true, keys: next, effort } : res;
 }
 
 // --- Hadith ------------------------------------------------------------------
