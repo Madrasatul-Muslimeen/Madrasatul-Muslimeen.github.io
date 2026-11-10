@@ -7,7 +7,9 @@
 //   - the Qur'an data (/tools/quran-data-pull/output/)        -> mm-quran-v1      (sw.js handleQuranData: named with no
 //                                                                                 version, so a release never empties it)
 //   - the Firebase scripts every page imports                 -> mm-ext-v1        (sw.js handleFirebaseSdk)
-//   - the Hadith and Dua books the reader ticks               -> mm-hadith-v1     (sw.js handleHadithData)
+//   - EVERY Hadith and Dua book                               -> mm-hadith-v1     (sw.js handleHadithData)
+//     (the Owner, J120 n120b, 10 Nov 2026: "2.D", all of them, about 220 MB; no per-book choice. Until then the
+//     reader ticked books, answer E; the old saved choice, mm_offline_books, is no longer read.)
 // Qur'an and Hadith files are stamped x-mm-cached-at exactly as the worker stamps them, so its own age checks read them.
 // The list of files and their sizes is app/offline-files.json (tools/offline/build-offline-files.mjs), read when
 // My account first opens, never at startup.
@@ -23,7 +25,6 @@ import { getAppLang } from "./prefs.js";
 import { APP_VERSION } from "./version.js";
 
 const LIST_URL = "./offline-files.json";
-const BOOKS_KEY = "mm_offline_books";
 const READY_KEY = "mm_offline_ready";
 const CACHES = { app: `mm-app-${APP_VERSION}`, quran: "mm-quran-v1", hadith: "mm-hadith-v1", ext: "mm-ext-v1" };
 const HADITH_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // sw.js HADITH_MAX_AGE_MS: an older copy is "stale" and fetched again
@@ -38,8 +39,8 @@ const CSS = `
 .offline-ready fieldset { border: 1px solid var(--card-line, #ccc); border-radius: 0.5rem; margin: 0.5rem 0; padding: 0.3rem 0.6rem 0.4rem; min-width: 0; }
 .offline-ready legend { font-size: 0.85rem; padding: 0 0.3rem; color: var(--card-text, #222); }
 .offline-ready .offline-books { max-height: 15rem; overflow-y: auto; }
-.offline-ready label.offline-book { display: flex; align-items: center; gap: 0.5rem; min-height: 40px; font-size: 0.85rem; color: var(--card-text, #222); cursor: pointer; }
-.offline-ready label.offline-book input { width: 20px; height: 20px; flex: 0 0 auto; margin: 0; }
+.offline-ready ul.offline-books { list-style: none; margin: 0; padding: 0; }
+.offline-ready li.offline-book { display: flex; align-items: center; gap: 0.5rem; min-height: 40px; font-size: 0.85rem; color: var(--card-text, #222); }
 .offline-ready .offline-book-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .offline-ready .offline-book-ar { display: block; text-align: start; font-size: 0.95em; color: var(--card-text-muted, #555); }
 .offline-ready .offline-book-size { flex: 0 0 auto; color: var(--card-text-muted, #555); white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -82,7 +83,8 @@ export function whenText(ms) {
 const filesOf = (dirs, cache) => dirs.flatMap((d) => d.files.map(([name, bytes]) => ({ url: new URL(d.base + name, location.origin).href, bytes, cache })));
 const bytesOf = (items) => items.reduce((s, f) => s + f.bytes, 0);
 
-/** The whole download list for these ticked book ids: { items: [{url, bytes, cache}], bytes }. Each URL once. */
+/** The whole download list for these book ids: { items: [{url, bytes, cache}], bytes }. Each URL once.
+ *  The section asks for every book (allBookIds); a narrower list is still accepted, for a caller that needs one. */
 export function planFor(list, bookIds) {
   const items = [
     ...filesOf(list.parts.app.dirs, list.parts.app.cache),
@@ -155,6 +157,9 @@ export async function getReady(plan, onProgress = () => {}) {
   return { failed, fetched, kept };
 }
 
+/** Every book the list carries (J120 2 D: all of them). */
+export const allBookIds = (list) => list.books.map((b) => b.id);
+
 let listPromise = null;
 function loadList() {
   if (!listPromise) {
@@ -182,11 +187,11 @@ export function mountOfflineSection(host) {
   }
   const box = el("section", { class: "offline-ready", id: "offlineReady", "aria-labelledby": "offlineReadyTitle" });
   box.appendChild(el("h3", { id: "offlineReadyTitle" }, t("Use the app without internet")));
-  box.appendChild(el("p", { class: "offline-muted" }, t("Keeps the app, the Qur'an and the books you tick on this device, so they open with no internet.")));
+  box.appendChild(el("p", { class: "offline-muted" }, t("Keeps the app, the Qur'an and every Hadith and Dua book on this device, so they open with no internet.")));
   const fs = el("fieldset", { id: "offlineBooks" });
-  fs.appendChild(el("legend", {}, t("Hadith and Dua books to keep offline")));
-  const books = el("div", { class: "offline-books" });
-  books.appendChild(el("p", { class: "offline-muted" }, t("Loading the list…")));
+  fs.appendChild(el("legend", {}, t("Hadith and Dua books kept offline (all of them)")));
+  const books = el("ul", { class: "offline-books" });
+  books.appendChild(el("li", { class: "offline-muted" }, t("Loading the list…")));
   fs.appendChild(books);
   const need = el("p", { id: "offlineNeed" });
   const btn = el("button", { type: "button", class: "offline-ready-btn", id: "offlineReadyBtn", disabled: "" }, t("Get ready for offline"));
@@ -211,26 +216,20 @@ export function mountOfflineSection(host) {
   if (ready && ready.at) state.textContent = t("Ready ✓ (updated {when})", { when: whenText(ready.at) });
 
   let list = null;
-  const ticked = () => [...books.querySelectorAll("input[data-offline-book]")].filter((i) => i.checked).map((i) => i.dataset.offlineBook);
-  const showNeed = () => { if (list) need.textContent = t("Space it will use: {size}", { size: mbText(planFor(list, ticked()).bytes) }); };
+  const showNeed = () => { if (list) need.textContent = t("Space it will use: {size}", { size: mbText(planFor(list, allBookIds(list)).bytes) }); };
 
   loadList().then((data) => {
     list = data;
-    const saved = store.get(BOOKS_KEY);
-    const chosen = Array.isArray(saved) ? saved : list.books.filter((b) => b.default).map((b) => b.id);
     books.textContent = "";
     for (const b of list.books) {
-      const label = el("label", { class: "offline-book" });
-      const box = el("input", { type: "checkbox", "data-offline-book": b.id });
-      box.checked = chosen.includes(b.id);
-      box.addEventListener("change", () => { store.set(BOOKS_KEY, ticked()); showNeed(); });
+      const row = el("li", { class: "offline-book", "data-offline-book": b.id });
       const name = el("span", { class: "offline-book-name" }, bookName(b));
       if (b.title.ar && b.id !== "dua") {
         // The Arabic title on its own line: inline beside the English, the right-to-left run swallowed the separator.
         name.appendChild(el("span", { class: "offline-book-ar", lang: "ar", dir: "rtl" }, b.title.ar));
       }
-      label.append(box, name, el("span", { class: "offline-book-size" }, mbText(bytesOf(filesOf(b.dirs, "hadith")))));
-      books.appendChild(label);
+      row.append(name, el("span", { class: "offline-book-size" }, mbText(bytesOf(filesOf(b.dirs, "hadith")))));
+      books.appendChild(row);
     }
     showNeed();
     btn.disabled = false;
@@ -247,12 +246,11 @@ export function mountOfflineSection(host) {
     failedBox.hidden = true;
     failedBox.textContent = "";
     space.textContent = "";
-    for (const i of books.querySelectorAll("input")) i.disabled = true;
     // Asked here, on the reader's tap, never at startup (I9). A browser may say no; the files are still kept,
     // the browser may just clear them first when the device runs short of space.
     let persisted = false;
     try { persisted = navigator.storage && navigator.storage.persist ? await navigator.storage.persist() : false; } catch { persisted = false; }
-    const plan = planFor(list, ticked());
+    const plan = planFor(list, allBookIds(list));
     state.textContent = t("Getting ready…");
     prog.hidden = false;
     bar.max = Math.max(1, plan.bytes);
@@ -286,10 +284,9 @@ export function mountOfflineSection(host) {
         + (result.failed.length > 3 ? " " + t("and {n} more", { n: num(result.failed.length - 3) }) : "");
     } else {
       const at = Date.now();
-      store.set(READY_KEY, { at, version: APP_VERSION, books: ticked() });
+      store.set(READY_KEY, { at, version: APP_VERSION, books: allBookIds(list) });
       state.textContent = t("Ready ✓ (updated {when})", { when: whenText(at) });
     }
     btn.disabled = false;
-    for (const i of books.querySelectorAll("input")) i.disabled = false;
   });
 }

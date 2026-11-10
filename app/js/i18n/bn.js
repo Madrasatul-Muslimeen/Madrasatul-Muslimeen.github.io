@@ -4963,8 +4963,8 @@ export const BN = {
   "As sourced": "উৎসে যেমন আছে",
   // PCF MSA J120 O2: "Get ready for offline" in My account (app/js/offline-ready.js).
   "Use the app without internet": "ইন্টারনেট ছাড়া অ্যাপ ব্যবহার",
-  "Keeps the app, the Qur'an and the books you tick on this device, so they open with no internet.": "অ্যাপ, কুরআন আর আপনার টিক দেওয়া কিতাবগুলো এই ডিভাইসে রেখে দেয়, যাতে ইন্টারনেট ছাড়াই খোলে।",
-  "Hadith and Dua books to keep offline": "ইন্টারনেট ছাড়া রাখার জন্য হাদীস ও দু‘আর কিতাব",
+  "Keeps the app, the Qur'an and every Hadith and Dua book on this device, so they open with no internet.": "অ্যাপ, কুরআন আর হাদীস ও দু‘আর সব কিতাব এই ডিভাইসে রেখে দেয়, যাতে ইন্টারনেট ছাড়াই খোলে।",
+  "Hadith and Dua books kept offline (all of them)": "ইন্টারনেট ছাড়া রাখা হাদীস ও দু‘আর কিতাব (সবগুলো)",
   "Loading the list…": "তালিকা আসছে…",
   "Get ready for offline": "ইন্টারনেট ছাড়া ব্যবহারের জন্য প্রস্তুত করুন",
   "This browser cannot keep the app for use without internet.": "এই ব্রাউজার ইন্টারনেট ছাড়া ব্যবহারের জন্য অ্যাপ রাখতে পারে না।",
