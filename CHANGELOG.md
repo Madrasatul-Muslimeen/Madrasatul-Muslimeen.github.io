@@ -23691,3 +23691,14 @@ The Owner, 10 Nov 2026 3:04 pm (MSA chat, recorded in J120): "J120: 1.A" (O1 to 
 - **Checks** (the Architect): new `offline-line-browser` 180/0 (four pages, en/bn at 390 and 1280, the service worker on as on a phone): online the line's code is never fetched; offline the line reads right, is first, fits, no sideways scroll, contrast; back online "saving…" then "All saved ✓" then gone; a waiting Note is counted; a page opened offline shows the line; Sign in and an outside link stopped with words, an in-app link not; the Read view still ends inside the screen. Mutations `noline` 30, `eager` 9, `nosaved` 8, `nowarm` 31, `nocount` 2, `noguard` 6 red. app-offline-boot-browser 15/0, service-worker 18/0, stub-parity 4/0, apps-build-check 53/0. `app/offline-files.json` regenerated. (The suite's first run went offline before the worker had kept the file: `waitForFunction` counts an async body's promise as true at once; the wait is polled from Node now.)
 - **Not yet**: O6 (recitation per sūrah, the reader chooses). Not proven on a real phone.
 - Nothing deployed to Firestore.
+
+## v14.17 — 10 Nov 2026 — Recitation and Asma posters say they need the internet (PCF MSA J120 O5, QR part)
+
+The Owner's offline plan O5 (J120): "every part that truly needs the internet says so in words … instead of failing". The MSA part shipped in v14.16; this is the part in Quran Study and Asma (QuranRevival's frozen parts), asked of the PCA as a change request and built by the QR Lead 45L (PR #1618, branch `claude/qr-lead-offline-needs-internet`, merged as 9ece2470). Reviewed and released by the Architect 97L.
+
+- **`app/js/audio-player.js`**: `reportFailure()` says "Recitation needs the internet." when `navigator.onLine` is false, instead of "Couldn't play …: <media error>"; online failures keep the old wording.
+- **`app/js/asma-renderer.js`** / **`app/js/asma-poster.js`**: `renderAsmaPosterHtml()` adds a quiet status note "Posters need the internet" under a poster drawn while offline (not on the screensaver); the poster still draws, with fallback lettering (its fonts come from fonts.googleapis.com, which the worker does not keep).
+- **`app/js/i18n/bn.js`**: two strings.
+- **Checks** (re-run by the Architect on main v14.16 + the branch): new `needs-internet-lines-browser` 20/0 (en/bn at 390 and 1280, online controls keep the old wording); mutations `noaudio` 4, `noposter` 8, `nobn` 4 red; asma-poster-browser 102/0; stub-parity 4/0, apps-build-check 53/0. The Lead also reported offline-line 180/0, asma-explore-name-poster 36/0, asma-name-nav-poster 140/0.
+- **Next**: O6 (recitation per sūrah offline, the Owner's answer G), the QR Lead's.
+- Nothing deployed to Firestore.

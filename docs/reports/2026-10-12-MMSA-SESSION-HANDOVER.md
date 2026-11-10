@@ -3320,3 +3320,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.14** (2026-11-10): Notes offline part 2 (PCF MSA J120 O3b).
 - **v14.15** (2026-11-10): Your own records ready offline (PCF MSA J120 O4).
 - **v14.16** (2026-11-10): One calm Offline line (PCF MSA J120 O5).
+- **v14.17** (2026-11-10): Recitation and posters say they need the internet (PCF MSA J120 O5, QR part).
