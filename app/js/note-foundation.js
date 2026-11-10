@@ -1443,13 +1443,16 @@ export async function getNotesByIds(db, tenantId, noteIds) {
  * `listNotePlacementsForOwnerPage()`.
  */
 export async function listNoteSourcesForOwnerPage(db, {
-  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null, idRange = null,
 }) {
   requirePageSize(pageSize);
+  // `idRange` (PCF MSA J120 O3, note-outbox.js): the same document-id range the placement and Note readers above already
+  // take, so a replay can ask "is this one link already saved?" without a get of a document that may not exist.
   const q = query(collection(db, TENANT.NOTE_SOURCES),
     where("tenantId", "==", requireToken("tenantId", tenantId)),
     where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
     where("status", "==", status),
+    ...idRangeClauses(idRange),
     ...(after ? [startAfter(after)] : []),
     limit(pageSize));
   const snapshot = await getDocs(q);

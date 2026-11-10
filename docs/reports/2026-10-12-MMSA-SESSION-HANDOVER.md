@@ -3315,3 +3315,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.09** (2026-11-10): Quran Study one Read bar, Study in the ⋮ (MSA · QR J132).
 - **v14.10** (2026-11-10): Mark the Word, five marks on the Word card (MSA · QR J136).
 - **v14.11** (2026-11-10): Practising words get a light violet tint (QR Lead).
+- **v14.12** (2026-11-10): Notes offline: kept on the device, saved when online (J120 O3).
