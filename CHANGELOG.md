@@ -23631,3 +23631,11 @@ The Owner, 10 Nov 2026 3:04 pm (PCF MSA J136): "J136: Approved with recommended"
 - **Checks** (the Architect, on the PR head): behaviour 974/1 (14a, as main), word-effort 46/0, word-effort-browser 42/0, ayah-keys 69/0, rules-authorisation-executable 114/0 (new check: the flag may be true only if the published block allows `effort`), global-approach-card-browser 109/0 (was 101/8 on main; old night palette back = 105/4), word-card-marks-row 48/0, marks-k2 76/0, marks-k2-matrix 90/0, apps-build-check 53/0, brief-integrity 15/0, stub-parity 4/0.
 - **The Owner's step (E1)**: publish the candidate in the Firebase console; then a follow-up round copies it into `firestore.rules` and sets the flag true.
 - Nothing deployed to Firestore.
+
+## v14.11 — 10 Nov 2026 — Quran Study: Practising words get their own light violet tint
+
+The Owner, 10 Nov 2026 (QR Lead 45L's chat, screenshot of Al-Baqarah 2:16): "Enable 'Practising' words a light distinguishable color". Built by QR Lead 45L (#1607, head 952e7aed), reviewed and released by the Architect 95L.
+
+- **`app/quranrevival.html`**: `.is-practising-word` (light rgba(124,92,214,0.20); Night card rgba(178,150,255,0.26)) on hifz, WbW and āyah words; `setPractisingWordMark()` adds "— Practising" to the word's accessible name; `refreshKnownWordMarks()` collects practising words and the tint wins over Known / still-to-learn; the Mark words note adds "Words you are practising are always marked in light violet." `bn.js` 1 string.
+- **Checks** (the Architect, on main v14.10 + #1607): practising-word-marks-browser 30/0 (the Lead's 4 mutations red), known-word-marks 122/0, mark-words-mode 48/0, behaviour 974/1 (14a, as main), apps-build-check 53/0.
+- Nothing deployed to Firestore.
