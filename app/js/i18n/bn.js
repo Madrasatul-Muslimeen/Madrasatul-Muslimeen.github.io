@@ -4992,4 +4992,6 @@ export const BN = {
   "Your Notes written offline are now saved.": "ইন্টারনেট ছাড়া লেখা আপনার নোটগুলো এখন সংরক্ষিত।",
   "A Note written offline could not be saved: {why}": "ইন্টারনেট ছাড়া লেখা একটি নোট সংরক্ষণ করা যায়নি: {why}",
   "This Note also changed elsewhere: the later change is its text, and the other is kept as an older version.": "এই নোটটি অন্য কোথাও-ও বদলেছে: পরের পরিবর্তনটিই এর লেখা, আর অন্যটি পুরোনো সংস্করণ হিসেবে রাখা আছে।",
+  // PCF MSA J120 O3b: a copy made offline (its tags are not kept on the device).
+  "Kept on this device — it will be saved when you are online. Its tags are not copied while offline.": "এই ডিভাইসে রাখা আছে — ইন্টারনেট ফিরলে সংরক্ষিত হবে। ইন্টারনেট ছাড়া এর ট্যাগগুলো কপি হয় না।",
 };

@@ -603,6 +603,9 @@ export async function runTransaction(db, callback) {
   // Audit part 124: the real SDK's runTransaction needs the server, so offline it REJECTS (code "unavailable") --
   // it is never queued. Modelled only under the opt-in hold switch (see __held), so no other suite changes.
   if (typeof window !== "undefined" && window.__stubHoldWritesWhileOffline && navigator.onLine === false) throw Object.assign(new Error("offline: a transaction needs the server"), { code: "unavailable" });
+  // PCF MSA J120 O3b: OPT-IN (window.__stubTxUnavailable = true) -- the server cannot be reached while navigator.onLine
+  // still reads true (a captive Wi-Fi, a dead line): the real SDK refuses the transaction with code "unavailable".
+  if (typeof window !== "undefined" && window.__stubTxUnavailable) throw Object.assign(new Error("Failed to get document because the client is offline."), { code: "unavailable" });
   const staged = [];
   const rowFor = (ref) => (DATA[ref && ref.__col] || []).find((d) => d._id === (ref && ref.__id));
   const tx = {
