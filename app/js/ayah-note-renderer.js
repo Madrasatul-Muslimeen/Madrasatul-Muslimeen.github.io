@@ -147,7 +147,9 @@ export function renderQuickMenu(unitKey, {
       <button type="button" class="ayah-quick-btn${hasNote ? " has-note" : ""}" data-qm-toggle title="${t("Quick actions")}" aria-label="${t("Quick actions")}" aria-haspopup="true">⋮</button>
       <div class="quick-menu qm-sheet">
         ${studyBlock}
-        ${studyOnly ? `<div class="qm-tiles">${extraTiles}</div>` : `<div class="qm-tiles">
+        ${studyOnly ? `<div class="qm-tiles">${showTextTools ? `${tile("data-qm-wbw", "🔤", t("Word by Word"), { on: isWbwOn })}
+          ${tile("data-qm-roots", "🌱", t("Root"), { on: isRootsOn })}
+          ${tile("data-qm-derivatives", "🌿", t("Derivatives"), { on: isDerivativesOn })}` : ""}${extraTiles}</div>` : `<div class="qm-tiles">
           ${tile("data-qm-play", "▶", t("Play"))}
           ${tile(`data-qm-note${hasNote ? "" : " data-qm-note-new"}`, "📝", hasNote ? t("Notes") : t("Take Note"))}
           ${hasNote ? tile("data-qm-note-add", "＋", t("New Note")) : ""}
