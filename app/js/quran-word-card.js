@@ -1677,7 +1677,12 @@ export function fitWordCardFamilyRows(root, open, text, formatNumber = String) {
     }
     more.setAttribute("aria-expanded", "false");
     const current = chips.find((c) => c.classList.contains("word-card-family-chip-current"));
-    chips.forEach((c) => { if (c !== current && top(c) > line1) c.hidden = true; });
+    // QR Lead 46L (11 Nov 2026): MEASURE ALL, THEN HIDE. This loop used to read each chip's top and hide the chip in the same pass, so every hide
+    // made the browser lay the whole row out again before the next read: a root with a thousand places froze the page for ~18 s on a tap of ›
+    // (found by the suites quran-word-card-return and quran-word-card-flow-nav, which stopped in a click that never came back). Hiding a chip on
+    // a later line cannot move any chip on the first line, so reading every top first and writing after gives the same result in ONE layout.
+    const tops = chips.map(top);
+    chips.forEach((c, i) => { if (c !== current && tops[i] > line1) c.hidden = true; });
     const count = () => {
       more.textContent = String(text.familyMore).replace("{n}", formatNumber(chips.filter((c) => c.hidden).length));
     };

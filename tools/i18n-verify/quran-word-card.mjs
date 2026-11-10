@@ -20,7 +20,15 @@ function check(name, fn) {
 
 check("card starts closed", () => assert.equal(renderQuranWordCard({ state: createWordCardState(), chapter, ayah, word }), ""));
 check("opening preserves permanent identity", () => assert.equal(openWordCard(createWordCardState(), id).occurrenceId, id));
-check("WbW renders Arabic and both meanings", () => { const html = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word }); assert.match(html, /بِسْمِ/); assert.match(html, /In the name/); assert.match(html, /নামে/); });
+// UPDATED IN PLACE (QR Lead 46L, 11 Nov 2026): since PCF MSA J101 ("one meaning beside the Arabic") the card shows the meaning in the READER'S
+// language only, English by default and Bangla when the page says so (context.meaningLang), never both at once. This check still expected both
+// in one English render, so it stopped the whole suite at line 23 for weeks; it now asks for each language by itself, and that the other one is absent.
+check("WbW renders the Arabic and ONE meaning in the reader's language (English by default, Bangla when asked)", () => {
+  const en = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word });
+  assert.match(en, /بِسْمِ/); assert.match(en, /In the name/); assert.doesNotMatch(en, /নামে/, "the English card must not also print the Bangla meaning");
+  const bn = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word, context: { meaningLang: "bn" } });
+  assert.match(bn, /নামে/); assert.doesNotMatch(bn, /In the name/, "the Bangla card must not also print the English meaning");
+});
 // Updated in place 12 Oct 2026 (decisions 101/103): a fourth level, Intermediate, between Basic and Depth.
 // UPDATED IN PLACE (J38/J39, 19 Oct 2026): the card has FIVE tabs now (WbW, Root, Family, Taṣrīf, Depth); this described four.
 check("five level tabs are always present", () => { const html = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word }); assert.equal((html.match(/role="tab"/g) || []).length, 5); });
