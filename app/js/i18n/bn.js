@@ -3215,6 +3215,8 @@ export const BN = {
   "Make a poster": "একটি পোস্টার তৈরি করুন",
   "You don't have a Note on this āyah yet.": "এই আয়াতে আপনার এখনো কোনো নোট নেই।",
   "Take Note": "নোট নিন",
+  "Approaches on this āyah: {done} of {total} started": "এই আয়াতে {total}টির মধ্যে {done}টি পদ্ধতি শুরু হয়েছে",
+  "Āyah status": "আয়াতের অবস্থা",
   "Status of this āyah": "এই আয়াতের অবস্থা",
   "See on the wheel": "চাকায় দেখুন",
   "Known {known} of {total} words": "{total}-এর মধ্যে {known}টি শব্দ জানা",

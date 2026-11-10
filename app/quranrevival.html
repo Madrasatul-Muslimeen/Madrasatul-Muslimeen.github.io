@@ -3065,6 +3065,15 @@
   /* The Owner, 6 Nov 2026 (option A): the āyah number sits on the title's row, right beside the ⋮, both before the āyah starts. */
   .meaning-ayah-head > .ayah-num-badge { margin-left: auto; flex: 0 0 auto; }
   .meaning-ayah-head > .ayah-num-badge + .ayah-quick-wrap { margin-left: 0; }
+  /* PCF MSA J110 / inbox qr46lstripe01 (the Owner ticked A, 11 Nov 2026): the āyah's STATUS stripe sits in the free gap between its name and its number.
+     A button shows only when that status exists. 22px painted, 40px to press (the chip's own padding), so the row stays a finger-size target. */
+  .ayah-stripe { display: inline-flex; align-items: center; margin-left: auto; flex: 0 1 auto; min-width: 0; }
+  .meaning-ayah-head > .ayah-stripe + .ayah-num-badge { margin-left: 0; }
+  .ayah-stripe-chip { flex: none; min-width: 30px; min-height: 40px; padding: 9px 2px; border: 0; background: none; display: grid; place-items: center; font: inherit; cursor: pointer; }
+  .ayah-stripe-chip i { box-sizing: border-box; font-style: normal; display: grid; place-items: center; min-width: 24px; height: 22px; padding: 0 5px; border-radius: 7px; font-size: 0.7rem; font-weight: 700; line-height: 1; border: 1px solid transparent; }
+  .ayah-stripe-chip.appr i { background: #f6ead0; color: #7a5710; border-color: #b8892b; }
+  .ayah-stripe-chip.note i { background: #1F3A6E; color: #fff; }
+  .ayah-stripe-chip:focus-visible { outline: 3px solid #B8862F; outline-offset: 1px; border-radius: 8px; }
   .ayah-quick-header { align-items: center; gap: 0.5rem; }
   .meaning-more { min-height: 44px; border: 1px dashed #c9b98f; border-radius: 0.6rem; background: #fdf8ea; color: #5e4418; font: inherit; font-weight: 600; cursor: pointer; }
   .meaning-more[disabled] { opacity: 0.5; cursor: default; }
@@ -21348,6 +21357,12 @@
       // Issue #295 -- (c) the number badge before the Arabic, in both the
       // normal flowing Read view (ayah-renderer.js's renderArabicPanel) and
       // the Note view's own locally-built Arabic block.
+      const ayahStripeBtn = event.target.closest("[data-ayah-stripe]");
+      if (ayahStripeBtn) {
+        const [ss, aa] = ayahStripeBtn.dataset.ayahStripeKey.split(":").map(Number);
+        if (ayahStripeBtn.dataset.ayahStripe === "note") openLatestNoteFromMenu(buildUnitKey.ayah(ss, aa)); else openAyahActionSheet(ayahStripeBtn.dataset.ayahStripeKey);
+        return;
+      }
       const ayahNumBadge = event.target.closest("[data-ayah-num-badge]");
       if (ayahNumBadge) { openAyahActionSheet(ayahNumBadge.dataset.ayahNumBadge, ayahNumBadge.dataset.ayahSplitHalf || null); return; }
       // Issue #286 -- (b) the Word Card's own "This āyah ⋯" button.
@@ -21699,6 +21714,19 @@
 
     /** PCF MSA J110 C: the same ⋮ the ONE Ayah View carries on every āyah (Copy, Share, Play this āyah, Bookmark,
         Note & more…, QCR), without its Word by Word / Root / Derivatives rows: the Reading View has its own switches. */
+    /** The āyah's status stripe (inbox qr46lstripe01, the Owner ticked A): a small button for each status this āyah HAS, nothing for one it lacks.
+        Round 1: Approaches (how many Approaches have a stage on it; opens the Āyah card, which lists each) and Notes (opens the latest Note).
+        No new read: Approaches come from the surah's records already in memory (approachStatusesForAyah), Notes from ayahHasAnyNote(). */
+    function ayahStripeHtml(surahNum, ayahNum) {
+      const chips = [];
+      const statuses = approachStatusesForAyah(surahNum, ayahNum);
+      const started = statuses.filter((x) => x.statusId !== "not_started").length;
+      const chip = (kind, glyph, label, key) => `<button type="button" class="ayah-stripe-chip ${kind}" data-ayah-stripe="${kind}" data-ayah-stripe-key="${key}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"><i aria-hidden="true">${glyph}</i></button>`;
+      if (started > 0) chips.push(chip("appr", `${escapeHtml(num(started))}/${escapeHtml(num(statuses.length))}`, t("Approaches on this āyah: {done} of {total} started", { done: num(started), total: num(statuses.length) }), `${surahNum}:${ayahNum}`));
+      if (ayahHasAnyNote(buildUnitKey.ayah(surahNum, ayahNum))) chips.push(chip("note", "📝", t("Notes on this āyah"), `${surahNum}:${ayahNum}`));
+      return chips.length ? `<span class="ayah-stripe" role="group" aria-label="${escapeHtml(t("Āyah status"))}">${chips.join("")}</span>` : "";
+    }
+
     function meaningQuickMenuHtml(surahNum, ayahNum) {
       const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
       const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
@@ -21721,7 +21749,7 @@
             tajweedOn: tajweedToggle.checked, langs, wbwLangs: langs.length ? langs : ["en"], wordCardInteractive: true, surahNumber: g.surah,
           }));
           html += `<article class="meaning-ayah${out ? " out" : ""}" data-meaning-key="${key}" data-meaning-page="${pageNum}">
-            <div class="meaning-ayah-head"><span class="meaning-ayah-ref">${escapeHtml(surahName(g.surah, meta?.nameEnglish))} ${num(g.surah)}:${escapeHtml(ayahLabelFor(g.surah, a.ayah, null))}</span>${lifted.badge}${meaningQuickMenuHtml(g.surah, a.ayah)}</div>
+            <div class="meaning-ayah-head"><span class="meaning-ayah-ref">${escapeHtml(surahName(g.surah, meta?.nameEnglish))} ${num(g.surah)}:${escapeHtml(ayahLabelFor(g.surah, a.ayah, null))}</span>${ayahStripeHtml(g.surah, a.ayah)}${lifted.badge}${meaningQuickMenuHtml(g.surah, a.ayah)}</div>
             ${surahFlowHeadingHtml(g.surah, a.ayah)}${bismillahHtmlFor(g.surah, a.ayah)}${lifted.parts}</article>`;
         }
       }
