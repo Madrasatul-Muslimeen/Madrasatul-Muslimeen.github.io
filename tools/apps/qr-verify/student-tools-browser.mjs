@@ -223,7 +223,8 @@ async function readAyah(p, surah = "2", ayah = "256") {
   await settle(p, 900);
   await p.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
 }
-const notesFrame = (p) => p.frames().find((x) => /journey-map\.html\?embed=1&unit=/.test(x.url()));
+// MSA · QR J130 (a): the ⋮ sheet's 📝 tile on an āyah with no Note opens the pane on a NEW Note (journey-map.html?embed=1&new=1&unit=...), so the frame's URL may carry new=1.
+const notesFrame = (p) => p.frames().find((x) => /journey-map\.html\?embed=1&(new=1&)?unit=/.test(x.url()));
 const trayFrame = (p) => p.frames().find((x) => /journey-map\.html\?embed=1&note=|journey-map\.html\?embed=1#/.test(x.url()));
 const readPlace = (p) => ev(p, () => ({ ayah: document.getElementById("ayahSelect")?.value, surah: document.getElementById("surahSelect")?.value, top: document.getElementById("readScroll")?.scrollTop ?? 0 }));
 
