@@ -7,11 +7,13 @@
 // [hidden]-trap and pill-contrast checks went with the row. Expected values are written BY HAND. Run from the repository root, serve.js on :8080.
 //   --mutate=row-back   the old row is shown again (the J132 hide rule loses #readQuickRow)  -> "the old row is not on screen" FAILS
 //   --mutate=no-study   the ⋮ sheet loses its Study group (no Record / Approach tiles)       -> the tile checks FAIL
+//   --mutate=no-bare-dots   the bare full screen hides the bar's ⋮ (the three would be unreachable) -> "the bar's ⋮ is on the bare bar" FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   "row-back": ["#readPickers, #readBar #readApproachBar, #readBar #readQuickRow, body.immersive-read #readBar #readQuickRow { display: none !important; }", "#readPickers, #readBar #readApproachBar { display: none !important; }"],
+  "no-bare-dots": [":not(#readBarBookmarkBtn):not(#readQuickMenuSlot) { display: none; }", ":not(#readBarBookmarkBtn) { display: none; }"],
   "no-study": ["extraTiles: barUnitTilesHtml(), studyBlock: studyGroupHtml() });\n      attachAyahQuickMenus(readQuickMenuSlot);", "extraTiles: barUnitTilesHtml() });\n      attachAyahQuickMenus(readQuickMenuSlot);"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);

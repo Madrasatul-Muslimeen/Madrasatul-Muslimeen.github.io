@@ -4,7 +4,7 @@
 // Bismillah stays on the intention card only (untouched here).
 //
 //   node tools/i18n-verify/read-one-bar-browser.mjs [--mutate=NAME] [--width=390] [--lang=en]   (repository root, serve.js on :8080)
-//   --mutate=pillback   the old pill is shown again                       -> "the old rows are not on the bar" FAILS
+//   --mutate=pillback   the old pill is shown again (run with --width=768: below 600px a second rule also hides it) -> "the old rows are not on the bar" FAILS
 //   --mutate=nostudy    the ⋮ sheet loses its Study group (ONE Ayah view) -> the Study group / picker / tile checks FAIL
 //   --mutate=nofwd      a pick made in the sheet is not passed on         -> "a pick in the sheet changes the real picker" FAILS
 //   --mutate=noreopen   the sheet is not opened again after a pick        -> "the sheet is open again" FAILS
@@ -124,7 +124,8 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   await page.selectOption('[data-qm-place="readUnitTypeSelect"]', "range"); await page.waitForTimeout(1500);
   const p2 = await page.evaluate(() => ({ unit: document.getElementById("unitTypeSelect").value, shown: [...document.querySelectorAll("[data-qm-place]")].filter((e) => e.getBoundingClientRect().width > 0).map((e) => e.dataset.qmPlace) }));
   check(`${tag} choosing Range in the sheet brings From and To (and takes the āyah picker away)`, p2.unit === "range" && JSON.stringify(p2.shown) === JSON.stringify(["readUnitTypeSelect", "readSurahSelect", "readRangeFromSelect", "readRangeToSelect"]), JSON.stringify(p2));
-  await page.selectOption('[data-qm-place="readUnitTypeSelect"]', "ayah"); await page.waitForTimeout(1200);
+  await page.selectOption('[data-qm-place="readUnitTypeSelect"]', "ayah", { timeout: 5000 }).catch(() => { void 0; /* a build without the sheet's Study group on a Range fails the checks above and below */ }); await page.waitForTimeout(1200);
+  await setSel(page, "unitTypeSelect", "ayah"); await page.waitForTimeout(1000); // whatever the sheet did, the next steps start from the ONE Ayah view
   await page.keyboard.press("Escape");
   await page.evaluate(() => document.body.click()); await page.waitForTimeout(200);
 
