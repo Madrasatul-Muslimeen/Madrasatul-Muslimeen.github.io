@@ -121,8 +121,14 @@ test("the candidate (swapped into the deployed Rules) behaves exactly as the mat
   assert.deepEqual(bad, [], `cases that did not behave: ${bad.join(" | ")}`);
 });
 
-test("the PUBLISHED Rules refuse every effort write (why the app says 'cannot be saved yet') and still allow every old-shape write", async () => {
-  const bad = await matrix(live, { expectPublished: false });
+// UPDATED IN PLACE (PCF MSA J136, 10 Nov 2026 UTC): the Owner published the candidate ("Rules Published", in the QR Lead
+// 46L's chat), so firestore.rules now CARRIES `effort`. This case used to assert the published Rules REFUSE every effort
+// write (expectPublished: false), which was the reason the app said "cannot be saved yet"; it now asserts the published
+// Rules behave exactly as the candidate matrix says -- effort writes allowed and bounded, every old-shape write still
+// allowed. The refusing variant is kept as `expectPublished: false` in matrix() for the day a Rules file without effort
+// is ever tested again.
+test("the PUBLISHED Rules (the Owner published the candidate) behave exactly as the candidate matrix says", async () => {
+  const bad = await matrix(live);
   assert.deepEqual(bad, [], `cases that did not behave under the published Rules: ${bad.join(" | ")}`);
 });
 

@@ -455,6 +455,9 @@ const PUBLISHED_DEPLOYMENTS = [
   // Added 9 Nov 2026 (Architect 89L): the Owner published the Hisn/Qur'anic dua-key change (PCF MSA J104 line 24,
   // "Rule Published."), and firestore.rules was made this file byte for byte; the dawahPages-block half is unchanged.
   "docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules",
+  // Added 11 Nov 2026 (QR Lead 46L): the Owner published the J136 effort Rules (PCF MSA J136 n136d, "Rules Published", in the
+  // QR Lead's chat), and firestore.rules was made this file byte for byte; the dawahPages-block half is unchanged.
+  "docs/proposals/word-effort.DEPLOYMENT-candidate.rules",
 ];
 function dawahBlock(text) {
   const start = text.indexOf("match /dawahPages/");

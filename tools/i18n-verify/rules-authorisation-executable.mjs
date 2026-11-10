@@ -35,6 +35,26 @@ import process from "node:process";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
+// UPDATED IN PLACE 11 Nov 2026 (QR Lead 46L): the Owner PUBLISHED the J136 effort Rules ("Rules Published", PCF MSA J136 n136d), so
+// firestore.rules is now docs/proposals/word-effort.DEPLOYMENT-candidate.rules, which is the 9 Nov dua-keys file plus exactly three
+// effort edits. The checks that pinned the dua-keys file byte for byte now pin the effort file byte for byte AND prove that
+// taking those three edits out gives the dua-keys file again (stripEffort), so the "only the effort lines" claim stays checked.
+const EFFORT_DEPLOYMENT = () => read("docs/proposals/word-effort.DEPLOYMENT-candidate.rules");
+function stripEffort(text) {
+  let t = text;
+  const a = "'entries', 'effort',";
+  assert.equal(t.split(a).length - 1, 1, "stripEffort: the 'effort' field-list edit is not present exactly once");
+  t = t.replace(a, "'entries',");
+  const b = "\n            && effortOk()";
+  assert.equal(t.split(b).length - 1, 1, "stripEffort: the `&& effortOk()` edit is not present exactly once");
+  t = t.replace(b, "");
+  const lines = t.split("\n");
+  const i = lines.findIndex((l) => l === "      function effortOk() {");
+  assert.ok(i >= 7, "stripEffort: function effortOk() not found");
+  assert.equal(lines[i - 7], "      }", "stripEffort: the added block does not start where expected");
+  lines.splice(i - 7, 10);
+  return lines.join("\n");
+}
 
 let passed = 0, failed = 0;
 function check(name, fn) {
@@ -656,7 +676,8 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   check("AYAH KEYS: firestore.rules carries the published ayahKeyMarks block, unchanged (the Owner published it 5 Nov 2026)", () => {
     const live = read("firestore.rules");
     assert.ok(/match \/ayahKeyMarks\//.test(live), "firestore.rules does not carry ayahKeyMarks");
-    assert.equal(matchBlock(live, "ayahKeyMarks/"), matchBlock(akRules, "ayahKeyMarks/"), "firestore.rules' ayahKeyMarks block differs from docs/governance/2026-10-15-ayah-keys-candidate.rules, which is what production carries");
+    // 11 Nov 2026: the published block is the Keys block plus the effort edits, so compare it with the effort edits taken out.
+    assert.equal(matchBlock(stripEffort(live), "ayahKeyMarks/"), matchBlock(akRules, "ayahKeyMarks/"), "firestore.rules' ayahKeyMarks block differs (beyond the effort edits) from docs/governance/2026-10-15-ayah-keys-candidate.rules, which is what production carries");
   });
 
   // K0 (4 Nov 2026): the same marks on a hadith and its words, hadithKeyMarks, in the SAME candidate file.
@@ -720,7 +741,8 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   check("DUA SAVING: firestore.rules IS the published deployment file (now the dua-keys file), and carries the candidate's three blocks, the duaKey pattern widened", () => {
     const dep = read("docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
     const live = read("firestore.rules");
-    assert.equal(live, dep, "firestore.rules differs from docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules, which is what production carries");
+    assert.equal(live, EFFORT_DEPLOYMENT(), "firestore.rules differs from docs/proposals/word-effort.DEPLOYMENT-candidate.rules, which is what production carries since 11 Nov 2026");
+    assert.equal(stripEffort(live), dep, "firestore.rules, with the three effort edits taken out, differs from docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
     const OLDP = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40})$')";
     const NEWP = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40}|hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?)$')";
     for (const c of DUA) assert.equal(matchBlock(live, `${c}/`).replaceAll(NEWP, () => OLDP), matchBlock(dua, `${c}/`), `firestore.rules' ${c} block differs from the candidate beyond the widened duaKey pattern`);
@@ -839,7 +861,7 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   });
   check("DUA KEYS PUBLISHED: firestore.rules IS the dua-keys file, byte for byte (the Owner published it, 9 Nov 2026)", () => {
     const fr = read("firestore.rules");
-    assert.equal(fr, cand, "firestore.rules differs from the published dua-keys file");
+    assert.equal(stripEffort(fr), cand, "firestore.rules, with the effort edits taken out, differs from the published dua-keys file");
     assert.equal(fr.split(NEW).length - 1, 2, "firestore.rules does not carry the widened pattern twice");
   });
 }

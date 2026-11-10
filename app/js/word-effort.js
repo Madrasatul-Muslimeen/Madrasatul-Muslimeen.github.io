@@ -12,14 +12,15 @@
 // permanent, I5; marks saved before this round keep their meaning: an old "Learned" counts as Learned Easy, an old
 // "Difficult" as Hard). Only "Already Known" and "Very Hard" need the new optional `effort` map, which the published
 // Rules do not allow yet (docs/proposals/word-effort.candidate.rules is the CANDIDATE; the Owner publishes it).
-// UNTIL THEN `WORD_EFFORT_RULES_PUBLISHED` stays false: those two buttons are shown, tap, and SAY IN WORDS that they cannot
-// be saved yet -- nothing is written, nothing fails silently (I15). Flip the flag in the same release that follows the
-// Owner's publishing step, and in no other.
+// THE OWNER PUBLISHED THE RULES (11 Nov 2026, in the QR Lead 46L's chat: "Rules Published"), so `WORD_EFFORT_RULES_PUBLISHED` is
+// now true and firestore.rules is the published text (docs/proposals/word-effort.DEPLOYMENT-candidate.rules). Had it stayed
+// false, those two buttons would be shown, tap, and SAY IN WORDS that they cannot be saved yet -- nothing written, nothing
+// failing silently (I15); that refusal path stays in the data layer for the day the flag is ever false again.
 //
 // PURE: no imports, no reads, no writes. Everything that needs the page (saving, painting) takes these functions' output.
 
-/** FALSE until the Owner has published docs/proposals/word-effort.candidate.rules in Firebase (an Owner Control Gate). */
-export const WORD_EFFORT_RULES_PUBLISHED = false;
+/** TRUE since the Owner published docs/proposals/word-effort.DEPLOYMENT-candidate.rules in Firebase (an Owner Control Gate, passed 11 Nov 2026). */
+export const WORD_EFFORT_RULES_PUBLISHED = true;
 
 /** The three effort words a document may hold (the Rules cannot check them: the client does, here). "hard" is never stored: it is the key `hard`. */
 export const EFFORT_STORED = Object.freeze(["known", "easy", "very"]);
