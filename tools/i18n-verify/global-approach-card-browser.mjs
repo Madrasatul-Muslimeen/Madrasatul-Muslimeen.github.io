@@ -16,7 +16,7 @@
 // Every expected value is written out by hand from the fixture.
 //
 //   node tools/i18n-verify/global-approach-card-browser.mjs
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, STUDY_TILES, clickStudyTile } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
@@ -71,6 +71,7 @@ async function installSyntheticMushafFixture(ctx) {
 }
 
 async function clickSafely(page, selector, attempts = 4) {
+  if (STUDY_TILES[selector]) return clickStudyTile(page, selector); // MSA · QR J132: the Record button is a tile in the ⋮ Study group now
   let lastErr;
   for (let i = 0; i < attempts; i++) {
     await page.evaluate(() => {
@@ -158,7 +159,7 @@ const T = {
 };
 
 async function waitCapsule(page) {
-  await page.waitForFunction(() => { const c = document.getElementById("readBarRecordBtn"); return !!c && c.getBoundingClientRect().width > 0 && Number.isFinite(Number(document.getElementById("mushafPageRef")?.dataset.page)); }, null, { timeout: 12000 }).catch(() => {});
+  await page.waitForFunction(() => { const c = document.querySelector("#readQuickMenuSlot .ayah-quick-btn"); return !!c && c.getBoundingClientRect().width > 0 /* J132: the ⋮ that holds the Record tile */ && Number.isFinite(Number(document.getElementById("mushafPageRef")?.dataset.page)); }, null, { timeout: 12000 }).catch(() => {});
 }
 
 // ---- 1. (updated in place, issue #428) The #370 capsule was REPLACED by the three-button bar; its layout is proven in approach-record-status-bar-browser.mjs. Here: it is gone and the Record button carries its text.

@@ -31,12 +31,15 @@ const sheetInfo = (page, scope) => page.evaluate((sc) => {
   const vis = (b) => b.getBoundingClientRect().width > 0;
   const all = [...m.querySelectorAll("button")].filter((b) => !b.classList.contains("qm-go-btn") && vis(b));
   const tiles = all.filter((b) => b.classList.contains("qm-tile"));
-  const rects = tiles.map((t) => t.getBoundingClientRect()); const tops = [...new Set(rects.map((r) => Math.round(r.top)))];
+  const rects = tiles.map((t) => t.getBoundingClientRect());
+  // MSA · QR J132: the Study group's three tiles (Approach | Record | Status) are their own row of three, above the four-column grid: the "rows of four" rule is about the grid.
+  const gridRects = tiles.filter((t) => !t.closest(".qm-study-tiles")).map((t) => t.getBoundingClientRect()); const tops = [...new Set(gridRects.map((r) => Math.round(r.top)))];
+  const studyRects = tiles.filter((t) => t.closest(".qm-study-tiles")).map((t) => t.getBoundingClientRect());
   const oneLine = (el) => { const r = document.createRange(); r.selectNodeContents(el); return r.getClientRects().length === 1; };
   const word = (k) => { const t = tiles.find((x) => key(x) === k); const l = t?.querySelector(".qm-label"); return l ? oneLine(l) : null; };
-  return { open: true, keys: tiles.map(key), notTiles: all.filter((b) => !b.classList.contains("qm-tile")).map(key), hs: rects.map((r) => Math.round(r.height)), ws: rects.map((r) => Math.round(r.width * 10) / 10),
+  return { open: true, keys: tiles.map(key), notTiles: all.filter((b) => !b.classList.contains("qm-tile")).map(key), hs: rects.map((r) => Math.round(r.height)), ws: rects.map((r) => Math.round(r.width * 10) / 10), gridWs: gridRects.map((r) => Math.round(r.width * 10) / 10), // J132: the grid's own tile widths (the Study row of three is wider by design)
     inside: rects.every((r) => r.left >= mb.left - 0.5 && r.right <= mb.right + 0.5) && mb.left >= -1 && mb.right <= innerWidth + 1, bottomOk: mb.bottom <= innerHeight + 1, vw: innerWidth, rows: tops.length,
-    perRow: tops.map((tp) => rects.filter((r) => Math.round(r.top) === tp).length), oldParts: m.querySelectorAll(".qm-rows, .qm-chips, .qm-chip").length,
+    perRow: tops.map((tp) => gridRects.filter((r) => Math.round(r.top) === tp).length), studyRow: studyRects.length === 3 && new Set(studyRects.map((r) => Math.round(r.top))).size === 1, oldParts: m.querySelectorAll(".qm-rows, .qm-chips, .qm-chip").length,
     words: { play: word("data-qm-play"), bookmark: word("data-qm-bookmark"), qcr: word("data-qm-qcr"), copy: word("data-qm-sub-toggle") },
     labelsWrap: tiles.every((t) => getComputedStyle(t.querySelector(".qm-label")).whiteSpace === "normal"),
     texts: tiles.map((t) => t.querySelector(".qm-label")?.textContent.trim() ?? "") };
@@ -57,7 +60,8 @@ for (const width of [320, 390, 768, 1280]) {
   const one = await sheetInfo(page, "#readQuickMenuSlot");
   check(`${tag} ONE Ayah View: the bar's ⋮ holds every button as a tile (Play, Note, Bookmark, QCR, Copy, Share, Writing, Word by Word, Root, Derivatives, Collapse, Text size, Mark complete), each >= 40px`, !!one && BAR_KEYS.every((k) => one.keys.includes(k)) && one.hs.every((h) => h >= 40), JSON.stringify(one));
   check(`${tag} ONE Ayah View: there is no row and no chip, and no button in the sheet that is not a tile`, !!one && one.oldParts === 0 && one.notTiles.length === 0, JSON.stringify(one));
-  check(`${tag} ONE Ayah View: the three study buttons are tiles below 600px only (the bar has them from 600px)`, !!one && (one.keys.filter((k) => k === "data-qm-act").length === (width < 600 ? 4 : 1)), JSON.stringify(one));
+  // UPDATED IN PLACE, MSA · QR J132 (the Owner, 10 Nov 2026: "Study moves to dot"): the three study buttons are tiles in the ⋮ Study group at EVERY width (they were tiles below 600px only, the bar having them from 600px); with Mark complete that is four data-qm-act tiles.
+  check(`${tag} ONE Ayah View: the three study buttons are one row of three tiles in the sheet's Study group at every width`, !!one && one.keys.filter((k) => k === "data-qm-act").length === 4 && one.studyRow, JSON.stringify(one));
   check(`${tag} ONE Ayah View: the open sheet is inside the screen`, !!one && one.inside && one.bottomOk, JSON.stringify(one));
   check(`${tag} ONE Ayah View at 100% text: every row is four tiles but the last (never 3+1 in the middle)`, !!one && one.perRow.slice(0, -1).every((n) => n === 4) && one.perRow.at(-1) <= 4, JSON.stringify(one));
   await page.evaluate(() => document.querySelector("#readQuickMenuSlot [data-qm-toggle]")?.click());
@@ -96,7 +100,7 @@ for (const [lang, width, pct] of [["en", 390, 100], ["en", 360, 100], ["en", 320
   check(`${tag} every tile is inside the sheet and the screen, and the sheet is inside the screen`, !!g && g.inside && g.bottomOk && g.keys.length >= 13, JSON.stringify(g));
   check(`${tag} the labels are allowed to wrap`, !!g && g.labelsWrap, JSON.stringify(g));
   const cols = pct >= 150 ? 2 : 4;
-  check(`${tag} ${cols} equal columns: every row but the last is ${cols} tiles`, !!g && g.perRow.slice(0, -1).every((n) => n === cols) && g.perRow.at(-1) <= cols && Math.max(...g.ws) - Math.min(...g.ws) <= 1, JSON.stringify(g));
+  check(`${tag} ${cols} equal columns: every row but the last is ${cols} tiles`, !!g && g.perRow.slice(0, -1).every((n) => n === cols) && g.perRow.at(-1) <= cols && Math.max(...g.gridWs) - Math.min(...g.gridWs) <= 1, JSON.stringify(g)); // UPDATED IN PLACE, MSA · QR J132: equal columns is the grid's rule; the Study group's row of three has its own equal width
   if (pct === 100 && lang === "en") check(`${tag} the words Play, Bookmark, QCR and Copy are not cut`, !!g && g.words.play && g.words.bookmark && g.words.qcr && g.words.copy, JSON.stringify(g.words));
   if (lang === "bn") check(`${tag} every tile carries Bangla words (QCR and A± are signs)`, !!g && g.texts.every((tx) => /[ঀ-৿]/.test(tx) || /^(QCR|A±)$/.test(tx)), JSON.stringify(g?.texts));
   if (pct === 100 && lang === "en" && width !== 320) {
@@ -111,11 +115,11 @@ for (const [lang, width, pct] of [["en", 390, 100], ["en", 360, 100], ["en", 320
       const slidersInside = getComputedStyle(pop).display !== "none" && pb.width > 0 && pb.left >= mb.left - 1 && pb.right <= mb.right + 1;
       m.querySelector('[data-qm-act="complete"]').click(); await new Promise((r) => setTimeout(r, 100));
       document.querySelector("#readQuickMenuSlot [data-qm-toggle]").click(); await new Promise((r) => setTimeout(r, 100));
-      const ph = document.querySelector('#readQuickMenuSlot [data-qm-act="approach"]'); const phoneVisible = !!ph && ph.getBoundingClientRect().width > 0;
+      const ph = document.querySelector('#readQuickMenuSlot [data-qm-act="approach"]'); const phoneVisible = !!ph && ph.getBoundingClientRect().width > 0; // J132: at every width now
       if (phoneVisible) ph.click();
       return { slidersInside, hits, phoneVisible };
     });
-    check(`${tag} Text size opens its sliders inside the sheet; Mark complete presses the bar's ✓${r.phoneVisible ? "; Take an Approach presses the bar's button" : ""}`, r.slidersInside && r.hits.complete === 1 && (!r.phoneVisible || r.hits.approach === 1), JSON.stringify(r));
+    check(`${tag} Text size opens its sliders inside the sheet; Mark complete presses the bar's ✓${r.phoneVisible ? "; Take an Approach presses the bar's button" : ""}`, r.slidersInside && r.hits.complete === 1 && r.phoneVisible && r.hits.approach === 1, JSON.stringify(r));
   }
   await ctx.close();
 }

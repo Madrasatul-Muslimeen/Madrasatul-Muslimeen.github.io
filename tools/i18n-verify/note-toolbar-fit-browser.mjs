@@ -57,10 +57,12 @@ for (const lang of ["en", "bn"].filter((l) => !LANG || l === LANG)) for (const [
     await until("surah 2", () => ev(() => !!document.querySelector('#readView [data-word-occurrence^="quran-word-occurrence:v1:2:"]')));
     await ev(() => { const el = document.getElementById("ayahSelect"); el.value = "256"; el.dispatchEvent(new Event("change", { bubbles: true })); });
     await sleep(900); await kill();
+    // UPDATED IN PLACE 10 Nov 2026 (MSA · QR J130 follow-up, the Architect 94L): the Notes pane has had no route since J114 (the Owner,
+    // PCF MSA J114 n114b, 7 Nov 2026: "2.F"): the ⋮ sheet's Notes tile (clickReadTool's route when the old 📝 is not on screen) opens
+    // the āyah's latest Note straight in the Mapping My Journey window, which is the window this suite measures. The pane's list
+    // step (open the pane, tap the Note) is gone; everything from the window on is unchanged.
+    check(`${tag} POSITIVE CONTROL the old 📝 is not on screen (so the route below is the ⋮ Notes tile)`, await ev(() => (document.getElementById("readNotesBtn")?.getBoundingClientRect().width ?? 0) === 0));
     await clickReadTool(P, "#readNotesBtn");
-    const F = await until("the Notes pane frame", () => P.frames().find((x) => /embed=1&unit=/.test(x.url())));
-    await F.waitForSelector('[data-unit-body] [data-note-id="n256"] [data-note-open]', { timeout: 15000 });
-    await F.click('[data-unit-body] [data-note-id="n256"] [data-note-open]');
     const T = await until("the Mapping My Journey window frame", () => P.frames().find((x) => /embed=1&note=n256/.test(x.url())));
     await T.waitForFunction(() => /No compulsion/.test(document.querySelector("#notePane:not([hidden])")?.textContent ?? ""), null, { timeout: 15000 });
     await sleep(600);

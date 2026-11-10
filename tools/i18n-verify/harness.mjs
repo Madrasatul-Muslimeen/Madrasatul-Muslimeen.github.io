@@ -112,7 +112,18 @@ const READ_TOOL_TWINS = { "#readBookmarkBtn": "#readBarBookmarkBtn" };
 // MSA · QR J130 (a): since J114 (ONE ⋮ menu) #readNotesBtn and #readBookmarkBtn are display:none !important at every width (legacyTools does NOT bring
 // them back); the real route to each is its tile in the ⋮ sheet. clickReadTool falls back to the tile when the old button is not on screen and the ⋮ is.
 const READ_TOOL_TILES = { "#readNotesBtn": "#readQuickMenuSlot .qm-sheet [data-qm-note]", "#readBookmarkBtn": "#readQuickMenuSlot .qm-sheet [data-qm-bookmark]" };
+// MSA · QR J132 (the Owner, 10 Nov 2026: "Study moves to dot"): the three Take an Approach | Record Your Progress | Know Your Status buttons are tiles in
+// the Study group of the bar's ⋮ sheet at EVERY width (the gold pill and Study ▾ are off the bar). The buttons stay in the page, hidden, as what the
+// tiles press; a suite that wants the reader's route opens ⋮ and presses the tile.
+export const STUDY_TILES = { "#readBarTakeBtn": '[data-qm-act="approach"]', "#readBarRecordBtn": '[data-qm-act="record"]', "#readBarStatusBtn": '[data-qm-act="status"]' };
+export async function clickStudyTile(page, sel) {
+  const tile = `#readQuickMenuSlot .quick-menu ${STUDY_TILES[sel]}`;
+  const open = await page.evaluate(() => !!document.querySelector("#readQuickMenuSlot .quick-menu")?.classList.contains("open"));
+  if (!open) { await page.click("#readQuickMenuSlot .ayah-quick-btn", { timeout: 8000 }); await page.waitForTimeout(300); }
+  await page.click(tile, { timeout: 8000 });
+}
 export async function clickReadTool(page, sel) {
+  if (STUDY_TILES[sel]) return clickStudyTile(page, sel);
   const tile = READ_TOOL_TILES[sel];
   const shownNow = (q) => page.evaluate((s) => (document.querySelector(s)?.getBoundingClientRect().width ?? 0) > 0, q);
   if (tile && !(await shownNow(sel)) && !(await shownNow("#readBarBookmarkBtn"))) {

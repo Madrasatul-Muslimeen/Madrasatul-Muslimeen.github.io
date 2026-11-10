@@ -2835,7 +2835,8 @@
      full-screen state, where the strip is otherwise empty apart from the
      full-screen icon. */
   body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readMeaningLayersSlot):not(#readOnSwitch):not(#mushafPagePrevBtn):not(#mushafPageNextBtn) { display: none; }
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn):not(#readMushafBtn):not(#readBarBookmarkBtn) { display: none; }
+  /* MSA · QR J132: the bare state keeps the bar's ⋮ too: Study (Take an Approach, Record, Status, the unit and sūrah pickers), Notes and the rest are in its sheet now that the bottom row is gone. */
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn):not(#readMushafBtn):not(#readBarBookmarkBtn):not(#readQuickMenuSlot) { display: none; }
   /* 10 Oct 2026: 📖 Meaning stays in the bare full-screen state too (the Owner: "visible even in full screen Mushaf
      view"), beside ⤢. */
   #readMeaningBtn, #readMushafBtn {
@@ -5597,8 +5598,22 @@
   .quick-menu.qm-sheet .text-size-wrap > .qm-tile[data-text-size-toggle] { width: 100%; box-sizing: border-box; min-height: 4rem; text-align: center; background: #f6f1e2; border: 1px solid #e3d6b0; padding: 0.5rem 0.1rem 0.4rem; font-size: 0.66rem; color: #1F3A6E; }
   .quick-menu.qm-sheet .text-size-popover { grid-column: 1 / -1; position: static; width: auto; box-shadow: none; border: 1px solid #e3d6b0; border-radius: 0.7rem; padding: 0.4rem 0.6rem; }
   @media (max-width: 359.98px) { .qm-sheet .qm-label { font-size: 0.6rem; } }
-  .qm-sheet .qm-phone-only { display: none; }
-  @media (max-width: 599.98px) { .qm-sheet .qm-phone-only { display: flex; } }
+  /* PCF MSA J132 (the Owner, 10 Nov 2026): the Study group at the top of the ⋮ sheet: its title, the pickers (mirrors of #readPickers) and the three
+     Approach tiles. The tiles show at every width now (they were phone-only while the bar carried the Approach pill and Study ▾). */
+  .qm-sheet .qm-group { padding-bottom: 0.5rem; margin-bottom: 0.5rem; border-bottom: 1px solid #e3d6b0; }
+  .qm-sheet .qm-group-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8a7c55; padding: 0 0.15rem 0.35rem; }
+  .qm-sheet .qm-places { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.4rem; }
+  .qm-sheet .qm-places .qm-place { flex: 1 1 0; min-width: 0; min-height: 40px; box-sizing: border-box; margin: 0; padding: 0.2rem 0.25rem; font-size: 0.78rem; color: #1F3A6E; background: #fff; border: 1px solid #d8c68a; border-radius: 0.5rem; }
+  .qm-sheet .qm-places .qm-place[hidden] { display: none; }
+  /* the unit type takes its own line (its words are the longest); the sūrah and the number pickers share the line under it, so no name is cut at 320px */
+  .qm-sheet .qm-places [data-qm-place="readUnitTypeSelect"] { flex: 1 1 100%; }
+  .qm-sheet .qm-places [data-qm-place="readAyahSelect"], .qm-sheet .qm-places [data-qm-place="readUnitNumSelect"],
+  .qm-sheet .qm-places [data-qm-place="readRangeFromSelect"], .qm-sheet .qm-places [data-qm-place="readRangeToSelect"] { flex: 0 1 4.5rem; }
+  .qm-sheet .qm-study-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* PCF MSA J132: ONE Read bar. The picker row, the Approach pill and the Study ▾ row are no longer on the bar (their controls live in the ⋮ sheet's
+     Study group); they stay in the page, hidden, because the same buttons and selects still do the work (onExtra presses the buttons; the mirrors
+     forward to the selects). */
+  #readPickers, #readBar #readApproachBar, #readBar #readQuickRow, body.immersive-read #readBar #readQuickRow { display: none !important; }
   /* One menu: ⋯ (More tools) is retired from sight at every width. Mark complete and Text size are tiles in the ⋮ sheet; below 600px the
      three study buttons are too, so the bar's own row for them is hidden there. Every id and handler stays. */
   #readBar #readToolsBtn, #readToolsMenu { display: none !important; }
@@ -22773,9 +22788,12 @@
         onUnitBookmark: () => { readBookmarkBtn.click(); },
         onMenuOpen: (unitKey, wrap) => {
           syncMenuNoteState(unitKey, wrap);
+          paintStudyPlaces(wrap);
           fitQuickSheet(wrap);
           const done = wrap.querySelector('[data-qm-act="complete"]'); // the bar's ✓ may be unavailable (no saving here): its tile follows it
           if (done) { done.disabled = readCompleteBtn.disabled; done.title = readCompleteBtn.title || ""; }
+          const rec = wrap.querySelector('[data-qm-act="record"]'); // MSA · QR J132: the Record tile says what the bar's Record button says (Mushaf: the chosen Approach's text)
+          if (rec && readBarRecordBtn) rec.title = readBarRecordBtn.title; // title only: the tile's spoken name stays "Record Your Progress"
         },
         // The tiles the page adds to the bar's ⋮ (barUnitTilesHtml): each presses the bar button it stands for.
         onExtra: (key) => { document.getElementById({ complete: "readCompleteBtn", approach: "readBarTakeBtn", record: "readBarRecordBtn", status: "readBarStatusBtn" }[key])?.click(); },
@@ -22955,9 +22973,44 @@
       const tileHtml = (act, glyph, label, full, cls = "") => `<button type="button" class="qm-item qm-tile${cls}" data-qm-act="${act}" title="${escapeHtml(full)}" aria-label="${escapeHtml(full)}"><span class="qm-glyph" aria-hidden="true">${glyph}</span><span class="qm-label">${escapeHtml(label)}</span></button>`;
       const textSize = renderTextSizeButtonHtml("readsheet", { btnClass: "qm-item qm-tile" })
         .replace(/>A±<\/button>/, ` aria-label="${escapeHtml(t("Text size"))}"><span class="qm-glyph" aria-hidden="true">A±</span><span class="qm-label">${escapeHtml(t("Text size"))}</span></button>`);
-      return textSize + tileHtml("complete", "✓", t("Mark complete"), t("Mark this reading complete"))
-        + tileHtml("approach", "🎯", t("Approach"), t("Take an Approach"), " qm-phone-only") + tileHtml("record", "✅", t("Record"), t("Record Your Progress"), " qm-phone-only") + tileHtml("status", "📊", t("Status"), t("Know Your Status"), " qm-phone-only");
+      return textSize + tileHtml("complete", "✓", t("Mark complete"), t("Mark this reading complete"));
     }
+    /** PCF MSA J132 (the Owner, 10 Nov 2026: "Study moves to dot. Place it elegantly."): the Study ▾ pill, the three pickers and the
+        Take an Approach | Record Your Progress | Know Your Status pill leave the Read bar and become ONE labelled group at the top of the
+        bar's ⋮ sheet. The pickers here are MIRRORS of #readPickers (same rule as that row: the existing handler is the only code that
+        decides anything); they are filled from the live selects each time the sheet opens (paintStudyPlaces), so a long āyah list is
+        not copied on every render. The three tiles press the same buttons they always did (onExtra). */
+    const STUDY_PLACE_IDS = ["readUnitTypeSelect", "readSurahSelect", "readAyahSelect", "readUnitNumSelect", "readRangeFromSelect", "readRangeToSelect"];
+    function studyGroupHtml() {
+      const tileHtml = (act, glyph, label, full) => `<button type="button" class="qm-item qm-tile" data-qm-act="${act}" title="${escapeHtml(full)}" aria-label="${escapeHtml(full)}"><span class="qm-glyph" aria-hidden="true">${glyph}</span><span class="qm-label">${escapeHtml(label)}</span></button>`;
+      return `<div class="qm-group qm-study" role="group" aria-label="${escapeHtml(t("Study"))}">
+        <div class="qm-group-title">${escapeHtml(t("Study"))}</div>
+        <div class="qm-places">${STUDY_PLACE_IDS.map((id) => `<select class="qm-place" data-qm-place="${id}" hidden></select>`).join("")}</div>
+        <div class="qm-tiles qm-study-tiles">${tileHtml("approach", "🎯", t("Approach"), t("Take an Approach"))}${tileHtml("record", "✅", t("Record"), t("Record Your Progress"))}${tileHtml("status", "📊", t("Status"), t("Know Your Status"))}</div>
+      </div>`;
+    }
+    /** Fill the sheet's mirrors from the live pickers (called as the sheet opens). */
+    function paintStudyPlaces(wrap) {
+      syncReadPickers(); // the live pickers' own options and which of them show, as of now (a render may still be on its way to this line)
+      for (const m of wrap.querySelectorAll("[data-qm-place]")) {
+        const src = document.getElementById(m.dataset.qmPlace);
+        if (!src) { m.hidden = true; continue; }
+        if (m.options.length !== src.options.length || m.options[0]?.textContent !== src.options[0]?.textContent) m.innerHTML = src.innerHTML;
+        m.value = src.value; m.hidden = src.hidden; m.setAttribute("aria-label", src.getAttribute("aria-label") || "");
+      }
+    }
+    /** A pick made in the sheet re-renders the screen (and this ⋮), so the sheet is opened again for a moment after: changing the unit
+        type brings new pickers, and the reader should not have to open ⋮ again for each one. */
+    let studySheetKeepOpenAt = 0;
+    function reopenStudySheet() {
+      if (Date.now() - studySheetKeepOpenAt > 4000) return;
+      readQuickMenuSlot.querySelector("[data-qm-toggle]")?.click();
+    }
+    readQuickMenuSlot.addEventListener("change", (e) => {
+      const m = e.target.closest?.("[data-qm-place]"); const src = m && document.getElementById(m.dataset.qmPlace); if (!src) return;
+      studySheetKeepOpenAt = Date.now();
+      src.value = m.value; src.dispatchEvent(new Event("change", { bubbles: true }));
+    });
     /** An open ⋮ sheet is taller now (every button is a tile). Held on screen: it opens on the side of ⋮ with more room, above the tabs and
         the Zab bar, and scrolls inside itself when that side is still short (the same rule ⋯ More tools had, placeReadTools). */
     function fitQuickSheet(wrap) {
@@ -26758,6 +26811,13 @@
         // means the whole Range/Whole Surah/etc., which a flow view is
         // exactly suited to.
         readQuickMenuSlot.innerHTML = "";
+        // PCF MSA J132: the bar's ⋮ is where Study lives now, so a flow (Read on) keeps a ⋮ with ONLY the Study group, Text size and Mark
+        // complete: nothing in it is about one āyah, which is why the per-āyah items stay on each āyah's own badge.
+        if (!isMushaf) {
+          readQuickMenuSlot.innerHTML = renderQuickMenu(ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf()), { sheet: true, studyOnly: true, studyBlock: studyGroupHtml(), extraTiles: barUnitTilesHtml() });
+          attachAyahQuickMenus(readQuickMenuSlot);
+          reopenStudySheet();
+        }
         // PCF MSA J114: the Mushaf prints the āyāt as one page of text and has no ⋮ beside an āyah, so the bar carries it, for
         // the āyah the ◂ ▸ last stopped at (refreshMushafBarMenu).
         if (isMushaf) refreshMushafBarMenu();
@@ -26837,7 +26897,7 @@
         // button of its own to mean one specific āyah.
         readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, {
           hasNote: ayahHasAnyNote(singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: true,
-          sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(), extraTiles: barUnitTilesHtml(),
+          sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(), extraTiles: barUnitTilesHtml(), studyBlock: studyGroupHtml(),
           // Text-tools round -- Word by Word / Root / Derivatives / Collapse,
           // the same group the Note view's own ⋮ carries. Not offered in
           // Mushaf mode, which replaces those choices rather than sharing
@@ -26848,6 +26908,7 @@
           isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
         });
         attachAyahQuickMenus(readQuickMenuSlot);
+        reopenStudySheet();
       }
       renderPersistentWordCard();
 
@@ -27669,8 +27730,9 @@
       if (!mushafToggle.checked || !currentSurahData) { return; }
       const key = ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf());
       const marked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: key });
-      readQuickMenuSlot.innerHTML = renderQuickMenu(key, { hasNote: ayahHasAnyNote(key), isBookmarked: marked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(), extraTiles: barUnitTilesHtml() });
+      readQuickMenuSlot.innerHTML = renderQuickMenu(key, { hasNote: ayahHasAnyNote(key), isBookmarked: marked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(), extraTiles: barUnitTilesHtml(), studyBlock: studyGroupHtml() });
       attachAyahQuickMenus(readQuickMenuSlot);
+      reopenStudySheet();
     }
     // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two stops: 6 then 7.
     function stepAyahBy(dir) {

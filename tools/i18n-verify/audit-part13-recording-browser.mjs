@@ -10,7 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, STUDY_TILES, clickStudyTile } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -86,7 +86,8 @@ async function openBarCard(page) {
     await page.click("#readToolsBtn"); await page.waitForTimeout(250);
   }
 }
-async function tapBar(page, sel) { await openBarCard(page); await page.click(sel); }
+// UPDATED IN PLACE, MSA · QR J132 (the Owner, 10 Nov 2026: "Study moves to dot"): the three buttons are tiles in the ⋮ sheet's Study group now.
+async function tapBar(page, sel) { if (STUDY_TILES[sel]) return clickStudyTile(page, sel); await openBarCard(page); await page.click(sel); }
 // The week the Monitor page actually read: the date at the end of the activity document id it fetched (t1__p1__<weekKey>).
 const weekKeyRead = (page) => ev(page, () => ((window.__fsLog || []).find((x) => x.kind === "getDoc" && x.col === "activity")?.id || "").match(/(\d{4}-\d\d-\d\d)$/)?.[1] ?? null);
 const settle = (page, ms = 500) => page.waitForTimeout(ms);
@@ -113,8 +114,9 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   await flow("bar", lang, width, async (t, page, ctx, errors) => {
     await openRead(page);
     const vw = width, vh = width > 600 ? 900 : 844;
-    await openBarCard(page);
-    const bar = await ev(page, () => [...document.querySelectorAll("#readApproachBar button")].map((b) => { const r = b.getBoundingClientRect(); return { id: b.id, w: r.width, h: r.height, r: r.right, l: r.left }; }));
+    await ev(page, () => { if (!document.querySelector("#readQuickMenuSlot .quick-menu")?.classList.contains("open")) document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.click(); }); await settle(page, 300);
+    const bar = await ev(page, () => ['approach', 'record', 'status'].map((k) => document.querySelector(`#readQuickMenuSlot [data-qm-act="${k}"]`)).map((b) => { const r = b.getBoundingClientRect(); return { id: { approach: "readBarTakeBtn", record: "readBarRecordBtn", status: "readBarStatusBtn" }[b.dataset.qmAct], w: r.width, h: r.height, r: r.right, l: r.left }; }));
+    await ev(page, () => document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.click()); await settle(page, 200);
     if (PROBE) console.log(t, JSON.stringify(bar));
     check(`${t}: POSITIVE CONTROL the bar has Take / Record / Status buttons`, bar.map((b) => b.id).join() === "readBarTakeBtn,readBarRecordBtn,readBarStatusBtn", JSON.stringify(bar));
     check(`${t}: the three buttons sit inside the screen and are tap targets (>=36px high)`, bar.every((b) => b.w > 0 && b.l >= 0 && b.r <= vw + 1 && b.h >= 36), JSON.stringify(bar));

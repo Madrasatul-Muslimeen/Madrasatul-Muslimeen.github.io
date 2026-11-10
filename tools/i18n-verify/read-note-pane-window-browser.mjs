@@ -43,7 +43,8 @@ DATA.notes = [...(DATA.notes ?? []), ...${JSON.stringify(NOTES)}];`;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
 async function makeCtx(lang, width, height, rect = null) {
-  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height }, extraSeedJs: SEED });
+  // legacyTools: drives the retired ⋯ path (PCF MSA J114 ONE menu); the pane is reached through the retired 📝, see openPane().
+  const ctx = await newContext(browser, { legacyTools: true, appLang: lang, banner: false, viewport: { width, height }, extraSeedJs: SEED });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   // J72: a remembered place is the shared home rect now (n72a A), so it is seeded there too
   if (rect) await ctx.addInitScript((r) => { try { if (!localStorage.getItem("mmsa-read-note-window")) { localStorage.setItem("mmsa-read-note-window", JSON.stringify(r)); localStorage.setItem("mmsa-home-window-v1", JSON.stringify({ ...r, user: true })); } } catch { /* */ } }, rect);
@@ -64,7 +65,17 @@ async function openPane(ctx) {
   await ev(() => { const el = document.getElementById("ayahSelect"); el.value = "256"; el.dispatchEvent(new Event("change", { bubbles: true })); });
   await P.waitForTimeout(900);
   await ev(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
-  await clickReadTool(P, "#readNotesBtn");
+  // UPDATED IN PLACE 10 Nov 2026 (MSA · QR J130 follow-up, the Architect 94L), as read-note-pane-browser does: the Notes pane has had
+  // no route since J114 (the Owner, PCF MSA J114 n114b, 7 Nov 2026: "2.F"), but its code (and this window) is kept, so this suite
+  // still tests it: it asserts the retirement first, then puts the old 📝 back with a style rule.
+  check(`J114: the bar's 📝 is retired from sight (the pane has no route; this suite shows it on purpose)`, await ev(() => getComputedStyle(document.getElementById("readNotesBtn")).display === "none"));
+  await P.addStyleTag({ content: "#readBar #readNotesBtn { display: inline-flex !important; }" });
+  // Below 900px the 📝 lived in the ⋯ tools menu: open ⋯ first, then press 📝 itself (NOT clickReadTool, whose fallback is the
+  // ⋮ sheet's Notes tile, which opens Mapping My Journey rather than the pane).
+  if (await ev(() => (document.getElementById("readNotesBtn")?.getBoundingClientRect().width ?? 0) === 0 && (document.getElementById("readToolsBtn")?.getBoundingClientRect().width ?? 0) > 0)) {
+    await P.click("#readToolsBtn"); await P.waitForTimeout(200);
+  }
+  await P.click("#readNotesBtn");
   await P.waitForFunction(() => document.querySelector("#readNotePane:not([hidden]) iframe"), null, { timeout: 8000 });
   await P.waitForTimeout(300);
   return P;

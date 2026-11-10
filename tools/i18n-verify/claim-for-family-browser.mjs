@@ -6,7 +6,7 @@
 // are written by hand from the fixture (p1 Ahsan, p2 Maryam). en/bn at 390 and 1100.
 //   --mutate=self-only   claimApproachStatus writes only for the Student again -> the two-person checks fail
 //   --mutate=no-picker   the picker is never mounted                           -> the picker checks fail
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, clickStudyTile } from "./harness.mjs";
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -51,7 +51,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1100]) {
   await ev(() => { const s = document.getElementById("unitTypeSelect"); s.value = "page"; s.dispatchEvent(new Event("change", { bubbles: true })); }); await P.waitForTimeout(1000);
   await ev(() => { const m = document.getElementById("mushafToggle"); if (m && !m.checked) { m.checked = true; m.dispatchEvent(new Event("change", { bubbles: true })); } }); await P.waitForTimeout(800);
   await P.waitForFunction(() => Number.isFinite(Number(document.getElementById("mushafPageRef")?.dataset.page)), null, { timeout: 15000 }).catch(() => {});
-  await P.click("#readBarRecordBtn");
+  await clickStudyTile(P, "#readBarRecordBtn"); // MSA · QR J132: a tile in the ⋮ Study group
   await P.waitForFunction(() => !!document.querySelector("#pageApproachSelect"), null, { timeout: 8000 }).catch(() => {});
   const picker = await ev(() => { const t = document.querySelector("[data-gac-record-title]"), r = document.querySelector("[data-claim-for]"); const b = r?.querySelector("[data-assign-trigger]")?.getBoundingClientRect(); return r ? { after: t?.nextElementSibling === r && t.parentElement.classList.contains("claim-for-line"), label: r.querySelector("[data-assign-trigger-label]")?.textContent, h: b?.height ?? 0, inside: !!b && b.left >= 0 && b.right <= innerWidth, rows: [...r.querySelectorAll("[data-assign-list] input")].map((i) => [i.value, i.checked]) } : null; });
   check(`${tag}: "This page" card: 👥 sits beside "Record Your Progress", on its line`, !!picker?.after, JSON.stringify(picker));
@@ -84,7 +84,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1100]) {
   // the Unit Card (text view) carries it too, and remembers Maryam
   await ev(() => { document.querySelector("[data-ayah-sheet-close], .ayah-sheet-close")?.click(); });
   await ev(() => { const m = document.getElementById("mushafToggle"); if (m && m.checked) { m.checked = false; m.dispatchEvent(new Event("change", { bubbles: true })); } }); await P.waitForTimeout(800);
-  await P.click("#readBarRecordBtn").catch(() => {});
+  await clickStudyTile(P, "#readBarRecordBtn").catch(() => {});
   await P.waitForFunction(() => !!document.querySelector("#unitCardApproachSelect"), null, { timeout: 8000 }).catch(() => {});
   check(`${tag}: the Unit Card has 👥 too, still on Maryam`, (await ev(() => document.querySelector("[data-claim-for] [data-assign-trigger-label]")?.textContent)) === NAMES[lang][1]);
   check(`${tag}: no sideways scroll`, await ev(() => document.documentElement.scrollWidth <= innerWidth + 1));
