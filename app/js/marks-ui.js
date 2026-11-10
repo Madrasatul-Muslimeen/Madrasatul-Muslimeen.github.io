@@ -134,7 +134,7 @@ export function marksLegendHtml(lang = "en") {
 /** CSS for everything above, in the page's own colours; one place, appended once by the page. */
 export const MARKS_CSS = `
 .marks-row { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem .6rem; margin:.4rem 0; }
-.marks-row { --mk-label:#c9d3ea; --mk-hard:#ef7a64; --mk-practice:#e5b04a; --mk-done:#58c08c; --mk-on:#0e1630; }
+.marks-row { --mk-label:#c9d3ea; --mk-hard:#f89480; --mk-practice:#e5b04a; --mk-done:#58c08c; --mk-on:#0e1630; }
 [data-card-look="light"] .marks-row { --mk-label:#46536b; --mk-hard:#b3321d; --mk-practice:#7a5410; --mk-done:#1b6f45; --mk-on:#ffffff; }
 .marks-row-label { font-size:.82rem; color:var(--mk-label); }
 .marks-row-buttons { display:flex; flex-wrap:wrap; gap:.4rem; }

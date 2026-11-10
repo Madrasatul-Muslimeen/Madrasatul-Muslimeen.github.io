@@ -166,7 +166,7 @@ export function effortTableHtml(tally, { lang = "en", scopeLabel = "", countLabe
  * palette per card look: light tones on the Night card, deep tones on the Light card (a palette belongs to a SURFACE).
  */
 export const WORD_EFFORT_CSS = `
-.we-row { --we-known:#6aa8e8; --we-hard:#ef7a64; --we-learn:#e5b04a; --we-easy:#58c08c; --we-very:#b48be6; --we-on:#0e1630; margin:.4rem 0; }
+.we-row { --we-known:#6aa8e8; --we-hard:#f89480; --we-learn:#e5b04a; --we-easy:#58c08c; --we-very:#b48be6; --we-on:#0e1630; margin:.4rem 0; }
 [data-card-look="light"] .we-row { --we-known:#1f5f9f; --we-hard:#b3321d; --we-learn:#7a5410; --we-easy:#1b6f45; --we-very:#5a2c94; --we-on:#ffffff; }
 .we-label { display:block; font-size:.82rem; margin-bottom:.25rem; opacity:.85; }
 .we-buttons { display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:.4rem; }
@@ -186,6 +186,6 @@ export const WORD_EFFORT_CSS = `
 .we-table th, .we-table td { text-align:start; padding:.3rem .4rem; border-bottom:1px solid rgba(143,160,194,.35); }
 .we-table .n { text-align:end; } .we-of { opacity:.85; }
 .we-swatch { display:inline-block; width:.7rem; height:.7rem; border-radius:3px; margin-inline-end:.4rem; vertical-align:-1px; }
-.we-swatch-known { background:var(--we-known,#6aa8e8); } .we-swatch-easy { background:var(--we-easy,#58c08c); } .we-swatch-hard { background:var(--we-hard,#ef7a64); } .we-swatch-very { background:var(--we-very,#b48be6); }
+.we-swatch-known { background:var(--we-known,#6aa8e8); } .we-swatch-easy { background:var(--we-easy,#58c08c); } .we-swatch-hard { background:var(--we-hard,#f89480); } .we-swatch-very { background:var(--we-very,#b48be6); }
 @media (max-width:520px) { .we-buttons { grid-template-columns:repeat(3,minmax(0,1fr)); } .we-row .we-btn { font-size:.8rem; padding:.25rem .25rem; } }
 `;
