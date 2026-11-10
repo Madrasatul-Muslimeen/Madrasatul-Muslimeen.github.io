@@ -4710,6 +4710,11 @@
   /* Owner, 3 Oct 2026 -- the "Unknown" side of the Mark words switch: a light
      amber, so a reader can always tell which of the two is showing. */
   .hifz-word.is-unknown-word:not(.playing), button.wbw-word-clickable.is-unknown-word, .ayah-word-clickable.is-unknown-word { background-color: rgba(214,140,20,0.18); border-radius: 0.25em; }
+  /* MSA · QR (the Owner, 10 Nov 2026, screenshot of Al-Baqarah 2:16): words whose progress is "Practising" get their OWN light tint, a violet that
+     is not the amber of "still to learn" nor the green of "known"; it wins over both when they meet (a practising word is neither). */
+  .hifz-word.is-practising-word:not(.playing), button.wbw-word-clickable.is-practising-word, .ayah-word-clickable.is-practising-word { background-color: rgba(124,92,214,0.20); border-radius: 0.25em; }
+  [data-card-look="night"] .hifz-word.is-practising-word:not(.playing), [data-card-look="night"] button.wbw-word-clickable.is-practising-word, [data-card-look="night"] .ayah-word-clickable.is-practising-word { background-color: rgba(178,150,255,0.26); }
+
   [data-card-look="night"] .hifz-word.is-unknown-word:not(.playing), [data-card-look="night"] button.wbw-word-clickable.is-unknown-word, [data-card-look="night"] .ayah-word-clickable.is-unknown-word { background-color: rgba(255,193,94,0.20); }
   .mark-words-row { display: grid; gap: 0.35rem; margin-top: 0.5rem; }
   .mark-words-title { font-weight: 700; font-size: 0.9rem; }
@@ -18805,6 +18810,21 @@
         delete el.dataset.unknownBaseName;
       }
     }
+    // MSA · QR (the Owner, 10 Nov 2026): a word whose progress is "Practising" is tinted light violet.
+    function setPractisingWordMark(el, practising) {
+      if (el.classList.contains("is-practising-word") === practising) return;
+      el.classList.toggle("is-practising-word", practising);
+      if (practising) {
+        el.dataset.practisingBaseName = el.getAttribute("aria-label") ?? el.textContent.trim();
+        el.setAttribute("aria-label", `${el.dataset.practisingBaseName} — ${statusLabel("practising")}`);
+      } else {
+        if (el.dataset.practisingBaseName !== undefined) {
+          if (el.dataset.practisingBaseName) el.setAttribute("aria-label", el.dataset.practisingBaseName);
+          else el.removeAttribute("aria-label");
+        }
+        delete el.dataset.practisingBaseName;
+      }
+    }
     /** The share of the Qur'an this person knows, 0–1: the best of the three
      *  levels' "You know" totals (a word is marked known when ANY level makes
      *  it known), or null when the totals cannot be read. Cached by
@@ -18831,7 +18851,7 @@
       const mode = getMarkWordsMode();
       document.querySelectorAll("[data-mark-words-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.markWordsMode === mode)));
       const note = document.getElementById("markWordsNote");
-      if (note) note.textContent = markWordsNoteText(mode, shows ?? markWordsShows(mode, share), share);
+      if (note) note.textContent = `${markWordsNoteText(mode, shows ?? markWordsShows(mode, share), share)} ${t("Words you are practising are always marked in light violet.")}`;
     }
     function setKnownWordMark(el, known) {
       if (el.classList.contains("is-known-word") === known) return;
@@ -18851,13 +18871,14 @@
       knownWordMarksRequest++;
       document.querySelectorAll(".is-known-word[data-word-occurrence]").forEach((el) => setKnownWordMark(el, false));
       document.querySelectorAll(".is-unknown-word[data-word-occurrence]").forEach((el) => setUnknownWordMark(el, false));
+      document.querySelectorAll(".is-practising-word[data-word-occurrence]").forEach((el) => setPractisingWordMark(el, false));
     }
     async function refreshKnownWordMarks() {
       const requestId = ++knownWordMarksRequest;
       const { tenantId, subjectPersonId } = wordProgressActor();
       const initial = knownWordElements();
       if (!initial.length) return;
-      if (!tenantId || !subjectPersonId) { initial.forEach((el) => { setKnownWordMark(el, false); setUnknownWordMark(el, false); }); return; }
+      if (!tenantId || !subjectPersonId) { initial.forEach((el) => { setKnownWordMark(el, false); setUnknownWordMark(el, false); setPractisingWordMark(el, false); }); return; }
       try {
         const bySurah = new Map();
         for (const el of initial) {
@@ -18868,6 +18889,7 @@
         }
         const confirmationRequired = !!(await wordProgressConfirmationRequired(tenantId, subjectPersonId));
         const known = new Set();
+        const practising = new Set();
         const realWords = new Set();
         for (const [surahNum, ids] of bySurah) {
           const surahData = await getSurah(surahNum);
@@ -18878,6 +18900,21 @@
           const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
           const views = effectiveViewsForScope(surahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
           for (const occ of scope) if (views.get(occ)?.countsAsKnown) known.add(occ);
+          // MSA · QR: "Practising" -- the word's own mark, or its dictionary word's (the Word card's WbW buttons claim lemma-wide);
+          // a word that already counts as known is not practising.
+          for (const occ of scope) {
+            if (known.has(occ)) continue;
+            let lemmaState = null;
+            if (isLemmaProgressPersistenceReady()) {
+              try {
+                const r = parseQuranWordOccurrenceId(occ);
+                const w = surahData?.ayahs?.find((x) => x.ayah === r.ayah)?.words?.find((x) => x.position === r.position);
+                const lemmaId = w ? wbwClaimKey(w) : null;
+                if (lemmaId) lemmaState = lemmaViewWithGroup({ tenantId, personId: subjectPersonId, lemmaId, root: w?.morphology?.root, confirmationRequired })?.state ?? null;
+              } catch { /* no lemma view for this word */ }
+            }
+            if (rawViews.get(occ)?.state === "practising" || lemmaState === "practising") practising.add(occ);
+          }
           // Only a real word of the surah may be marked "still to learn"
           // (never an āyah-end marker or anything else carrying an id).
           for (const occ of scope) {
@@ -18896,7 +18933,9 @@
         for (const el of knownWordElements()) {
           const isKnown = known.has(el.dataset.wordOccurrence);
           setKnownWordMark(el, shows === "known" && isKnown);
-          setUnknownWordMark(el, shows === "unknown" && !isKnown && realWords.has(el.dataset.wordOccurrence));
+          const isPractising = practising.has(el.dataset.wordOccurrence);
+          setUnknownWordMark(el, shows === "unknown" && !isKnown && !isPractising && realWords.has(el.dataset.wordOccurrence));
+          setPractisingWordMark(el, isPractising);
         }
       } catch (error) {
         console.warn("known-word marks unavailable", error); // decoration only: never a write, never blocks reading
