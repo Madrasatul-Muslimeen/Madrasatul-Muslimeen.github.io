@@ -2284,6 +2284,7 @@ export const BN = {
   // Round 3 -- the A4 poster + screensaver.
   "QuranRevival · Asma ul Husna": "কুরআনরিভাইভাল · আসমাউল হুসনা",
   "Poster": "পোস্টার",
+  "Posters need the internet": "পোস্টার দেখতে ইন্টারনেট লাগে",
   "Print": "প্রিন্ট",
 
   // Asma-in-Explore round -- AH as a second Explore topic + Note-view Topic.
