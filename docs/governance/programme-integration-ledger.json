@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.04",
+    "version": "14.05",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6737,7 +6737,7 @@
     {
       "version": "14.04",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Word Card menu and Āyah card bar (MSA · QR J125, J131; #1583, #1585)",
       "integration": {
         "authorizedOn": "2026-11-09",
@@ -6745,10 +6745,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "14.05",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Three QR Lead rounds: J135 Word Card marks renamed and Learn starts the practise round (#1586); J133 Learn next level switch with a lazily loaded levels file (#1588); J134 the card's Bangla switch OFF for each new word (#1590).",
+      "integration": {
+        "authorizedOn": "2026-11-10",
+        "integratedOn": "2026-11-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "14.05",
+  "nextUnallocated": "14.06",
   "nextUnallocatedNote": [
+    "v14.05 was allocated to Word Card marks Difficult · Learn · Learned, Learn next level switch, Bangla switch OFF per new word (MSA · QR J135, J133, J134), 2026-11-10.",
     "v14.04 was allocated to Word Card ☰ menu (J125) and the Āyah card bar: no –, ← beside ×, 📝 Note beside 📖 (J131), 2026-11-09.",
     "v14.03 was allocated to four Quran Study fixes: Word card marks row (J128), intention strip wraps (J124), level titles (J126), Last read (J123), 2026-11-09.",
     "v14.02 was allocated to the Owner's al-Wāqiʿah recording as a reciter (MSA · QR J121, #1566), 2026-11-09.",
