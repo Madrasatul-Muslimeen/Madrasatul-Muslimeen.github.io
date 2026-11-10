@@ -36,6 +36,7 @@
 //   --mutate=no-multi-filing    a kept Note keeps only its first filing                  -> section 7 "both folders" FAILS
 //   --mutate=no-copy-kept       a kept copy still tries to tag itself offline            -> section 7 "tags" FAILS
 //   --mutate=no-restore-outbox  a version brought back offline is not kept               -> section 7 "restore" FAILS
+//   --mutate=no-restore-words   a kept restore says "brought back" instead of "kept"     -> section 7 "in words" FAILS
 //   --mutate=notes-no-outbox    notes.html saves straight to Firestore again             -> section 9 FAILS
 //   --mutate=notes-no-evidence  the replay records no Journaling evidence                -> section 9 "evidence" FAILS
 //   --mutate=notes-no-overlay   notes.html ignores what the device holds                 -> section 9 "reopened" FAILS
@@ -67,6 +68,7 @@ const MUT = {
   "folder-last": [["app/js/note-outbox.js", "      const e = list.find((x) => (!actorUid", '      const e = [...list.filter((x) => x.kind !== "folder"), ...list.filter((x) => x.kind === "folder")].find((x) => (!actorUid']],
   "no-multi-filing": [["app/js/note-outbox.js", "  if (Array.isArray(e.placements)) return e.placements;", "  if (Array.isArray(e.placements)) return e.placements.slice(0, 1);"]],
   "no-copy-kept": [["app/journey-map.html", "        if (keptCopy) return made.created.noteId;\n", ""]],
+  "no-restore-words": [["app/js/note-window.js", 'host.status(host.keptOnDevice?.(n.noteId, newId) === true ? t("Kept on this device — it will be saved when you are online.") : t(', "host.status(false ? 0 : t("]],
   "no-restore-outbox": [["app/journey-map.html", "restore: (note, rev) => reviseKeepingOffline(db, {", "restore: (note, rev) => updatePermanentNoteContent(db, {"]],
   "notes-no-outbox": [
     ["app/notes.html", "          if (offlineNow()) return keep();\n          try {\n            return await createStudyNote(", "          try {\n            return await createStudyNote("],
