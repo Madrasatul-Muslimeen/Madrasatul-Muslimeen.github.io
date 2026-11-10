@@ -109,7 +109,16 @@ export { chromium };
 // same bookmark. A reader presses the one on screen, so this does too (behaviour.mjs crashed on the hidden twin, measured on v12.22-23,
 // stopping before sections 45-56).
 const READ_TOOL_TWINS = { "#readBookmarkBtn": "#readBarBookmarkBtn" };
+// MSA · QR J130 (a): since J114 (ONE ⋮ menu) #readNotesBtn and #readBookmarkBtn are display:none !important at every width (legacyTools does NOT bring
+// them back); the real route to each is its tile in the ⋮ sheet. clickReadTool falls back to the tile when the old button is not on screen and the ⋮ is.
+const READ_TOOL_TILES = { "#readNotesBtn": "#readQuickMenuSlot .qm-sheet [data-qm-note]", "#readBookmarkBtn": "#readQuickMenuSlot .qm-sheet [data-qm-bookmark]" };
 export async function clickReadTool(page, sel) {
+  const tile = READ_TOOL_TILES[sel];
+  const shownNow = (q) => page.evaluate((s) => (document.querySelector(s)?.getBoundingClientRect().width ?? 0) > 0, q);
+  if (tile && !(await shownNow(sel)) && !(await shownNow("#readBarBookmarkBtn"))) {
+    if (!(await shownNow(tile)) && (await shownNow("#readQuickMenuSlot .ayah-quick-btn"))) { await page.click("#readQuickMenuSlot .ayah-quick-btn"); await page.waitForTimeout(300); }
+    if (await shownNow(tile)) { await page.click(tile); return; }
+  }
   const twin = READ_TOOL_TWINS[sel];
   if (twin && await page.evaluate(([s, t]) => (document.querySelector(s)?.getBoundingClientRect().width ?? 0) === 0 && (document.querySelector(t)?.getBoundingClientRect().width ?? 0) > 0, [sel, twin])) sel = twin;
   const shown = await page.evaluate((s) => (document.querySelector(s)?.getBoundingClientRect().width ?? 0) > 0, sel);
