@@ -2419,6 +2419,8 @@
      Prev/Next/Play/Stop and, from 900px where #readToolsMenu is display:contents, Notes/Writing/Complete/Attach. The
      tools PANEL below 900px sets its own taller tiles, which this min-size does not touch. */
   #readBar .qr-ico { box-sizing: border-box; min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+  /* 11 Nov 2026: on the narrowest phones, while the way-back chip holds the bar's line, the quick 🔍 steps aside (search stays in Study options) so the bar gains no line. */
+  @media (max-width: 359px) { #readBar:has(#readBackSlot > *) #readSearchBtn { display: none; } }
   #readBar .qr-ico[hidden] { display: none; }
   /* The Owner, 11 Nov 2026: ☰ alone (no word) when the word would cost a row of the bar (fitReadListWord()). */
   #readBar #readListBtn.word-off .read-list-word { display: none; }
