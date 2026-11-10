@@ -3318,3 +3318,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.12** (2026-11-10): Notes offline: kept on the device, saved when online (J120 O3).
 - **v14.13** (2026-11-10): Read view ⋮ sheet room and Study picker widths.
 - **v14.14** (2026-11-10): Notes offline part 2 (PCF MSA J120 O3b).
+- **v14.15** (2026-11-10): Your own records ready offline (PCF MSA J120 O4).

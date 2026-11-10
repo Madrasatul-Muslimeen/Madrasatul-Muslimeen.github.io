@@ -51,6 +51,11 @@ export const auth = getAuth(firebaseApp);
 export const db = initializeFirestore(firebaseApp, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
+    // PCF MSA J120 O4: "Get ready for offline" keeps a copy of the reader's own Notes, folders, Records and Bookmarks
+    // in this on-device database (offline-own-data.js). The SDK's default size is 40 MB, past which it clears the
+    // least recently used documents -- a large Notes library (the Owner's WordPress import) could lose part of its
+    // copy. 200 MB keeps it whole. Storage only: no network read is added anywhere (I9).
+    cacheSizeBytes: 200 * 1024 * 1024,
   }),
 });
 
