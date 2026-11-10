@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.19",
+    "version": "14.20",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6917,8 +6917,20 @@
     {
       "version": "14.19",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Quran Study: save a sūrah's recitation for offline; the worker serves only saved files (J120 O6, QR Lead + Architect review).",
+      "integration": {
+        "authorizedOn": "2026-11-10",
+        "integratedOn": "2026-11-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "14.20",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "PCF MSA J110 / qr46lstripe01 the āyah status stripe round 1 (#1630) and PCF MSA J136 the Owner-published effort Rules adopted with the flag on (#1631).",
       "integration": {
         "authorizedOn": "2026-11-10",
         "integratedOn": "2026-11-10",
@@ -6927,8 +6939,9 @@
       }
     }
   ],
-  "nextUnallocated": "14.20",
+  "nextUnallocated": "14.21",
   "nextUnallocatedNote": [
+    "v14.20 was allocated to Ayah stripe round 1 + J136 effort Rules on, 2026-11-10.",
     "v14.19 was allocated to Recitation saved for offline per sūrah (PCF MSA J120 O6), 2026-11-10.",
     "v14.18 was allocated to The Asma poster says it needs the internet (PCF MSA J120 O5, QR part 2), 2026-11-10.",
     "v14.17 was allocated to Recitation and posters say they need the internet (PCF MSA J120 O5, QR part), 2026-11-10.",

@@ -3323,3 +3323,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.17** (2026-11-10): Recitation and posters say they need the internet (PCF MSA J120 O5, QR part).
 - **v14.18** (2026-11-10): The Asma poster says it needs the internet (PCF MSA J120 O5, QR part 2).
 - **v14.19** (2026-11-10): Recitation saved for offline per sūrah (PCF MSA J120 O6).
+- **v14.20** (2026-11-10): Ayah stripe round 1 + J136 effort Rules on.

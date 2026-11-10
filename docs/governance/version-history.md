@@ -1122,3 +1122,4 @@ total). Allocated by the MMSA Architect.
 14.17: Recitation and posters say they need the internet (PCF MSA J120 O5, QR part). Allocated by the MMSA Architect.
 14.18: The Asma poster says it needs the internet (PCF MSA J120 O5, QR part 2). Allocated by the MMSA Architect.
 14.19: Recitation saved for offline per sūrah (PCF MSA J120 O6). Allocated by the MMSA Architect.
+14.20: Ayah stripe round 1 + J136 effort Rules on. Allocated by the MMSA Architect.
