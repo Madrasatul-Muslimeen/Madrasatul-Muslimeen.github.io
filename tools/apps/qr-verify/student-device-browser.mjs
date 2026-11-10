@@ -109,8 +109,16 @@ window.__sd = {
       // Scrolled out of view inside a scrolling panel: scrolling reaches it, as covered() already says (the MSA-QR-LEAD,
       // 23 Oct: #ayahPanels is 90px tall at 360x740 and the āyah number sat below it, so its tap test hit #studyScreen).
       if (window.__sd.clipped(el, cx, cy)) return false;
-      const hits = (y) => { if (y < 0 || y > innerHeight || cx < 0 || cx > innerWidth) return true; /* off the screen edge: scrolling reaches it, not a defect */ const h = document.elementFromPoint(cx, y); return !!h && (h === el || el.contains(h)); };
-      return !(hits(cy - 19) && hits(cy + 19)); })
+      const hitsAt = (x, y) => { if (y < 0 || y > innerHeight || x < 0 || x > innerWidth) return true; /* off the screen edge: scrolling reaches it, not a defect */ const h = document.elementFromPoint(x, y); return !!h && (h === el || el.contains(h)); };
+      if (hitsAt(cx, cy - 19) && hitsAt(cx, cy + 19)) return false;
+      // MSA · QR J130 (c): a control low in a scrolling page can sit under the fixed dock / Zab corner until it is scrolled up (a Bangla Read view at
+      // 360x740 puts the first āyah's number there). Scrolling reaches it, so it is judged where scrolling puts it; every scroll is put back.
+      const saved = [[null, scrollX, scrollY]]; for (let q = el.parentElement; q; q = q.parentElement) if (q.scrollHeight > q.clientHeight) saved.push([q, q.scrollLeft, q.scrollTop]);
+      el.scrollIntoView({ block: "center", inline: "nearest" });
+      const r2 = el.getBoundingClientRect(), x2 = r2.left + r2.width / 2, y2 = r2.top + r2.height / 2;
+      const reached = hitsAt(x2, y2 - 19) && hitsAt(x2, y2 + 19);
+      for (const [q, l, t] of saved) { if (q) { q.scrollLeft = l; q.scrollTop = t; } else scrollTo(l, t); }
+      return !reached; })
     .map((el) => (el.id || el.className || el.tagName) + ":" + Math.round(el.getBoundingClientRect().height)),
   clipped: (el, x, y) => { for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) { const o = getComputedStyle(p); if (/(auto|scroll|hidden|clip)/.test(o.overflowY + o.overflowX)) { const r = p.getBoundingClientRect(); if (x < r.left || x > r.right || y < r.top || y > r.bottom) return true; } } return false; },
   covered: (root) => [...(root || document).querySelectorAll("button, a[href], select")]
@@ -463,12 +471,19 @@ try {
         + '<p id="sdEn">This sentence is plain English prose</p>'
         + '<p id="sdLow" style="color:#777;background:#888">low</p>'
         + '<div id="sdWide" style="position:absolute;left:0;top:0;width:' + (innerWidth + 300) + 'px;height:5px"></div>'
-        + '<div style="position:fixed;left:5px;top:300px;width:100px;height:60px;overflow:auto;z-index:1"><div style="height:200px"></div><button id="sdScrolled" style="height:20px">y</button></div>';
+        + '<div style="position:fixed;left:5px;top:300px;width:100px;height:60px;overflow:auto;z-index:1"><div style="height:200px"></div><button id="sdScrolled" style="height:20px">y</button></div>'
+        // J130 (c): a 24px button with a 40px tap pad (the āyah number) under a fixed bar at the bottom. In a page that scrolls, scrolling clears it (NOT counted);
+        // in one that cannot scroll, nothing can (counted).
+        + '<style>.sdPad{position:relative;height:24px;width:60px}.sdPad::after{content:"";position:absolute;top:50%;left:50%;width:44px;height:44px;transform:translate(-50%,-50%)}</style>'
+        + '<div style="position:fixed;left:0;bottom:0;width:100%;height:12vh;z-index:9;background:blue"></div>'
+        + '<div style="position:fixed;left:150px;top:0;width:90px;height:100vh;overflow:auto;z-index:1"><div style="height:85vh"></div><button class="sdPad" id="sdPadScroll">p</button><div style="height:100vh"></div></div>'
+        + '<div style="position:fixed;left:250px;top:0;width:90px;height:100vh;overflow:auto;z-index:1"><div style="height:85vh"></div><button class="sdPad" id="sdPadStuck">q</button></div>';
       document.body.append(d);
       return { smallIds: window.__sd.small(d), small: window.__sd.small(d).length, covered: window.__sd.covered(d).length, english: window.__sd.english().length, sideways: window.__sd.sideways(), low: window.__sd.contrast(document.getElementById("sdLow")) };
     });
     check("POSITIVE CONTROL small: an injected 20px button is found", pc.small >= 1, JSON.stringify(pc));
     check("small: a 20px button scrolled out of view inside a scrolling panel is NOT counted (scrolling reaches it)", !pc.smallIds.some((x) => x.startsWith("sdScrolled:")) && pc.smallIds.some((x) => x.startsWith("sdSmall:")), JSON.stringify(pc.smallIds));
+    check("small: a 24px button with a tap pad under the fixed bar is NOT counted when scrolling clears it, and IS counted when nothing can scroll (J130 c)", !pc.smallIds.some((x) => x.startsWith("sdPadScroll:")) && pc.smallIds.some((x) => x.startsWith("sdPadStuck:")), JSON.stringify(pc.smallIds));
     check("POSITIVE CONTROL covered: an injected button under an overlay is found", pc.covered >= 1, JSON.stringify(pc));
     check("POSITIVE CONTROL english: English prose on a Bangla page is found", pc.english >= 1, JSON.stringify(pc));
     check("POSITIVE CONTROL sideways: an injected over-wide block is found", pc.sideways > 0, JSON.stringify(pc));

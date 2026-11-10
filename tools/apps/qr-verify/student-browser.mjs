@@ -177,21 +177,27 @@ async function flows(auth, lang, [w, h]) {
   await page.evaluate(() => { const s = document.getElementById("readSurahSelect"); s.value = "1"; s.dispatchEvent(new Event("change", { bubbles: true })); });
   await settle(page, 1000);
   const vis = (sel) => page.evaluate((q) => { const e = document.querySelector(q); return !!e && e.getBoundingClientRect().width > 0; }, sel);
-  // PCF MSA J99 part 2 (v12.7x, 25 Oct): below 600px the three study buttons live in the Read bar's ⋯ card, so open it first.
+  // MSA · QR J130 (b): since J114 (ONE ⋮ menu) the three study buttons on a phone are tiles in the ⋮ sheet (the ⋯ card is retired from sight), so
+  // open the ⋮ sheet and press the tile; at 600px and up they are still on the Read bar.
+  const sheetTile = (act) => `#readQuickMenuSlot .qm-sheet [data-qm-act="${act}"]`;
+  const pressStudy = async (barSel, act) => {
+    if (w >= 600) { await page.click(barSel); return; }
+    if (!(await vis(sheetTile(act)))) { await page.click("#readQuickMenuSlot .ayah-quick-btn"); await settle(page, 400); }
+    await page.click(sheetTile(act));
+  };
   if (w < 600) {
-    check(`${tag}: POSITIVE CONTROL on a phone the three study buttons are inside the closed ⋯ card`, await page.evaluate(() => !!document.getElementById("readBarTakeBtn")?.closest("#readToolsMenu")));
-    await page.click("#readToolsBtn"); await settle(page, 400);
+    check(`${tag}: POSITIVE CONTROL on a phone the three study buttons are tiles in the closed ⋮ sheet`, !(await vis(sheetTile("status"))) && (await page.evaluate(() => ["approach", "record", "status"].every((a) => !!document.querySelector(`#readQuickMenuSlot [data-qm-act="${a}"]`)))));
+    await page.click("#readQuickMenuSlot .ayah-quick-btn"); await settle(page, 400);
   }
-  check(`${tag}: the Take / Record / Status bar shows`, (await vis("#readBarTakeBtn")) && (await vis("#readBarRecordBtn")) && (await vis("#readBarStatusBtn")));
+  check(`${tag}: the Take / Record / Status ${w < 600 ? "tiles show in the ⋮ sheet" : "bar shows"}`, w < 600 ? (await vis(sheetTile("approach"))) && (await vis(sheetTile("record"))) && (await vis(sheetTile("status"))) : (await vis("#readBarTakeBtn")) && (await vis("#readBarRecordBtn")) && (await vis("#readBarStatusBtn")));
   // Know Your Status
-  await page.click("#readBarStatusBtn"); await settle(page, 1200);
+  await pressStudy("#readBarStatusBtn", "status"); await settle(page, 1200);
   const st = await page.evaluate(() => ({ open: !document.getElementById("myStatusMount").hidden, text: document.getElementById("myStatusBody").innerText.length, close: document.getElementById("myStatusCloseBtn").getBoundingClientRect().width > 0 }));
   check(`${tag}: Know Your Status opens with its Approaches and a ✕`, st.open && st.text > 60 && st.close, JSON.stringify(st));
   await page.click("#myStatusCloseBtn"); await settle(page, 400);
   check(`${tag}: ✕ takes the student back to the Read view`, await page.evaluate(() => document.getElementById("myStatusMount").hidden && !document.getElementById("readView").hidden));
   // Record Your Progress: the write is the student's own claim
-  if (w < 600) { await page.click("#readToolsBtn"); await settle(page, 400); }
-  await page.click("#readBarRecordBtn"); await settle(page, 900);
+  await pressStudy("#readBarRecordBtn", "record"); await settle(page, 900);
   const picked = await waitFor(`${tag}: Record Your Progress card`, () => page.selectOption("#ayahSheetApproachSelect", "recite").then(() => true));
   if (picked) {
     await settle(page, 400);
@@ -207,8 +213,7 @@ async function flows(auth, lang, [w, h]) {
   }
   await page.evaluate(() => document.querySelectorAll("#ayahActionSheetOverlay.open [data-ayah-sheet-close]").forEach((b) => b.click())); await settle(page, 300);
   // Take an Approach: the wheel
-  if (w < 600) { await page.click("#readToolsBtn"); await settle(page, 400); }
-  await page.click("#readBarTakeBtn"); await settle(page, 1200);
+  await pressStudy("#readBarTakeBtn", "approach"); await settle(page, 1200);
   const tk = await page.evaluate(() => ({ readHidden: document.getElementById("readView").hidden, segs: document.querySelectorAll("#wheelContainer .wheel-seg").length }));
   check(`${tag}: Take an Approach draws the Approach wheel`, tk.readHidden && tk.segs >= 3, JSON.stringify(tk));
   // Explore
