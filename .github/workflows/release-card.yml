@@ -1,0 +1,50 @@
+# G02 item K (PCA J86 pro1110d; the Owner's yes, 10 Nov 2026): after each MSA release, send the release's
+# Library card to the Owner's BwN Library, with no AI. A release is a push to main that changes
+# app/js/version.js (allocate-version.py always does). The card is built from version.js and the release's own
+# CHANGELOG.md heading by tools/governance/release-card.py, and sent by BwN's library/send_card.py, fetched from
+# its one home (BwN's site), never copied here. send_card.py needs no key (BwN's public web identifier), so this
+# workflow has no secret. Sending the same pid + cid again updates the same card, so a repeat is harmless.
+#
+# OFF UNTIL 18 NOV 2026 (Sydney), the Pro-plan switch-on (G02 section 6): before that date every run stops at the
+# first step and sends nothing; from that date it runs by itself, with no switch to flip.
+# THE WAY BACK: delete this file (or disable the workflow in Actions). Nothing else depends on it.
+
+name: release-card
+
+on:
+  push:
+    branches: [main]
+    paths: [app/js/version.js]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Re-send the card for this version (e.g. 14.06); empty = the version on main"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  card:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - id: gate
+        name: Off until 18 Nov 2026 (Sydney)
+        run: |
+          today=$(TZ=Australia/Sydney date +%Y%m%d)
+          if [ "$today" -lt 20261118 ]; then echo "on=false" >> "$GITHUB_OUTPUT"; echo "Off until 18 Nov 2026 (today $today): no card sent."; else echo "on=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.on == 'true'
+      - name: Build the card from version.js and CHANGELOG.md, then send it
+        if: steps.gate.outputs.on == 'true'
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/card"
+          python3 -I tools/governance/release-card.py $VERSION_INPUT > "$RUNNER_TEMP/card/card.json"
+          cat "$RUNNER_TEMP/card/card.json"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/card/send_card.py" https://basheerawanazeera.github.io/BasheeraWaNazeera/library/send_card.py
+          python3 -I "$RUNNER_TEMP/card/send_card.py" "$RUNNER_TEMP/card/card.json"
