@@ -5345,7 +5345,9 @@
      header takes two rows -- ‹ 🔍 [This āyah] … › × on the first (the button stays beside 🔍), the word and its root centred on
      the second -- rather than squeezing the word to nothing. */
   @container wordcard (max-width: 34rem) {
-    .quran-word-card header { flex-wrap: wrap; row-gap: 0.25rem; }
+    /* PCF MSA J127: 0.25rem -> 0.5rem. With ‹ › together at the start, "This āyah" sits 42px further right, right above the centred
+       Arabic word, and the tall marks of a word such as نَعْبُدُ touched it (word-card-j101-top-browser, 520px). */
+    .quran-word-card header { flex-wrap: wrap; row-gap: 0.5rem; }
     .quran-word-card header button.word-card-legend-btn { margin-inline-end: auto; } /* J59: was on "This āyah"; the ⓘ now sits beside it */
     .quran-word-card header > .word-card-head-word { order: 5; flex: 1 1 calc(100% - 6rem); min-width: 4.5rem; }
     .quran-word-card header > .word-card-root-box { order: 6; }
