@@ -1108,4 +1108,4 @@ total). Allocated by the MMSA Architect.
 14.03: four Quran Study fixes: Word card marks row (J128), intention strip wraps (J124), level titles (J126), Last read (J123). Allocated by the MMSA Architect.
 14.04: Word Card ☰ menu (J125) and the Āyah card bar: no –, ← beside ×, 📝 Note beside 📖 (J131). Allocated by the MMSA Architect.
 14.05: Word Card marks Difficult · Learn · Learned, Learn next level switch, Bangla switch OFF per new word (MSA · QR J135, J133, J134). Allocated by the MMSA Architect.
-14.06: a saved whole-list Bangla switch in the Bangla list panel (MSA · QR J134 follow-up). Allocated by the MMSA Architect.
+14.06: a saved whole-list Bangla switch in the Bangla list panel (MSA · QR J134 follow-up); Study Next boxes redraw on a language switch (J130 d). Allocated by the MMSA Architect.
