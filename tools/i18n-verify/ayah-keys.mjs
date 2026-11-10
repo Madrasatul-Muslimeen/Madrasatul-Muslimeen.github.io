@@ -246,6 +246,8 @@ const unitFake = unitSrc.replace(/import \{[^}]*\} from "\.\/i18n\.js";/, "const
 check("unit-keys.js import of i18n.js was replaced (the real buildUnitKey is under test)", () => assert.notEqual(unitFake, unitSrc));
 globalThis.__akUnitKeys = await import(`data:text/javascript;base64,${Buffer.from(unitFake).toString("base64")}`);
 globalThis.__akKeys = keys;
+// MSA · QR J136: the real, pure word-effort.js
+globalThis.__akEffort = await import(`data:text/javascript;base64,${Buffer.from(fs.readFileSync(path.join(appJs, "word-effort.js"), "utf8")).toString("base64")}`);
 
 let source = fs.readFileSync(path.join(appJs, "ayah-keys-data.js"), "utf8");
 const before = source;
@@ -255,7 +257,9 @@ source = source
   .replace(/import \{ createDocument, updateDocument \} from "\.\/envelope\.js";/, "const { createDocument, updateDocument } = globalThis.__akEnvelope;")
   .replace(/import \{ safeWrite \} from "\.\/errors\.js";/, "const { safeWrite } = globalThis.__akErrors;")
   .replace(/import \{ buildUnitKey \} from "\.\/unit-keys\.js";/, "const { buildUnitKey } = globalThis.__akUnitKeys;")
-  .replace(/import \{ isKeyId, MADRASAH_SCOPE \} from "\.\/ayah-keys\.js";/, "const { isKeyId, MADRASAH_SCOPE } = globalThis.__akKeys;");
+  .replace(/import \{ isKeyId, MADRASAH_SCOPE \} from "\.\/ayah-keys\.js";/, "const { isKeyId, MADRASAH_SCOPE } = globalThis.__akKeys;")
+  // MSA · QR J136: the REAL word-effort.js (pure, imports nothing) is loaded and handed to the module under test.
+  .replace(/import \{ WORD_EFFORT_RULES_PUBLISHED, isEffortWord \} from "\.\/word-effort\.js";/, "const { WORD_EFFORT_RULES_PUBLISHED, isEffortWord } = globalThis.__akEffort;");
 check("every import of ayah-keys-data.js was replaced (the module under test is the real one)", () => {
   assert.notEqual(source, before);
   assert.ok(!/^import /m.test(source), "an import survived the in-memory replacement");
@@ -396,7 +400,9 @@ await acheck("loadSurahKeys returns { madrasah, mine } in exactly TWO reads (the
   await data.setAyahKey(db, ctx, { scope: "other", surah: 6, ayah: 3, keyId: "hard", on: true });
   reads.length = 0;
   const r = await data.loadSurahKeys(db, ctx, 6);
-  assert.deepEqual(Object.keys(r).sort(), ["madrasah", "mine"]);
+  // UPDATED IN PLACE (MSA · QR J136, 10 Nov 2026): loadSurahKeys also returns `mineEffort`, the person's own effort map, read from
+  // the SAME document as `mine` -- still two reads. word-effort.mjs holds the behaviour of that map.
+  assert.deepEqual(Object.keys(r).sort(), ["madrasah", "mine", "mineEffort"]);
   assert.deepEqual(r.madrasah, { "ayah:6:1": ["scholars"] });
   assert.deepEqual(r.mine, { "ayah:6:2": ["hard"] });
   assert.equal(reads.length, 2, `read ${reads.join(", ")}`);
@@ -404,7 +410,7 @@ await acheck("loadSurahKeys returns { madrasah, mine } in exactly TWO reads (the
 });
 await acheck("loadSurahKeys on an untouched sūrah is two empty maps; a bad sūrah throws", async () => {
   reset();
-  assert.deepEqual(await data.loadSurahKeys(db, ctx, 9), { madrasah: {}, mine: {} });
+  assert.deepEqual(await data.loadSurahKeys(db, ctx, 9), { madrasah: {}, mine: {}, mineEffort: {} }); // UPDATED IN PLACE, J136: + mineEffort
   for (const bad of [0, 115, 1.5, "2", undefined]) await assert.rejects(() => data.loadSurahKeys(db, ctx, bad), /surah must be/);
 });
 await acheck("loadSurahKeys returns copies: changing the result does not change the store", async () => {

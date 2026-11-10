@@ -80,7 +80,7 @@ export function countMarks(pieces, entries) {
  * (a sūrah of one āyah, an āyah of one word) is drawn as two halves so the arc is never degenerate.
  * Each piece is `<g class="mk-piece" data-mk-go="<index>" role="button" tabindex="0" aria-label="…">`.
  */
-export function marksWheelHtml(pieces, entries, { lang = "en", centreTop = "", centreSub = "" } = {}) {
+export function marksWheelHtml(pieces, entries, { lang = "en", centreTop = "", centreSub = "", effort = null } = {}) {
   const S = 360, c = S / 2, n = pieces.length;
   if (!n) return `<p class="mk-wheel-empty" data-mk-wheel-empty>${esc(t("Nothing to show here yet."))}</p>`;
   const gap = n > 200 ? 0 : Math.min(0.012, 0.6 / n);
@@ -93,8 +93,12 @@ export function marksWheelHtml(pieces, entries, { lang = "en", centreTop = "", c
     const a0 = (i / n) * 2 * Math.PI + gap, a1 = ((i + 1) / n) * 2 * Math.PI - gap;
     const have = marksIn(entries?.[p.key]);
     const names = have.map((m) => keyName(m, lang)).join(", ");
-    const label = `${p.label}${names ? ` · ${names}` : ""}`;
-    const paths = bands.map(([id, r0, r1]) => pathsFor(a0, a1, r0, r1).map((d) => `<path d="${d}" class="mk-band mk-band-${id}${have.includes(id) ? " on" : ""}"/>`).join("")).join("");
+    const effName = effort?.[p.key] === "known" ? "Already Known" : effort?.[p.key] === "very" ? "Very Hard" : "";
+    const label = `${p.label}${names || effName ? ` · ${[names, effName].filter(Boolean).join(", ")}` : ""}`;
+    // MSA · QR J136: a word whose stored effort is "known" or "very" lights the INNER band in its own colour (blue / purple);
+    // Learned Easy is the `done` key and keeps the green it always had. `effort` is the reader's map of unit key -> word.
+    const eff = effort?.[p.key] === "known" || effort?.[p.key] === "very" ? effort[p.key] : null;
+    const paths = bands.map(([id, r0, r1]) => pathsFor(a0, a1, r0, r1).map((d) => `<path d="${d}" class="mk-band mk-band-${id}${have.includes(id) || (id === "done" && eff) ? " on" : ""}${id === "done" && eff ? ` mk-eff-${eff}` : ""}"/>`).join("")).join("");
     const tick = p.group !== lastGroup && lastGroup !== null && n > 1 ? `<path d="${arc(c, c, 104, 176, a0 - 0.003, a0 + 0.003)}" class="mk-tick"/>` : "";
     lastGroup = p.group;
     return `<g class="mk-piece" data-mk-go="${i}" data-mk-key="${esc(p.key)}" data-mk-marks="${esc(have.join(" "))}" role="button" tabindex="0" aria-label="${esc(label)}"><title>${esc(label)}</title>${paths}${tick}</g>`;
@@ -121,25 +125,33 @@ export function wireMarksWheel(root, pieces, onGo) {
 
 /** The legend under the wheel (colour swatches with the mark names). */
 export function marksLegendHtml(lang = "en") {
-  return `<p class="mk-legend" data-mk-legend>${MARK_IDS.map((id) => `<span class="mk-legend-item"><i class="mk-swatch mk-swatch-${id}"></i>${esc(keyName(id, lang))}</span>`).join("")}</p>`;
+  // MSA · QR J136: the word views also show Already Known (blue) and Very Hard (purple) on the inner band.
+  const extra = [["known", lang === "bn" ? "আগে থেকেই জানা" : "Already Known"], ["very", lang === "bn" ? "খুব কঠিন" : "Very Hard"]]
+    .map(([id, name]) => `<span class="mk-legend-item mk-legend-eff"><i class="mk-swatch mk-swatch-eff-${id}"></i>${esc(name)}</span>`).join("");
+  return `<p class="mk-legend" data-mk-legend>${MARK_IDS.map((id) => `<span class="mk-legend-item"><i class="mk-swatch mk-swatch-${id}"></i>${esc(keyName(id, lang))}</span>`).join("")}${extra}</p>`;
 }
 
 /** CSS for everything above, in the page's own colours; one place, appended once by the page. */
 export const MARKS_CSS = `
 .marks-row { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem .6rem; margin:.4rem 0; }
-.marks-row-label { font-size:.82rem; color:var(--muted,#8fa0c2); }
+.marks-row { --mk-label:#c9d3ea; --mk-hard:#f89480; --mk-practice:#e5b04a; --mk-done:#58c08c; --mk-on:#0e1630; }
+[data-card-look="light"] .marks-row { --mk-label:#46536b; --mk-hard:#b3321d; --mk-practice:#7a5410; --mk-done:#1b6f45; --mk-on:#ffffff; }
+.marks-row-label { font-size:.82rem; color:var(--mk-label); }
 .marks-row-buttons { display:flex; flex-wrap:wrap; gap:.4rem; }
 .mk-btn { min-height:40px; padding:.3rem .8rem; border-radius:999px; border:1.5px solid currentColor; background:transparent; font:inherit; font-size:.9rem; cursor:pointer; }
 .mk-btn:disabled { opacity:.55; cursor:default; }
-.mk-hard { color:#c8553d; } .mk-practice { color:#b9770e; } .mk-done { color:#2e8b57; }
-.mk-hard[aria-pressed="true"] { background:#c8553d; color:#fff; border-color:#c8553d; }
-.mk-practice[aria-pressed="true"] { background:#b9770e; color:#fff; border-color:#b9770e; }
-.mk-done[aria-pressed="true"] { background:#2e8b57; color:#fff; border-color:#2e8b57; }
+/* MSA · QR J136 (Architect 94L, 10 Nov 2026): the marks-row text met only 2.6-4.3:1 (global-approach-card-browser, 8 fails). One palette per card look,
+   every text colour 4.5:1 or better on its own card (a palette belongs to a SURFACE): light tones on the Night card, deep tones on the Light card. */
+.marks-row .mk-hard { color:var(--mk-hard); } .marks-row .mk-practice { color:var(--mk-practice); } .marks-row .mk-done { color:var(--mk-done); }
+.marks-row .mk-hard[aria-pressed="true"] { background:var(--mk-hard); color:var(--mk-on); border-color:var(--mk-hard); }
+.marks-row .mk-practice[aria-pressed="true"] { background:var(--mk-practice); color:var(--mk-on); border-color:var(--mk-practice); }
+.marks-row .mk-done[aria-pressed="true"] { background:var(--mk-done); color:var(--mk-on); border-color:var(--mk-done); }
 .mk-wheel-wrap { width:100%; flex:1 1 100%; min-width:0; }
 .mk-wheel-for { display:block; width:100%; box-sizing:border-box; margin:.25rem 0 .1rem; text-align:center; overflow-wrap:anywhere; }
 .mk-wheel { width:100%; max-width:420px; height:auto; display:block; margin:0 auto; }
 .mk-piece { cursor:pointer; outline:none; } .mk-piece:focus-visible .mk-band { stroke:#fff; stroke-width:1.5; }
 .mk-band { fill:rgba(143,160,194,.22); } .mk-band-hard.on { fill:#c8553d; } .mk-band-practice.on { fill:#d99a2b; } .mk-band-done.on { fill:#2e8b57; }
+.mk-band.mk-eff-known.on { fill:#2f6fb3; } .mk-band.mk-eff-very.on { fill:#6b3aa6; }
 .mk-tick { fill:#0e1630; }
 .mk-centre-top { fill:#e8ecf7; font-family:"Amiri Quran","Amiri",serif; } .mk-centre-sub, .mk-count-total { fill:#8fa0c2; }
 .mk-count-hard { fill:#e0806b; } .mk-count-practice { fill:#e3b04b; } .mk-count-done { fill:#5cc58a; }
@@ -148,6 +160,7 @@ export const MARKS_CSS = `
 .mk-view-switch { display:flex; flex-wrap:wrap; gap:.3rem; justify-content:center; margin:.4rem 0; }
 .mk-legend { display:flex; flex-wrap:wrap; gap:.3rem .9rem; justify-content:center; font-size:.85rem; margin:.4rem 0; }
 .mk-swatch { display:inline-block; width:.8rem; height:.8rem; border-radius:50%; margin-inline-end:.3rem; vertical-align:-1px; }
+.mk-swatch-eff-known { background:#2f6fb3; } .mk-swatch-eff-very { background:#6b3aa6; }
 .mk-swatch-hard { background:#c8553d; } .mk-swatch-practice { background:#d99a2b; } .mk-swatch-done { background:#2e8b57; }
 .mk-wheel-msg, .mk-wheel-empty { text-align:center; color:#8fa0c2; margin:1rem 0; }
 `;

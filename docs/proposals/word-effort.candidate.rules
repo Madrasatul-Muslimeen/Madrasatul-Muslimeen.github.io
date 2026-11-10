@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // PCF MSA J136 -- "MARK THE WORD": THE STORED EFFORT FIELD -- CANDIDATE, NOT PUBLISHED, NOT MERGED.
+    //
+    // Written by the QR Lead 45L, 10 Nov 2026, on the Owner's word of 10 Nov 3:04 pm ("J136: Approved with recommended";
+    // n136b: yes to the stored `effort` field). firestore.rules is UNTOUCHED (Rules are an Owner Control Gate). UNTIL THE
+    // OWNER PUBLISHES THIS, the app cannot save the two new results ("Already Known" and "Very Hard") and says so in
+    // words (app/js/word-effort.js, WORD_EFFORT_RULES_PUBLISHED = false); Difficult, Learn and Learned save as before.
+    //
+    // WHAT CHANGES: the ayahKeyMarks block below REPLACES the published one in firestore.rules. It is
+    // the published block byte for byte except (1) 'effort' is allowed in the document's field list, and (2) effortOk()
+    // bounds it. tools/firestore-emulator/word-effort.rules.test.mjs checks that claim by diffing the two blocks.
+    // Nothing else in firestore.rules changes; no new collection, no new index, no delete.
+    // =====================================================================
+
+    match /ayahKeyMarks/{markKey} {
+
+      function ayahKeysShapeOk() {
+        return d().keys().hasOnly([
+                 'tenantId', 'scope', 'surah', 'entries', 'effort',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'tenantId', 'scope', 'surah', 'entries',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().scope is string && d().scope.size() > 0
+            && d().surah is int && d().surah >= 1 && d().surah <= 114
+            && markKey == d().tenantId + '__' + d().scope + '__' + string(d().surah)
+            && d().entries is map
+            && effortOk()
+            && d().schemaVersion is number
+            && d().createdAt is timestamp && d().updatedAt is timestamp
+            && d().createdBy is string && d().createdBy.size() > 0;
+      }
+
+      // PCF MSA J136 (10 Nov 2026) -- the ONE new, OPTIONAL field: `effort`, a map from a word's unit key to the degree of
+      // effort the reader says it took ('known', 'easy', 'very'). Absent on every document written so far, so every
+      // existing document stays valid. Rules cannot inspect one key of an arbitrarily keyed map, so the client validates
+      // the keys and the three words (app/js/word-effort.js); the Rules bound the SHAPE and the SIZE (the longest
+      // sura, Al-Baqarah, has 6,144 words, so 7,000 cannot be reached by honest use).
+      function effortOk() {
+        return !('effort' in d())
+            || (d().effort is map && d().effort.size() <= 7000);
+      }
+
+      // Who may write the document of `scope` in `tenantId`.
+      function ayahKeysMayWrite(tenantId, scope) {
+        return scope == 'madrasah'
+            ? (canAdminIdentity(tenantId) || isTeacherIn(tenantId))
+            : (personInTenant(tenantId, scope) && canRecordFor(tenantId, scope));
+      }
+      // Who may read it: every member for the madrasah's, canRecordFor for a person's.
+      function ayahKeysMayRead(tenantId, scope) {
+        return scope == 'madrasah'
+            ? (signedIn() && myRolesIn(tenantId).size() > 0)
+            : (personInTenant(tenantId, scope) && canRecordFor(tenantId, scope));
+      }
+
+      // The read-before-create probe: a nonexistent document has no data to expose.
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/ayahKeyMarks/$(markKey));
+      allow get: if ayahKeysMayRead(resource.data.tenantId, resource.data.scope);
+      allow list: if ayahKeysMayRead(resource.data.tenantId, resource.data.scope);
+
+      allow create: if ayahKeysShapeOk()
+                    && ayahKeysMayWrite(d().tenantId, d().scope)
+                    && d().createdBy == myUid();
+
+      allow update: if resource != null
+                    && ayahKeysShapeOk()
+                    && ayahKeysMayWrite(resource.data.tenantId, resource.data.scope)
+                    && d().tenantId == resource.data.tenantId
+                    && d().scope == resource.data.scope
+                    && d().surah == resource.data.surah
+                    && d().createdBy == resource.data.createdBy;
+
+      allow delete: if false; // I4/D6 -- a shorter list, never a deleted document.
+    }
+  }
+}

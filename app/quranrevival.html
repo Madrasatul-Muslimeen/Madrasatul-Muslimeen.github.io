@@ -4298,6 +4298,9 @@
   .word-card-markrow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.35rem; margin: 0.45rem 0 0; }
   .word-card-markrow .marks-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; margin: 0; }
   .word-card-markrow .marks-row-label { grid-column: 1 / -1; font-size: 0.8rem; }
+  .word-card-markrow .we-row { grid-column: 1 / -1; min-width: 0; }
+  .word-card-markrow .we-btn { min-width: 0; overflow-wrap: anywhere; }
+  .word-card-markrow .we-details { margin-top: 0.4rem; } .word-card-markrow .we-details summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; }
   .word-card-markrow .marks-row-buttons { display: contents; }
   .word-card-markrow .mk-btn, .word-card-markrow .word-card-practise { min-width: 0; width: auto; min-height: 44px; margin: 0; padding: 0.25rem 0.3rem; border-radius: 0.5rem; font-size: 0.82rem; line-height: 1.15; overflow-wrap: anywhere; }
   .word-card-markrow .word-card-practise.mk-learn { background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); font-weight: 700; }
@@ -7948,7 +7951,8 @@
     // The Note's question card toggle (PCF MSA J05, T15 A): the card itself is placed on the Note by the shared Note window.
     import { QUESTION_CARD_CSS, getQuestionCardMode, setQuestionCardMode, questionCardSettingHtml } from "./js/critical-reasoning-guides.js";
     // PCF MSA J03 K2 -- the three marks (Difficult / Need practice / Done) on the Āyah card, the Word card and the Marks wheel.
-    import { loadSurahKeys, loadPersonSurahKeys, setAyahKey, setWordKey } from "./js/ayah-keys-data.js";
+    import { loadSurahKeys, loadPersonSurahKeys, setAyahKey, setWordKey, setWordMarks } from "./js/ayah-keys-data.js";
+    import { wordMarksRowHtml, wireWordMarksRow, tapMark, tallyDegrees, effortTableHtml, WORD_EFFORT_CSS } from "./js/word-effort.js"; // MSA · QR J136
     // PCF MSA J119 -- words the Qur'an shares with Bangla (Word Card button + list; marks stay on this device until the Rules are published).
     import { loadBanglaState, saveBanglaState, setBanglaWord, setBanglaWheel, banglaWheelPlan, activeBanglaSet, banglaFigures, banglaTagText } from "./js/bangla-words.js";
     import { banglaBlockHtml, wireBanglaBlock, banglaWheelSwitchesHtml, wireBanglaWheelSwitches, BANGLA_CSS } from "./js/bangla-words-ui.js";
@@ -11431,7 +11435,7 @@
       const pieces = wheelPieces(marksWheelView, currentSurahData, currentAyahNum);
       const switchHtml = `<div class="mk-view-switch wheel-look-switch" data-mk-view-switch role="group" aria-label="${escapeHtml(t("Which view"))}">${MARKS_WHEEL_VIEWS.map((v) => `<button type="button" class="wheel-look-btn" data-mk-view="${v}" aria-pressed="${v === marksWheelView}">${escapeHtml(names[v])}</button>`).join("")}</div>`;
       const top = marksWheelView === "ayah-words" ? `${surah}:${currentAyahNum}` : `${t("Sūrah")} ${num(surah)}`;
-      wheelContainer.innerHTML = `<div class="mk-wheel-wrap">${switchHtml}${marksWheelHtml(pieces, marksStore.mine, { lang, centreTop: top, centreSub: names[marksWheelView] })}</div>`;
+      wheelContainer.innerHTML = `<div class="mk-wheel-wrap">${switchHtml}${marksWheelHtml(pieces, marksStore.mine, { lang, centreTop: top, centreSub: names[marksWheelView], effort: marksStore.mineEffort })}</div>`;
       wireMarksWheel(wheelContainer, pieces, (p) => {
         if (p.go.kind === "ayah") openAyahActionSheet(`${surah}:${p.go.ayah}`);
         else openWordCardForOccurrenceId(`quran-word-occurrence:v1:${surah}:${p.go.ayah}:${p.go.position}`);
@@ -20165,8 +20169,9 @@
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: marksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Marks for this word"), wordMarkNames()), banglaHtml: banglaHtmlFor(word), menuOpen: wordCardMenuOpen, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: wordMarksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Mark the Word")), banglaHtml: banglaHtmlFor(word), menuOpen: wordCardMenuOpen, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       wireMarksRow(content, onMarkToggle); // PCF MSA J03 K2
+      wireWordMarksRow(content, onWordMarkTap); // MSA · QR J136
       wireBanglaFor(content); // PCF MSA J119
       // J03 K3 "Study Next" (was "Read next"): Qur'an (this word's places), Dictionary, Scholars and Tafsīr under the card. The box is kept per
       // word, so the card's many redraws (data arriving) do not close a tab the reader opened. Wired AFTER the innerHTML above.
@@ -24020,8 +24025,8 @@
         onOnOff: (on) => { banglaCardOn = on; if (quranWordCardState?.open) renderPersistentWordCard(); }, // J134: the card's own switch, never saved
       });
     }
-    const marksStyleEl = document.createElement("style"); marksStyleEl.textContent = MARKS_CSS; document.head.appendChild(marksStyleEl);
-    let marksStore = { id: "", mine: {}, state: "idle" }, marksBusy = new Set(), marksWheelView = "ayat";
+    const marksStyleEl = document.createElement("style"); marksStyleEl.textContent = MARKS_CSS + WORD_EFFORT_CSS; document.head.appendChild(marksStyleEl);
+    let marksStore = { id: "", mine: {}, mineEffort: {}, state: "idle" }, marksBusy = new Set(), marksWheelView = "ayat", wordEffortNote = { unitKey: "", text: "" };
     // J03 (the Owner, 5 Nov 2026): Monitor's "Show on wheel" opens Quran Study with ?surah=&keysFor=<personId>&back=1: the Marks wheel
     // shows THAT student's marks, read-only (a teacher / guardian / owner reads them, the Rules' call). Nothing here ever writes.
     let marksViewFor = null, viewMarks = { id: "", marks: {}, state: "idle" };
@@ -24054,9 +24059,9 @@
       if (!c || !surah) return;
       const id = marksStoreId(c, surah);
       if (marksStore.id === id && marksStore.state !== "idle") return;
-      marksStore = { id, mine: {}, state: "loading" };
-      loadSurahKeys(db, c, surah).then((r) => { if (marksStore.id !== id) return; marksStore = { id, mine: r.mine ?? {}, state: "ready" }; repaintMarks(); })
-        .catch((err) => { if (marksStore.id !== id) return; marksStore = { id, mine: {}, state: "failed" }; console.warn("marks not loaded:", err?.code || err?.message || err); repaintMarks(); });
+      marksStore = { id, mine: {}, mineEffort: {}, state: "loading" };
+      loadSurahKeys(db, c, surah).then((r) => { if (marksStore.id !== id) return; marksStore = { id, mine: r.mine ?? {}, mineEffort: r.mineEffort ?? {}, state: "ready" }; repaintMarks(); })
+        .catch((err) => { if (marksStore.id !== id) return; marksStore = { id, mine: {}, mineEffort: {}, state: "failed" }; console.warn("marks not loaded:", err?.code || err?.message || err); repaintMarks(); });
     }
     function marksReadyFor(surah) { const c = marksCtx(); return !!c && marksStore.id === marksStoreId(c, surah) && marksStore.state === "ready"; }
     /** The marks row for one unit, or "" while the marks are not loaded (the card says nothing rather than something false). */
@@ -24068,6 +24073,46 @@
       ensureSurahMarks(surah);
       if (!marksReadyFor(surah)) return "";
       return marksRowHtml({ unitKey, keys: marksStore.mine[unitKey] ?? [], lang: marksLang(), heading, busy: marksBusy.has(unitKey), names });
+    }
+    // MSA · QR J136 (the Owner, 10 Nov 2026: "Approved with recommended"): ONE "Mark the Word" set on the Word card --
+    // Already Known · Difficult · Learn · Learned Easy · Very Hard (js/word-effort.js). Difficult / Learn / Learned Easy are
+    // the saved marks hard / practice / done; "Already Known" and "Very Hard" need the stored `effort` field, which the
+    // Owner has still to publish in Firebase, so until then they SAY SO instead of failing silently (I15).
+    function wordEffortTally(surah) {
+      const keys = (currentSurahData?.ayahs ?? []).flatMap((a) => (a.words ?? []).map((w) => `qword:${surah}:${a.ayah}:${w.position}`));
+      return tallyDegrees(keys, marksStore.mine, marksStore.mineEffort);
+    }
+    function wordMarksRowFor(unitKey, surah, heading) {
+      if (!marksCtx()) return "";
+      ensureSurahMarks(surah);
+      if (!marksReadyFor(surah)) return "";
+      const lang = marksLang();
+      const detailsHtml = `<details class="we-details" data-word-effort-details><summary>${escapeHtml(t("How hard was it, in this sūrah"))}</summary>${effortTableHtml(wordEffortTally(surah), { lang, scopeLabel: "", countLabel: t("Count"), degreeLabel: t("Degree"), ofWords: t("of {n} words") })}</details>`;
+      return wordMarksRowHtml({ unitKey, keys: marksStore.mine[unitKey] ?? [], effort: marksStore.mineEffort[unitKey] ?? null, lang, heading, busy: marksBusy.has(unitKey), note: wordEffortNote.unitKey === unitKey ? wordEffortNote.text : "", detailsHtml });
+    }
+    async function onWordMarkTap(unitKey, markId) {
+      const c = marksCtx();
+      if (!c || marksBusy.has(unitKey)) return;
+      const [, s, a, w] = unitKey.split(":");
+      const surah = Number(s);
+      const next = tapMark(marksStore.mine[unitKey] ?? [], marksStore.mineEffort[unitKey] ?? null, markId);
+      wordEffortNote = { unitKey: "", text: "" };
+      marksBusy.add(unitKey); repaintMarks();
+      try {
+        const res = await setWordMarks(db, c, { scope: c.personId, surah, ayah: Number(a), position: Number(w), keys: next.keys, effort: next.effort });
+        if (res?.refused === "rules-not-published") {
+          wordEffortNote = { unitKey, text: t("This mark cannot be saved yet: the new saving rule has not been published in Firebase. Difficult, Learn and Learned Easy save as before.") };
+        } else if (res?.ok && marksStore.id === marksStoreId(c, surah)) {
+          marksStore.mine = { ...marksStore.mine, [unitKey]: res.keys };
+          marksStore.mineEffort = { ...marksStore.mineEffort, [unitKey]: res.effort };
+          // J135: switching Learn ON also takes the reader to learn the word; switching it off only unmarks.
+          if (markId === "learn" && res.keys.includes("practice")) {
+            const lemma = currentSurahData?.ayahs?.find((x) => x.ayah === Number(a))?.words?.find((x) => x.position === Number(w))?.morphology?.lemma;
+            if (lemma) openVocabWordRound(lemma).catch((error) => console.warn("Vocabulary unavailable", error));
+          }
+        }
+        // any other failure is already reported to the reader (I15); the marks simply stay as they were
+      } finally { marksBusy.delete(unitKey); repaintMarks(); }
     }
     async function onMarkToggle(unitKey, keyId, on) {
       const c = marksCtx();

@@ -36,15 +36,15 @@ for (const [lang, width, pct] of QUICK ? cells.filter((c) => c[1] === 360 && c[2
   }
   await ev(page, () => { const el = document.getElementById("ayahSelect"); el.value = "2"; el.dispatchEvent(new Event("change", { bubbles: true })); });
   await settle(page, 900);
-  const geo = (sel, box) => ev(page, ({ sel, box }) => {
+  const geo = (sel, box, btn = "[data-mark-key]") => ev(page, ({ sel, box, btn }) => {
     const rows = [...document.querySelectorAll(sel)].filter((r) => r.getBoundingClientRect().width > 0);
     const row = rows[0]; if (!row) return { none: true };
-    const bs = [...row.querySelectorAll("[data-mark-key]")];
+    const bs = [...row.querySelectorAll(btn)];
     const cb = (document.querySelector(box) ?? document.body).getBoundingClientRect();
     const r = row.getBoundingClientRect();
     return { n: bs.length, cut: bs.filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => b.textContent), short: bs.filter((b) => b.getBoundingClientRect().height < 39.5).length,
       inside: r.left >= cb.left - 1 && r.right <= cb.right + 1, over: document.documentElement.scrollWidth - innerWidth };
-  }, { sel, box });
+  }, { sel, box, btn });
   // Āyah card
   await ev(page, () => document.querySelector('[data-ayah-num-badge="1:2"]')?.click());
   await page.waitForSelector("[data-ayah-sheet] [data-marks-row]", { timeout: 6000 }).catch(() => {});
@@ -61,9 +61,10 @@ for (const [lang, width, pct] of QUICK ? cells.filter((c) => c[1] === 360 && c[2
   const occ = "quran-word-occurrence:v1:1:1:1";
   await page.waitForFunction((i) => document.querySelector(`#readView [data-word-occurrence="${i}"]`), occ, { timeout: 8000 }).catch(() => {});
   await ev(page, (i) => document.querySelector(`#readView [data-word-occurrence="${i}"]`)?.click(), occ);
-  await page.waitForSelector(".quran-word-card [data-marks-row]", { timeout: 6000 }).catch(() => {});
-  g = await geo(".quran-word-card [data-marks-row]", ".quran-word-card");
-  check(`${tag} Word card marks whole, inside, tall`, !g.none && g.n === 3 && g.cut.length === 0 && g.short === 0 && g.inside && g.over <= 0, JSON.stringify(g));
+  // UPDATED IN PLACE (MSA · QR J136, 10 Nov 2026): the Word card row is the FIVE "Mark the Word" buttons (data-word-mark), not three marks.
+  await page.waitForSelector(".quran-word-card [data-word-marks-row]", { timeout: 6000 }).catch(() => {});
+  g = await geo(".quran-word-card [data-word-marks-row]", ".quran-word-card", "[data-word-mark]");
+  check(`${tag} Word card marks whole, inside, tall`, !g.none && g.n === 5 && g.cut.length === 0 && g.short === 0 && g.inside && g.over <= 0, JSON.stringify(g));
   if (width === 360 && pct === 200) await page.screenshot({ path: `/tmp/marks-k2-matrix-word-${lang}-360-200.png` }).catch(() => {});
   await ev(page, () => document.querySelector("[data-word-card-close]")?.click());
   await settle(page, 300);
