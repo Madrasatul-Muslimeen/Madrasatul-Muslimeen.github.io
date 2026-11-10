@@ -23942,12 +23942,12 @@
       const inList = set.has(lemma);
       const bn = banglaByLemma?.get(lemma)?.b ?? "";
       return banglaBlockHtml({
-        state: { ...banglaState, on: banglaCardOn }, lemma, canAdmin: canAdminCatalogueClientSide(), figures, rows, open: banglaListOpen, // J134: this card's own switch
+        state: { ...banglaState, on: banglaCardOn }, lemma, canAdmin: canAdminCatalogueClientSide(), figures, rows, open: banglaListOpen, listOn: banglaState.on, // J134: the heading switch is this card's own; listOn is the SAVED whole-list setting
         tag: inList && banglaCardOn ? banglaTagText(bn, getAppLang() === "bn" ? "bn" : "en") : "",
         text: {
           mark: t("Also in Bangla"), marked: t("In Bangla"), heading: t("Bangla list"), admin: t("Admin's"), mine: t("Mine"),
           adminNote: t("admin marks"), readOnly: t("read only"), yours: t("yours"), listHeading: t("Words also in Bangla ({n})"),
-          listSwitch: t("Use the Bangla word list"), wordSwitch: t("{word} in the list"), deviceOnly: t("Saved on this device only for now."),
+          listSwitch: t("Use the Bangla word list"), savedSwitch: t("Count Bangla words as known and on the Wheel"), savedSwitchLabel: t("Bangla words count as known and on the Wheel"), wordSwitch: t("{word} in the list"), deviceOnly: t("Saved on this device only for now."),
           count: t("{words} words, {percent}% of the Qur'an's words"), empty: t("No words in this list yet."),
         },
       });
@@ -23960,6 +23960,7 @@
       wireBanglaBlock(content, {
         onWord: (lemma, on) => banglaChanged(setBanglaWord(banglaState, lemma, on, { canAdmin: canAdminCatalogueClientSide() })),
         onList: (id) => banglaChanged({ ...banglaState, list: id }),
+        onSaved: (on) => banglaChanged({ ...banglaState, on }), // J134 follow-up (93L, A): the saved whole-list setting, on its existing key
         onOnOff: (on) => { banglaCardOn = on; if (quranWordCardState?.open) renderPersistentWordCard(); }, // J134: the card's own switch, never saved
       });
     }

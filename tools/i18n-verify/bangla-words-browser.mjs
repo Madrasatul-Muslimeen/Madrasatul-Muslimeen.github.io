@@ -10,6 +10,8 @@
 //   --mutate=resetsame the switch resets on every redraw  -> "a redraw of the same word keeps it" FAILS
 //   --mutate=savesw  the card switch writes the saved whole-list setting (Wheel would lose Bangla) -> "saved setting untouched" FAILS
 //   --mutate=nocount the count line is not drawn               -> the count check FAILS
+//   --mutate=nosaved the saved whole-list switch (J134 follow-up) is not drawn -> its present/off/on checks FAIL
+//   --mutate=savedwrong the saved switch writes the opposite of what was asked -> "turns the saved setting off" FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -25,6 +27,8 @@ const MUT = {
   keepon: ["      banglaSwitchWordId = id; banglaCardOn = false;", "      banglaSwitchWordId = id;", "app/quranrevival.html"],
   resetsame: ["      if (id === banglaSwitchWordId) return;\n", "", "app/quranrevival.html"],
   savesw: ["onOnOff: (on) => { banglaCardOn = on; if (quranWordCardState?.open) renderPersistentWordCard(); },", "onOnOff: (on) => { banglaCardOn = on; banglaChanged({ ...banglaState, on }); },", "app/quranrevival.html"],
+  nosaved: ['${listOn === null ? "" :', '${true ? "" :', "app/js/bangla-words-ui.js"],
+  savedwrong: ["onSaved: (on) => banglaChanged({ ...banglaState, on }),", "onSaved: (on) => banglaChanged({ ...banglaState, on: !on }),", "app/quranrevival.html"],
   nocount: ["${count ? `<div class=\"bnw-count\" data-bangla-count>${count}</div>` : \"\"}", "", "app/js/bangla-words-ui.js"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -113,6 +117,25 @@ for (const [w, h, lang] of [[1280, 900, "en"], [390, 844, "en"], [390, 844, "bn"
   const page2 = await openCard(ctx);
   await tap(page2.locator("#quranWordCardMount [data-bangla-onoff]")); await page2.waitForTimeout(300);
   check(`${tag} the mark is still there after a reload (once the switch is ON)`, (await page2.locator("#quranWordCardMount [data-bangla-block] .bnw-mark").getAttribute("aria-pressed")) === "true");
+  // J134 follow-up (the MSA Architect 93L, A): the SAVED whole-list setting (banglaState.on, no new key) has its own switch in the Bangla list's panel,
+  // so a reader who saved it OFF before v14.05 is never stuck. It is independent of the card's own switch above.
+  const ss = () => page2.locator("#quranWordCardMount [data-bangla-saved-onoff]");
+  const cardSw = () => page2.locator("#quranWordCardMount [data-bangla-onoff]");
+  const savedPresent = (await ss().count()) === 1;
+  check(`${tag} the Bangla list panel has a saved whole-list switch, ON by default`, savedPresent && (await ss().getAttribute("aria-pressed")) === "true");
+  const sbox = savedPresent ? await ss().boundingBox() : null;
+  check(`${tag} the saved switch is a finger-size control inside the screen`, !!sbox && sbox.height >= 40 && sbox.x >= 0 && sbox.x + sbox.width <= w + 1, JSON.stringify(sbox));
+  const cardBefore = await cardSw().getAttribute("aria-pressed");
+  await tap(ss()); await page2.waitForTimeout(300);
+  check(`${tag} tapping it turns the saved setting off, on the existing key (no new key)`, (await state(page2)).on === false && (await ss().getAttribute("aria-pressed")) === "false" && (await page2.evaluate(() => Object.keys(localStorage).filter((k) => /bangla/i.test(k)).join(",") === "mm_bangla_words.v1")));
+  check(`${tag} the card's own switch is untouched by it`, (await cardSw().getAttribute("aria-pressed")) === cardBefore);
+  await page2.reload(); await page2.waitForTimeout(800);
+  const page3 = await openCard(ctx);
+  const ss3 = page3.locator("#quranWordCardMount [data-bangla-saved-onoff]");
+  check(`${tag} (positive control) the saved OFF survives a reload and the switch shows it OFF`, (await state(page3)).on === false && (await ss3.getAttribute("aria-pressed")) === "false");
+  await tap(ss3); await page3.waitForTimeout(300);
+  check(`${tag} the way back: tapping it again turns the saved setting on`, (await state(page3)).on === true && (await ss3.getAttribute("aria-pressed")) === "true");
+  if (lang === "bn") check(`${tag} the saved switch's words are Bangla`, await page3.evaluate(() => !/[A-Za-z]{4,}/.test(document.querySelector("#quranWordCardMount [data-bangla-saved-row]")?.textContent ?? "x")));
   await ctx.close();
 }
 await browser.close();

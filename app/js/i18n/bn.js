@@ -4865,6 +4865,8 @@ export const BN = {
   "yours": "আপনার",
   "Words also in Bangla ({n})": "বাংলায়ও আছে এমন শব্দ ({n})",
   "Use the Bangla word list": "বাংলা শব্দের তালিকা ব্যবহার করুন",
+  "Count Bangla words as known and on the Wheel": "বাংলা শব্দ জানা শব্দ হিসেবে ও চক্রে গণ্য করুন",
+  "Bangla words count as known and on the Wheel": "বাংলা শব্দ জানা শব্দ হিসেবে ও চক্রে গণ্য হয়",
   "{word} in the list": "তালিকায় {word}",
   "Saved on this device only for now.": "আপাতত শুধু এই ডিভাইসে সংরক্ষিত।",
   "{words} words, {percent}% of the Qur'an's words": "{words}টি শব্দ, কুরআনের শব্দের {percent}%",
