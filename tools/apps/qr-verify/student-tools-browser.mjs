@@ -32,6 +32,7 @@ let pass = 0, fail = 0;
 //   appVersion  #appVersion is #888 on white, 3.54:1, on the signed-out page
 //   signInBtn   the signed-out page's "Sign in with Google" is 27px tall
 const FOR_QR_LEAD = []; // QR Lead PR (J85): #appVersion (now #666, 5.74:1) and #signInBtn (now 40px) fixed and removed
+const FOR_ARCHITECT = ["folderChip32"]; // MSA · QR J130 (a): shared new-Note editor draws its 📁 folder chip 32px tall (88x32); not QR-only code, so not for the QR Lead
 const seenKnown = new Set();
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -49,6 +50,8 @@ const MUTATIONS = {
   // Each puts one audit-45 fix back: the bookmark flow's popover contrast / the notes flow's 40px search / its sideways scroll must FAIL.
   "who-tag": ["app/js/bookmark-popover.js", "**/app/js/bookmark-popover.js*", "color: #555; /* audit 45", "color: #777; /* audit 45"],
   "find-40": ["app/js/read-note-pane.js", "**/app/js/read-note-pane.js*", "min-height: 40px; /* audit 45", "min-height: 36px; /* audit 45"],
+  // MSA · QR J130 (a): the ⋮ sheet's Take Note tile does nothing -> the notes flow's "tile opens the Note window" and "SAVED by the tile" checks must FAIL.
+  "note-tile": ["app/quranrevival.html", "**/app/quranrevival.html*", "onTakeNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { fromQuickMenu: true }); },", "onTakeNote: () => {},"],
   "unit-head": ["app/journey-map.html", "**/app/journey-map.html*", "html.pane-tabs-hosted #noteLayout.tier-wide .unit-head { margin-inline: 0; }", ""],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
@@ -154,7 +157,9 @@ async function state(t, p, label, mustSee, only = {}) {
   check(`${tt}: no control cut off at the screen edge`, m.cut.length === 0, m.cut.slice(0, 5).join(" | "));
   check(`${tt}: no control covered by something else`, m.covered.length === 0, m.covered.slice(0, 5).join(" | "));
   check(`${tt}: every ← Back is 40px or taller`, m.backSmall.length === 0, m.backSmall.slice(0, 5).join(" | "));
-  check(`${tt}: every finger control is at least 40px`, m.small.length === 0, m.small.slice(0, 6).join(" | "));
+  // MSA · QR J130 (a): the new-Note editor (shared journey-map / note-window code, the Architect's) draws its 📁 folder chip 88x32. Listed, not failed, and reported in the hand-in; a listed finding that stops occurring is reported too.
+  const smallNow = m.small.filter((x) => { if (/^button\.folder-chip:📁 Primary \d+x32\b/.test(x)) { seenKnown.add("folderChip32"); return false; } return true; });
+  check(`${tt}: every finger control is at least 40px`, smallNow.length === 0, smallNow.slice(0, 6).join(" | "));
   const lowC = m.contrast.filter((x) => { if (/^span#appVersion\b/.test(x)) { seenKnown.add("appVersion"); return false; } return true; });
   check(`${tt}: text colour 4.5:1 against its real background`, lowC.length === 0, lowC.slice(0, 6).join(" | "));
   return m;
@@ -223,7 +228,8 @@ async function readAyah(p, surah = "2", ayah = "256") {
   await settle(p, 900);
   await p.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
 }
-const notesFrame = (p) => p.frames().find((x) => /journey-map\.html\?embed=1&unit=/.test(x.url()));
+// MSA · QR J130 (a): the ⋮ sheet's 📝 tile on an āyah with no Note opens the pane on a NEW Note (journey-map.html?embed=1&new=1&unit=...), so the frame's URL may carry new=1.
+const notesFrame = (p) => p.frames().find((x) => /journey-map\.html\?embed=1&(new=1&)?unit=/.test(x.url()));
 const trayFrame = (p) => p.frames().find((x) => /journey-map\.html\?embed=1&note=|journey-map\.html\?embed=1#/.test(x.url()));
 const readPlace = (p) => ev(p, () => ({ ayah: document.getElementById("ayahSelect")?.value, surah: document.getElementById("surahSelect")?.value, top: document.getElementById("readScroll")?.scrollTop ?? 0 }));
 
@@ -233,21 +239,28 @@ async function notes(t, p, errors, lang) {
   await readAyah(p);
   const before = await readPlace(p);
   check(`${t}: POSITIVE CONTROL the student is on 2:256 in the Read view`, before.ayah === "256" && before.surah === "2", JSON.stringify(before));
-  await clickReadTool(p, "#readNotesBtn");
-  check(`${t}: 📝 opens the Notes pane`, await until("the Notes pane frame loads", async () => { const f = notesFrame(p); return !!f && await f.locator("[data-unit-new]").count() > 0; }));
-  const nf = notesFrame(p); if (!nf) return;
-  await until("the pane's ✚ New note is ready", async () => nf.evaluate(() => { const b = document.querySelector("[data-unit-new]"); return !!b && !b.hasAttribute("aria-disabled") && !b.disabled; }));
-  await state(t, p, "Notes pane (empty), host", "#readNotePane", { scope: "#readNotePane" });
-  await state(t, p, "Notes pane (empty), inside", "#readNotePane iframe", { frame: () => notesFrame(p) });
+  // MSA · QR J130 (a), reason: J114 retired #readNotesBtn; the real route is the ⋮ sheet's 📝 tile. On an āyah with no Note it is "Take Note": it CREATES AND SAVES the
+  // Note itself and opens the pane on it (no ✚ New note button in the frame, no tray). The tray is reached the way a reader reaches it: ← Back, then the 📝 tile again
+  // (the āyah now has a Note, so the tile opens the LATEST Note in the Mapping My Journey tray, openLatestNoteFromMenu).
   await ev(p, () => { sessionStorage.setItem("__stubWrites", "[]"); window.__stubWriteData = []; });
-  await nf.click("[data-unit-new]");
+  await clickReadTool(p, "#readNotesBtn");
+  check(`${t}: 📝 (the ⋮ sheet's Take Note tile) opens the Note window on a new Note`, await until("the Notes pane frame loads", async () => !!notesFrame(p)));
   const stored = await until("the Note is stored", async () => (await writesOf(p)).some((w) => w.col === "notes"));
   const w = await writesOf(p);
   const cols = w.map((x) => x.col);
-  check(`${t}: the Note is SAVED -- notes, noteRevisions, noteSources (ayah:2:256) and notePlacements are written`, stored && ["notes", "noteRevisions", "noteSources", "notePlacements"].every((c) => cols.includes(c)), JSON.stringify(cols));
-  const src = w.find((x) => x.col === "noteSources");
+  check(`${t}: the Note is SAVED by the tile -- notes, noteRevisions, noteSources (ayah:2:256) and notePlacements are written`, stored && ["notes", "noteRevisions", "noteSources", "notePlacements"].every((c) => cols.includes(c)), JSON.stringify(cols));
   check(`${t}: ...and nothing is DELETED (no delete write)`, !w.some((x) => /delete/i.test(x.op || "")), JSON.stringify(w.map((x) => x.op)));
-  check(`${t}: it opens in the Mapping My Journey window`, await until("the tray opens on the Note", async () => visible(p, "#journeyTray iframe")));
+  check(`${t}: POSITIVE CONTROL the Note window (#noteOpener) is on screen`, await until("note window visible", async () => visible(p, "#noteOpener")));
+  await state(t, p, "Note window (new Note), host", "#noteOpener", { scope: "#noteOpener" });
+  await state(t, p, "Note window (new Note), inside", "#noteOpener iframe", { frame: () => notesFrame(p) });
+  await p.click("#noteOpener .no-close"); await settle(p, 600);
+  const afterPane = await ev(p, () => ({ hidden: !document.getElementById("noteOpener") || getComputedStyle(document.getElementById("noteOpener")).display === "none" || document.getElementById("noteOpener").hidden, ayah: document.getElementById("ayahSelect").value }));
+  check(`${t}: ✕ closes the Note window to the same āyah`, afterPane.hidden && afterPane.ayah === before.ayah, JSON.stringify(afterPane));
+  // The tray's real route from the Read view: the "Mapping My Journey" tab (#tabJourneyBtn). (The 📝 tile on an āyah WITH a Note opens its latest Note in the tray too, but the stub's
+  // Note lookup cannot see a Note written in the same page, so a second tile press here would create a SECOND Note; that route is covered by the app's own lookup, not this stub.)
+  if (!(await ev(p, () => document.getElementById("tabJourneyBtn")?.getBoundingClientRect().width > 0))) { await p.click("#tabStudyBtn"); await settle(p, 300); }
+  await p.click("#tabJourneyBtn");
+  check(`${t}: the Mapping My Journey tab opens the Mapping My Journey window`, await until("the tray opens", async () => visible(p, "#journeyTray iframe")));
   const trayReady = await until("tray page ready", async () => { const f = trayFrame(p); return !!f && await f.evaluate(() => !!document.getElementById("newFolderName")); }, 20000);
   check(`${t}: POSITIVE CONTROL the tray's own page is loaded`, trayReady);
   const tf = trayFrame(p);
@@ -278,16 +291,11 @@ async function notes(t, p, errors, lang) {
   check(`${t}: the chip restores the tray (chip gone)`, s.tray && !s.chip, JSON.stringify(s));
   // ✕ goes back to where the student was: the Notes pane over the same āyah
   await ev(p, () => document.querySelector("#journeyTray .jt-close")?.click()); await settle(p, 600);
-  const afterX = await ev(p, () => ({ tray: !!document.querySelector("#journeyTray:not([hidden])"), pane: !document.getElementById("readNotePane")?.hidden }));
-  check(`${t}: ✕ closes the tray and comes straight back to the Notes pane`, !afterX.tray && afterX.pane, JSON.stringify(afterX));
-  // the āyah's Notes list shows the new Note
-  const nf2 = notesFrame(p);
-  const listed = nf2 ? await until("the āyah's Notes list shows the new Note", async () => nf2.evaluate(() => document.querySelectorAll("[data-note-open]").length >= 1)) : false;
-  check(`${t}: the āyah's Notes list shows the new Note`, listed);
-  await state(t, p, "Notes pane (one Note), inside", "#readNotePane iframe", { frame: () => notesFrame(p) });
-  await p.click("#readNotePane [data-rnp-back]"); await settle(p, 600);
-  const after = await ev(p, () => ({ hidden: document.getElementById("readNotePane").hidden, ayah: document.getElementById("ayahSelect").value, top: document.getElementById("readScroll")?.scrollTop ?? 0 }));
-  check(`${t}: ← Back closes the pane to the same āyah and the same place`, after.hidden && after.ayah === before.ayah && Math.abs(after.top - before.top) <= 2, JSON.stringify({ before, after }));
+  const afterX = await ev(p, () => ({ tray: !!document.querySelector("#journeyTray:not([hidden])"), ayah: document.getElementById("ayahSelect")?.value, top: document.getElementById("readScroll")?.scrollTop ?? 0 }));
+  check(`${t}: ✕ closes the tray and comes straight back to the same āyah (the tray was opened from the 📝 tile, so the Read view is behind it)`, !afterX.tray && afterX.ayah === before.ayah, JSON.stringify(afterX));
+  await ev(p, () => document.querySelector("#journeyTray .jt-close")?.click()); await settle(p, 600);
+  const after = await ev(p, () => ({ hidden: !document.querySelector("#journeyTray:not([hidden])"), ayah: document.getElementById("ayahSelect").value, top: document.getElementById("readScroll")?.scrollTop ?? 0 }));
+  check(`${t}: ✕ returns to the same āyah and the same place`, after.hidden && after.ayah === before.ayah && Math.abs(after.top - before.top) <= 2, JSON.stringify({ before, after }));
   check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 3).join(" | "));
 }
 
@@ -404,19 +412,20 @@ async function failed(t, p, errors, lang) {
 
 async function failednote(t, p, errors, lang) {
   await readAyah(p);
-  await clickReadTool(p, "#readNotesBtn");
-  await until("pane", async () => { const f = notesFrame(p); return !!f && await f.locator("[data-unit-new]").count() > 0; });
-  const nf = notesFrame(p); if (!nf) return;
-  await until("ready", async () => nf.evaluate(() => { const b = document.querySelector("[data-unit-new]"); return !!b && !b.hasAttribute("aria-disabled") && !b.disabled; }));
-  await nf.evaluate(() => { window.__stubFailWrites = true; window.__stubFailTx = true; window.__stubFailBatch = true; });
+  // MSA · QR J130 (a), reason: J114 retired #readNotesBtn and its pane's ✚ New note. The Take Note tile saves the Note itself, from the Read page, so the refusal is set on THIS page before the tile is pressed.
+  // The Note is created INSIDE the Note window's page (journey-map.html?embed=1&new=1), which loads after the press, so the refusal is an init script for pages loaded from now on.
+  await p.context().addInitScript(() => { window.__stubFailWrites = true; window.__stubFailTx = true; window.__stubFailBatch = true; });
   await ev(p, () => { sessionStorage.setItem("__stubWrites", "[]"); window.__stubWriteData = []; });
-  await nf.click("[data-unit-new]");
-  await settle(p, 1800);
-  const msg = await nf.evaluate(() => [...document.querySelectorAll("#pageStatusMsg, #qr-write-failure-banner, [role=alert]")].filter((e) => getComputedStyle(e).display !== "none" && e.getBoundingClientRect().width > 0).map((e) => e.textContent.trim()).join(" | "));
-  check(`${t}: a REFUSED Note save shows words to the student (I15), not silence`, msg.length > 3, JSON.stringify(msg) + " " + await nf.evaluate(() => (document.getElementById("pageStatusMsg")?.outerHTML ?? "no #pageStatusMsg").slice(0, 200)));
+  await clickReadTool(p, "#readNotesBtn");
+  await until("the Note window frame loads", async () => !!notesFrame(p));
+  await settle(p, 2500);
+  const seenMsg = (x) => x.evaluate(() => [...document.querySelectorAll("#pageStatusMsg, #qr-write-failure-banner, [role=alert]")].filter((e) => getComputedStyle(e).display !== "none" && e.getBoundingClientRect().width > 0).map((e) => e.textContent.trim()).join(" | "));
+  const nf = notesFrame(p);
+  const msg = [await seenMsg(p), nf ? await seenMsg(nf) : ""].filter(Boolean).join(" | ");
+  check(`${t}: a REFUSED Note save shows words to the student (I15), not silence`, msg.length > 3, JSON.stringify(msg));
   if (lang === "bn") check(`${t}: ...and the words are in Bangla`, BN.test(msg), JSON.stringify(msg));
   check(`${t}: nothing is stored by the refused save`, !(await writesOf(p)).some((x) => x.col === "notes"), JSON.stringify((await writesOf(p)).map((x) => x.col)));
-  check(`${t}: the Notes pane stays open (the student is not thrown out)`, await visible(p, "#readNotePane"));
+  check(`${t}: the Note window stays open (the student is not thrown out)`, await visible(p, "#noteOpener"));
 }
 
 // ---- the detectors prove themselves -----------------------------------------------------------------------------------------
@@ -461,7 +470,7 @@ for (const lang of LANGS) for (const look of LOOKS) for (const width of WIDTHS) 
   await flow("failednote", lang, look, width, "/app/quranrevival.html", failednote);
 }
 
-if (!ONLY && !WONLY && !LONLY && !KONLY && !MUTATE) for (const id of FOR_QR_LEAD) check(`the known QR Lead finding "${id}" still occurs (else remove it from FOR_QR_LEAD: it was fixed)`, seenKnown.has(id));
+if (!ONLY && !WONLY && !LONLY && !KONLY && !MUTATE) for (const id of [...FOR_QR_LEAD, ...FOR_ARCHITECT]) check(`the known QR Lead finding "${id}" still occurs (else remove it from FOR_QR_LEAD: it was fixed)`, seenKnown.has(id));
 await browser.close();
 server.kill();
 console.log(`\n==== student-tools-browser${MUTATE ? ` [mutated: ${MUTATE}]` : ""}: ${pass} passed, ${fail} failed ====`);
