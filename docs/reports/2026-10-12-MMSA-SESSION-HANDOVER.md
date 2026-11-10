@@ -3310,3 +3310,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.04** (2026-11-09): Word Card ☰ menu (J125) and the Āyah card bar: no –, ← beside ×, 📝 Note beside 📖 (J131).
 - **v14.05** (2026-11-10): Word Card marks Difficult · Learn · Learned, Learn next level switch, Bangla switch OFF per new word (MSA · QR J135, J133, J134).
 - **v14.06** (2026-11-10): a saved whole-list Bangla switch in the Bangla list panel (MSA · QR J134 follow-up).
+- **v14.07** (2026-11-10): the new Note's folder chip at finger size (MSA · QR J130 a follow-up).
