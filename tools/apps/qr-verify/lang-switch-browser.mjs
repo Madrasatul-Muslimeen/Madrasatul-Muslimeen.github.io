@@ -44,11 +44,13 @@ const seenKnown = new Set();
 // name: [file in the built app, route glob, anchor (exactly once), replacement]. Each puts one fix back to the old code.
 // translateStatic() already turns ENGLISH text nodes into Bangla on en -> bn, so langpop and langtray are caught bn -> en:
 //   node tools/apps/qr-verify/lang-switch-browser.mjs --mutate=langpop --only=bookmark --width=1280 --lang=bn   (langtray: --only=typing)
-//   langmin --only=chip, langpane --only=notes, langtoast --only=toast, langedittray --only=typing: --lang=en
+//   langmin --only=chip, langpane (the Notes pane has NO real route since J114, so no flow reaches it: unproven here), notetile --only=notes (--lang=en), langtray --only=notes (--lang=bn), langtoast --only=toast, langedittray --only=typing: --lang=en
 const MUTATIONS = {
   langpop: ["app/js/bookmark-popover.js", "**/app/js/bookmark-popover.js*", "fresh.innerHTML = rebuild();", "return;"],
   langtray: ["app/js/journey-tray.js", "**/app/js/journey-tray.js*", "onAppLangChange(relabel); // audit 47 langtray", ""],
   langmin: ["app/js/minimise.js", "**/app/js/minimise.js*", "onAppLangChange(relabel); // audit 47 langmin", ""],
+  // MSA · QR J130 (a): the ⋮ sheet's 📝 tile opens nothing -> the notes / chip / typing flows' "tile opens the Mapping My Journey window" controls FAIL.
+  notetile: ["app/quranrevival.html", "**/app/quranrevival.html*", "onOpenNote: (unitKey) => openLatestNoteFromMenu(unitKey),", "onOpenNote: () => {},"],
   langpane: ["app/js/read-note-pane.js", "**/app/js/read-note-pane.js*", "onAppLangChange(relabel); // audit 47 langpane", ""],
   langlive: ["app/js/bookmark-popover.js", "**/app/js/bookmark-popover.js*", "const live = (x) => (typeof x === \"function\" ? x() : x);", "const live = ((memo) => (x) => (typeof x === \"function\" ? (memo.has(x) || memo.set(x, x()), memo.get(x)) : x))(new Map());"],
   langrelabel: ["app/js/read-note-pane.js", "**/app/js/read-note-pane.js*", "unit = { ...unit, ...u }; // audit 47 langrelabel", ""],
@@ -227,21 +229,19 @@ async function menus(t, p, errors, lang) {
     await judge(t, p, "Bookmark menu", to, "details.nav-cat-bookmark[open]", "details.nav-cat-bookmark");
   } else check(`${t}: the Bookmark menu is not offered signed out (nothing to repaint)`, !!signedOut);
 }
+// MSA · QR J130 (a): #readNotesBtn is retired (J114); the real route is the ⋮ sheet's 📝 tile. On 2:255 (it has a seeded Note) the tile is "Notes" and opens that Note in the Mapping My Journey window (openLatestNoteFromMenu),
+// so the Notes pane (#readNotePane) is NOT reached by it (the Notes pane has no tile or button; the Āyah card's 📝 Note opens the Note window, and its "open earlier Notes" link needs a count only the pane itself reports).
+const trayFrameOf = (p) => p.frames().find((x) => /journey-map\.html\?embed=1&note=|journey-map\.html\?embed=1#/.test(x.url()));
 async function notes(t, p, errors, lang) {
   const to = OTHER(lang);
   await readAyah(p);
   await clickReadTool(p, "#readNotesBtn");
-  check(`${t}: POSITIVE CONTROL the Notes pane opens`, await until("pane", async () => { const f = notesFrame(p); return !!f && await f.locator("[data-unit-new]").count() > 0; }));
+  check(`${t}: POSITIVE CONTROL the ⋮ sheet's Notes tile opens the Mapping My Journey window on the seeded Note`, await until("tray", async () => visible(p, "#journeyTray iframe") && !!trayFrameOf(p), 20000));
+  await settle(p, 1200);
   const r = await switchInPlace(p, to);
   check(`${t}: POSITIVE CONTROL the switch happened IN PLACE`, r.changed && r.kept, JSON.stringify(r));
-  await judge(t, p, "Notes pane (bar, search box, ✚ New note)", to, "#readNotePane", "#readNotePane");
-  const nf = notesFrame(p);
-  if (nf) {
-    await until("ready", async () => nf.evaluate(() => { const b = document.querySelector("[data-unit-new]"); return !!b && !b.hasAttribute("aria-disabled") && !b.disabled; }));
-    await nf.click("[data-unit-new]").catch(() => {});
-    const tray = await until("the tray opens", async () => visible(p, "#journeyTray iframe"), 15000);
-    if (tray) { await settle(p, 1200); await judge(t, p, "Mapping My Journey window opened from the pane", to, "#journeyTray", "#journeyTray"); }
-  }
+  await settle(p, 1200);
+  await judge(t, p, "Mapping My Journey window opened from the 📝 tile", to, "#journeyTray", "#journeyTray");
 }
 async function bookmark(t, p, errors, lang) {
   const to = OTHER(lang);
@@ -273,15 +273,15 @@ async function word(t, p, errors, lang) {
 async function chip(t, p, errors, lang) {
   const to = OTHER(lang);
   await readAyah(p);
-  await clickReadTool(p, "#readNotesBtn");
-  await until("pane", async () => visible(p, "#readNotePane .mm-min-btn"));
-  await ev(p, () => document.querySelector("#readNotePane .mm-min-btn")?.click());
-  check(`${t}: POSITIVE CONTROL the Notes pane is minimised to a chip`, await until("chip", async () => visible(p, '[data-mm-min-chip="notes"]')));
+  await clickReadTool(p, "#readNotesBtn"); // the ⋮ sheet's 📝 tile (J130 (a)): opens the Mapping My Journey window, which carries the – button
+  await until("tray", async () => visible(p, "#journeyTray .mm-min-btn"), 20000);
+  await ev(p, () => document.querySelector("#journeyTray .mm-min-btn")?.click());
+  check(`${t}: POSITIVE CONTROL the Mapping My Journey window is minimised to a chip`, await until("chip", async () => visible(p, '[data-mm-min-chip="journey"]')));
   await switchInPlace(p, to);
   await judge(t, p, "minimised chip and dock", to, "#mmMinDock", "#mmMinDock");
-  await ev(p, () => document.querySelector('[data-mm-min-chip="notes"]')?.click());
+  await ev(p, () => document.querySelector('[data-mm-min-chip="journey"]')?.click());
   await settle(p, 500);
-  await judge(t, p, "the Notes pane brought back from its chip", to, "#readNotePane", "#readNotePane");
+  await judge(t, p, "the Mapping My Journey window brought back from its chip", to, "#journeyTray", "#journeyTray");
 }
 /** The Bookmark popover opened with its unit labels and people's names as FUNCTIONS (what QR's caller should pass): every word
     follows the switch, the reader's own picks stay. */
@@ -349,9 +349,7 @@ async function typing(t, p, errors, lang) {
   const to = OTHER(lang), WORDS = "typed before the switch 47";
   await readAyah(p);
   await clickReadTool(p, "#readNotesBtn");
-  check(`${t}: POSITIVE CONTROL the Notes pane lists the seeded Note`, await until("pane note", async () => { const f = notesFrame(p); return !!f && await f.locator('[data-note-id="n255"]').count() > 0; }, 20000));
-  const nf = notesFrame(p);
-  await nf.evaluate(() => document.querySelector('[data-note-id="n255"] [data-note-open]')?.click());
+  // MSA · QR J130 (a), reason: the Note opens from the ⋮ sheet's 📝 tile (on 2:255 it holds the seeded Note, so the tile opens it straight in the Mapping My Journey window); there is no Notes pane list to click in.
   const trayFrame = () => p.frames().find((x) => /journey-map\.html\?embed=1&note=n255/.test(x.url()));
   const editBtn = (f) => f.evaluate(() => [...document.querySelectorAll("[data-pane-edit-toggle]")].find((e) => !e.hidden && e.getBoundingClientRect().width > 0)?.click() ?? "none");
   check(`${t}: POSITIVE CONTROL the Note opens in the Mapping My Journey window`, await until("the Note opens", async () => !!trayFrame() && trayFrame().evaluate(() => [...document.querySelectorAll("[data-pane-edit-toggle]")].some((e) => !e.hidden && e.getBoundingClientRect().width > 0)), 20000));
@@ -362,7 +360,6 @@ async function typing(t, p, errors, lang) {
   await p.keyboard.press("End");
   await p.keyboard.type(" " + WORDS);
   await tf.evaluate(() => { window.__sameDoc = "kept"; });
-  await nf.evaluate(() => { window.__sameDoc = "kept"; });
   const r = await switchInPlace(p, to);
   check(`${t}: POSITIVE CONTROL the switch happened IN PLACE`, r.changed && r.kept, JSON.stringify(r));
   const inNew = (x) => (to === "bn" ? /[ঀ-৿]/.test(x) : !/[ঀ-৿]/.test(x) && /[A-Za-z]/.test(x));
@@ -370,15 +367,13 @@ async function typing(t, p, errors, lang) {
   check(`${t}: the window's page was NOT reloaded under the Note being typed`, await tf.evaluate(() => window.__sameDoc === "kept").catch(() => false));
   const text = await tf.evaluate(() => document.querySelector("[data-edit-body]")?.textContent ?? null).catch(() => null);
   check(`${t}: the words being typed are still in the open editor`, !!text && text.includes(WORDS), JSON.stringify(text));
-  const paneAgain = await until("the pane's page is loaded again", async () => { const f = notesFrame(p); return !!f && f.evaluate(() => window.__sameDoc !== "kept" && !!document.querySelector('[data-note-id="n255"]')); }, 20000);
-  check(`${t}: the Notes pane's page (no Note open in it) was loaded again in the new language`, paneAgain);
   // Done: the words are saved. Then ✕, and the Note opened again: the window is in the new language.
   await editBtn(tf);
   // (each frame runs its own copy of the Firebase stub: the window's writes are in the window's DATA)
   check(`${t}: the Note's words were saved`, await until("saved", async () => tf.evaluate((w) => JSON.stringify(window.__DATA?.noteRevisions || []).includes(w), WORDS), 15000));
   await ev(p, () => document.querySelector("#journeyTray .jt-close")?.click());
   await settle(p, 500);
-  await notesFrame(p)?.evaluate(() => document.querySelector('[data-note-id="n255"] [data-note-open]')?.click());
+  await clickReadTool(p, "#readNotesBtn"); // the 📝 tile again: the same Note, opened fresh in the new language
   const back = await until("the window opens again", async () => !!trayFrame() && trayFrame().evaluate(() => window.__sameDoc !== "kept" && [...document.querySelectorAll("[data-pane-edit-toggle]")].some((e) => !e.hidden && e.getBoundingClientRect().width > 0)), 20000);
   check(`${t}: POSITIVE CONTROL the Note opens again in the window`, back);
   if (back) { await settle(p, 1200); await judge(t, p, "Mapping My Journey window opened again after the switch", to, "#journeyTray", "#journeyTray"); }
@@ -407,12 +402,12 @@ const LANGS = ["en", "bn"].filter((l) => !LONLY || l === LONLY);
 for (const lang of LANGS) for (const width of WIDTHS) {
   if (!SIGNEDOUT_ONLY) {
     await flow("menus", lang, width, menus);
-    await flow("notes", lang, width, notes);
+    await flow("notes", lang, width, notes, { note: true });
     await flow("bookmark", lang, width, bookmark);
     await flow("cards", lang, width, cards);
     await flow("word", lang, width, word);
     await flow("zab", lang, width, zab);
-    await flow("chip", lang, width, chip);
+    await flow("chip", lang, width, chip, { note: true });
     await flow("toast", lang, width, toast);
     await flow("popfn", lang, width, popfn);
     await flow("relabel", lang, width, relabel);
