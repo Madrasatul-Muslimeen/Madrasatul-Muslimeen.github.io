@@ -1116,3 +1116,4 @@ total). Allocated by the MMSA Architect.
 14.11: Practising words get a light violet tint (QR Lead). Allocated by the MMSA Architect.
 14.12: Notes offline: kept on the device, saved when online (J120 O3). Allocated by the MMSA Architect.
 14.13: Read view ⋮ sheet room and Study picker widths. Allocated by the MMSA Architect.
+14.14: Notes offline part 2 (PCF MSA J120 O3b). Allocated by the MMSA Architect.

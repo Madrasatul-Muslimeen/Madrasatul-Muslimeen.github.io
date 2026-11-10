@@ -2187,7 +2187,8 @@ export function createNoteViews(host) {
           host.afterRevise(n);
           rerenderNoteEverywhere(n.noteId);
           close();
-          host.status(t("That version was brought back as a new version. The earlier ones are all still in the list."));
+          // PCF MSA J120 O3b: offline the page keeps the restore in its outbox (note-outbox.js) and says so; it is saved when online.
+          host.status(host.keptOnDevice?.(n.noteId, newId) === true ? t("Kept on this device — it will be saved when you are online.") : t("That version was brought back as a new version. The earlier ones are all still in the list."));
         } catch (err) {
           back.disabled = false;
           msg(err?.message === "Stale Note revision." ? t("This Note changed on another device. Reload it, then try again.") : notSavedText(err));

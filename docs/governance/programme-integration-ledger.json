@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.13",
+    "version": "14.14",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6845,8 +6845,20 @@
     {
       "version": "14.13",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "MSA · QR follow-up round by the QR Lead 45L (#1610): the ⋮ sheet inside the reading area is placed in the visible band so every tile can be pressed, and the Study pickers show their longest option whole.",
+      "integration": {
+        "authorizedOn": "2026-11-10",
+        "integratedOn": "2026-11-10",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "14.14",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "PCF MSA J120 O3b: the Notes page's own editor (with its Journaling evidence), the first Note before the system folder exists, Copy and version restore are kept on the device offline, and a save refused 'unavailable' while the line reads up is kept too.",
       "integration": {
         "authorizedOn": "2026-11-10",
         "integratedOn": "2026-11-10",
@@ -6855,8 +6867,9 @@
       }
     }
   ],
-  "nextUnallocated": "14.14",
+  "nextUnallocated": "14.15",
   "nextUnallocatedNote": [
+    "v14.14 was allocated to Notes offline part 2 (PCF MSA J120 O3b), 2026-11-10.",
     "v14.13 was allocated to Read view ⋮ sheet room and Study picker widths, 2026-11-10.",
     "v14.12 was allocated to Notes offline: kept on the device, saved when online (J120 O3), 2026-11-10.",
     "v14.11 was allocated to Practising words get a light violet tint (QR Lead), 2026-11-10.",

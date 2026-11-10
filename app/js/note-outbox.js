@@ -20,12 +20,26 @@
 //     text again on top, so the later change is still the Note's text. Nothing is lost either way (I4).
 //
 // A failure that is not "offline" is NOT kept quietly: it is thrown to the caller exactly as before (I15).
+//
+// O3b (PCF MSA J120, part 2) adds three things, still through the same functions an online save calls:
+//   * a FOLDER kept on the device (kind "folder"): the system folder a first Note is filed in, created with
+//     createNoteFolder() when online, its id minted here, asked about first, and replayed BEFORE the Note filed in it
+//     (the outbox is replayed in the order it was written). A system folder another device made meanwhile is used
+//     instead, so a person still has exactly one of each (ADR-010 §3).
+//   * a NEW Note filed in SEVERAL folders (a copy keeps every filing of its original).
+//   * the Journaling evidence the Notes screen records after a save (ADR-008): kept with the save as the plain
+//     arguments journalEvidenceArgs() made when the Note was written offline (strings only: its week and its day are
+//     already decided, so nothing is rebuilt), and recorded through recordJournalEvidence() once the Note has landed,
+//     by whichever page sends it.
 
 import {
+  createNoteFolder,
   createNotePlacement,
   createNoteSource,
   createPermanentNote,
   getNotesByIds,
+  listAllActiveFoldersForOwner,
+  listNoteFoldersForOwnerPage,
   listNotePlacementsForOwnerPage,
   listNoteSourcesForOwnerPage,
   listNotesForOwnerIdPage,
@@ -38,6 +52,9 @@ export const OUTBOX_KEY = "mmsa.noteOutbox.v1";
 export const OUTBOX_REVISION_OLDER = "offline-older"; // this device's text, kept as an older version (the other was later)
 export const OUTBOX_REVISION_KEPT = "offline-kept";   // the later text, put back on top of it
 
+const KINDS = Object.freeze(["revise", "create", "folder"]);
+const SYSTEM_FOLDER_ROLES = Object.freeze(["journey-map", "reflection-archive"]); // ADR-010 §3's closed set
+
 const listeners = new Set();
 /** Called with { saved: [entry], failed: [{ entry, error }] } after every replay that did something. */
 export function onReplayed(fn) { listeners.add(fn); return () => listeners.delete(fn); }
@@ -45,7 +62,7 @@ export function onReplayed(fn) { listeners.add(fn); return () => listeners.delet
 function read() {
   try {
     const v = JSON.parse(localStorage.getItem(OUTBOX_KEY) || "[]");
-    return Array.isArray(v) ? v.filter((e) => e && typeof e === "object" && (e.kind === "revise" || e.kind === "create")) : [];
+    return Array.isArray(v) ? v.filter((e) => e && typeof e === "object" && KINDS.includes(e.kind)) : [];
   } catch { return []; }
 }
 function write(list) {
@@ -66,7 +83,31 @@ export function isOfflineFailure(error) {
 /** Every save still waiting on this device (a copy). */
 export function pendingEntries() { return read(); }
 export function hasPending(filter = {}) { return read().some((e) => matchesOwner(e, filter)); }
-export function pendingForNote(noteId) { return read().filter((e) => e.noteId === noteId); }
+export function pendingForNote(noteId) { return read().filter((e) => e.kind !== "folder" && e.noteId === noteId); }
+/** The folders kept on this device (for one owner), not yet on the server. */
+export function pendingFolders(filter = {}) { return read().filter((e) => e.kind === "folder" && matchesOwner(e, filter)); }
+
+/** Every filing a waiting new Note carries (an entry kept before O3b has one, in folderId/placementId/order). */
+function placementsOf(e) {
+  if (e.kind !== "create") return [];
+  if (Array.isArray(e.placements)) return e.placements;
+  return e.folderId ? [{ folderId: e.folderId, placementId: e.placementId, order: e.order ?? 0 }] : [];
+}
+function placedDone(e, p) { return !!(e.done?.placed?.[p.placementId] || (e.done?.placement && p.placementId === e.placementId)); }
+
+/**
+ * Journaling evidence arguments, kept as they are: journalEvidenceArgs() returns plain strings (its week and its day
+ * are already decided), so nothing has to be rebuilt on the replay. Anything that would not come back the same from
+ * JSON (a Date, a function, a nested object) is refused HERE, where the page can still say so -- never on the replay.
+ */
+export function keptEvidence(evidence) {
+  if (!evidence) return null;
+  const plain = JSON.parse(JSON.stringify(evidence));
+  const same = Object.keys(evidence).length === Object.keys(plain).length
+    && Object.entries(evidence).every(([k, v]) => (v === null || ["string", "number", "boolean"].includes(typeof v)) && plain[k] === v);
+  if (!same) throw new TypeError("note-outbox: Journaling evidence must be plain values to be kept on the device.");
+  return plain;
+}
 function matchesOwner(e, { tenantId, ownerPersonId, actorUid } = {}) {
   return (!tenantId || e.tenantId === tenantId) && (!ownerPersonId || e.ownerPersonId === ownerPersonId) && (!actorUid || e.actorUid === actorUid);
 }
@@ -78,35 +119,63 @@ let replaying = null; // the entry id being replayed now: nothing is folded into
  * one the edit expects), the two are folded into ONE save -- the replay writes one revision, as an online editor that
  * saved once would. Returns the revision id the Note now carries on this device.
  */
-export function keepRevise({ tenantId, ownerPersonId = null, noteId, expectedRevisionId, revisionId = newNoteEntityId(), title, bodyHtml, revisionReason = "content-update", actorUid }) {
+export function keepRevise({ tenantId, ownerPersonId = null, noteId, expectedRevisionId, revisionId = newNoteEntityId(), title, bodyHtml, revisionReason = "content-update", actorUid, evidence = null }) {
   const list = read();
-  const base = list.find((e) => e.noteId === noteId && e.revisionId === expectedRevisionId && e.id !== replaying && !(e.kind === "create" && e.done?.note));
+  // O3b: a version brought back ("version-restore") is never folded into a waiting edit, nor an edit into it.
+  const base = list.find((e) => e.kind !== "folder" && e.noteId === noteId && e.revisionId === expectedRevisionId && e.id !== replaying && !(e.kind === "create" && e.done?.note)
+    && (e.kind === "create" || (e.revisionReason ?? "content-update") === revisionReason));
   const at = Date.now();
+  const kept = keptEvidence(evidence);
   if (base) {
-    Object.assign(base, { revisionId, title, bodyHtml, at });
+    // The waiting save's own evidence stands: a creation is recorded once, a revision once a day.
+    Object.assign(base, { revisionId, title, bodyHtml, at, evidence: base.evidence ?? kept });
   } else {
-    list.push({ kind: "revise", id: newNoteEntityId(), tenantId, ownerPersonId, noteId, expectedRevisionId, revisionId, title, bodyHtml, revisionReason, actorUid, at });
+    list.push({ kind: "revise", id: newNoteEntityId(), tenantId, ownerPersonId, noteId, expectedRevisionId, revisionId, title, bodyHtml, revisionReason, actorUid, at, evidence: kept });
   }
   if (!write(list)) throw Object.assign(new Error("This device could not keep the Note (its storage is full or private)."), { code: "outbox-full" });
   return revisionId;
 }
 
 /**
- * Keep a NEW Note on the device: the Note, its study-unit link (createStudyNote's source, or null) and its filing
- * (or null), each with its id minted now. Returns { noteId, revisionId, placementId, sourceLinkId }.
+ * Keep a NEW Note on the device: the Note, its study-unit link (createStudyNote's source, or null) and its filings
+ * (`folderId` + `order`, or `placements`: [{ folderId, order, placementId? }] for several), each with its id minted
+ * now -- or the ids a page already minted for an online try the server never answered (`noteId`, `revisionId`,
+ * `sourceLinkId`, each placement's `placementId`), `done` naming the steps that DID land. `evidence` is the Journaling
+ * evidence to record once the Note lands (the Notes screen's), or null.
+ * Returns { noteId, revisionId, placementId, placementIds, sourceLinkId }.
  */
-export function keepCreate({ tenantId, ownerPersonId, ownerUid, actorUid, title = "", bodyHtml = "", source = null, folderId = null, order = 0, unitKey = null }) {
+export function keepCreate({ tenantId, ownerPersonId, ownerUid, actorUid, title = "", bodyHtml = "", source = null, folderId = null, order = 0, unitKey = null,
+  noteId = newNoteEntityId(), revisionId = newNoteEntityId(), sourceLinkId = null, placements = null, done = {}, evidence = null }) {
+  const filings = (placements ?? (folderId ? [{ folderId, order }] : []))
+    .map((p) => ({ folderId: p.folderId, order: p.order ?? 0, placementId: p.placementId ?? newNoteEntityId() }));
   const entry = {
     kind: "create", id: newNoteEntityId(), tenantId, ownerPersonId, ownerUid, actorUid,
-    noteId: newNoteEntityId(), revisionId: newNoteEntityId(), title, bodyHtml, unitKey,
-    source: source ? { ...source } : null, sourceLinkId: source ? (source.sourceLinkId ?? newNoteEntityId()) : null,
-    folderId, placementId: folderId ? newNoteEntityId() : null, order, at: Date.now(), done: {},
+    noteId, revisionId, title, bodyHtml, unitKey,
+    source: source ? { ...source } : null, sourceLinkId: source ? (sourceLinkId ?? source.sourceLinkId ?? newNoteEntityId()) : null,
+    folderId: filings[0]?.folderId ?? null, placementId: filings[0]?.placementId ?? null, order: filings[0]?.order ?? order,
+    placements: filings, at: Date.now(), done: { ...done }, evidence: keptEvidence(evidence),
   };
   if (entry.source) delete entry.source.sourceLinkId;
   const list = read();
   list.push(entry);
   if (!write(list)) throw Object.assign(new Error("This device could not keep the Note (its storage is full or private)."), { code: "outbox-full" });
-  return { noteId: entry.noteId, revisionId: entry.revisionId, placementId: entry.placementId, sourceLinkId: entry.sourceLinkId };
+  return { noteId: entry.noteId, revisionId: entry.revisionId, placementId: entry.placementId, placementIds: filings.map((p) => p.placementId), sourceLinkId: entry.sourceLinkId };
+}
+
+/**
+ * Keep a FOLDER on the device (createNoteFolder()'s own fields), its id minted now (or the page's, for an online try
+ * the server never answered). A system folder already waiting here for the same owner is the one returned: a person
+ * has one of each (ADR-010 §3). Returns the folder id.
+ */
+export function keepFolder({ tenantId, ownerPersonId, ownerUid, actorUid, name, parentFolderId = null, semanticRole = "user", order = 0, folderId = newNoteEntityId() }) {
+  const list = read();
+  if (SYSTEM_FOLDER_ROLES.includes(semanticRole)) {
+    const same = list.find((e) => e.kind === "folder" && e.semanticRole === semanticRole && e.tenantId === tenantId && e.ownerPersonId === ownerPersonId);
+    if (same) return same.folderId;
+  }
+  list.push({ kind: "folder", id: newNoteEntityId(), tenantId, ownerPersonId, ownerUid, actorUid, folderId, name, parentFolderId, semanticRole, order, at: Date.now() });
+  if (!write(list)) throw Object.assign(new Error("This device could not keep the Note (its storage is full or private)."), { code: "outbox-full" });
+  return folderId;
 }
 
 /**
@@ -133,7 +202,7 @@ export async function reviseKeepingOffline(db, args) {
 }
 /** Is this revision of this Note still only on the device? */
 export function keptOnDevice(noteId, revisionId) {
-  return read().some((e) => e.noteId === noteId && (!revisionId || e.revisionId === revisionId));
+  return read().some((e) => e.kind !== "folder" && e.noteId === noteId && (!revisionId || e.revisionId === revisionId));
 }
 
 /**
@@ -144,6 +213,7 @@ export function keptOnDevice(noteId, revisionId) {
 export function overlayPending(notes, placements, { tenantId, ownerPersonId } = {}) {
   const added = { notes: [], placements: [] };
   for (const e of read()) {
+    if (e.kind === "folder") continue; // a waiting folder: pendingFolders()
     if (!matchesOwner(e, { tenantId, ownerPersonId: e.kind === "create" ? ownerPersonId : undefined })) continue;
     let note = notes.find((n) => n.noteId === e.noteId);
     if (!note && e.kind === "create" && (!ownerPersonId || e.ownerPersonId === ownerPersonId)) {
@@ -154,8 +224,9 @@ export function overlayPending(notes, placements, { tenantId, ownerPersonId } = 
       added.notes.push(note);
     }
     if (note) Object.assign(note, { title: e.title, bodyHtml: e.bodyHtml, currentRevisionId: e.revisionId, updatedAt: { toDate: () => new Date(e.at), toMillis: () => e.at } });
-    if (e.kind === "create" && e.folderId && placements && !placements.some((p) => p.placementId === e.placementId)) {
-      const p = { placementId: e.placementId, noteId: e.noteId, folderId: e.folderId, order: e.order, status: "active", tenantId: e.tenantId, ownerPersonId: e.ownerPersonId };
+    for (const f of placementsOf(e)) {
+      if (!placements || placements.some((p) => p.placementId === f.placementId)) continue;
+      const p = { placementId: f.placementId, noteId: e.noteId, folderId: f.folderId, order: f.order, status: "active", tenantId: e.tenantId, ownerPersonId: e.ownerPersonId };
       placements.push(p);
       added.placements.push(p);
     }
@@ -178,8 +249,29 @@ function timeOf(ts) {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Saves one waiting edit. Resolves to the entry as saved ({ ...entry, finalRevisionId, keptOlder }). */
+/**
+ * The Journaling evidence kept with a save, recorded once its Note has landed -- through recordJournalEvidence(), the
+ * function the Notes screen calls after an online save (loaded only when there is evidence to record). A refusal for
+ * want of the server stops the replay (the save stays kept and is asked about again); any other is reported with the
+ * saved Note, which is not undone, so the page can say the activity was not recorded (I15).
+ */
+async function recordKeptEvidence(db, e) {
+  if (!e.evidence || e.done?.evidence) return null;
+  const { recordJournalEvidence } = await import("./study-note-service.js");
+  try {
+    return await recordJournalEvidence(db, e.evidence, e.actorUid);
+  } catch (error) {
+    if (isOfflineFailure(error)) throw error;
+    return { eventId: null, written: false, blocked: true, skipped: false, reason: String(error?.message ?? error) };
+  }
+}
+
+/** Saves one waiting edit (and then its Journaling evidence). Resolves to the entry as saved ({ ...entry, finalRevisionId, keptOlder, journal }). */
 async function replayRevise(db, e) {
+  const done = await replayReviseNote(db, e);
+  return { ...done, journal: await recordKeptEvidence(db, e) };
+}
+async function replayReviseNote(db, e) {
   const save = (expectedRevisionId, revisionId, title, bodyHtml, revisionReason) => updatePermanentNoteContent(db, {
     tenantId: e.tenantId, noteId: e.noteId, expectedRevisionId, revisionId, title, bodyHtml, revisionReason, actorUid: e.actorUid,
   });
@@ -224,14 +316,45 @@ async function replayCreate(db, e, mark) {
     }
     e.done.source = true; mark(e);
   }
-  if (e.folderId && !e.done.placement) {
-    if (!(await existsById(listNotePlacementsForOwnerPage, db, owner, e.placementId))) {
+  for (const p of placementsOf(e)) {
+    if (placedDone(e, p)) continue;
+    if (!(await existsById(listNotePlacementsForOwnerPage, db, owner, p.placementId))) {
       await createNotePlacement(db, { tenantId: e.tenantId, ownerPersonId: e.ownerPersonId, ownerUid: e.ownerUid ?? null,
-        noteId: e.noteId, folderId: e.folderId, order: e.order, placementId: e.placementId, actorUid: e.actorUid });
+        noteId: e.noteId, folderId: p.folderId, order: p.order, placementId: p.placementId, actorUid: e.actorUid });
     }
-    e.done.placement = true; mark(e);
+    e.done.placed = { ...(e.done.placed ?? {}), [p.placementId]: true }; mark(e);
   }
-  return { ...e, finalRevisionId: e.revisionId };
+  const journal = await recordKeptEvidence(db, e);
+  if (e.evidence) { e.done.evidence = true; mark(e); }
+  return { ...e, finalRevisionId: e.revisionId, journal };
+}
+
+/**
+ * Saves one folder made offline, with createNoteFolder() and its own fields, once: asked about first by its own id.
+ * A SYSTEM folder made meanwhile elsewhere (another id, the same role) is used instead of making a second one: every
+ * Note waiting here that is filed in the device's folder is moved to it before it is sent.
+ */
+async function replayFolder(db, e) {
+  const owner = { tenantId: e.tenantId, ownerPersonId: e.ownerPersonId };
+  if (SYSTEM_FOLDER_ROLES.includes(e.semanticRole)) {
+    const there = (await listAllActiveFoldersForOwner(db, owner)).find((f) => f.semanticRole === e.semanticRole);
+    if (there && there.folderId !== e.folderId) {
+      const now = read();
+      for (const x of now) {
+        if (x.kind !== "create") continue;
+        const moved = placementsOf(x).map((p) => (p.folderId === e.folderId ? { ...p, folderId: there.folderId } : p));
+        Object.assign(x, { placements: moved, folderId: moved[0]?.folderId ?? x.folderId });
+      }
+      write(now);
+      return { ...e, folderId: there.folderId, usedExisting: true };
+    }
+    if (there) return { ...e };
+  } else if (await existsById(listNoteFoldersForOwnerPage, db, owner, e.folderId)) {
+    return { ...e };
+  }
+  await createNoteFolder(db, { tenantId: e.tenantId, ownerPersonId: e.ownerPersonId, ownerUid: e.ownerUid ?? null, name: e.name,
+    parentFolderId: e.parentFolderId ?? null, semanticRole: e.semanticRole, order: e.order ?? 0, folderId: e.folderId, actorUid: e.actorUid });
+  return { ...e };
 }
 
 let running = null;
@@ -247,17 +370,20 @@ export function replayOutbox(db, { actorUid } = {}) {
     for (;;) {
       if (offlineNow()) break;
       const list = read();
-      const e = list.find((x) => (!actorUid || x.actorUid === actorUid) && !failed.some((f) => f.entry.id === x.id));
+      // A Note filed in a folder that could not be made waits with it: kept, never filed into nothing.
+      const stuck = new Set(failed.filter((f) => f.entry.kind === "folder").map((f) => f.entry.folderId));
+      const e = list.find((x) => (!actorUid || x.actorUid === actorUid) && !failed.some((f) => f.entry.id === x.id)
+        && !placementsOf(x).some((p) => stuck.has(p.folderId)));
       if (!e) break;
       replaying = e.id;
       const mark = (changed) => { const now = read(); const i = now.findIndex((x) => x.id === changed.id); if (i >= 0) { now[i] = { ...now[i], done: { ...changed.done } }; write(now); } };
       try {
-        const done = e.kind === "create" ? await replayCreate(db, e, mark) : await replayRevise(db, e);
+        const done = e.kind === "create" ? await replayCreate(db, e, mark) : e.kind === "folder" ? await replayFolder(db, e) : await replayRevise(db, e);
         // Removed only if nothing was folded into it meanwhile (the same revision id): otherwise its newer text goes next.
         const now = read();
         const i = now.findIndex((x) => x.id === e.id);
         if (i >= 0 && now[i].revisionId === e.revisionId) { now.splice(i, 1); write(now); }
-        else if (i >= 0) { now[i] = { ...now[i], kind: "revise", expectedRevisionId: done.finalRevisionId, done: undefined }; write(now); }
+        else if (i >= 0) { now[i] = { ...now[i], kind: "revise", expectedRevisionId: done.finalRevisionId, done: undefined, evidence: e.evidence ? null : (now[i].evidence ?? null) }; write(now); }
         saved.push(done);
       } catch (error) {
         if (isOfflineFailure(error)) break;
