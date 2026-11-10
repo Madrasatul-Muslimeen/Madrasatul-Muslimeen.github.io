@@ -332,21 +332,24 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
     await page.click('#readContentsBody .rc-row[data-rc-kind="surah"][data-rc-n="112"]');
     await page.waitForFunction(() => document.body.classList.contains("immersive-read"), null, { timeout: 8000 });
     await settle(page, 800);
-    // UPDATED IN PLACE (QR Lead, the Owner 24 Oct 2026): from 600 to 1023px the three open from one "Study ▾" button.
-    await ev(page, () => { const b = document.querySelector("#readQuickRow [data-rq-menu]"); if (b && b.getBoundingClientRect().width > 0) b.click(); }); await settle(page, 300);
-    const labels = await ev(page, () => [...document.querySelectorAll("#readQuickRow .rq-btn")].map((b) => ({ txt: b.textContent.trim(), w: b.getBoundingClientRect().width, h: b.getBoundingClientRect().height, inView: b.getBoundingClientRect().bottom <= innerHeight + 1 && b.getBoundingClientRect().right <= innerWidth + 1 })));
-    check(`${t}: POSITIVE CONTROL three quick buttons are on screen`, labels.length === 3 && labels.every((l) => l.w > 0 && l.h >= 30 && l.inView), JSON.stringify(labels));
+    // UPDATED IN PLACE, MSA · QR J132 (the Owner, 10 Nov 2026: "Study moves to dot"): the bottom row and its Study ▾ button are gone at every width;
+    // Notes, Record and Approach are tiles in the Study group / grid of the bar's ⋮ sheet, which the full-screen bar keeps. The ⋮ is opened first.
+    await ev(page, () => { const m = document.querySelector("#readQuickMenuSlot .quick-menu"); if (!m?.classList.contains("open")) document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.click(); }); await settle(page, 400);
+    const labels = await ev(page, () => [...document.querySelectorAll('#readQuickMenuSlot [data-qm-act="approach"], #readQuickMenuSlot [data-qm-act="record"], #readQuickMenuSlot [data-qm-act="status"]')].map((b) => ({ txt: b.querySelector(".qm-label").textContent.trim(), w: b.getBoundingClientRect().width, h: b.getBoundingClientRect().height, inView: b.getBoundingClientRect().bottom <= innerHeight + 1 && b.getBoundingClientRect().right <= innerWidth + 1 })));
+    check(`${t}: POSITIVE CONTROL the three study tiles are on screen in the ⋮ sheet, and the old bottom row is not`, labels.length === 3 && labels.every((l) => l.w > 0 && l.h >= 30 && l.inView) && (await ev(page, () => (document.getElementById("readQuickRow")?.getBoundingClientRect().width ?? 0) === 0)), JSON.stringify(labels));
     if (lang === "bn") check(`${t}: their labels are Bangla`, labels.every((l) => BN.test(l.txt)), labels.map((l) => l.txt).join());
-    await click(page, "readQuickNoteBtn"); await settle(page, 1200);
+    await page.click("#readQuickMenuSlot .qm-sheet [data-qm-note]"); await settle(page, 1200);
     // UPDATED IN PLACE (QR Lead, 2 Nov 2026): since J108 the quick Notes button opens the shared new-Note window (#noteOpener,
     // js/note-opener.js), not the Notes pane (that is the 📝 readNotesBtn). It is on screen, then closed so the next step starts clean.
     check(`${t}: Notes opens a new Note (the shared Note window)`, await ev(page, () => { const w = document.getElementById("noteOpener"); return !!w && !w.hidden && w.getBoundingClientRect().width > 0; }));
     await ev(page, () => document.querySelector("#noteOpener .no-close")?.click()); await settle(page, 500);
-    await click(page, "readNotesBtn"); await settle(page, 500);
-    await click(page, "readQuickTrackBtn"); await settle(page, 900);
+    // (the retired 📝 Notes-pane button was pressed here to put the pane over the bar; since J114 the pane has no reader route, and the ⋮ sheet is the one way: MSA · QR J132)
+    await ev(page, () => { if (!document.querySelector("#readQuickMenuSlot .quick-menu")?.classList.contains("open")) document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.click(); }); await settle(page, 300);
+    await page.click('#readQuickMenuSlot [data-qm-act="record"]'); await settle(page, 900);
     check(`${t}: Record opens the Unit card`, await ev(page, () => !!document.querySelector("[data-unit-card]")));
     await ev(page, () => document.querySelector("[data-unit-card-close]")?.click()); await settle(page, 500);
-    await click(page, "readQuickApproachBtn"); await settle(page, 900);
+    await ev(page, () => { if (!document.querySelector("#readQuickMenuSlot .quick-menu")?.classList.contains("open")) document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.click(); }); await settle(page, 300);
+    await page.click('#readQuickMenuSlot [data-qm-act="approach"]'); await settle(page, 900);
     check(`${t}: Approach opens the Approach wheel`, await ev(page, () => { const w = document.getElementById("wheelSection"); return !!w && w.getBoundingClientRect().width > 0 && !document.getElementById("wheelPopupView").hidden; }));
   });
 

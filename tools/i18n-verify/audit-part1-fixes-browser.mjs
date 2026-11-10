@@ -104,11 +104,14 @@ for (const lang of ["en", "bn"]) {
       needBox(`${tag} Read bar icon buttons`, bar, 40, 40);
       check(`${tag} Read bar has the transport buttons`, ["#prevUnitBtn", "#nextUnitBtn", "#readPlayBtn", "#readStopBtn"].every((s) => bar.some((b) => b.s === s)));
       if (width >= 900) check(`${tag} Read bar shows Notes/Writing/Complete inline`, ["#readNotesBtn", "#readWritingBtn", "#readCompleteBtn"].every((s) => bar.some((b) => b.s === s)));
-      needBox(`${tag} Read pickers`, await rectsOf(page, ["#readAyahSelect", "#readSurahSelect", "#readUnitTypeSelect"]), 0, 40);
+      // UPDATED IN PLACE, MSA · QR J132 (the Owner, 10 Nov 2026: "Study moves to dot"): the picker row is off the bar; the three pickers are the
+      // mirrors at the top of the ⋮ sheet's Study group, so they are measured there (>= 40px), and the bar's own row is asserted gone.
+      await page.evaluate(() => { if (!document.querySelector("#readQuickMenuSlot .quick-menu")?.classList.contains("open")) document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.click(); }); await page.waitForTimeout(400);
+      needBox(`${tag} Read pickers (the ⋮ Study group's)`, await rectsOf(page, ['[data-qm-place="readAyahSelect"]', '[data-qm-place="readSurahSelect"]', '[data-qm-place="readUnitTypeSelect"]']), 0, 40);
       const rows = new Set(bar.filter((b) => !/hideChrome|readTools|readWindow/.test(b.s)).map((b) => b.y));
       check(`${tag} Read bar: transport + tools sit on at most two tidy lines (${[...rows].join(",")})`, rows.size <= 2);
-      const pk = await rectsOf(page, ["#readPickers select"]);
-      check(`${tag} Read pickers: one line (${[...new Set(pk.map((p) => p.y))].join(",")})`, new Set(pk.map((p) => p.y)).size === 1);
+      check(`${tag} Read pickers: the old picker row is NOT on the bar`, (await rectsOf(page, ["#readPickers"])).length === 0);
+      await page.evaluate(() => document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.click()); await page.waitForTimeout(200);
       const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
       check(`${tag} no sideways page overflow after the changes`, noOverflow);
 

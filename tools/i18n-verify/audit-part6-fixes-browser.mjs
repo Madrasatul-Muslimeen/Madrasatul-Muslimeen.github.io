@@ -85,10 +85,11 @@ const FLOWS = {
   },
   async read(tag, page) {
     await click(page, "tabStudyBtn"); await click(page, "tabReadBtn"); await page.waitForTimeout(900);
-    // PCF MSA J99 (the Owner, 25 Oct 2026: "put those 3 buttons inside the dots on the card"): below 600px the three are in
-    // the ⋯ card, so it is opened first, as a reader does. Updated in place, reason recorded.
-    if (await page.evaluate(() => !!document.querySelector("#readToolsMenu #readApproachBar"))) { await click(page, "readToolsBtn"); await page.waitForTimeout(250); }
-    const S = ["#readBarTakeBtn", "#readBarRecordBtn", "#readBarStatusBtn", "#readUnitChip"];
+    // UPDATED IN PLACE, MSA · QR J132 (the Owner, 10 Nov 2026: "Study moves to dot"): the three buttons are tiles in the ⋮ sheet's Study group at every
+    // width (earlier: the ⋯ card below 600px, the bar from 600px). The ⋮ is opened first, as a reader does; the tiles are measured there.
+    await page.evaluate(() => { if (!document.querySelector("#readQuickMenuSlot .quick-menu")?.classList.contains("open")) document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.click(); });
+    await page.waitForTimeout(300);
+    const S = ['#readQuickMenuSlot [data-qm-act="approach"]', '#readQuickMenuSlot [data-qm-act="record"]', '#readQuickMenuSlot [data-qm-act="status"]', "#readUnitChip"];
     tall(tag, await sizes(page, S), S);
   },
   async notepane(tag, page) {

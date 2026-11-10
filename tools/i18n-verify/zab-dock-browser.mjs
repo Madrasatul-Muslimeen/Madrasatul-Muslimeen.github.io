@@ -92,23 +92,26 @@ for (const lang of ["en", "bn"]) for (const width of [320, 360, 390, 740, 820]) 
       await page.keyboard.press("Escape");
       await page.waitForTimeout(300);
       check(`${tag}: Esc closes it again`, await page.evaluate(() => document.getElementById("zabPanel").hidden && document.querySelector(".zab-dock-btn").getAttribute("aria-pressed") === "false"));
-      // the Read view hides the row: the corner comes back, above the pinned quick buttons
+      // the Read view hides the row: the corner comes back
       await page.click("#readContentsBtn");
       await page.waitForTimeout(1000);
       await page.locator(".rc-ar").first().click();
       await page.waitForTimeout(2000);
+      // UPDATED IN PLACE, MSA · QR J132 (the Owner, 10 Nov 2026: "Study moves to dot"): the pinned bottom row of quick buttons is gone (Notes / Record /
+      // Approach are tiles in the bar's ⋮ sheet), so nothing sits at the bottom for the corner to lift above. What matters now: the corner is back,
+      // and it covers none of the bar's own buttons (the ⋮ among them), which is where those controls live.
       const r = await page.evaluate(() => {
         const c = document.getElementById("zabCorner"), q = document.getElementById("readQuickRow");
-        const shown = c.getClientRects().length > 0, cr = c.getBoundingClientRect(), qr = q.getBoundingClientRect();
-        const qVis = q.getClientRects().length > 0 && qr.height > 0;
-        // Updated in place 24 Oct 2026 (audit part 72): only buttons ON SCREEN count -- round 666fe0c4 added a tablet-only
-        // "Study" menu button that is display:none on a phone, and a 0x0 button is not covered, it is absent.
-        const covered = qVis ? [...q.querySelectorAll("button")].filter((b) => b.getClientRects().length > 0 && b.getBoundingClientRect().width > 0).filter((b) => { const br = b.getBoundingClientRect(); const h = document.elementFromPoint(br.left + br.width / 2, br.top + br.height / 2); return !(h && b.contains(h)); }).map((b) => b.id) : [];
-        return { shown, qVis, gap: Math.round(qr.top - cr.bottom), covered };
+        const shown = c.getClientRects().length > 0;
+        const qVis = !!q && q.getClientRects().length > 0 && q.getBoundingClientRect().height > 0;
+        const dots = document.querySelector("#readQuickMenuSlot .ayah-quick-btn");
+        const buttons = [...document.querySelectorAll("#readBar button")].filter((b) => b.getClientRects().length > 0 && b.getBoundingClientRect().width > 0);
+        const covered = buttons.filter((b) => { const br = b.getBoundingClientRect(); const h = document.elementFromPoint(br.left + br.width / 2, br.top + br.height / 2); return !(h && b.contains(h)); }).map((b) => b.id || b.className);
+        return { shown, qVis, dots: !!dots && dots.getBoundingClientRect().width > 0, n: buttons.length, covered };
       });
-      check(`${tag}: POSITIVE CONTROL the Read view's quick buttons are on screen`, r.qVis, JSON.stringify(r));
+      check(`${tag}: POSITIVE CONTROL the Read bar's ⋮ is on screen and the old bottom row of quick buttons is not`, r.dots && !r.qVis && r.n > 0, JSON.stringify(r));
       check(`${tag}: in the Read view the corner 🧰 is back`, r.shown, JSON.stringify(r));
-      check(`${tag}: ...above the quick buttons, covering none of them`, r.gap >= 0 && r.covered.length === 0, JSON.stringify(r));
+      check(`${tag}: ...covering none of the Read bar's buttons`, r.covered.length === 0, JSON.stringify(r));
     }
   } catch (e) { check(`${tag}: flow ran`, false, String(e.stack || e).split("\n").slice(0, 3).join(" | ")); }
   await ctx.close();
