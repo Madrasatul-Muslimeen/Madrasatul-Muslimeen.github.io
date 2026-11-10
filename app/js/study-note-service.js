@@ -55,6 +55,10 @@ function evidenceFor({ tenantId, personId, unitKey, commit, at, weekStartsOn }) 
 export function journalEvidenceFor({ tenantId, personId, unitKey, commit, at = new Date(), weekStartsOn = 0 } = {}) {
   return evidenceFor({ tenantId, personId, unitKey, commit, at, weekStartsOn });
 }
+/** J120 O3b -- the study-unit link createStudyNote() writes, with createStudyNote()'s own defaults, for a Note kept offline. */
+export function studyNoteSourceFor({ unitKey, relationshipKind = "origin", provenanceKind = PROVENANCE_STUDY_NOTE, approachId = null } = {}) {
+  return studyNoteSource({ unitKey, relationshipKind, provenanceKind, approachId });
+}
 
 /**
  * Creates a permanent Note about one Study Unit and returns

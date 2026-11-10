@@ -206,7 +206,7 @@ for (const lang of run("o3") ? ["en", "bn"] : []) {
     const madeKept = await until(page, () => JSON.parse(localStorage.getItem("mmsa.noteOutbox.v1") || "[]").some((e) => e.kind === "create"), null, 5000);
     const ob1 = (await outbox(page)) || [];
     const created = ob1.find((e) => e.kind === "create");
-    check(`${tag}: ✚ New note offline is kept on the device (one Note, filed in Alpha)`, madeKept && ob1.filter((e) => e.kind === "create").length === 1 && created?.folderId === "fA" && !!created?.placementId, JSON.stringify(ob1).slice(0, 300));
+    check(`${tag}: ✚ New note offline is kept on the device (one Note, filed in Alpha)`, madeKept && ob1.filter((e) => e.kind === "create").length === 1 && created?.folderId === "fA" && !!created?.placementId, String(JSON.stringify(ob1)).slice(0, 300));
     const st1 = await pageStatus(page);
     check(`${tag}: ...and the page says so, in words`, st1 === KEPT, st1);
     check(`${tag}: ...and nothing reached the server`, (await page.evaluate(() => window.__DATA.notes.length)) === 3);
@@ -226,7 +226,7 @@ for (const lang of run("o3") ? ["en", "bn"] : []) {
     await flushByHiding(page);
     await until(page, () => JSON.parse(localStorage.getItem("mmsa.noteOutbox.v1") || "[]").some((e) => e.noteId === "n1" && e.bodyHtml.includes("MORE")), null, 4000);
     const ob3 = (await outbox(page)) || [];
-    check(`${tag}: a second offline save of the same Note is folded into ONE waiting save`, ob3.filter((e) => e.noteId === "n1").length === 1 && ob3.find((e) => e.noteId === "n1")?.expectedRevisionId === "rev-n1", JSON.stringify(ob3.map((e) => [e.kind, e.noteId])).slice(0, 200));
+    check(`${tag}: a second offline save of the same Note is folded into ONE waiting save`, ob3.filter((e) => e.noteId === "n1").length === 1 && ob3.find((e) => e.noteId === "n1")?.expectedRevisionId === "rev-n1", String(JSON.stringify(ob3.map((e) => [e.kind, e.noteId]))).slice(0, 200));
     await doneEditing(page);
     check(`${tag}: the open Note shows the offline text after the editor closes (redraw)`, (await page.textContent("#notePane [data-pane-body]")).includes("OFFLINE-EDIT MORE"));
     check(`${tag}: no sideways scroll`, await noSideways(page));
@@ -265,16 +265,16 @@ for (const lang of run("o3") ? ["en", "bn"] : []) {
     // ---- 3. Online again: every kept save goes, through the same transactions, each Note created once --
     await page.evaluate(() => { sessionStorage.removeItem("__forceOffline"); window.dispatchEvent(new Event("online")); });
     const drained = await until(page, () => JSON.parse(localStorage.getItem("mmsa.noteOutbox.v1") || "[]").length === 0, null, 10000);
-    check(`${tag}: online again, the device's outbox is emptied`, drained, JSON.stringify(await outbox(page)).slice(0, 300));
+    check(`${tag}: online again, the device's outbox is emptied`, drained, String(JSON.stringify(await outbox(page))).slice(0, 300));
     const madeRow = newId ? await noteRow(page, newId) : null;
     const w = await writes(page);
     const noteSets = w.filter((x) => x.col === "notes" && x.id === `t1__${newId}` && x.op === "set");
-    check(`${tag}: the Note made offline is saved by a transaction (createPermanentNote's own fields)`, !!madeRow && noteSets.length >= 1 && noteSets.every((x) => x.tx === true) && ["bodyHtml", "currentRevisionId", "noteId", "ownerPersonId", "status", "tenantId", "title", "visibility"].every((f) => noteSets[0].data.includes(f)), JSON.stringify(noteSets).slice(0, 300));
+    check(`${tag}: the Note made offline is saved by a transaction (createPermanentNote's own fields)`, !!madeRow && noteSets.length >= 1 && noteSets.every((x) => x.tx === true) && ["bodyHtml", "currentRevisionId", "noteId", "ownerPersonId", "status", "tenantId", "title", "visibility"].every((f) => noteSets[0].data.includes(f)), String(JSON.stringify(noteSets)).slice(0, 300));
     check(`${tag}: ...created exactly ONCE`, noteSets.length === 1, String(noteSets.length));
     check(`${tag}: ...with its first revision under the id kept on the device`, !!madeRow && madeRow.rev === created?.revisionId && (await revs(page, newId)).length === 1);
     check(`${tag}: ...and filed in Alpha under the kept placement id`, await page.evaluate(([i, p]) => window.__DATA.notePlacements.filter((x) => x.noteId === i && x.folderId === "fA" && x.placementId === p).length === 1, [newId, created?.placementId]));
     const r1 = await revs(page, "n1");
-    check(`${tag}: the offline edit is saved as ONE revision chained from the old one`, r1.length === 1 && r1[0].prev === "rev-n1" && r1[0].body.includes("OFFLINE-EDIT MORE") && r1[0].reason === "content-update", JSON.stringify(r1).slice(0, 300));
+    check(`${tag}: the offline edit is saved as ONE revision chained from the old one`, r1.length === 1 && r1[0].prev === "rev-n1" && r1[0].body.includes("OFFLINE-EDIT MORE") && r1[0].reason === "content-update", String(JSON.stringify(r1)).slice(0, 300));
     check(`${tag}: ...and the Note's text on the server is the offline text`, ((await noteRow(page, "n1"))?.body || "").includes("OFFLINE-EDIT MORE"));
     const st2 = await pageStatus(page);
     // One of the Notes (n3) changed elsewhere later, so the sentence is the one that says so.
@@ -283,13 +283,13 @@ for (const lang of run("o3") ? ["en", "bn"] : []) {
     // ---- 4. Changed elsewhere meanwhile: the later change wins, the earlier is kept as an older version -
     const r2 = await revs(page, "n2");
     const n2 = await noteRow(page, "n2");
-    check(`${tag}: changed elsewhere EARLIER: this device's text is saved on top of the head`, r2.length === 1 && r2[0].prev === "rev-n2-elsewhere" && r2[0].body.includes("MINE-LATER") && n2?.body.includes("MINE-LATER") && n2?.rev === r2[0].id, JSON.stringify({ r2, n2 }).slice(0, 400));
+    check(`${tag}: changed elsewhere EARLIER: this device's text is saved on top of the head`, r2.length === 1 && r2[0].prev === "rev-n2-elsewhere" && r2[0].body.includes("MINE-LATER") && n2?.body.includes("MINE-LATER") && n2?.rev === r2[0].id, String(JSON.stringify({ r2, n2 })).slice(0, 400));
     const r3 = await revs(page, "n3");
     const n3 = await noteRow(page, "n3");
     const older = r3.find((r) => r.reason === "offline-older"), keptBack = r3.find((r) => r.reason === "offline-kept");
     check(`${tag}: changed elsewhere LATER: this device's text is kept as an older version, the later text stays on top`,
       r3.length === 2 && !!older && !!keptBack && older.prev === "rev-n3-elsewhere" && older.body.includes("MINE-EARLIER") && keptBack.prev === older.id && keptBack.body.includes("Changed elsewhere, later") && n3?.rev === keptBack.id && n3?.body.includes("Changed elsewhere, later"),
-      JSON.stringify({ r3, n3 }).slice(0, 500));
+      String(JSON.stringify({ r3, n3 })).slice(0, 500));
     check(`${tag}: nothing is deleted on the way (no delete in any write)`, (await writes(page)).every((x) => x.op !== "delete"));
     check(`${tag}: no page errors`, errors.filter((e) => !/ERR_CERT_AUTHORITY_INVALID|ERR_INTERNET_DISCONNECTED|net::ERR_/.test(e)).length === 0, errors.slice(0, 3).join(" | "));
     await ctx.close();
@@ -313,7 +313,7 @@ if (run("o3")) {
   const drained = await until(page, () => JSON.parse(localStorage.getItem("mmsa.noteOutbox.v1") || "[]").length === 0, null, 10000);
   check(`${tag}: the waiting save is sent on load`, drained);
   const w = await writes(page);
-  check(`${tag}: the Note already on the server is NOT created again`, w.filter((x) => x.col === "notes" && x.id === "t1__n9").length === 0 && (await page.evaluate(() => window.__DATA.notes.filter((n) => n.noteId === "n9").length)) === 1, JSON.stringify(w.filter((x) => x.col === "notes")).slice(0, 300));
+  check(`${tag}: the Note already on the server is NOT created again`, w.filter((x) => x.col === "notes" && x.id === "t1__n9").length === 0 && (await page.evaluate(() => window.__DATA.notes.filter((n) => n.noteId === "n9").length)) === 1, String(JSON.stringify(w.filter((x) => x.col === "notes"))).slice(0, 300));
   check(`${tag}: ...and its filing, which had not, is made once`, (await page.evaluate(() => window.__DATA.notePlacements.filter((p) => p.placementId === "pl9").length)) === 1);
   await ctx.close();
 }
@@ -364,7 +364,7 @@ for (const [lang, width, elsewhere] of run("folder") ? [["en", 390, false], ["bn
   const made1 = await newNoteInPrimary(page, 1);
   let ob = (await outbox(page)) || [];
   const fe = ob.find((e) => e.kind === "folder"), ce = ob.find((e) => e.kind === "create");
-  check(`${tag}: offline, the Primary folder is kept on the device too (its own id, createNoteFolder's fields)`, made1 && !!fe && fe.semanticRole === "journey-map" && HEX.test(fe.folderId) && fe.parentFolderId === null && fe.order === 0 && !!fe.name && fe.ownerPersonId === "p1", JSON.stringify(ob).slice(0, 400));
+  check(`${tag}: offline, the Primary folder is kept on the device too (its own id, createNoteFolder's fields)`, made1 && !!fe && fe.semanticRole === "journey-map" && HEX.test(fe.folderId) && fe.parentFolderId === null && fe.order === 0 && !!fe.name && fe.ownerPersonId === "p1", String(JSON.stringify(ob)).slice(0, 400));
   check(`${tag}: ...kept BEFORE the Note filed in it, which is filed in that id`, !!ce && ce.folderId === fe?.folderId && ob.indexOf(fe) < ob.indexOf(ce));
   const st = await pageStatus(page);
   check(`${tag}: ...the page says it is kept, in words`, st === KEPT, st);
@@ -392,14 +392,14 @@ for (const [lang, width, elsewhere] of run("folder") ? [["en", 390, false], ["bn
   await page.evaluate(() => { sessionStorage.setItem("__stubWrites", "[]"); window.__stubWriteData = []; window.__stubRecordTxData = true; });
   await goOnline(page);
   const drained = await drainedOk(page);
-  check(`${tag}: online again, everything kept is sent`, drained, JSON.stringify(await outbox(page)).slice(0, 300));
+  check(`${tag}: online again, everything kept is sent`, drained, String(JSON.stringify(await outbox(page))).slice(0, 300));
   const w = await page.evaluate(() => (window.__stubWriteData || []).map((x) => ({ col: x.col, id: x.id, op: x.kind })));
   const folderSets = w.filter((x) => x.col === "noteFolders" && x.op === "set");
   const prim = await page.evaluate(() => window.__DATA.noteFolders.filter((f) => f.semanticRole === "journey-map").map((f) => f.folderId));
   const target = elsewhere ? "fOther" : fe?.folderId;
   if (!elsewhere) {
     const firstNote = w.findIndex((x) => x.col === "notes" || x.col === "notePlacements");
-    check(`${tag}: the Primary folder is made ONCE, under the kept id, by createNoteFolder`, folderSets.length === 1 && folderSets[0].id === `t1__${fe?.folderId}` && JSON.stringify(prim) === JSON.stringify([fe?.folderId]), JSON.stringify({ folderSets, prim }).slice(0, 300));
+    check(`${tag}: the Primary folder is made ONCE, under the kept id, by createNoteFolder`, folderSets.length === 1 && folderSets[0].id === `t1__${fe?.folderId}` && JSON.stringify(prim) === JSON.stringify([fe?.folderId]), String(JSON.stringify({ folderSets, prim })).slice(0, 300));
     check(`${tag}: ...and FIRST, before any Note filed in it`, folderSets.length === 1 && firstNote >= 0 && w.indexOf(folderSets[0]) < firstNote, JSON.stringify(w.map((x) => x.col)));
   } else {
     check(`${tag}: another device's Primary is used: no second Primary is made`, folderSets.length === 0 && JSON.stringify(prim) === JSON.stringify(["fOther"]), JSON.stringify({ folderSets, prim }));
@@ -441,17 +441,18 @@ for (const [lang, width] of run("copy") ? [["en", 390], ["bn", 1280]] : []) {
   await page.click(".note-versions [data-ver-restore]");
   const keptR = await until(page, () => JSON.parse(localStorage.getItem("mmsa.noteOutbox.v1") || "[]").some((e) => e.kind === "revise" && e.noteId === "n1"), null, 5000);
   const r = ((await outbox(page)) || []).find((e) => e.kind === "revise" && e.noteId === "n1");
-  check(`${tag}: a version brought back offline is kept on the device (a "version-restore" revision on the current one)`, keptR && r?.revisionReason === "version-restore" && r?.expectedRevisionId === "rev-n1" && r?.bodyHtml.includes("OLD body"), JSON.stringify(r).slice(0, 300));
+  check(`${tag}: a version brought back offline is kept on the device (a "version-restore" revision on the current one)`, keptR && r?.revisionReason === "version-restore" && r?.expectedRevisionId === "rev-n1" && r?.bodyHtml.includes("OLD body"), String(JSON.stringify(r)).slice(0, 300));
   const stR = await pageStatus(page);
   check(`${tag}: ...the page says it is kept, in words`, stR === KEPT, stR);
   check(`${tag}: ...no revision reached the server`, (await page.evaluate(() => window.__DATA.noteRevisions.length)) === 2);
   check(`${tag}: ...and the Note shows the brought-back text`, await until(page, () => (document.querySelector("#notePane [data-pane-body]")?.textContent || "").includes("OLD body"), null, 4000));
-  // ⋯ Make a copy
+  // ⋯ Make a copy (a restore that failed leaves the Versions dialog open: closed first, so the copy is still tested)
+  if (await vis(page, ".note-versions [data-ver-close]")) await page.click(".note-versions [data-ver-close]");
   await paneMenu(page, "[data-pane-duplicate]");
   const keptC = await until(page, () => JSON.parse(localStorage.getItem("mmsa.noteOutbox.v1") || "[]").some((e) => e.kind === "create"), null, 6000);
   const c = ((await outbox(page)) || []).find((e) => e.kind === "create");
   const folders = (c?.placements || []).map((p) => p.folderId).sort();
-  check(`${tag}: a copy made offline is kept on the device, with the brought-back text`, keptC && !!c && c.title.startsWith("Note One") && c.title !== "Note One" && (c.bodyHtml || "").includes("OLD body"), JSON.stringify(c).slice(0, 300));
+  check(`${tag}: a copy made offline is kept on the device, with the brought-back text`, keptC && !!c && c.title.startsWith("Note One") && c.title !== "Note One" && (c.bodyHtml || "").includes("OLD body"), String(JSON.stringify(c)).slice(0, 300));
   check(`${tag}: ...filed in both folders the original is in, each under its own id`, JSON.stringify(folders) === JSON.stringify(["fA", "fB"]) && new Set(c.placements.map((p) => p.placementId)).size === 2 && c.placements.every((p) => HEX.test(p.placementId)), JSON.stringify(c?.placements));
   const stC = await pageStatus(page);
   check(`${tag}: ...and the page says so, and that its tags are not copied while offline`, stC === (lang === "bn" ? TAGS_BN : TAGS_EN), stC);
@@ -461,7 +462,7 @@ for (const [lang, width] of run("copy") ? [["en", 390], ["bn", 1280]] : []) {
   await page.evaluate(() => sessionStorage.setItem("__stubWrites", "[]"));
   await ctx.setOffline(false);
   await goOnline(page);
-  check(`${tag}: online again, both are sent`, await drainedOk(page), JSON.stringify(await outbox(page)).slice(0, 300));
+  check(`${tag}: online again, both are sent`, await drainedOk(page), String(JSON.stringify(await outbox(page))).slice(0, 300));
   const rv = (await revs(page, "n1")).filter((x) => x.reason === "version-restore");
   check(`${tag}: the version is brought back as ONE new revision chained from the current one`, rv.length === 1 && rv[0].prev === "rev-n1" && rv[0].body.includes("OLD body") && (await noteRow(page, "n1"))?.rev === rv[0].id, JSON.stringify(rv));
   const sets = (await writes(page)).filter((x) => x.col === "notes" && x.id === `t1__${c?.noteId}` && x.op === "set");
@@ -486,7 +487,7 @@ for (const [lang, width] of run("unavailable") ? [["en", 390], ["bn", 1280]] : [
   const kept = await until(page, () => JSON.parse(localStorage.getItem("mmsa.noteOutbox.v1") || "[]").some((e) => e.kind === "create"), null, 6000);
   const c = ((await outbox(page)) || []).find((e) => e.kind === "create");
   check(`${tag}: the browser says it is online (the case under test)`, await page.evaluate(() => navigator.onLine === true));
-  check(`${tag}: a new Note refused as "unavailable" is kept on the device, filed in Alpha`, kept && c?.folderId === "fA" && HEX.test(c?.noteId || "") && HEX.test(c?.placementId || ""), JSON.stringify(c).slice(0, 300));
+  check(`${tag}: a new Note refused as "unavailable" is kept on the device, filed in Alpha`, kept && c?.folderId === "fA" && HEX.test(c?.noteId || "") && HEX.test(c?.placementId || ""), String(JSON.stringify(c)).slice(0, 300));
   const st = await pageStatus(page);
   check(`${tag}: ...the page says it is kept, in words`, st === KEPT, st);
   check(`${tag}: ...nothing reached the server, and no failure banner`, (await page.evaluate(() => window.__DATA.notes.length)) === 3 && !(await vis(page, "#qr-write-failure-banner")));
@@ -539,7 +540,7 @@ for (const [lang, width] of run("notes") ? [["en", 390], ["bn", 1280]] : []) {
   await page.click("#newSaveBtn");
   const keptC = await until(page, () => JSON.parse(localStorage.getItem("mmsa.noteOutbox.v1") || "[]").some((e) => e.kind === "create"), null, 6000);
   const c = ((await outbox(page)) || []).find((e) => e.kind === "create");
-  check(`${tag}: a new Note saved offline is kept on the device, with its study-unit link (createStudyNote's source)`, keptC && !!c && c.unitKey === "ayah:2:255" && c.source?.sourceKey === "ayah:2:255" && c.source?.sourceKind === "quran-unit" && c.source?.relationshipKind === "origin" && c.source?.provenanceKind === "study-note" && c.source?.approachId === null && HEX.test(c.sourceLinkId || "") && HEX.test(c.noteId || ""), JSON.stringify(c).slice(0, 400));
+  check(`${tag}: a new Note saved offline is kept on the device, with its study-unit link (createStudyNote's source)`, keptC && !!c && c.unitKey === "ayah:2:255" && c.source?.sourceKey === "ayah:2:255" && c.source?.sourceKind === "quran-unit" && c.source?.relationshipKind === "origin" && c.source?.provenanceKind === "study-note" && c.source?.approachId === null && HEX.test(c.sourceLinkId || "") && HEX.test(c.noteId || ""), String(JSON.stringify(c)).slice(0, 400));
   const ev = c?.evidence;
   check(`${tag}: ...and its Journaling evidence ("note created", for this Note, this unit and its day)`, !!ev && ev.eventType === "journal.note-created" && ev.noteId === c.noteId && ev.unitKey === "ayah:2:255" && ev.trackableId === "approach_10" && ev.personId === "p1" && /^\d{4}-\d\d-\d\d$/.test(ev.dateIso) && typeof ev.weekKey === "string" && ev.weekKey.length > 0, JSON.stringify(ev));
   check(`${tag}: ...kept as plain values (nothing to rebuild on the replay)`, !!ev && Object.values(ev).every((v) => typeof v === "string"));
@@ -557,13 +558,14 @@ for (const [lang, width] of run("notes") ? [["en", 390], ["bn", 1280]] : []) {
   await page.click(`${card(NID)} [data-edit-save]`);
   const keptR = await until(page, (n) => JSON.parse(localStorage.getItem("mmsa.noteOutbox.v1") || "[]").some((e) => e.kind === "revise" && e.noteId === n), NID, 5000);
   const r = ((await outbox(page)) || []).find((e) => e.kind === "revise" && e.noteId === NID);
-  check(`${tag}: Save revision offline is kept on the device, building on the Note's revision`, keptR && r?.expectedRevisionId === RID && (r?.bodyHtml || "").includes("EDITED-OFFLINE"), JSON.stringify(r).slice(0, 300));
+  check(`${tag}: Save revision offline is kept on the device, building on the Note's revision`, keptR && r?.expectedRevisionId === RID && (r?.bodyHtml || "").includes("EDITED-OFFLINE"), String(JSON.stringify(r)).slice(0, 300));
   check(`${tag}: ...with its Journaling evidence ("note revised")`, r?.evidence?.eventType === "journal.note-revised" && r?.evidence?.noteId === NID && r?.evidence?.unitKey === "ayah:2:255", JSON.stringify(r?.evidence));
   st = await pageStatus(page);
   check(`${tag}: ...the page says it is kept, in words`, st === KEPT, st);
   check(`${tag}: ...no revision reached the server, and the card shows the kept text`, (await page.evaluate(() => window.__DATA.noteRevisions.length)) === 0 && await until(page, (s) => (document.querySelector(s)?.textContent || "").includes("EDITED-OFFLINE"), card(NID), 4000));
 
-  // 3. A pop-up window's edit.
+  // 3. A pop-up window's edit. (A failed inline save leaves its form open: cancelled first, so the window is still tested.)
+  if (await vis(page, `${card(NID)} [data-edit-cancel]`)) await page.click(`${card(NID)} [data-edit-cancel]`);
   await page.click(`${card(NID)} [data-note-window]`);
   await page.waitForSelector(W(NID), { state: "visible", timeout: 8000 });
   const direct = `${W(NID)} [data-pane-bar] > [data-pane-edit-toggle]`;
@@ -576,7 +578,7 @@ for (const [lang, width] of run("notes") ? [["en", 390], ["bn", 1280]] : []) {
   await flushByHiding(page);
   const keptW = await until(page, (n) => JSON.parse(localStorage.getItem("mmsa.noteOutbox.v1") || "[]").some((e) => e.noteId === n && e.bodyHtml.includes("WINDOW")), NID, 5000);
   const rw = ((await outbox(page)) || []).filter((e) => e.noteId === NID);
-  check(`${tag}: a window's edit offline is kept, folded into the same waiting save (one revision when online)`, keptW && rw.length === 1 && rw[0].expectedRevisionId === RID && rw[0].bodyHtml.includes("EDITED-OFFLINE") && rw[0].evidence?.eventType === "journal.note-revised", JSON.stringify(rw).slice(0, 300));
+  check(`${tag}: a window's edit offline is kept, folded into the same waiting save (one revision when online)`, keptW && rw.length === 1 && rw[0].expectedRevisionId === RID && rw[0].bodyHtml.includes("EDITED-OFFLINE") && rw[0].evidence?.eventType === "journal.note-revised", String(JSON.stringify(rw)).slice(0, 300));
   const ws = await page.evaluate((s) => { const e = document.querySelector(`${s} [data-edit-status]`); return e && !e.hidden ? e.textContent : ""; }, W(NID));
   check(`${tag}: ...and the window says it is kept on this device, in words`, ws === KEPT, ws);
   await winToggle();
@@ -591,17 +593,17 @@ for (const [lang, width] of run("notes") ? [["en", 390], ["bn", 1280]] : []) {
   // 5. Online again.
   await page.evaluate(() => sessionStorage.setItem("__stubWrites", "[]"));
   await goOnline(page);
-  check(`${tag}: online again, the outbox is emptied`, await drainedOk(page), JSON.stringify(await outbox(page)).slice(0, 300));
+  check(`${tag}: online again, the outbox is emptied`, await drainedOk(page), String(JSON.stringify(await outbox(page))).slice(0, 300));
   const w = await writes(page);
   const noteSets = w.filter((x) => x.col === "notes" && x.id === `t1__${c?.noteId}` && x.op === "set");
-  check(`${tag}: the new Note is made ONCE, by a transaction, under its kept ids`, noteSets.length === 1 && noteSets[0].tx === true && (await noteRow(page, c?.noteId))?.rev === c?.revisionId, JSON.stringify(noteSets).slice(0, 300));
+  check(`${tag}: the new Note is made ONCE, by a transaction, under its kept ids`, noteSets.length === 1 && noteSets[0].tx === true && (await noteRow(page, c?.noteId))?.rev === c?.revisionId, String(JSON.stringify(noteSets)).slice(0, 300));
   const src = await page.evaluate((i) => window.__DATA.noteSources.filter((s) => s.sourceLinkId === i).map((s) => ({ k: s.sourceKey, kind: s.sourceKind, rel: s.relationshipKind, prov: s.provenanceKind, ap: s.approachId, n: s.noteId })), c?.sourceLinkId);
   check(`${tag}: ...linked to the unit once, under its kept link id, exactly as createStudyNote links it`, src.length === 1 && src[0].k === "ayah:2:255" && src[0].kind === "quran-unit" && src[0].rel === "origin" && src[0].prov === "study-note" && src[0].ap === null && src[0].n === c?.noteId, JSON.stringify(src));
   const r1 = await revs(page, NID);
-  check(`${tag}: the edits are saved as ONE revision chained from the old one`, r1.length === 1 && r1[0].prev === RID && r1[0].body.includes("EDITED-OFFLINE") && r1[0].body.includes("WINDOW"), JSON.stringify(r1).slice(0, 300));
+  check(`${tag}: the edits are saved as ONE revision chained from the old one`, r1.length === 1 && r1[0].prev === RID && r1[0].body.includes("EDITED-OFFLINE") && r1[0].body.includes("WINDOW"), String(JSON.stringify(r1)).slice(0, 300));
   const evs = await evidenceRows(page);
-  check(`${tag}: the Journaling evidence is recorded: "note created" for the new Note`, evs.filter((e) => e.eventType === "journal.note-created" && e.noteId === c?.noteId && e.unitKey === "ayah:2:255").length === 1, JSON.stringify(evs).slice(0, 400));
-  check(`${tag}: ...and "note revised" for the edited one`, evs.filter((e) => e.eventType === "journal.note-revised" && e.noteId === NID).length === 1, JSON.stringify(evs).slice(0, 400));
+  check(`${tag}: the Journaling evidence is recorded: "note created" for the new Note`, evs.filter((e) => e.eventType === "journal.note-created" && e.noteId === c?.noteId && e.unitKey === "ayah:2:255").length === 1, String(JSON.stringify(evs)).slice(0, 400));
+  check(`${tag}: ...and "note revised" for the edited one`, evs.filter((e) => e.eventType === "journal.note-revised" && e.noteId === NID).length === 1, String(JSON.stringify(evs)).slice(0, 400));
   st = await pageStatus(page);
   check(`${tag}: the page says the offline Notes are saved, in words`, st === (lang === "bn" ? SAVED_BN : SAVED_EN), st);
 

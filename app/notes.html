@@ -171,11 +171,10 @@
     import "./js/palette-keys.js"; // audit part 154: keyboard focus in / back / out of the ⋯ menus
     import { createFirestoreSettingsStore } from "./js/note-user-settings-fs.js";
     import {
-      createStudyNote, reviseStudyNote, retireStudyNote, notesForStudyUnit, recordJournalEvidence, journalEvidenceFor, PROVENANCE_STUDY_NOTE,
+      createStudyNote, reviseStudyNote, retireStudyNote, notesForStudyUnit, recordJournalEvidence, journalEvidenceFor, studyNoteSourceFor,
     } from "./js/study-note-service.js";
     // PCF MSA J120 O3b: a Note written or changed here offline is kept on the device and saved by the same functions when online.
     import { keepCreate, keepRevise, keptOnDevice, overlayPending, replayOutbox, onReplayed, offlineNow, isOfflineFailure, hasPending, pendingForNote } from "./js/note-outbox.js";
-    import { studyNoteSource } from "./js/study-note-binding.js";
     import { NOTE_STATUS, newNoteEntityId, listNoteRevisions, listNoteTagsForOwnerPage, listNoteTagLinksForOwnerPage, createNoteTag as createTag, tagNote, untagNote } from "./js/note-foundation.js";
     import { isDawahReady } from "./js/dawah-readiness.js";
     import { isSiyagahSectionsReady } from "./js/siyagah-sections-readiness.js";
@@ -660,7 +659,7 @@
             const evidence = journalEvidenceFor({ tenantId: activeTenantId, personId: selectedPersonId, unitKey, at, weekStartsOn,
               commit: { noteId: ids.noteId, revisionId: ids.revisionId, previousRevisionId: null, revisionReason: "created" } });
             keepCreate({ ...owner, ...ids, title, bodyHtml, unitKey, evidence,
-              source: studyNoteSource({ unitKey, relationshipKind: "origin", provenanceKind: PROVENANCE_STUDY_NOTE, approachId: null }) });
+              source: studyNoteSourceFor({ unitKey }) });
             return { kept: true };
           };
           if (offlineNow()) return keep();
