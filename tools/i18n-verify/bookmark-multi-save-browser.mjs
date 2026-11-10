@@ -64,7 +64,21 @@ async function readView(page) {
   await setSel(page, "surahSelect", "2"); await page.waitForTimeout(1500);
   await setSel(page, "unitTypeSelect", "surah"); await page.waitForTimeout(800);
 }
-const tapBm = async (page) => { await page.evaluate(() => { window.__stubWriteData = []; const n = document.getElementById("bmSavedNotice"); if (n) n.hidden = true; }); await clickReadTool(page, "#readBookmarkBtn"); };
+// UPDATED IN PLACE 10 Nov 2026 (MSA · QR J130 follow-up, the Architect 94L): the bar's 🔖 (#readBookmarkBtn, which bookmarked the
+// selected Study Unit) has been retired from sight since J114 (ONE ⋮ menu, the Owner, 6-7 Nov 2026); its place is the ⋮ sheet's
+// "whole unit" bookmark tile ([data-qm-unit-bookmark], J114 follow-up), which opens the same Bookmark dialog. The unit here is the
+// whole sūrah, so the first āyah's ⋮ on screen is opened and that tile pressed. Everything after the dialog opens is unchanged.
+const tapBm = async (page) => {
+  await page.evaluate(() => { window.__stubWriteData = []; const n = document.getElementById("bmSavedNotice"); if (n) n.hidden = true; });
+  // A fresh ⋮ each time: any sheet left open is closed first. The tile is pressed with a DOM click, NOT a pointer tap, on
+  // purpose: in whole-sūrah mode the first āyah's ⋮ sheet opens upward with no room (clipped by #readScroll at 390px, under the
+  // Read bar at 1280px; measured 10 Nov 2026 and reported to the QR Lead with MSA · QR J132, Quran Study's Read bar). That
+  // reachability defect is the Read view's to fix; this suite proves the multi-person save, which starts once the dialog opens.
+  await page.keyboard.press("Escape"); await page.waitForTimeout(150);
+  await page.locator(".ayah-quick-btn:visible").first().click(); await page.waitForTimeout(300);
+  const pressed = await page.evaluate(() => { const e = [...document.querySelectorAll(".qm-sheet [data-qm-unit-bookmark]")].find((x) => x.getBoundingClientRect().width > 0); if (e) e.click(); return !!e; });
+  if (!pressed) throw new Error("the ⋮ sheet has no whole-unit bookmark tile on screen");
+};
 const tick = (page, sel, ids) => page.evaluate(([s, list]) => {
   for (const c of document.querySelectorAll(s)) { if (c.checked !== list.includes(c.value)) c.click(); }
 }, [sel, ids]);

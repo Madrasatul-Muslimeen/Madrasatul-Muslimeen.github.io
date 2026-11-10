@@ -367,6 +367,19 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: no page errors`, noErr(errors).length === 0, noErr(errors).slice(0, 2).join(" | "));
   });
 }
+/** UPDATED IN PLACE 10 Nov 2026 (MSA · QR J130 follow-up, the Architect 94L), as read-note-pane-browser does: the Read view's Notes
+ *  pane has had no route since J114 (the Owner, PCF MSA J114 n114b, 7 Nov 2026: "2.F": the ⋮ Notes tile opens Mapping My Journey),
+ *  but its code is kept, so this audit still measures it. The first call asserts the retirement; then the old 📝 (and, below 900px,
+ *  the retired ⋯ menu that held it: harness.mjs's legacyTools rule) is put back with a style rule, and 📝 itself is pressed (NOT
+ *  clickReadTool, whose fallback is the ⋮ Notes tile, which opens Mapping My Journey rather than the pane). */
+async function openRetiredPane(page, t, first) {
+  if (first) check(`${t}: J114: the bar's 📝 is retired from sight (the pane has no route; this audit shows it on purpose)`, await ev(page, () => getComputedStyle(document.getElementById("readNotesBtn")).display === "none"));
+  await page.addStyleTag({ content: "#readBar #readNotesBtn { display: inline-flex !important; } @media (max-width: 899.98px) { #readBar #readToolsBtn { display: inline-flex !important; } #readToolsMenu.open { display: grid !important; } } @media (min-width: 900px) { #readToolsMenu { display: contents !important; } }" });
+  if (await ev(page, () => (document.getElementById("readNotesBtn")?.getBoundingClientRect().width ?? 0) === 0 && (document.getElementById("readToolsBtn")?.getBoundingClientRect().width ?? 0) > 0)) {
+    await page.click("#readToolsBtn"); await settle(page, 200);
+  }
+  await page.click("#readNotesBtn");
+}
 for (const lang of LANGS) for (const width of WIDTHS) {
   const bn = lang === "bn";
   // 1 and 2: the Notes pane in the Read view, and its Track this āyah tab.
@@ -380,7 +393,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await ev(page, () => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
     const before = await ev(page, () => ({ ayah: document.getElementById("ayahSelect").value, top: document.getElementById("readScroll")?.scrollTop ?? 0 }));
     check(`${t}: POSITIVE CONTROL the Read view is on 2:256 with the 📝 control reachable`, before.ayah === "256" && (await ev(page, () => !!document.getElementById("readNotesBtn"))));
-    await clickReadTool(page, "#readNotesBtn");
+    await openRetiredPane(page, t, true);
     await page.waitForFunction(() => document.querySelector("#readNotePane:not([hidden]) iframe"), null, { timeout: 8000 }).catch(() => {});
     await settle(page, 700);
     const pane = await rect(page, "#readNotePane");
@@ -403,7 +416,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const after = await ev(page, () => ({ hidden: document.getElementById("readNotePane").hidden, ayah: document.getElementById("ayahSelect").value, top: document.getElementById("readScroll")?.scrollTop ?? 0 }));
     check(`${t}: ← Back closes the pane to the same āyah and the same place`, after.hidden && after.ayah === before.ayah && Math.abs(after.top - before.top) <= 2, JSON.stringify({ before, after }));
     // 2: Track this āyah
-    await clickReadTool(page, "#readNotesBtn"); await settle(page, 500);
+    await openRetiredPane(page, t, false); await settle(page, 500);
     // Updated in place (audit part 42): since PCF MSA J71 a computer's wide Notes window (1440px) hides its own tab row
     // (`.rnp-tabs-in-frame .rnp-tabs { display: none }`, read-note-pane.js syncHostedTabs) and the page inside the frame
     // carries the Notes | Track tabs on its tools row (`[data-jm-host-tab]`). So click the tab that is really on screen.

@@ -2,10 +2,21 @@
 // to this note view"): a Note opened from the Read view's Notes pane (the list, the top-bar search, ✚ New note) or from a
 // plain link to journey-map.html?note=<id> opens in the Mapping My Journey TRAY, with THAT note's title in its note window;
 // nothing else opens; ✕ returns to exactly where the reader was. Zab's "Open" is proven in zab-to-note-browser.
+//
+// UPDATED IN PLACE 10 Nov 2026 (MSA · QR J130 follow-up, the Architect 94L): the Read view's Notes pane has had NO ROUTE since
+// J114 (the Owner, PCF MSA J114 n114b, 7 Nov 2026: "2.F": the ⋮ sheet's Notes tile opens the āyah's latest Note in Mapping My
+// Journey and offers "+ New Note"; the pane is not offered). So:
+//   - "list" (a Note tapped in the pane's list) is now "tile": the ⋮ Notes tile on 2:256 opens "Started on 2:256" in the tray,
+//     nothing else opens, the pane stays closed, ✕ returns. (The fuller proof of that route is ayah-notes-open-latest-browser.)
+//   - "search" (the pane's top-bar search) and "new" (the pane's ✚ New note) are RETIRED: their flows stay below, NOT run, and
+//     paneRetired() FAILS the day a route to the pane comes back (#readNotesBtn on screen, or the tile opening #readNotePane);
+//     then run them again instead.
+//   - "link" (journey-map.html?note=<id>) is unchanged.
 // Run from the repository root with serve.js on :8080 (the harness BASE).
-//   --only=list|search|new|link     one entry point        --lang=en|bn
-//   --mutate=list    the pane opens a tapped Note in its own small Note view again   -> the list/search/new entries fail
-//   --mutate=link    the tray ignores ?note= on a link                               -> the link entry fails
+//   --only=tile|retired|link     one entry point        --lang=en|bn
+//   --mutate=tile    the ⋮ Notes tile does nothing (its onOpenNote emptied)      -> the tile entry fails
+//   --mutate=link    the tray ignores ?note= on a link                          -> the link entry fails
+//   --mutate=pane    the old 📝 button is on screen again (J114's hiding rule gone) -> the retired guard fails
 import { chromium, newContext, openPage, clickReadTool, BASE } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -17,7 +28,10 @@ const check = (name, ok, detail = "") => {
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
 const ONLY = arg("only"), LANG = arg("lang"), MUTATE = arg("mutate");
 const MUT = {
-  list: ["journey-map.html", "if (unitMode) { openUnitInJourney(noteId); return; }", ""],
+  tile: ["quranrevival.html", "onOpenNote: (unitKey) => openLatestNoteFromMenu(unitKey),", "onOpenNote: () => {},"],
+  // Both rules that keep the old 📝 off screen: J114's (the bar's own Notes button) and "one menu" (the whole ⋯ tools menu).
+  pane: ["quranrevival.html", "#readBar #readBookmarkBtn, #readBar #readBarBookmarkBtn, #readBar #readNotesBtn, #readBar #readWritingBtn,", "#readBar #readBookmarkBtn, #readBar #readBarBookmarkBtn, #readBar #readWritingBtn,",
+    "#readBar #readToolsBtn, #readToolsMenu { display: none !important; }", "/* mutated */"],
   link: ["js/journey-tray.js", "openJourneyTray({ noteId });", "openJourneyTray();"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -48,8 +62,12 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height }, extraSeedJs: SEED });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
-    const [file, a, b] = MUT[MUTATE];
-    await ctx.route(`**/app/${file}*`, async (r) => { const src = fs.readFileSync(`app/${file}`, "utf8"); if (!src.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`); await r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: src.split(a).join(b) }); });
+    const [file, ...pairs] = MUT[MUTATE]; // file, then old/new text pairs; EVERY occurrence of each is replaced
+    await ctx.route(`**/app/${file}*`, async (r) => {
+      let src = fs.readFileSync(`app/${file}`, "utf8");
+      for (let i = 0; i < pairs.length; i += 2) { if (!src.includes(pairs[i])) throw new Error(`mutation anchor missing: ${MUTATE}`); src = src.split(pairs[i]).join(pairs[i + 1]); }
+      await r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: src });
+    });
   }
   const { page: P } = await openPage(ctx, "/app/quranrevival.html");
   const ev = (f, a) => P.evaluate(f, a);
@@ -88,11 +106,29 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   // POSITIVE CONTROL: before any tap the tray is closed and shows no note, so a title read later came from the tap.
   check(`${tag} POSITIVE CONTROL: no tray and no note title before the first tap`, !(await state()).tray && (await trayTitle()) === "");
 
-  if (!ONLY || ONLY === "list") {
-    const F = await openPane(256);
-    check(`${tag} list: the Notes pane lists "Started on 2:256"`, !!F && !!(await F.$('[data-unit-body] [data-note-id="n256"] [data-note-open]')));
-    if (F) { const before = await state(); await F.click('[data-unit-body] [data-note-id="n256"] [data-note-open]'); await opened("list", "Started on 2:256", before, { paneStays: true }); }
+  if (!ONLY || ONLY === "tile") {
+    // The ⋮ beside 2:256 -> its sheet's 📝 Notes tile (clickReadTool's route when the old button is not on screen).
+    const before = await state();
+    const tileShown = await until("the ⋮ sheet's Notes tile for 2:256", async () => {
+      if (!(await ev(() => (document.querySelector("#readQuickMenuSlot .qm-sheet [data-qm-note]")?.getBoundingClientRect().width ?? 0) > 0))) {
+        await P.click("#readQuickMenuSlot .ayah-quick-btn").catch(() => {}); await P.waitForTimeout(300);
+      }
+      return ev(() => { const t = document.querySelector("#readQuickMenuSlot .qm-sheet [data-qm-note]"); return !!t && t.getBoundingClientRect().width > 0 && !t.hasAttribute("data-qm-note-new"); });
+    });
+    check(`${tag} tile: POSITIVE CONTROL the ⋮ sheet shows 📝 Notes (not "Take Note") for 2:256, which has a Note`, tileShown);
+    if (tileShown) { await P.click("#readQuickMenuSlot .qm-sheet [data-qm-note]"); await opened("tile", "Started on 2:256", before, { paneStays: false }); }
   }
+  if (!ONLY || ONLY === "retired") await paneRetired();
+  /** RETIRED (J114 n114b F): the pane's search and ✚ New note flows below are NOT run. This keeps the retirement honest. */
+  async function paneRetired() {
+    await P.keyboard.press("Escape").catch(() => {});
+    // On a narrow screen the old button lived in the ⋯ tools menu: open ⋯ first when it is on screen, then measure.
+    if (await ev(() => (document.getElementById("readToolsBtn")?.getBoundingClientRect().width ?? 0) > 0)) { await P.click("#readToolsBtn").catch(() => {}); await P.waitForTimeout(200); }
+    const btn = await ev(() => document.getElementById("readNotesBtn")?.getBoundingClientRect().width ?? -1);
+    check(`${tag} RETIRED search/new (J114 n114b F): the old 📝 Notes button is not on screen, so the Notes pane has no route (else run the pane's search and new flows again)`, btn <= 0, `#readNotesBtn width ${btn}`);
+    check(`${tag} RETIRED search/new: the Notes pane is closed`, await ev(() => !document.getElementById("readNotePane") || document.getElementById("readNotePane").hidden));
+  }
+  if (false) { // RETIRED 10 Nov 2026 (J114 n114b F): the pane's search and ✚ New note, kept as they were. paneRetired() guards them.
   if (!ONLY || ONLY === "search") {
     const bar = await ev(() => !!document.querySelector("#readNotePane:not([hidden])"));
     if (!bar) await openPane(256);
@@ -125,6 +161,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
       check(`${tag} new: ✕ returns to exactly where the reader was`, !after.tray && after.ayah === before.ayah && after.pane === before.pane && Math.abs(after.scroll - before.scroll) <= 2, JSON.stringify({ before, after }));
     } else check(`${tag} new: the pane opened on 2:257`, false);
   }
+  } // end RETIRED
   if (!ONLY || ONLY === "link") {
     await P.click("#readNotePane [data-rnp-back]").catch(() => {});
     await P.waitForTimeout(300);
