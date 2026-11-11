@@ -82,14 +82,27 @@ Overall about **2½–3 weeks** of my time for P0–P3, spread over several smal
 | Copyright (community upload of Darussalam books) | we only link/stream from archive.org, never copy or store; credit shown |
 | Weight on phones | PDF library loads only when the pane opens; range reads only |
 
-## 7. Decisions for the Owner
-- [ ] **Rights:** OK to open the archive.org scans inside the app with a credit line, never copying them? (The item's "creator" is
-  quranstudy-oneayahaday.com: is that your upload?)
-- [ ] **Go P0 (the one-day spike) and then the Tirmidhi pilot?**
-- [ ] **Viewer:** pop-up pane inside the app (recommended), with "open on archive.org" as the fallback?
-- [ ] **Book order after Tirmidhi:** Bukhari, Muslim, then the rest? (Or your order.)
-- [ ] **Dua cards:** include them (needs the Dua Lead), or Hadith cards only for now?
+## 7. Decisions — ANSWERED by the Owner, 11 Nov 2026
+- [x] Rights: **credit line is fine** (shown in the pane: "Scan: Darussalam edition, shared on archive.org"); we only link to the scans.
+- [x] **Start with Sahih al-Bukhari.** Book order after it: **Bukhari, Muslim, Tirmidhi, Abu Dawud, Nasa'i, Ibn Majah**, then **all other resources** (Muwatta, Ahmad, the rest), "we will keep adding such books".
+- [x] Viewer: **pop-up pane**.
+- [x] **Dua cards included** (the Dua card files are the Dua Lead's: one call to `bookPageButton` goes into `dua-browser.js`, asked of the Architect/Dua Lead).
+- [x] **Eventually every resource can be downloaded to the device, the user's choice.** See 8: this needs a different route from the embed.
 
-## 8. Hand-offs
+## 8. Spike result and build log (11 Nov 2026)
+- **Spike (real Chromium, phone width):** archive.org's embed (`/embed/<item>/<file>#page/n<leaf>/mode/1up`) shows the real scanned page in an
+  iframe on our origin: Bukhari hadith 112 on leaf 120 ("Page 120/4292"), Arabic and English on the page. **A direct `fetch` of the PDF from our
+  page FAILS (CORS)**, so a PDF library inside our page (PDF.js) cannot read archive.org's file. Decision: **use the embed**.
+- **Consequence for "download to the device":** the browser cannot read these PDFs from our page, so the app cannot store them itself.
+  Options when we get there: (1) a plain "Download this book" link the reader saves to their device; (2) we host copies or a free relay
+  (needs the Owner's approval, and copyright care); (3) only the page maps and text go offline, the scan stays online. The app already has
+  a "Use the app without internet" offline pack (`offline-ready.js`); the book scans would be a separate, optional, size-warned download.
+- **Bukhari map (built):** 7,100 of 7,563 numbers found directly (93.9%); 463 flagged "approximate" (shown with a note: this page or the next).
+  Cross-check on 400 direct hits against our own English text: 395 agree; the 5 others read by hand: 4 are spelling/narrator variants in
+  our text with the page right, 1 is a false match. Pages never go backwards. File: `output/book-pages/bukhari.json` (38 KB).
+- **Built (branch `claude/hadith-book-pages-bukhari`):** `book-pages-build.py`, `sources/book-pages.json`, `hadith-book-pages.js`,
+  `hadith-book-viewer.js`, the button on Text-pane narrations, CSS, Bangla strings, suite `hadith-book-pages-browser.mjs` (70 checks, 7 mutations).
+
+## 9. Hand-offs
 - New Hadith files only: `book-pages` data tools, a card button in `hadith-browser.js`, a new viewer module and its suite.
 - Shared parts I would **ask the Architect** about, not touch: `sw.js` (leave PDFs uncached), any security headers.

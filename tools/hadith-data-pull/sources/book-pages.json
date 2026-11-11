@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "note": "Where each hadith book can be read as the ORIGINAL PRINTED PAGE (Owner, 10-11 Nov 2026: scan first, Shamela for the rest). One row per book; add a row, run tools/hadith-data-pull/book-pages-build.py <key>, read its report. We only LINK to the scans (never copy them). Credit line is shown with every page.",
+  "credit": "Scan: Darussalam edition, as shared on archive.org",
+  "books": [
+    {
+      "key": "bukhari",
+      "title": "Sahih al-Bukhari (Arabic-English, Darussalam)",
+      "archiveId": "AllInOne-Hadiths-EngArabicDarusalam_201407",
+      "scanFile": "All in One-Sahih Al Bukhari-Eng-Arabic",
+      "scanSlug": "All%20in%20One-Sahih%20Al%20Bukhari-Eng-Arabic",
+      "numbering": "standard (Fath al-Bari / Muhsin Khan), 1-7563",
+      "lastNumber": 7563,
+      "translationDir": "bukhari",
+      "translationChunk": 500,
+      "versionUri": "0256Bukhari.Sahih.JK000110-ara1",
+      "status": "mapped"
+    }
+  ]
+}
