@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.22",
+    "version": "14.23",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6953,7 +6953,7 @@
     {
       "version": "14.22",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Owner's three Read-bar asks of 11 Nov 2026 (#1637, QR Lead 46L).",
       "integration": {
         "authorizedOn": "2026-11-10",
@@ -6961,10 +6961,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "14.23",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Three Quran Study changes by the QR Lead 46L: the ayah stripe's Words/QCR/Asma chips (#1638), the Word Card's Know Your Status on/off switch (#1640, J129 B1), and Bangla Words stage 1 kinds under a new v2 key (#1641, J119).",
+      "integration": {
+        "authorizedOn": "2026-11-11",
+        "integratedOn": "2026-11-11",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "14.23",
+  "nextUnallocated": "14.24",
   "nextUnallocatedNote": [
+    "v14.23 was allocated to Ayah stripe round 2, Know Your Status switch, Bangla Words v2 data, 2026-11-11.",
     "v14.22 was allocated to Read bar: one bookmark, WbW/Root/Derivatives, quick search, 2026-11-10.",
     "v14.21 was allocated to Word Card nav together, Verb Form line, freeze fix, 2026-11-10.",
     "v14.20 was allocated to Ayah stripe round 1 + J136 effort Rules on, 2026-11-10.",
