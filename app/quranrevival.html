@@ -8007,6 +8007,7 @@
     import { isTasrifLevelPersistenceReady } from "./js/study-tasrif-level-readiness.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah, scrollToAyahIfRendered, mushafPageAyahGroups } from "./js/hifz-renderer.js";
     import { readPrintedOn, savePrintedOn, renderPrintedPages } from "./js/mushaf-printed.js";
+    import { downloadPrintedPdf } from "./js/printed-pdf.js";
     import { keptPages, scopeStatus, pageRange, estimateBytes as printedEstimateBytes, mbText as printedMbText, savePrintedPages, removePrintedPages, TOTAL_PAGES as PRINTED_TOTAL } from "./js/printed-offline.js";
     // Issue #286 -- the "This āyah" action sheet (Mushaf marker tap, Word
     // Card "This āyah ⋯") and its one new action, filing this reader's own
@@ -27545,6 +27546,7 @@
     // kept unless that button is pressed. A failure is said in words (I15). printed-offline.js holds the cache.
     // -----------------------------------------------------------------------
     let printedOfflineScope = "surah", printedOfflineBusy = false, printedOfflineStatus = null, printedOfflineToken = 0;
+    let printedPdfScope = "juz", printedPdfBusy = false, printedPdfStatus = null;
     async function printedOfflinePages(scope) {
       if (scope === "all") return pageRange(1, PRINTED_TOTAL);
       await ensureMushafData();
@@ -27571,7 +27573,7 @@
       if (!scopes[printedOfflineScope]?.length) printedOfflineScope = "all";
       const pages = scopes[printedOfflineScope];
       const st = scopeStatus(pages, kept), total = scopeStatus(scopes.all, kept);
-      const sig = JSON.stringify([printedOfflineScope, currentSurahNum, juz.juz, st, total.have, total.bytes, printedOfflineBusy, printedOfflineStatus, getAppLang()]);
+      const sig = JSON.stringify([printedOfflineScope, currentSurahNum, juz.juz, st, total.have, total.bytes, printedOfflineBusy, printedOfflineStatus, printedPdfScope, printedPdfBusy, printedPdfStatus, getAppLang()]);
       if (box.dataset.sig === sig) return;
       box.dataset.sig = sig;
       const what = printedOfflineScope === "surah" ? surahDisplayName(currentSurahNum) : printedOfflineScope === "juz" ? t("Juz {juz}", { juz: num(juz.juz) }) : t("The whole Mushaf ({pages} pages)", { pages: num(PRINTED_TOTAL) });
@@ -27587,7 +27589,14 @@
           : `<button type="button" id="printedOfflineSave"${printedOfflineBusy ? " disabled" : ""}>${t("Keep in the app")} (${t("about")} ${printedMbText(printedEstimateBytes(st.total - st.have))})</button>`) + `</div>` +
         `<p class="recit-off-status" id="printedOfflineStatus" role="${printedOfflineStatus?.kind === "error" ? "alert" : "status"}" data-kind="${printedOfflineStatus?.kind ?? ""}">${printedOfflineStatus ? escapeHtml(printedOfflineStatus.text) : ""}</p>` +
         `<p class="opt-note" id="printedOfflineTotal">${total.have ? escapeHtml(t("On this device: {have} of {total} pages ({size}).", { have: num(total.have), total: num(PRINTED_TOTAL), size: printedMbText(total.bytes) })) : t("No printed pages are kept on this device.")}</p>` +
-        (total.have ? `<div class="recit-off-row"><button type="button" id="printedOfflineRemoveAll"${printedOfflineBusy ? " disabled" : ""}>${t("Remove all kept pages")}</button></div>` : "");
+        (total.have ? `<div class="recit-off-row"><button type="button" id="printedOfflineRemoveAll"${printedOfflineBusy ? " disabled" : ""}>${t("Remove all kept pages")}</button></div>` : "") +
+        `<h5 class="opt-subhead" style="margin-top:0.8rem">${t("PDF file")}</h5>` +
+        `<p class="opt-note">${t("A PDF file goes to your Downloads folder like any file, for any PDF reader. It is made on this device from the page pictures and keeps nothing in the app.")}</p>` +
+        `<div class="recit-off-row"><select id="printedPdfScope" aria-label="${t("What to put in the PDF")}">` +
+          `<option value="juz"${printedPdfScope === "juz" ? " selected" : ""}>${escapeHtml(t("This juz': {n} ({pages} pages)", { n: num(juz.juz), pages: num(juz.pages.length) }))}</option>` +
+          `<option value="all"${printedPdfScope === "all" ? " selected" : ""}>${escapeHtml(t("The whole Mushaf ({pages} pages)", { pages: num(PRINTED_TOTAL) }))}</option></select>` +
+          `<button type="button" id="printedPdfBtn"${printedPdfBusy ? " disabled" : ""}>${t("Download PDF")} (${t("about")} ${printedMbText(printedEstimateBytes(printedPdfScope === "all" ? PRINTED_TOTAL : juz.pages.length))})</button></div>` +
+        `<p class="recit-off-status" id="printedPdfStatus" role="${printedPdfStatus?.kind === "error" ? "alert" : "status"}" data-kind="${printedPdfStatus?.kind ?? ""}">${printedPdfStatus ? escapeHtml(printedPdfStatus.text) : ""}</p>`;
       const redraw = () => { delete box.dataset.sig; return renderPrintedOffline(); };
       document.getElementById("printedOfflineScope").addEventListener("change", (e) => { printedOfflineScope = e.target.value; printedOfflineStatus = null; redraw(); });
       document.getElementById("printedOfflineSave")?.addEventListener("click", async () => {
@@ -27601,6 +27610,18 @@
         printedOfflineBusy = false; await redraw();
       });
       const removeThese = async (list, label) => { await removePrintedPages({ pages: list }); printedOfflineStatus = { kind: "info", text: t("Removed from this device: {what}.", { what: label }) }; await redraw(); };
+      document.getElementById("printedPdfScope").addEventListener("change", (e) => { printedPdfScope = e.target.value; printedPdfStatus = null; redraw(); });
+      document.getElementById("printedPdfBtn").addEventListener("click", async () => {
+        if (printedPdfBusy) return;
+        const list = printedPdfScope === "all" ? scopes.all : juz.pages;
+        const filename = printedPdfScope === "all" ? "Madinah-Mushaf-604-pages.pdf" : `Madinah-Mushaf-juz-${String(juz.juz).padStart(2, "0")}.pdf`;
+        printedPdfBusy = true; printedPdfStatus = { kind: "info", text: t("Making the PDF… {done} of {total}", { done: num(0), total: num(list.length) }) }; await redraw();
+        try {
+          const r = await downloadPrintedPdf({ pages: list, filename, title: printedPdfScope === "all" ? "Madinah Mushaf" : `Madinah Mushaf, Juz ${juz.juz} (pages ${list[0]}-${list[list.length - 1]})`, onProgress: (d, n) => { const el = document.getElementById("printedPdfStatus"); if (el) el.textContent = t("Making the PDF… {done} of {total}", { done: num(d), total: num(n) }); } });
+          printedPdfStatus = { kind: "info", text: t("PDF made: {name} ({pages} pages, {size}).", { name: filename, pages: num(r.pages), size: printedMbText(r.bytes) }) };
+        } catch (err) { printedPdfStatus = { kind: "error", text: err?.message || t("Could not make the PDF.") }; }
+        printedPdfBusy = false; await redraw();
+      });
       document.getElementById("printedOfflineRemove")?.addEventListener("click", () => removeThese(pages, what));
       document.getElementById("printedOfflineRemoveAll")?.addEventListener("click", () => removeThese(scopes.all, t("The whole Mushaf ({pages} pages)", { pages: num(PRINTED_TOTAL) })));
     }
