@@ -45,7 +45,7 @@ if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const ANCHORS = JSON.parse(fs.readFileSync("tools/i18n-verify/hadith-shamela-anchors.json", "utf8"));
 const reg = JSON.parse(fs.readFileSync("tools/hadith-data-pull/sources/book-pages.json", "utf8"));
 const maps = {};
-for (const key of Object.keys(ANCHORS)) {
+for (const key of Object.keys(ANCHORS).filter((k) => k !== "note")) {
   const row = reg.books.find((b) => b.key === key);
   const mp = JSON.parse(fs.readFileSync(`tools/hadith-data-pull/output/book-pages/${key}.json`, "utf8"));
   maps[key] = mp;
@@ -61,14 +61,15 @@ for (const key of Object.keys(ANCHORS)) {
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const MUW = "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1";
-const AHM = "0241IbnHanbal.Musnad.Shamela0025794-ara1";
 const [mwN, mwA] = Object.entries(ANCHORS.muwatta.at)[0];
 async function openBook(P, uri, number) {
-  await P.goto(P.url()); await P.waitForSelector('[data-hadith-tab="dua"]');
-  await P.click('[data-hadith-tab="dua"]'); await P.click('[data-dua-mode="chapters"]'); await P.waitForSelector("[data-dua-book]");
-  await P.click(`[data-dua-book="${uri}"]`); await P.waitForSelector("[data-dua-chapter]"); await P.click("[data-dua-chapter]");
-  await P.waitForSelector("[data-openiti-goto-input]", { state: "attached" });
-  const step = await P.$('[data-reader-show="chapters"]'); if (step && await step.isVisible()) await step.click();
+  const on = await P.$eval('[data-hadith-tab="books"]', (b) => b.getAttribute("aria-current") === "page").catch(() => false);
+  if (!on) await P.click('[data-hadith-tab="books"]');
+  await P.waitForSelector(`[data-openiti-book="${uri}"]`, { timeout: 25000 });
+  await P.click(`[data-openiti-book="${uri}"]`);
+  await P.waitForSelector("[data-openiti-goto-input]", { timeout: 15000 });
+  const mode = await P.$("[data-openiti-goto-mode]"); // the book's OWN numbers, not the standard concordance ones
+  if (mode) await mode.selectOption("edition");
   await P.fill("[data-openiti-goto-input]", String(number)); await P.click("[data-openiti-goto-btn]");
 }
 for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
@@ -125,9 +126,9 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
     const a = await m.loadBookPage(ahm, ahmN), none = await m.loadBookPage(muw, 99999), zero = await m.loadBookPage(muw, 0);
     return { a: a && [a.index, a.volume, a.page, a.kind, a.embedUrl, a.openUrl, a.approximate], none, zero, isM: m.isShamelaBook(muw), isB: m.isShamelaBook("0256Bukhari.Sahih.JK000110-ara1"),
       all: m.BOOK_PAGE_BOOKS, noBtnBad: v.bookPageButton(muw, 0) === null };
-  }, [MUW, AHM, Object.keys(ANCHORS.ahmad.at)[0]]);
-  const [aN, aA] = Object.entries(ANCHORS.ahmad.at)[0];
-  check(`${tag} Musnad Ahmad ${aN}: Shamela index ${aA[0]}, vol ${aA[1]}, p. ${aA[2]}, the book 25794, never "approximate"`, JSON.stringify(mod.a) === JSON.stringify([aA[0], aA[1], aA[2], "shamela", `https://shamela.ws/book/25794/${aA[0]}`, `https://shamela.ws/book/25794/${aA[0]}`, false]), JSON.stringify(mod.a));
+  }, [MUW, MUW, Object.keys(ANCHORS.muwatta.at)[1]]);
+  const [aN, aA] = Object.entries(ANCHORS.muwatta.at)[1];
+  check(`${tag} Muwatta ${aN} (two-part number 396 / 120): Shamela index ${aA[0]}, vol ${aA[1]}, p. ${aA[2]}, the book 28107, never "approximate"`, JSON.stringify(mod.a) === JSON.stringify([aA[0], aA[1], aA[2], "shamela", `https://shamela.ws/book/28107/${aA[0]}`, `https://shamela.ws/book/28107/${aA[0]}`, false]), JSON.stringify(mod.a));
   check(`${tag} a number past the end, or zero, has no page and no button (never a guess)`, mod.none === null && mod.zero === null && mod.noBtnBad);
   check(`${tag} Shamela books are told apart from scan books`, mod.isM && !mod.isB);
   const shRows = reg.books.filter((b) => b.kind === "shamela" && ["mapped", "verified"].includes(b.status));
@@ -136,5 +137,5 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await ctx.close();
 }
 await browser.close();
-console.log(`\n==== Hadith printed page on Shamela (Muwatta, Musnad Ahmad): ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== Hadith printed page on Shamela (Muwatta; Musnad Ahmad joins when its map is proven): ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
