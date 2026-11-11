@@ -1,0 +1,50 @@
+{
+  "note": "Anchors read BY HAND on live shamela.ws pages (11 Nov 2026): title 'ج<vol> - ص<page>' and the number printed at the head of the page. number -> [Shamela index, volume, printed page].",
+  "muwatta": {
+    "minCoverage": 0.99,
+    "maxBackwards": 0,
+    "at": {
+      "233": [
+        650,
+        2,
+        99
+      ],
+      "396": [
+        813,
+        2,
+        165
+      ],
+      "2000": [
+        2417,
+        3,
+        780
+      ],
+      "3600": [
+        4017,
+        5,
+        1430
+      ]
+    }
+  },
+  "adabmufrad": {
+    "minCoverage": 0.99,
+    "maxBackwards": 0,
+    "at": {
+      "26": [
+        40,
+        0,
+        23
+      ],
+      "365": [
+        549,
+        0,
+        134
+      ],
+      "689": [
+        1001,
+        0,
+        239
+      ]
+    }
+  }
+}
