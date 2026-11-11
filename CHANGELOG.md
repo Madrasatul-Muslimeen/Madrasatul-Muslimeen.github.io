@@ -23778,3 +23778,14 @@ The Owner's job of 11 Nov 2026 ("the original/real PDF page gives the user ultim
 - Review commit: a committed `tools/hadith-data-pull/__pycache__/*.pyc` removed; `.gitignore` ignores `__pycache__/`.
 
 Checks (98L, on the branch with main merged): hadith-book-pages-browser 109/0, `--prove` 9 of 9 caught (wrongleaf, noescape, nofocusback, nocredit, noapprox, nodownload, noduabutton, nobutton, eagerload); hadith-dua-a11y 2623/0; night-hadith-dua 6038/0; hadith-dua-keyboard 1086/0; openiti 76/0; dua-tab 63/0; dua-card-r2 168/0; apps-build-check 54/0. QR build and qr-verify on the merged main: 29/30, the one red `upgrade-browser` needs a QuranRevival clone this container lacks. No Firestore Rules change; nothing deployed to Firestore.
+
+## v14.25 — 11 Nov 2026 (Sydney) — Hadith: the printed page on Shamela
+
+The Owner's "Shamela is the fallback" (10-11 Nov 2026), built by the MSA-Hadith Lead (11L, then 12L) on `claude/hadith-book-pages-more`, reviewed by measurement and merged pinned (#1647, at 6d130fad) by the Architect 98L.
+
+- `hadith-book-pages.js`: two `kind: "shamela"` rows in `BOOK_PAGE_BOOKS` (Muwatta `0179MalikIbnAnas.Muwatta.Shamela0028107-ara1`, Shamela 28107; al-Adab al-Mufrad `0256Bukhari.AdabMufrad.JK000011-ara1`, Shamela 12991), `isShamelaBook()`, `shamelaUrl()`; `loadBookPage()` reads the map's `i`/`v`/`g` (Shamela index, volume, printed page).
+- `hadith-book-viewer.js`: the button reads "Printed page (Shamela)"; the credit names the edition, volume and page; no PDF download; the Tab ring skips the missing link. `hadith-browser.js` passes the book's own hadith number for these books. 4 strings in `bn.js`.
+- Builders `shamela-pages-build.py`, `shamela-pages-from-marks.py`; maps `book-pages/muwatta.json`, `adabmufrad.json`. The branch also carries an unused Riyad builder script and a `sources/book-pages.json` row ("building"); nothing in the app reads them (#1650 continues it).
+- **Review finding:** `hadith-book-pages-browser --prove` was 8 of 9 on the branch: `nocredit` anchored on the credit line the PR rewrote as a ternary, so that mutation no longer applied. Re-anchored (9 of 9).
+
+Checks (98L, branch with main merged): hadith-shamela-pages-browser 148/0, `--prove` 10 of 10; hadith-book-pages-browser 109/0, `--prove` 9 of 9 (after the fix); dua-tab 63/0; dua-card-r2 168/0; openiti 76/0; hadith-dua-keyboard 1086/0; hadith-dua-a11y 2623/0; night-hadith-dua 6038/0. QR build and qr-verify on the merged main: 29/30, the one red `upgrade-browser` needs a QuranRevival clone this container lacks. No Firestore Rules change; nothing deployed to Firestore.
