@@ -149,6 +149,21 @@
       },
       "status": "planned",
       "note": "The archive.org scan is image-only (no text layer). Shamela typed text, read page by page by shamela-pages-build.py (exact). The OpenITI PageV marks of this book are too sparse (hadith 252 sits ~200 lines before its next mark): shamela-pages-from-marks.py's own sample check, with its control, proved that route WRONG here (0 of 534), so it is not used for Ahmad."
+    },
+    {
+      "key": "adabmufrad",
+      "title": "al-Adab al-Mufrad (Bukhari, ed. Abd al-Baqi)",
+      "kind": "shamela",
+      "versionUri": "0256Bukhari.AdabMufrad.JK000011-ara1",
+      "numbering": "Abd al-Baqi's hadith numbers, 1-1322 (the numbers our Arabic text carries; hadith 26 read on both)",
+      "lastNumber": 1322,
+      "shamela": {
+        "id": "12991",
+        "edition": "ed. Abd al-Baqi",
+        "lastIndex": 2010
+      },
+      "status": "planned",
+      "note": "No scan in the archive.org item. Shamela 12991 matches our JK text (hadith 26 same words, same numbering). One-volume book: Shamela titles carry a page and no volume."
     }
   ]
 }

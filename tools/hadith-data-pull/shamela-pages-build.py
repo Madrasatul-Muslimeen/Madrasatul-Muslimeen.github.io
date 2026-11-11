@@ -19,7 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REGISTRY = os.path.join(HERE, "sources", "book-pages.json")
 OUT_DIR = os.path.join(HERE, "output", "book-pages")
 ARABIC_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
-TITLE = re.compile(r"<title>\s*ج(\d+)\s*-\s*ص(\d+)\s*-")
+TITLE = re.compile(r"<title>\s*(?:ج(\d+)\s*-\s*)?ص(\d+)\s*-")  # a one-volume book has no "ج<vol>": volume 0
 # a hadith paragraph starts with its number, or "global / in-book" (al-A'zami's Muwatta: "٣٩٦/ ١٢٠ -"; our OpenITI number is the first): <p><span id="p1" class="anchor"></span>٢٣٣ - ...
 PARA_NUMBER = re.compile(r'<p>\s*(?:<span\b[^>]*\bclass="anchor"[^>]*></span>\s*)?([٠-٩0-9]+)(?:\s*/\s*[٠-٩0-9]+)?\s*[-–]\s')
 
@@ -49,7 +49,7 @@ def read_page(body):
     m = TITLE.search(body)
     if not m:
         return None  # a front-matter page without a printed number
-    vol, page = int(m.group(1)), int(m.group(2))
+    vol, page = int(m.group(1) or 0), int(m.group(2))
     nums = [int(x.translate(ARABIC_DIGITS)) for x in PARA_NUMBER.findall(body)]
     return vol, page, nums
 

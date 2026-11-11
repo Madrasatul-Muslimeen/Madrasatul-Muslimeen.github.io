@@ -52,6 +52,11 @@ export const BOOK_PAGE_BOOKS = {
     title: { en: "Muwatta Malik", bn: "মুয়াত্তা মালিক" },
     edition: { en: "ed. al-A'zami", bn: "আল-আ'যামী সম্পাদিত" },
   },
+  "0256Bukhari.AdabMufrad.JK000011-ara1": {
+    key: "adabmufrad", kind: "shamela", shamelaId: "12991",
+    title: { en: "al-Adab al-Mufrad", bn: "আল-আদাবুল মুফরাদ" },
+    edition: { en: "ed. Abd al-Baqi", bn: "মুহাম্মাদ ফুআদ আবদুল বাকী সম্পাদিত" },
+  },
 };
 
 export const BOOK_PAGE_CREDIT_URL = "https://archive.org/details/AllInOne-Hadiths-EngArabicDarusalam_201407";

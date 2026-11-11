@@ -63,7 +63,9 @@ function showPane(info, number, opener) {
   credit.target = "_blank"; credit.rel = "noopener noreferrer";
   const edition = getAppLang() === "bn" ? book.edition?.bn : book.edition?.en;
   credit.textContent = shamela
-    ? t("Printed text: Shamela Library, {edition}, vol. {vol}, p. {page}", { edition, vol: num(String(info.volume ?? "")), page: num(String(info.page ?? "")) })
+    ? (info.volume
+      ? t("Printed text: Shamela Library, {edition}, vol. {vol}, p. {page}", { edition, vol: num(String(info.volume ?? "")), page: num(String(info.page ?? "")) })
+      : t("Printed text: Shamela Library, {edition}, p. {page}", { edition, page: num(String(info.page ?? "")) }))
     : t("Scan: Darussalam edition, shared on archive.org");
   foot.appendChild(credit);
   let down = null;

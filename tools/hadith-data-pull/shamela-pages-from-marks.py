@@ -63,7 +63,7 @@ def main():
             body = sp.fetch(sh["id"], i, a.cache)
             m = sp.TITLE.search(body)
             if m:
-                probes[i] = (int(m.group(1)), int(m.group(2)))
+                probes[i] = (int(m.group(1) or 0), int(m.group(2)))
             else:
                 v = VOL_ONLY.search(body)
                 probes[i] = (int(v.group(1)) if v else 0, None)

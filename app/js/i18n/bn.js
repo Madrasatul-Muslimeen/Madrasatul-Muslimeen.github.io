@@ -5005,6 +5005,7 @@ export const BN = {
   "Open on archive.org": "archive.org-এ খুলুন",
   "Printed page (Shamela)": "ছাপা পাতা (শামেলা)",
   "Printed text: Shamela Library, {edition}, vol. {vol}, p. {page}": "ছাপা পাঠ: আল-মাকতাবা আশ-শামিলা, {edition}, খণ্ড {vol}, পৃ. {page}",
+  "Printed text: Shamela Library, {edition}, p. {page}": "ছাপা পাঠ: আল-মাকতাবা আশ-শামিলা, {edition}, পৃ. {page}",
   "Open on Shamela": "শামেলায় খুলুন",
   "Download this book (PDF, {mb} MB)": "এই বইটি ডাউনলোড করুন (PDF, {mb} MB)",
   "No book page is listed for this hadith.": "এই হাদিসের জন্য বইয়ের পাতা তালিকায় নেই।",
