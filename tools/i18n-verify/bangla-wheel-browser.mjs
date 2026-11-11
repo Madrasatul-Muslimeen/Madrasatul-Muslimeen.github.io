@@ -83,7 +83,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   check(`${tag} centre off: no centre line, ring and tenth stay`, !w.centre && w.ring >= 1 && w.segs.length === 10, JSON.stringify({ ring: w.ring, c: w.centre, s: w.segs.length }));
   await click(page, "centre"); await click(page, "tenth"); await page.waitForTimeout(300); w = await info(page);
   check(`${tag} tenth off: nine steps again, ring and centre stay`, w.segs.length === 9 && w.ring >= 1 && !!w.centre, JSON.stringify({ ring: w.ring, c: w.centre, s: w.segs.length }));
-  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("mm_bangla_words.v1")).wheel);
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("mm_bangla_words.v2") || localStorage.getItem("mm_bangla_words.v1")).wheel);
   check(`${tag} the switches are remembered on this device`, stored.tenth === false && stored.ring === true && stored.centre === true, JSON.stringify(stored));
   await click(page, "tenth"); await page.waitForTimeout(300);
 
@@ -95,7 +95,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   check(`${tag} the tenth part opens no step`, !after || before === after, JSON.stringify({ before, after }));
 
   // the whole list off: no display at all
-  await page.evaluate(() => { const s = JSON.parse(localStorage.getItem("mm_bangla_words.v1")); s.on = false; localStorage.setItem("mm_bangla_words.v1", JSON.stringify(s)); });
+  await page.evaluate(() => { const k = localStorage.getItem("mm_bangla_words.v2") ? "mm_bangla_words.v2" : "mm_bangla_words.v1"; const s = JSON.parse(localStorage.getItem(k)); s.on = false; localStorage.setItem(k, JSON.stringify(s)); });
   await page.reload(); await page.waitForTimeout(1500);
   if (width < 900) { await page.click('#wheelDrawerRow [data-wheel-drawer="wheel"]').catch(() => {}); await page.waitForTimeout(250); }
   await page.evaluate(() => document.querySelector('[data-wheel-kind="vocab"]').click());

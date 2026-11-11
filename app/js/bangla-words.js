@@ -10,6 +10,12 @@
 // on THIS DEVICE only (localStorage), and the page says so. Nothing here is wired to Firestore.
 
 export const BANGLA_STORAGE_KEY = "mm_bangla_words.v1";
+/** Stage 1 of the Owner's J119 answers (11 Nov 2026): a word can be in MORE THAN ONE kind, so the saved shape gains a `kinds` map.
+ *  It is stored under a NEW key. v1 is only ever READ (a device that has only v1 shows exactly the words it showed before)
+ *  and is never rewritten or removed, so going back to an older build loses nothing. */
+export const BANGLA_STORAGE_KEY_V2 = "mm_bangla_words.v2";
+/** The kinds, in the Owner's order: Names in Bangla, known by Rituals, used in Bangla. A word carries one or more. */
+export const BANGLA_KINDS = Object.freeze(["names", "rituals", "bangla"]);
 export const BANGLA_CONTRACT = "quran-bangla-words:v1";
 export const LIST_ADMIN = "admin";
 export const LIST_MINE = "mine";
@@ -18,8 +24,22 @@ export const BANGLA_LISTS = Object.freeze([LIST_ADMIN, LIST_MINE]);
 export const BANGLA_WHEEL_DISPLAYS = Object.freeze(["ring", "centre", "tenth"]);
 
 export function emptyBanglaState() {
-  return { list: LIST_ADMIN, on: true, admin: [], mine: [], wheel: { ring: true, centre: true, tenth: false } };
+  return { list: LIST_ADMIN, on: true, admin: [], mine: [], kinds: { admin: {}, mine: {} }, wheel: { ring: true, centre: true, tenth: false } };
 }
+
+/** A kinds value read from anywhere becomes the known kinds only, in the Owner's order, no repeats; a word with none is "bangla". */
+const cleanKinds = (v) => {
+  const set = new Set((Array.isArray(v) ? v : []).filter((k) => BANGLA_KINDS.includes(k)));
+  const out = BANGLA_KINDS.filter((k) => set.has(k));
+  return out.length ? out : ["bangla"];
+};
+/** { lemma: [kinds] } for the lemmas of `ids` only: a lemma listed without kinds (every v1 word) is "bangla", so nothing changes for it. */
+const cleanKindMap = (ids, map) => {
+  const m = map && typeof map === "object" ? map : {};
+  const out = {};
+  for (const id of ids) out[id] = cleanKinds(m[id]);
+  return out;
+};
 
 const cleanIds = (v) => [...new Set((Array.isArray(v) ? v : []).filter((x) => typeof x === "string" && x.length > 0 && x.length <= 40))].sort();
 
@@ -28,20 +48,53 @@ export function normaliseBanglaState(raw) {
   const base = emptyBanglaState();
   if (!raw || typeof raw !== "object") return base;
   const w = raw.wheel && typeof raw.wheel === "object" ? raw.wheel : {};
+  const admin = cleanIds(raw.admin), mine = cleanIds(raw.mine);
   return {
     list: raw.list === LIST_MINE ? LIST_MINE : LIST_ADMIN,
     on: raw.on !== false,
-    admin: cleanIds(raw.admin),
-    mine: cleanIds(raw.mine),
+    admin,
+    mine,
+    kinds: { admin: cleanKindMap(admin, raw.kinds?.admin), mine: cleanKindMap(mine, raw.kinds?.mine) },
     wheel: { ring: w.ring !== false, centre: w.centre !== false, tenth: w.tenth === true },
   };
 }
 
+/** v2 when this device has it, else v1 read through the same normaliser (every v1 word becomes kind "bangla"), else empty. Never throws. */
 export function loadBanglaState(storage = globalThis.localStorage) {
-  try { return normaliseBanglaState(JSON.parse(storage.getItem(BANGLA_STORAGE_KEY))); } catch { return emptyBanglaState(); }
+  const read = (key) => { try { return JSON.parse(storage.getItem(key)); } catch { return null; } };
+  const v2 = read(BANGLA_STORAGE_KEY_V2);
+  if (v2 && typeof v2 === "object") return normaliseBanglaState(v2);
+  return normaliseBanglaState(read(BANGLA_STORAGE_KEY));
 }
+/** Writes v2 only. The v1 entry is left exactly as it was. */
 export function saveBanglaState(state, storage = globalThis.localStorage) {
-  try { storage.setItem(BANGLA_STORAGE_KEY, JSON.stringify(normaliseBanglaState(state))); return true; } catch { return false; }
+  try { storage.setItem(BANGLA_STORAGE_KEY_V2, JSON.stringify(normaliseBanglaState(state))); return true; } catch { return false; }
+}
+
+/** The kinds one word carries in a list (default: the viewed list); [] when the word is not in it. */
+export function banglaKindsOf(state, lemma, list) {
+  const s = normaliseBanglaState(state);
+  return s.kinds[list ?? s.list]?.[lemma] ? [...s.kinds[list ?? s.list][lemma]] : [];
+}
+
+/** The lemma ids in force that carry `kind` (all of them when `kind` is omitted). Empty while the list is switched off. */
+export function banglaWordsOfKind(state, kind) {
+  const s = normaliseBanglaState(state);
+  if (!s.on) return [];
+  return s[s.list].filter((id) => !kind || s.kinds[s.list][id].includes(kind));
+}
+
+/** A NEW state with the word's kinds set (the word is added if it was not there; an empty `kinds` array removes it).
+ *  Refuses a list the reader cannot edit, exactly like setBanglaWord. */
+export function setBanglaWordKinds(state, lemma, kinds, { list, canAdmin = false } = {}) {
+  const s = normaliseBanglaState(state);
+  const target = list ?? s.list;
+  if (!BANGLA_LISTS.includes(target) || !canEditList(target, canAdmin) || typeof lemma !== "string" || !lemma) return s;
+  const wanted = (Array.isArray(kinds) ? kinds : []).filter((k) => BANGLA_KINDS.includes(k));
+  const ids = new Set(s[target]);
+  const map = { ...s.kinds[target] };
+  if (!wanted.length) { ids.delete(lemma); delete map[lemma]; } else { ids.add(lemma); map[lemma] = cleanKinds(wanted); }
+  return { ...s, [target]: cleanIds([...ids]), kinds: { ...s.kinds, [target]: map } };
 }
 
 /** May this reader change this list? Their own list: always. The admin's: only an admin (the page passes canAdmin). */
@@ -64,7 +117,9 @@ export function setBanglaWord(state, lemma, on, { list, canAdmin = false } = {})
   if (!BANGLA_LISTS.includes(target) || !canEditList(target, canAdmin) || typeof lemma !== "string" || !lemma) return s;
   const set = new Set(s[target]);
   if (on) set.add(lemma); else set.delete(lemma);
-  return { ...s, [target]: cleanIds([...set]) };
+  const map = { ...s.kinds[target] };
+  if (on) map[lemma] = map[lemma] ?? ["bangla"]; else delete map[lemma];
+  return { ...s, [target]: cleanIds([...set]), kinds: { ...s.kinds, [target]: map } };
 }
 
 /**
