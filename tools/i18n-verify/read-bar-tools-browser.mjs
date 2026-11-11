@@ -87,11 +87,11 @@ for (const [lang, width, height] of [["en", 360, 740], ["en", 390, 844], ["bn", 
   if (lang === "bn" || width === 390) await page.screenshot({ path: `${SHOT_DIR}/read-bar-tools-${lang}-${width}.png` });
 
   // ---- Text size's sliders open fully on screen, the sheet staying open
-  await page.click(`${SHEET} [data-text-size-toggle]`); await page.waitForTimeout(300);
+  await page.click(`${SHEET} [data-text-size-toggle]`).catch(() => {}); await page.waitForTimeout(300); // 99L review: a missing tile (its mutation) is a counted FAIL below, not a crash
   // The sheet scrolls on a short phone (360x740), so the sliders are checked once scrolled to, as a reader does.
   const pop = await page.evaluate((q) => { const p = document.querySelector(`${q} .text-size-popover.open, .text-size-popover.open`); p?.scrollIntoView({ block: "nearest" }); const r = p?.getBoundingClientRect(); return r ? { l: Math.round(r.left), r: Math.round(r.right), t: Math.round(r.top), b: Math.round(r.bottom), inView: r.left >= 0 && r.right <= innerWidth + 1 && r.top >= 0 && r.bottom <= innerHeight + 1, sheetOpen: !!document.querySelector(q)?.classList.contains("open") } : null; }, SHEET);
   check(`${tag} ...Text size opens its sliders fully on screen, the sheet staying open`, !!pop && pop.inView && pop.sheetOpen, JSON.stringify(pop));
-  await page.click(`${SHEET} [data-text-size-toggle]`); await page.waitForTimeout(250);
+  await page.click(`${SHEET} [data-text-size-toggle]`).catch(() => {}); await page.waitForTimeout(250); // 99L review: a missing tile (its mutation) is a counted FAIL below, not a crash
 
   // ---- Escape and a tap outside
   await openSheet(page);
@@ -105,7 +105,7 @@ for (const [lang, width, height] of [["en", 360, 740], ["en", 390, 844], ["bn", 
 
   // ---- choosing a tool closes the sheet and the tool runs
   await openSheet(page);
-  await page.click(`${SHEET} [data-qm-writing]`); await page.waitForTimeout(500);
+  await page.click(`${SHEET} [data-qm-writing]`).catch(() => {}); await page.waitForTimeout(500); // 99L review: a missing tile (its mutation) is a counted FAIL below, not a crash
   check(`${tag} ...choosing Writing sheet closes the sheet and the tool runs (the Writing sheet opens)`, await page.evaluate((q) => !document.querySelector(q)?.classList.contains("open") && !!document.querySelector("[data-ws-chrome]"), SHEET));
   await page.evaluate(() => document.querySelector('[data-ws="close"]')?.click()); await page.waitForTimeout(300);
   await page.evaluate(() => document.querySelector('[data-ws="close-anyway"]')?.click()); await page.waitForTimeout(300);
