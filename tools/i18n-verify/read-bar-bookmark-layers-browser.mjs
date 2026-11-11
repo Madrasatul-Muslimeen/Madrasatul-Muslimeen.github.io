@@ -78,7 +78,9 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
   await page.waitForTimeout(700);
   // PCF MSA J110 A (the Owner ticked A, 2 Nov 2026): below 600px the switches are behind ONE "Show ▾" on 📖's line; it is
   // measured there, then opened so the switches themselves are checked as before. Updated in place, reason recorded.
-  // FLAGGED for the Architect (debt round, 11 Nov 2026): on a phone this range-unit Read on bar is THREE lines (151px at 390px), not the two lines read-one-bar asserts for the single-āyah bar.
+  // RED BY NAME ON PURPOSE (98L, 11 Nov 2026): with a range unit this Read-on bar is THREE lines (151px) at 360, 390 and 412px, not the two it was made to be. Its content is 782px
+  // wide (the sum of the controls 699px plus 13 gaps of 6.4px) against 2 x the bar's width: 656px at 360, 716px at 390, 760px at 412, so it is 126px, 66px and 22px short of two lines.
+  // The widest parts: the unit chip 98px, "Show 3 ▾" 95px, "Read on" 65px, and ten 40px buttons. Left failing until the Owner chooses (see PR #1649).
   const barH0 = await page.evaluate(() => Math.round(document.getElementById("readBar").getBoundingClientRect().height)); // before the Show menu opens (it opens inside the bar)
   const showTop = await page.evaluate(() => { const b = document.querySelector("#readMeaningLayersSlot [data-ml-menu]"), r = b?.getBoundingClientRect(); return r && r.width > 0 ? Math.round(r.top) : null; });
   if (showTop !== null) { await page.click("#readMeaningLayersSlot [data-ml-menu]"); await page.waitForTimeout(250); }
@@ -95,7 +97,7 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
   // PCF MSA J75 (the Owner, 22 Oct 2026: "For English, write only Eng"): below 480px the English switch reads "Eng".
   const want = lang === "bn" ? ["ইংরেজি", "বাংলা", "শব্দে শব্দে"] : [W < 480 ? "Eng" : "English", "Bangla", "WbW"];
   check(`${tag} the three switches are on the Read bar, none left in the flow, each whole and 36px tall: ${want.join(" / ")}`, L.inFlow === 0 && JSON.stringify(L.labels.map((l) => l.t)) === JSON.stringify(want) && L.labels.every((l) => l.whole && l.inBar && l.h >= 36), JSON.stringify(L));
-  check(`${tag} ...on 📖's own line, so the bar and switches take at most 60px (one line) from 600px, and at most 160px (three lines: with a range unit the bar also carries its chip, ◂ ▸ and Show ▾, J114/J110) below it (137px before)`, (showTop !== null ? W < 600 && Math.abs(showTop - L.mTop) < 4 : W >= 600 && L.labels.every((l) => Math.abs(l.top - L.mTop) < 4)) && L.cover <= (W < 600 ? 160 : 60), JSON.stringify({ cover: L.cover, showTop, tops: L.labels.map((l) => l.top), mTop: L.mTop }));
+  check(`${tag} ...on 📖's own line, so the bar and switches take at most 60px (one line) from 600px, and at most 100px (the two lines the bar was made to be, 98L 11 Nov) below it (137px before)`, (showTop !== null ? W < 600 && Math.abs(showTop - L.mTop) < 4 : W >= 600 && L.labels.every((l) => Math.abs(l.top - L.mTop) < 4)) && L.cover <= (W < 600 ? 100 : 60), JSON.stringify({ cover: L.cover, showTop, tops: L.labels.map((l) => l.top), mTop: L.mTop }));
   check(`${tag} no sideways scroll`, L.over <= 0, String(L.over));
   // Switching Bangla off still works from the bar, and the bar keeps the switches.
   await page.click('#readMeaningLayersSlot [data-meaning-layer="bn"]');
