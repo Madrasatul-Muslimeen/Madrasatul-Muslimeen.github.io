@@ -133,7 +133,7 @@
         "lastIndex": 4600
       },
       "status": "mapped",
-      "note": "No usable scan (the archive.org file is a web printout without hadith numbers). Shamela typed text of the A'zami edition; volume/page read from each Shamela page. Map: 3445 of 3670 numbers (93.9%), 2693 of the 2920 reader hadith (92.2%); sample check 388 of 400 opening-words found on the mapped page, control 11 of 400."
+      "note": "No usable scan (the archive.org file is a web printout without hadith numbers). Shamela typed text of the A'zami edition; volume/page read from each Shamela page. Map (11 Nov, after the number reader learned al-A'zami's two-part numbers and a number followed straight by a tag): 3670 of 3670 numbers, 2918 of 2920 reader hadith (99.9%); opening-words sample 392 of 399 on the mapped page, control 8; hand-read anchors 233, 396, 2000, 3600."
     },
     {
       "key": "ahmad",
@@ -162,8 +162,8 @@
         "edition": "ed. Abd al-Baqi",
         "lastIndex": 2010
       },
-      "status": "planned",
-      "note": "No scan in the archive.org item. Shamela 12991 matches our JK text (hadith 26 same words, same numbering). One-volume book: Shamela titles carry a page and no volume."
+      "status": "mapped",
+      "note": "No scan in the archive.org item. Shamela 12991 matches our JK text (hadith 26 same words, same numbering). One-volume book: Shamela titles carry a page and no volume. Map: 1321 of 1322 numbers (hadith 895 not found; 21 numbers print twice, the first print is kept). Opening-words sample 371 of 400 on the mapped page (control 6); the misses read by hand are right pages with different narrator wording between editions. Hand-read anchors 26, 365, 689."
     }
   ]
 }

@@ -24,6 +24,7 @@ const MUT = {
   withdownload: ["js/hadith-book-viewer.js", "  if (!shamela) {\n    const dl = bookDownload(book);", "  if (true) {\n    const dl = bookDownload(book);"],
   noescape: ["js/hadith-book-viewer.js", 'if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closePane(); return; }', ""],
   nofocusback: ["js/hadith-book-viewer.js", "if (opener && document.contains(opener)) opener.focus();", ""],
+  novolumefix: ["js/hadith-book-viewer.js", "(info.volume\n      ? t(", "(true\n      ? t("],
   eagerload: ["js/hadith-book-viewer.js", "  const note = el(\"span\", \"book-page-error\");", "  loadBookPage(versionUri, lazy ? 1 : number).catch(() => {});\n  const note = el(\"span\", \"book-page-error\");"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -120,6 +121,20 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280], ["bn", 360]
     await P.click(".book-page-close"); await P.waitForTimeout(120);
     check(`${tag} the × closes it, and pressing again re-used the page map (still one fetch)`, (await P.$("[data-book-page-pane]")) === null && fetched.join() === "muwatta.json", fetched.join());
   }
+  // a one-volume book (Adab al-Mufrad, number 26): the credit names the page and no volume
+  await P.goto(P.url()); await P.waitForSelector('[data-hadith-tab="books"]');
+  await openBook(P, "0256Bukhari.AdabMufrad.JK000011-ara1", 26);
+  await P.waitForSelector('[data-book-page-button="26"]', { timeout: 15000 }).catch(() => {});
+  const abtn = await P.$('[data-book-page-button="26"]');
+  check(`${tag} Adab al-Mufrad 26 has a "Printed page (Shamela)" button`, !!abtn);
+  if (abtn) {
+    await abtn.scrollIntoViewIfNeeded(); await abtn.click(); await P.waitForSelector("[data-book-page-pane]", { timeout: 15000 });
+    const asrc = await P.$eval("[data-book-page-frame]", (f) => f.src);
+    const acred = await P.$eval(".book-page-credit", (n) => n.textContent);
+    const bnd2 = (n) => String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]);
+    check(`${tag} ...it asks Shamela for index 40 of book 12991, and the credit names edition and page but NO volume`, asrc === "https://shamela.ws/book/12991/40" && acred === (lang === "bn" ? `ছাপা পাঠ: আল-মাকতাবা আশ-শামিলা, মুহাম্মাদ ফুআদ আবদুল বাকী সম্পাদিত, পৃ. ${bnd2(23)}` : "Printed text: Shamela Library, ed. Abd al-Baqi, p. 23"), asrc + " | " + acred);
+    await P.keyboard.press("Escape"); await P.waitForTimeout(120);
+  }
   // module level: both books, every kind of answer, and the book list bound to the registry
   const mod = await P.evaluate(async ([muw, ahm, ahmN]) => {
     const m = await import("/app/js/hadith-book-pages.js"); const v = await import("/app/js/hadith-book-viewer.js");
@@ -129,6 +144,8 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280], ["bn", 360]
   }, [MUW, MUW, Object.keys(ANCHORS.muwatta.at)[1]]);
   const [aN, aA] = Object.entries(ANCHORS.muwatta.at)[1];
   check(`${tag} Muwatta ${aN} (two-part number 396 / 120): Shamela index ${aA[0]}, vol ${aA[1]}, p. ${aA[2]}, the book 28107, never "approximate"`, JSON.stringify(mod.a) === JSON.stringify([aA[0], aA[1], aA[2], "shamela", `https://shamela.ws/book/28107/${aA[0]}`, `https://shamela.ws/book/28107/${aA[0]}`, false]), JSON.stringify(mod.a));
+  const ad = await P.evaluate(async () => { const m = await import("/app/js/hadith-book-pages.js"); const r = await m.loadBookPage("0256Bukhari.AdabMufrad.JK000011-ara1", 26); return r && [r.index, r.volume, r.page, r.embedUrl]; });
+  check(`${tag} Adab al-Mufrad 26: Shamela index 40, page 23, NO volume (a one-volume book), book 12991`, JSON.stringify(ad) === JSON.stringify([40, null, 23, "https://shamela.ws/book/12991/40"]), JSON.stringify(ad));
   check(`${tag} a number past the end, or zero, has no page and no button (never a guess)`, mod.none === null && mod.zero === null && mod.noBtnBad);
   check(`${tag} Shamela books are told apart from scan books`, mod.isM && !mod.isB);
   const shRows = reg.books.filter((b) => b.kind === "shamela" && ["mapped", "verified"].includes(b.status));
