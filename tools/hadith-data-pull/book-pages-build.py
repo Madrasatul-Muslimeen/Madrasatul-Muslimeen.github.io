@@ -12,7 +12,7 @@ Output (small, shipped to the app): tools/hadith-data-pull/output/book-pages/<bo
   a : sorted list of the numbers whose page is only approximate (the page where the previous hadith starts)
 No PDF or scan is ever stored here. The registry (sources/book-pages.json) says where each scan lives.
 """
-import bisect, html, json, os, re, sys, urllib.request, random
+import bisect, html, json, os, re, sys, unicodedata, urllib.request, random
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 REG = os.path.join(ROOT, "tools/hadith-data-pull/sources/book-pages.json")
@@ -45,9 +45,12 @@ def parse_leaves(xml):
         leaves.append(lines)
     return leaves
 
-NUM_RE = re.compile(r"(\d{1,4}) ?[.,:] ?(?=[A-Z(\[])")  # OCR splits "18 ." into two words, so join first
+# Each book numbers its hadith in print its own way; the registry's `numberRegex` (group 1 = the number) says how to read it at the
+# start of a line. OCR splits "18 ." into two words, so the first words of the line are joined before matching.
+DEFAULT_NUM_RE = r"(\d{1,4}) ?[.,:] ?(?=[A-Z(\[])"
 
-def candidates(leaves, top):
+def candidates(leaves, top, num_re):
+    NUM_RE = re.compile(num_re)
     out = []
     for i, lines in enumerate(leaves):
         for ws in lines:
@@ -75,6 +78,14 @@ def longest_increasing(cand):
 def norm_words(s):
     return re.findall(r"[a-z']+", s.lower().replace("`", "'").replace("’", "'").replace("‘", "'"))
 
+COMMON = {"allah", "messenger", "narrated", "prophet", "when", "that", "this", "then", "they", "said", "have", "with", "from"}
+
+def fold(s):
+    """Lower-case, accents and apostrophe-like marks removed, so 'Isma\u2019\u012bl' and OCR's "Isma'il" compare equal."""
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return re.sub(r"[\u2019\u2018\u02bf\u02be`']", "", s.lower())
+
 def our_text(book, n, chunk):
     path = os.path.join(TR, book, "en", f"{n // chunk}.json")
     if not os.path.exists(path):
@@ -90,7 +101,7 @@ def main():
     reg, row = load_registry(key)
     top = row["lastNumber"]
     leaves = parse_leaves(fetch_xml(row, xml_path))
-    cand = candidates(leaves, top)
+    cand = candidates(leaves, top, row.get("numberRegex", DEFAULT_NUM_RE))
     lis = longest_increasing(cand)
     exact = {n: lf for n, lf in lis.items()}
     p, approx, last_leaf = [], [], exact.get(1, 0)
@@ -101,20 +112,34 @@ def main():
         else:
             approx.append(n)
             p.append(last_leaf)  # at or after the previous hadith's page
-    # --- cross-check against our own text of the same translation (Muhsin Khan): the hadith's opening words must be on that page
+    # --- cross-check against our own English text of the same hadith. Same translation (`crossCheck: words`): its opening words must be on
+    # the page. Another translation (`crossCheck: names`): the narrators' names (which every translation spells alike) must be on it.
     chunk = row.get("translationChunk", 500)
+    mode = row.get("crossCheck", "words")
     rnd = random.Random(7)
     pool = [n for n in exact if our_text(row["translationDir"], n, chunk)]
     sample = rnd.sample(pool, min(400, len(pool)))
-    ok = bad = 0
+    ok = bad = ctrl_ok = 0
     bad_list = []
     for n in sample:
         t = our_text(row["translationDir"], n, chunk)
-        words = [w for w in norm_words(t) if w not in ("narrated", "by", "the", "of", "from", "that", "he", "said")][:5]
-        page = " ".join(" ".join(ws) for ws in leaves[exact[n]]).lower().replace("`", "'")
-        # accept the page if most of the opening words are there (OCR makes small errors)
-        hit = sum(1 for w in words if w in page)
-        if len(words) and hit >= max(3, len(words) - 2):
+        raw = " ".join(" ".join(ws) for ws in leaves[exact[n]])
+        page = fold(raw)
+        if mode == "names":
+            names = [fold(w) for w in re.findall(r"\b[A-Z][A-Za-z\u00C0-\u024F'’`ʿ]{3,}", t[:260]) if fold(w) not in COMMON]
+            names = list(dict.fromkeys(names))[:5]
+            # translations spell names differently (Huraira / Hurairah, A'isha / Aishah): compare the first 4 letters
+            hit = sum(1 for w in names if w[:4] in page)
+            good = len(names) == 0 or hit >= 1
+            ctrl_page = fold(" ".join(" ".join(ws) for ws in leaves[(exact[n] + 997) % len(leaves)]))  # CONTROL: the same text against a wrong page
+            ctrl_good = len(names) == 0 or sum(1 for w in names if w[:4] in ctrl_page) >= 1
+            ctrl_ok += 1 if ctrl_good else 0
+        else:
+            words = [w for w in norm_words(t) if w not in ("narrated", "by", "the", "of", "from", "that", "he", "said")][:5]
+            page_w = raw.lower().replace("`", "'")
+            hit = sum(1 for w in words if w in page_w)
+            good = len(words) and hit >= max(3, len(words) - 2)
+        if good:
             ok += 1
         else:
             bad += 1; bad_list.append(n)
@@ -129,6 +154,8 @@ def main():
     json.dump(out, open(path, "w", encoding="utf8"), separators=(",", ":"))
     print(f"{key}: {len(exact)} of {top} found directly ({100 * len(exact) / top:.1f}%), {len(approx)} approximate")
     print(f"cross-check on {len(sample)} direct hits against our own English: {ok} agree, {bad} do not ({100 * ok / max(1, len(sample)):.1f}% agree)")
+    if mode == "names":
+        print(f"  control (the same texts against a WRONG page): {ctrl_ok} of {len(sample)} would pass, so a pass here means something")
     if bad_list:
         print("  disagreeing numbers (first 15):", sorted(bad_list)[:15])
     mono = all(p[i] <= p[i + 1] for i in range(len(p) - 1))

@@ -4998,6 +4998,7 @@ export const BN = {
   "Loading the book page…": "বইয়ের পাতা আসছে…",
   "Scan: Darussalam edition, shared on archive.org": "স্ক্যান: দারুস সালাম সংস্করণ, archive.org-এ শেয়ার করা",
   "Open on archive.org": "archive.org-এ খুলুন",
+  "Download this book (PDF, {mb} MB)": "এই বইটি ডাউনলোড করুন (PDF, {mb} MB)",
   "No book page is listed for this hadith.": "এই হাদিসের জন্য বইয়ের পাতা তালিকায় নেই।",
   "The book page could not be loaded. Check your connection and try again.": "বইয়ের পাতা আনা যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।",
   // PCF MSA J120 O2: "Get ready for offline" in My account (app/js/offline-ready.js).

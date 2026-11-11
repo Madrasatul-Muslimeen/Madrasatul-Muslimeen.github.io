@@ -5,7 +5,7 @@
 import { el } from "./hadith-shared-ui.js";
 import { t, num } from "./i18n.js";
 import { getAppLang } from "./prefs.js";
-import { hasBookPages, loadBookPage, BOOK_PAGE_BOOKS, BOOK_PAGE_CREDIT_URL } from "./hadith-book-pages.js";
+import { hasBookPages, loadBookPage, bookDownload, BOOK_PAGE_BOOKS, BOOK_PAGE_CREDIT_URL } from "./hadith-book-pages.js";
 
 let openPane = null;
 
@@ -62,6 +62,14 @@ function showPane(info, number, opener) {
   credit.target = "_blank"; credit.rel = "noopener noreferrer";
   credit.textContent = t("Scan: Darussalam edition, shared on archive.org");
   foot.appendChild(credit);
+  const dl = bookDownload(book);
+  const down = document.createElement("a");
+  down.className = "book-page-download";
+  down.dataset.bookPageDownload = "true";
+  down.href = dl.url;
+  down.target = "_blank"; down.rel = "noopener noreferrer";
+  down.textContent = t("Download this book (PDF, {mb} MB)", { mb: num(String(dl.megabytes)) });
+  foot.appendChild(down);
   const out = document.createElement("a");
   out.className = "book-page-open-link";
   out.dataset.bookPageOpenLink = "true";
@@ -77,7 +85,7 @@ function showPane(info, number, opener) {
   const onKey = (e) => {
     if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closePane(); return; }
     if (e.key === "Tab") { // keep Tab inside the pane: × -> link -> credit -> ×
-      const ring = [close, credit, out];
+      const ring = [close, credit, down, out];
       const i = ring.indexOf(document.activeElement);
       e.preventDefault();
       ring[(i + (e.shiftKey ? ring.length - 1 : 1)) % ring.length].focus();
@@ -96,20 +104,24 @@ function showPane(info, number, opener) {
  * on first use only.
  */
 export function bookPageButton(versionUri, number) {
-  if (!hasBookPages(versionUri) || !(Math.trunc(Number(number)) > 0)) return null;
+  // `number` may be a function giving the standard number (or a promise of it) when it is only known later, as on a Dua card.
+  const lazy = typeof number === "function";
+  if (!hasBookPages(versionUri) || (!lazy && !(Math.trunc(Number(number)) > 0))) return null;
   const wrap = el("div", "book-page-row");
   const btn = el("button", "hadith-view-source book-page-button", t("Original book page"));
   btn.type = "button";
-  btn.dataset.bookPageButton = String(number);
+  if (!lazy) btn.dataset.bookPageButton = String(number);
   const note = el("span", "book-page-error");
   note.setAttribute("role", "status");
   btn.addEventListener("click", async () => {
     note.textContent = "";
     btn.disabled = true;
     try {
-      const info = await loadBookPage(versionUri, number);
+      const n = lazy ? await number() : number;
+      if (lazy && n) btn.dataset.bookPageButton = String(n);
+      const info = n ? await loadBookPage(versionUri, n) : null;
       if (!info) note.textContent = t("No book page is listed for this hadith.");
-      else showPane(info, number, btn);
+      else showPane(info, n, btn);
     } catch (err) {
       note.textContent = t("The book page could not be loaded. Check your connection and try again.");
     } finally { btn.disabled = false; }

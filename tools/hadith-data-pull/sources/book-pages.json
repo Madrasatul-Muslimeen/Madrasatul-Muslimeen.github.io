@@ -14,7 +14,45 @@
       "translationDir": "bukhari",
       "translationChunk": 500,
       "versionUri": "0256Bukhari.Sahih.JK000110-ara1",
-      "status": "mapped"
+      "status": "mapped",
+      "numberRegex": "(\\d{1,4}) ?[.,:] ?(?=[A-Z(\\[])",
+      "crossCheck": "words",
+      "pdfFile": "All in One-Sahih Al Bukhari-Eng-Arabic.pdf",
+      "pdfBytes": 81839111
+    },
+    {
+      "key": "muslim",
+      "title": "Sahih Muslim (Arabic-English, Darussalam)",
+      "archiveId": "AllInOne-Hadiths-EngArabicDarusalam_201407",
+      "scanFile": "All in One-Sahih Muslim-Eng-Arabic-Darusalam",
+      "scanSlug": "All%20in%20One-Sahih%20Muslim-Eng-Arabic-Darusalam",
+      "numbering": "Darussalam, [1]-[7563] in brackets",
+      "lastNumber": 7563,
+      "numberRegex": "\\[(\\d{1,4})\\]",
+      "crossCheck": "names",
+      "translationDir": "muslim",
+      "translationChunk": 500,
+      "versionUri": "0261Muslim.Sahih.Shamela0001727-ara1",
+      "status": "mapped",
+      "pdfFile": "All in One-Sahih Muslim-Eng-Arabic-Darusalam.pdf",
+      "pdfBytes": 153338585
+    },
+    {
+      "key": "tirmidhi",
+      "title": "Jami' at-Tirmidhi (Arabic-English, Darussalam)",
+      "archiveId": "AllInOne-Hadiths-EngArabicDarusalam_201407",
+      "scanFile": "All in One-Jami At-Tirmidhi-Eng",
+      "scanSlug": "All%20in%20One-Jami%20At-Tirmidhi-Eng",
+      "numbering": "Darussalam, 1-3956",
+      "lastNumber": 3956,
+      "numberRegex": "(\\d{1,4}) ?[.,:] ?(?=[A-Z(\\[\\'\"*^‘`])",
+      "crossCheck": "words",
+      "translationDir": "tirmidhi",
+      "translationChunk": 500,
+      "versionUri": "0279Tirmidhi.Sunan.JK000140-ara1",
+      "status": "mapped",
+      "pdfFile": "All in One-Jami At-Tirmidhi-Eng.pdf",
+      "pdfBytes": 65882011
     }
   ]
 }

@@ -15,6 +15,21 @@ export const BOOK_PAGE_BOOKS = {
     archiveId: "AllInOne-Hadiths-EngArabicDarusalam_201407",
     slug: "All%20in%20One-Sahih%20Al%20Bukhari-Eng-Arabic",
     title: { en: "Sahih al-Bukhari", bn: "সহীহ বুখারী" },
+    pdf: "All in One-Sahih Al Bukhari-Eng-Arabic.pdf", pdfBytes: 81839111,
+  },
+  "0279Tirmidhi.Sunan.JK000140-ara1": {
+    key: "tirmidhi",
+    archiveId: "AllInOne-Hadiths-EngArabicDarusalam_201407",
+    slug: "All%20in%20One-Jami%20At-Tirmidhi-Eng",
+    title: { en: "Jami' at-Tirmidhi", bn: "জামে' আত-তিরমিযী" },
+    pdf: "All in One-Jami At-Tirmidhi-Eng.pdf", pdfBytes: 65882011,
+  },
+  "0261Muslim.Sahih.Shamela0001727-ara1": {
+    key: "muslim",
+    archiveId: "AllInOne-Hadiths-EngArabicDarusalam_201407",
+    slug: "All%20in%20One-Sahih%20Muslim-Eng-Arabic-Darusalam",
+    title: { en: "Sahih Muslim", bn: "সহীহ মুসলিম" },
+    pdf: "All in One-Sahih Muslim-Eng-Arabic-Darusalam.pdf", pdfBytes: 153338585,
   },
 };
 
@@ -27,6 +42,16 @@ function cached(key, loader) {
 }
 
 export const hasBookPages = (versionUri) => Object.prototype.hasOwnProperty.call(BOOK_PAGE_BOOKS, versionUri);
+
+/**
+ * "Download this book" (the Owner, 11 Nov 2026): the whole scan as a PDF the reader keeps on their device. A plain link: the browser
+ * cannot read these files from our page (CORS), but it can open or save them. `mirrorUrl` is for the copy to be hosted in the
+ * BwN Library (Owner, 11 Nov): when a book row has one, that link is preferred and archive.org stays the fallback.
+ */
+export function bookDownload(book) {
+  const size = Math.max(1, Math.round((book.pdfBytes || 0) / 1e6));
+  return { url: book.mirrorUrl || `https://archive.org/download/${book.archiveId}/${encodeURIComponent(book.pdf)}`, megabytes: size };
+}
 
 /** archive.org's reader addresses a page of one file in the item by its 0-based leaf: .../<file>/page/n<leaf>/mode/1up */
 export function bookPageUrls(book, leaf) {

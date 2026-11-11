@@ -106,3 +106,22 @@ Overall about **2½–3 weeks** of my time for P0–P3, spread over several smal
 ## 9. Hand-offs
 - New Hadith files only: `book-pages` data tools, a card button in `hadith-browser.js`, a new viewer module and its suite.
 - Shared parts I would **ask the Architect** about, not touch: `sw.js` (leave PDFs uncached), any security headers.
+
+## 10. The Owner's second reply (11 Nov 2026): Dua button, "Download this book", and hosting in the BwN Library
+- **"If adding it doesn't cause any conflict, you do it"** (the Dua card button): checked, no other remote branch touches `app/js/dua-browser.js`;
+  the change is two lines there (an import and one call after the translation folds). Done; the Dua card button works the same way, finding its
+  standard number only when pressed. Suite: 100 checks include Dua 1 (= Bukhari 6311).
+- **"Download this book"**: built. The pane footer has "Download this book (PDF, 82 MB)" (a plain link; registry fields `pdfFile`, `pdfBytes`).
+  The registry/module also have an optional `mirrorUrl`: when a book has one, the download link prefers it and archive.org stays the fallback.
+- **Hosting a copy in the BwN Library (Basheera Wa Nazeera): NOT done by me, it is outside this repository and my session.** What it needs, measured:
+  | Book | PDF size | Note |
+  |---|---|---|
+  | Bukhari (Eng-Arabic) | 82 MB | fits a GitHub Pages repo (limit 100 MB per file) |
+  | Muslim (Eng-Arabic) | **153 MB** | **over 100 MB**: must be split in two or compressed first |
+  | Tirmidhi (Eng) | 66 MB | fits |
+  | Abu Dawud 53 MB, Nasa'i 102 + 16 MB, Ibn Majah 98 MB | | Nasa'i vols 1-5 is just over 100 MB; Ibn Majah is close |
+  A Pages repo is also meant to stay under about 1 GB in total.
+  **Big benefit if hosted on GitHub Pages:** it sends the header that lets our page read the file (archive.org does not). Then the app could show the
+  page itself (PDF.js) and the reader could choose "keep on this device" for offline reading, which archive.org cannot give us.
+  **Who:** the BwN session (or the Owner) uploads the files; then a `mirrorUrl` per book in `sources/book-pages.json` and `hadith-book-pages.js`
+  switches the download link at once. I can prepare the exact file list and a split/compress script for the BwN session if wanted.
