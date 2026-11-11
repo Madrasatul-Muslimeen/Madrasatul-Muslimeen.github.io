@@ -3324,3 +3324,5 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.18** (2026-11-10): The Asma poster says it needs the internet (PCF MSA J120 O5, QR part 2).
 - **v14.19** (2026-11-10): Recitation saved for offline per sūrah (PCF MSA J120 O6).
 - **v14.20** (2026-11-10): Ayah stripe round 1 + J136 effort Rules on.
+- **v14.21** (2026-11-10): Word Card nav together, Verb Form line, freeze fix.
+- **v14.22** (2026-11-10): Read bar: one bookmark, WbW/Root/Derivatives, quick search.

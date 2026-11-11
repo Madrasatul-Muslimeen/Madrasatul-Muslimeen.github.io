@@ -2419,7 +2419,12 @@
      Prev/Next/Play/Stop and, from 900px where #readToolsMenu is display:contents, Notes/Writing/Complete/Attach. The
      tools PANEL below 900px sets its own taller tiles, which this min-size does not touch. */
   #readBar .qr-ico { box-sizing: border-box; min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+  /* 11 Nov 2026: on the narrowest phones, while the way-back chip holds the bar's line, the quick 🔍 steps aside (search stays in Study options) so the bar gains no line. */
+  @media (max-width: 359px) { #readBar:has(#readBackSlot > *) #readSearchBtn { display: none; } }
   #readBar .qr-ico[hidden] { display: none; }
+  /* The Owner, 11 Nov 2026: ☰ alone (no word) when the word would cost a row of the bar (fitReadListWord()). */
+  #readBar #readListBtn.word-off .read-list-word { display: none; }
+  #readBar #readListBtn.word-off { padding: 0; width: 40px; min-width: 40px; }
   /* Decision 95: 📝 Notes, with the āyah's Note count once the pane has read it this session. */
   /* 10 Oct 2026 (the Owner: "all these buttons along with bookmark can be organised under one button so that a row
      space is saved"): #readToolsMenu holds Text size, Bookmark, Notes, Mark complete, Writing sheet and Attach to Asma.
@@ -2846,7 +2851,7 @@
      full-screen icon. */
   body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readMeaningLayersSlot):not(#readOnSwitch):not(#mushafPagePrevBtn):not(#mushafPageNextBtn) { display: none; }
   /* MSA · QR J132: the bare state keeps the bar's ⋮ too: Study (Take an Approach, Record, Status, the unit and sūrah pickers), Notes and the rest are in its sheet now that the bottom row is gone. */
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn):not(#readMushafBtn):not(#readBarBookmarkBtn):not(#readQuickMenuSlot) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn):not(#readMushafBtn):not(#readBarBookmarkBtn):not(#readSearchBtn):not(#readQuickMenuSlot) { display: none; }
   /* 10 Oct 2026: 📖 Meaning stays in the bare full-screen state too (the Owner: "visible even in full screen Mushaf
      view"), beside ⤢. */
   #readMeaningBtn, #readMushafBtn {
@@ -3065,16 +3070,20 @@
   /* The Owner, 6 Nov 2026 (option A): the āyah number sits on the title's row, right beside the ⋮, both before the āyah starts. */
   .meaning-ayah-head > .ayah-num-badge { margin-left: auto; flex: 0 0 auto; }
   .meaning-ayah-head > .ayah-num-badge + .ayah-quick-wrap { margin-left: 0; }
-  /* PCF MSA J110 / inbox qr46lstripe01 (the Owner ticked A, 11 Nov 2026): the āyah's STATUS stripe sits in the free gap between its name and its number.
-     A button shows only when that status exists. 22px painted, 40px to press (the chip's own padding), so the row stays a finger-size target. */
+  /* PCF MSA J129 (the Owner, B1): the Word Card's Know Your Status on/off switch. */
   .word-progress-data-switch { display: block; min-height: 40px; margin: 0 0 0.35rem auto; padding: 0.35rem 0.8rem; border: 1px solid #c9b88a; border-radius: 999px; background: #fffaf0; color: #5a4210; font: inherit; font-size: 0.85rem; cursor: pointer; }
   .word-progress-data-switch:focus-visible { outline: 3px solid #B8862F; outline-offset: 1px; }
+  /* PCF MSA J110 / inbox qr46lstripe01 (the Owner ticked A, 11 Nov 2026): the āyah's STATUS stripe sits in the free gap between its name and its number.
+     A button shows only when that status exists. 22px painted, 40px to press (the chip's own padding), so the row stays a finger-size target. */
   .ayah-stripe { display: inline-flex; align-items: center; margin-left: auto; flex: 0 1 auto; min-width: 0; }
   .meaning-ayah-head > .ayah-stripe + .ayah-num-badge { margin-left: 0; }
   .ayah-stripe-chip { flex: none; min-width: 30px; min-height: 40px; padding: 9px 2px; border: 0; background: none; display: grid; place-items: center; font: inherit; cursor: pointer; }
   .ayah-stripe-chip i { box-sizing: border-box; font-style: normal; display: grid; place-items: center; min-width: 24px; height: 22px; padding: 0 5px; border-radius: 7px; font-size: 0.7rem; font-weight: 700; line-height: 1; border: 1px solid transparent; }
   .ayah-stripe-chip.appr i { background: #f6ead0; color: #7a5710; border-color: #b8892b; }
   .ayah-stripe-chip.note i { background: #1F3A6E; color: #fff; }
+  .ayah-stripe-chip.wmark i { background: #ece3f7; color: #4b2a7a; border-color: #7d5bb0; }
+  .ayah-stripe-chip.qcr i { background: #e1f0ec; color: #12564a; border-color: #2f8f7c; }
+  .ayah-stripe-chip.asma i { background: #f3e1e6; color: #6b1f33; border-color: #a64560; font-family: var(--arabic-font, inherit); }
   .ayah-stripe-chip:focus-visible { outline: 3px solid #B8862F; outline-offset: 1px; border-radius: 8px; }
   .ayah-quick-header { align-items: center; gap: 0.5rem; }
   .meaning-more { min-height: 44px; border: 1px dashed #c9b98f; border-radius: 0.6rem; background: #fdf8ea; color: #5e4418; font: inherit; font-weight: 600; cursor: pointer; }
@@ -6728,6 +6737,10 @@
           <div id="readMeaningLayersSlot" class="meaning-layers-bar" role="group" aria-label="Show" hidden></div>
           <span id="readBackSlot" class="read-back-slot" data-back-dock></span>
           <div id="readBarEnd" class="read-bar-end">
+            <!-- The Owner, 11 Nov 2026 (the empty gap beside Read on, circled on a phone): a quick 🔍 Search on the Read bar. The same search as the
+                 banner's 🔍 (openHeadSearch(): Study options with the cursor in the search box, which takes "2:255" or a word). Hidden in the
+                 bare full-screen state by the #readBarEnd rule, like every button that is not named there. -->
+            <button type="button" class="secondary qr-ico" id="readSearchBtn" aria-label="Search the Qur'an" title="Search the Qur'an">🔍</button>
             <!-- 10 Oct 2026, the Owner: "I want a reading flow with meaning, translations, word meaning that should appear
                  by pressing a button. Then, pressing same button should collapse back to Mushaf view. That button should
                  be visible even in full screen Mushaf view." 📖 Meaning, just before ⤢ (renderMeaningFlow()). -->
@@ -8467,6 +8480,7 @@
       jumpInput.focus({ preventScroll: true });
     }
     headSearchBtn.addEventListener("click", openHeadSearch);
+    document.getElementById("readSearchBtn")?.addEventListener("click", openHeadSearch);
     const jumpMsg = document.getElementById("jumpMsg");
     const readingViewCard = document.getElementById("readingViewCard");
     const listeningCard = document.getElementById("listeningCard");
@@ -21717,8 +21731,6 @@
       if (mushafBtn) mushafBtn.hidden = true; // J99: 📖 is the one switch now (its own handler is kept for the Options tick's sake below)
     }
 
-    /** PCF MSA J110 C: the same ⋮ the ONE Ayah View carries on every āyah (Copy, Share, Play this āyah, Bookmark,
-        Note & more…, QCR), without its Word by Word / Root / Derivatives rows: the Reading View has its own switches. */
     /** The āyah's status stripe (inbox qr46lstripe01, the Owner ticked A): a small button for each status this āyah HAS, nothing for one it lacks.
         Round 1: Approaches (how many Approaches have a stage on it; opens the Āyah card, which lists each) and Notes (opens the latest Note).
         No new read: Approaches come from the surah's records already in memory (approachStatusesForAyah), Notes from ayahHasAnyNote(). */
@@ -21729,9 +21741,19 @@
       const chip = (kind, glyph, label, key) => `<button type="button" class="ayah-stripe-chip ${kind}" data-ayah-stripe="${kind}" data-ayah-stripe-key="${key}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"><i aria-hidden="true">${glyph}</i></button>`;
       if (started > 0) chips.push(chip("appr", `${escapeHtml(num(started))}/${escapeHtml(num(statuses.length))}`, t("Approaches on this āyah: {done} of {total} started", { done: num(started), total: num(statuses.length) }), `${surahNum}:${ayahNum}`));
       if (ayahHasAnyNote(buildUnitKey.ayah(surahNum, ayahNum))) chips.push(chip("note", "📝", t("Notes on this āyah"), `${surahNum}:${ayahNum}`));
+      // Round 2 (97L approved): three more statuses, each ONLY from data already in memory (no new read, I9). A status whose data is not
+      // loaded yet draws nothing, exactly as a status the āyah lacks does.
+      const wordMarked = marksReadyFor(surahNum) ? Object.keys(marksStore.mine).filter((k) => k.startsWith(`qword:${surahNum}:${ayahNum}:`) && (marksStore.mine[k] ?? []).length).length : 0;
+      if (wordMarked > 0) chips.push(chip("wmark", `★${escapeHtml(num(wordMarked))}`, t("Words marked on this āyah: {n}", { n: num(wordMarked) }), `${surahNum}:${ayahNum}`));
+      const inQcr = (qcrCollections ?? []).filter((c) => c?.status !== "archived" && Array.isArray(c?.items) && c.items.includes(buildUnitKey.ayah(surahNum, ayahNum))).length;
+      if (inQcr > 0) chips.push(chip("qcr", "QCR", t("In {n} of your QCR collections", { n: num(inQcr) }), `${surahNum}:${ayahNum}`));
+      const asmaHits = asmaXCollections ? asmaXAllNameEntries().filter((e) => e.ref && parseAsmaRef(e.ref).some((c) => c.kind === "quran" && c.surah === surahNum && c.ayah === ayahNum)).length : 0;
+      if (asmaHits > 0) chips.push(chip("asma", "اسم", t("This āyah is a reference for {n} of Allah's Names", { n: num(asmaHits) }), `${surahNum}:${ayahNum}`));
       return chips.length ? `<span class="ayah-stripe" role="group" aria-label="${escapeHtml(t("Āyah status"))}">${chips.join("")}</span>` : "";
     }
 
+    /** PCF MSA J110 C: the same ⋮ the ONE Ayah View carries on every āyah (Copy, Share, Play this āyah, Bookmark,
+        Note & more…, QCR), without its Word by Word / Root / Derivatives rows: the Reading View has its own switches. */
     function meaningQuickMenuHtml(surahNum, ayahNum) {
       const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
       const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
@@ -21740,7 +21762,7 @@
 
     async function meaningPageHtml(pageNum) {
       const groups = mushafPageAyahGroups(pageNum);
-      const panels = ["text", ...(readMeaningLayers.wbw ? ["wordByWord"] : [])];
+      const panels = ["text", ...(readMeaningLayers.wbw ? ["wordByWord"] : []), ...(rootsToggle.checked ? ["root"] : []), ...(derivativesToggle.checked ? ["derivatives"] : [])]; // J "Add WbW, Root, Derivatives choices": Root and Derivatives are drawn in Read on too
       const langs = [...(readMeaningLayers.en ? ["en"] : []), ...(readMeaningLayers.bn ? ["bn"] : [])];
       let html = `<div class="meaning-page-rule" data-meaning-page-rule="${pageNum}">${escapeHtml(t("Page {page}", { page: num(pageNum) }))}</div>`;
       for (const g of groups) {
@@ -26756,7 +26778,32 @@
         ⋮ badge calls these three as well, so they re-render whichever
         screen is open (onReadingTickChanged) rather than the Note view
         alone; the name is kept because the mechanism is unchanged. */
+    /** The Owner, 11 Nov 2026 ("You can only show the 3 lines (not Surah written) to make space, if not enough without removing anything"): the
+        ☰ button's word is dropped ONLY when that saves a row of the Read bar; otherwise it stays. Measured, never a fixed width: the rows are
+        counted with the word, then without it, and the word stays off only when it leaves fewer rows. */
+    function fitReadListWord() {
+      const bar = document.getElementById("readBar"), list = document.getElementById("readListBtn");
+      if (!bar || !list || !bar.offsetParent || list.hidden) return;
+      const rows = () => new Set([...bar.children].filter((c) => c.getBoundingClientRect().width > 0).map((c) => Math.round(c.getBoundingClientRect().top))).size;
+      list.classList.remove("word-off");
+      const before = rows();
+      if (before < 2) return;
+      list.classList.add("word-off");
+      if (rows() >= before) list.classList.remove("word-off");
+    }
+    window.addEventListener("resize", () => requestAnimationFrame(fitReadListWord));
+    new MutationObserver(() => requestAnimationFrame(fitReadListWord)).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+
     function toggleNoteWbw() {
+      // In Read on the Word by Word tile is the flow's own layer, the same state as its Show ▾ switch (the Owner, 11 Nov 2026).
+      if (document.getElementById("readOnCheck")?.checked && !mushafToggle.checked) {
+        const keep = meaningTopKey();
+        readMeaningLayers = { ...readMeaningLayers, wbw: !readMeaningLayers.wbw };
+        try { localStorage.setItem(READ_MEANING_LAYERS_KEY, JSON.stringify(readMeaningLayers)); } catch { /* per device only */ }
+        meaningFocusKey = keep;
+        renderStudyScreen();
+        return;
+      }
       wbwShowToggle.checked = !wbwShowToggle.checked;
       onReadingTickChanged();
     }
@@ -26941,7 +26988,11 @@
         // PCF MSA J132: the bar's ⋮ is where Study lives now, so a flow (Read on) keeps a ⋮ with ONLY the Study group, Text size and Mark
         // complete: nothing in it is about one āyah, which is why the per-āyah items stay on each āyah's own badge.
         if (!isMushaf) {
-          readQuickMenuSlot.innerHTML = renderQuickMenu(ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf()), { sheet: true, studyOnly: true, studyBlock: studyGroupHtml(), extraTiles: barUnitTilesHtml() });
+          readQuickMenuSlot.innerHTML = renderQuickMenu(ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf()), { sheet: true, studyOnly: true, studyBlock: studyGroupHtml(), extraTiles: barUnitTilesHtml(),
+            // The Owner, 11 Nov 2026 ("This is global dot card. Add WbW, Root, Derivatives choices here"): the same three choices the one-āyah
+            // menu has. In Read on, Word by Word is the flow's own layer (the same state as the Show ▾ switch); Root and Derivatives are the
+            // shared reading ticks, which the flow now draws too (meaningPageHtml).
+            showTextTools: true, isWbwOn: !!readMeaningLayers.wbw, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked });
           attachAyahQuickMenus(readQuickMenuSlot);
           reopenStudySheet();
         }
@@ -27023,7 +27074,11 @@
         // view's own per-āyah ⋮ badge keeps it, since it has no bar-level
         // button of its own to mean one specific āyah.
         readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, {
-          hasNote: ayahHasAnyNote(singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: true,
+          hasNote: ayahHasAnyNote(singleUnitKey), isBookmarked: singleIsBookmarked,
+          // The Owner, 11 Nov 2026 ("Why two BM?", the bar's global ⋮ with a Whole Surah unit): when the unit is wider than one āyah the bar's
+          // sheet carries ONE bookmark, the unit's ("Bookmark · Whole Surah 14"); the "this āyah" tile stays for a one-āyah unit and on each
+          // āyah's own ⋮ badge, which is about one āyah.
+          showBookmark: !unitBookmarkOpt(),
           sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(), extraTiles: barUnitTilesHtml(), studyBlock: studyGroupHtml(),
           // Text-tools round -- Word by Word / Root / Derivatives / Collapse,
           // the same group the Note view's own ⋮ carries. Not offered in
@@ -27045,6 +27100,7 @@
       renderUnitSpanReadout();
       renderUnitNav(); // shell round 21 -- the read bar's own Prev/Next ends
       syncReadPickers(); // shell round 22 -- the reading screen's own copies
+      fitReadListWord();
       syncReadNotes(); // decision 95 -- the 📝 Notes pane follows the āyah being read
     }
 
@@ -27914,7 +27970,7 @@
       if (!mushafToggle.checked || !currentSurahData) { return; }
       const key = ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf());
       const marked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: key });
-      readQuickMenuSlot.innerHTML = renderQuickMenu(key, { hasNote: ayahHasAnyNote(key), isBookmarked: marked, sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(), extraTiles: barUnitTilesHtml(), studyBlock: studyGroupHtml() });
+      readQuickMenuSlot.innerHTML = renderQuickMenu(key, { hasNote: ayahHasAnyNote(key), isBookmarked: marked, showBookmark: !unitBookmarkOpt(), sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(), extraTiles: barUnitTilesHtml(), studyBlock: studyGroupHtml() });
       attachAyahQuickMenus(readQuickMenuSlot);
       reopenStudySheet();
     }
