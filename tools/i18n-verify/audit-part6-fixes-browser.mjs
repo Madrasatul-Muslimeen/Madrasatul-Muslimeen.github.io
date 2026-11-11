@@ -30,7 +30,7 @@ const MUTATIONS = {
   // These three break the controls the Notes window really has now, and each makes a named check fail.
   "jtclose": ["app/js/journey-tray.js", "**/js/journey-tray.js*", ".jt-close { flex: 0 0 auto; min-width: 44px; min-height: 44px;", ".jt-close { flex: 0 0 auto; min-width: 0; min-height: 0; padding: 0; width: 24px; height: 24px;"],
   "minbtn": ["app/js/minimise.js", "**/js/minimise.js*", ".mm-min-btn { flex: 0 0 auto; margin-inline-start: auto; min-width: 40px; min-height: 40px; padding: 0;", ".mm-min-btn { flex: 0 0 auto; margin-inline-start: auto; min-width: 0; min-height: 0; width: 24px; height: 24px; padding: 0;"],
-  "panebtn": ["app/journey-map.html", "**/journey-map.html*", "html.pane-tabs-hosted #notePane .note-pane-bar .pane-btn { min-width: 40px; min-height: 40px;", "html.pane-tabs-hosted #notePane .note-pane-bar .pane-btn { min-width: 0; min-height: 0; padding: 0 4px; height: 26px;"],
+  "panebtn": ["app/css/note-window.css", "**/css/note-window.css*", ".pane-btn { min-height: 40px; min-width: 40px; white-space: nowrap; }", ".pane-btn { min-height: 0; min-width: 0; height: 26px !important; max-height: 26px !important; white-space: nowrap; }"],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error(`no such mutation ${MUTATE}`);
 const browser = await chromium.launch();
@@ -44,7 +44,7 @@ async function open(url, lang, width, seed) {
     const body = fs.readFileSync(path.join(ROOT, file), "utf8");
     const n = body.split(from).length - 1;
     if (n !== 1) throw new Error(`mutation anchor for ${MUTATE} found ${n} times`);
-    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript" : "text/html", body: body.split(from).join(to) }));
+    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript" : file.endsWith(".css") ? "text/css" : "text/html", body: body.split(from).join(to) }));
   }
   const { page } = await openPage(ctx, url);
   await page.waitForTimeout(1500);

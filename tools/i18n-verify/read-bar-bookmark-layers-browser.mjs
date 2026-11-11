@@ -62,7 +62,7 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
   check(`${tag} in bare full screen the bar still has no 🔖, and stays one line (≤ 44px tall)`, (await page.evaluate(() => [...document.querySelectorAll("#readBar button")].filter((x) => /🔖|★/.test(x.textContent) && x.getBoundingClientRect().width > 0).length)) === 0 && await page.evaluate(() => document.getElementById("readBar").getBoundingClientRect().height <= 44), String(await page.evaluate(() => document.getElementById("readBar").getBoundingClientRect().height)));
   // Leave full screen so the ⋮ is reachable, then bookmark through the unit tile: the popover names it, and the tile turns ★ once saved.
   for (let i = 0; i < 4 && (await page.evaluate(() => document.body.classList.contains("immersive-read"))); i++) { await page.click("#hideChromeBtn"); await page.waitForTimeout(500); }
-  await sheetBm(); await page.click("#readQuickMenuSlot .quick-menu [data-qm-unit-bookmark]");
+  await sheetBm(); await page.click("#readQuickMenuSlot .quick-menu [data-qm-unit-bookmark]", { timeout: 4000 }).catch(() => {}); // a mutant that removes the tile must end in the named FAIL below, not a timeout crash (98L, 11 Nov 2026)
   await page.waitForSelector(".bm-popover-overlay", { timeout: 5000 }).catch(() => {});
   await page.fill("[data-bm-pop-name]", "From the Mushaf bar").catch(() => {});
   await page.click("[data-bm-pop-save]").catch(() => {});
@@ -83,7 +83,7 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
   // The widest parts: the unit chip 98px, "Show 3 ▾" 95px, "Read on" 65px, and ten 40px buttons. Left failing until the Owner chooses (see PR #1649).
   const barH0 = await page.evaluate(() => Math.round(document.getElementById("readBar").getBoundingClientRect().height)); // before the Show menu opens (it opens inside the bar)
   const showTop = await page.evaluate(() => { const b = document.querySelector("#readMeaningLayersSlot [data-ml-menu]"), r = b?.getBoundingClientRect(); return r && r.width > 0 ? Math.round(r.top) : null; });
-  if (showTop !== null) { await page.click("#readMeaningLayersSlot [data-ml-menu]"); await page.waitForTimeout(250); }
+  if (showTop !== null) { await page.click("#readMeaningLayersSlot [data-ml-menu]", { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(250); }
   const L = await page.evaluate(() => {
     const slot = document.getElementById("readMeaningLayersSlot"), bar = document.getElementById("readBar").getBoundingClientRect(), m = document.getElementById("readMeaningBtn").getBoundingClientRect();
     const labels = [...(slot?.querySelectorAll("label") ?? [])].map((l) => { const r = l.getBoundingClientRect(); return { t: l.textContent.trim(), on: l.querySelector("input").checked, top: Math.round(r.top), h: Math.round(r.height), whole: l.scrollWidth <= l.clientWidth + 1, inBar: r.left >= bar.left - 1 && r.right <= bar.right + 1 }; });
@@ -100,10 +100,10 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
   check(`${tag} ...on 📖's own line, so the bar and switches take at most 60px (one line) from 600px, and at most 100px (the two lines the bar was made to be, 98L 11 Nov) below it (137px before)`, (showTop !== null ? W < 600 && Math.abs(showTop - L.mTop) < 4 : W >= 600 && L.labels.every((l) => Math.abs(l.top - L.mTop) < 4)) && L.cover <= (W < 600 ? 100 : 60), JSON.stringify({ cover: L.cover, showTop, tops: L.labels.map((l) => l.top), mTop: L.mTop }));
   check(`${tag} no sideways scroll`, L.over <= 0, String(L.over));
   // Switching Bangla off still works from the bar, and the bar keeps the switches.
-  await page.click('#readMeaningLayersSlot [data-meaning-layer="bn"]');
+  await page.click('#readMeaningLayersSlot [data-meaning-layer="bn"]', { timeout: 4000 }).catch(() => {}); // bounded: a mutant with no switches must end in counted FAILs, not a crash
   await page.waitForFunction(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0 && !document.querySelector("#pageViewContainer .ayah-translation-bn"), null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(500);
-  const off = await page.evaluate(() => ({ bn: document.querySelectorAll("#pageViewContainer .ayah-translation-bn").length, box: document.querySelector('#readMeaningLayersSlot [data-meaning-layer="bn"]')?.checked, filled: getComputedStyle(document.querySelector('#readMeaningLayersSlot [data-meaning-layer="bn"]').parentElement).backgroundColor }));
+  const off = await page.evaluate(() => ({ bn: document.querySelectorAll("#pageViewContainer .ayah-translation-bn").length, box: document.querySelector('#readMeaningLayersSlot [data-meaning-layer="bn"]')?.checked, filled: (() => { const e = document.querySelector('#readMeaningLayersSlot [data-meaning-layer="bn"]'); return e ? getComputedStyle(e.parentElement).backgroundColor : null; })() }));
   check(`${tag} tapping Bangla turns it off: no Bangla in the flow, its pill outlined (white)`, off.bn === 0 && off.box === false && off.filled === "rgb(255, 255, 255)", JSON.stringify(off));
   await page.click("#readMeaningBtn"); await page.waitForTimeout(900);
   check(`${tag} back on the Mushaf, the switches leave the bar`, await page.evaluate(() => { const s = document.getElementById("readMeaningLayersSlot"); return !!s && s.hidden && s.getBoundingClientRect().width === 0; }));
