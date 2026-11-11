@@ -112,7 +112,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280], ["bn", 360]
     check(`${tag} the pane sits inside the screen, the page area is tall enough (>= 300px), the × is >= 40px, the footer does not overflow sideways`, geo.l >= -0.5 && geo.t >= -0.5 && geo.r <= geo.vw + 0.5 && geo.b <= geo.vh + 0.5 && geo.fh >= 300 && geo.cw >= 40 && geo.ch >= 40 && geo.foot <= 0, JSON.stringify(geo));
     const focusIn = await P.evaluate(() => document.activeElement?.classList.contains("book-page-close"));
     check(`${tag} focus moves to the × when the pane opens`, focusIn);
-    await P.screenshot({ path: `tools/i18n-verify/out-shamela-${lang}-${width}.png` });
+    await P.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/out-shamela-${lang}-${width}.png` });
     await P.keyboard.press("Escape"); await P.waitForTimeout(120);
     check(`${tag} Escape closes the pane`, (await P.$("[data-book-page-pane]")) === null);
     check(`${tag} ...and focus is back on the button (way-back law)`, await P.evaluate((s) => document.activeElement === document.querySelector(s), BTN));
