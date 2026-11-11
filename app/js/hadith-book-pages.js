@@ -45,6 +45,18 @@ export const BOOK_PAGE_BOOKS = {
     title: { en: "Sahih Muslim", bn: "সহীহ মুসলিম" },
     pdf: "All in One-Sahih Muslim-Eng-Arabic-Darusalam.pdf", pdfBytes: 153338585,
   },
+  // Books with NO usable scan: the printed page as typed text on Shamela (the Owner, 10-11 Nov 2026: "Shamela is the fallback").
+  // These are keyed by the book's OWN hadith number (the one in our Arabic text), not a concordance standard number.
+  "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1": {
+    key: "muwatta", kind: "shamela", shamelaId: "28107",
+    title: { en: "Muwatta Malik", bn: "মুয়াত্তা মালিক" },
+    edition: { en: "ed. al-A'zami", bn: "আল-আ'যামী সম্পাদিত" },
+  },
+  "0241IbnHanbal.Musnad.Shamela0025794-ara1": {
+    key: "ahmad", kind: "shamela", shamelaId: "25794",
+    title: { en: "Musnad Ahmad", bn: "মুসনাদে আহমাদ" },
+    edition: { en: "ed. al-Arna'ut, al-Risala", bn: "আল-আরনাউত সম্পাদিত, আর-রিসালা" },
+  },
 };
 
 export const BOOK_PAGE_CREDIT_URL = "https://archive.org/details/AllInOne-Hadiths-EngArabicDarusalam_201407";
@@ -54,6 +66,11 @@ function cached(key, loader) {
   if (!cache.has(key)) cache.set(key, loader().catch((err) => { cache.delete(key); throw err; }));
   return cache.get(key);
 }
+
+/** A Shamela (typed printed text) book rather than an archive.org scan. */
+export const isShamelaBook = (versionUri) => BOOK_PAGE_BOOKS[versionUri]?.kind === "shamela";
+export const shamelaUrl = (book, index) => `https://shamela.ws/book/${book.shamelaId}/${Math.trunc(Number(index))}`;
+export const SHAMELA_URL = "https://shamela.ws/";
 
 export const hasBookPages = (versionUri) => Object.prototype.hasOwnProperty.call(BOOK_PAGE_BOOKS, versionUri);
 
@@ -90,6 +107,12 @@ export async function loadBookPage(versionUri, standardNumber, { fetchImpl = fet
     if (!res.ok) throw new Error(`Could not load the book page list (${res.status}).`);
     return res.json();
   });
+  if (book.kind === "shamela") {
+    const idx = map?.i?.[n - 1];
+    if (!map || n > map.numbers || !Number.isInteger(idx) || idx < 1) return null;
+    const url = shamelaUrl(book, idx);
+    return { book, kind: "shamela", leaf: null, index: idx, volume: map.v?.[n - 1] || null, page: map.g?.[n - 1] || null, approximate: false, embedUrl: url, openUrl: url };
+  }
   if (!map || n > map.numbers || !Number.isInteger(map.p?.[n - 1])) return null;
   const leaf = map.p[n - 1];
   // `a` is sorted: binary search

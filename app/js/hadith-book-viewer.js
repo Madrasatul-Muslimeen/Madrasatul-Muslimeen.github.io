@@ -5,7 +5,7 @@
 import { el } from "./hadith-shared-ui.js";
 import { t, num } from "./i18n.js";
 import { getAppLang } from "./prefs.js";
-import { hasBookPages, loadBookPage, bookDownload, BOOK_PAGE_BOOKS, BOOK_PAGE_CREDIT_URL } from "./hadith-book-pages.js";
+import { hasBookPages, loadBookPage, bookDownload, isShamelaBook, SHAMELA_URL, BOOK_PAGE_BOOKS, BOOK_PAGE_CREDIT_URL } from "./hadith-book-pages.js";
 
 let openPane = null;
 
@@ -56,26 +56,33 @@ function showPane(info, number, opener) {
   pane.appendChild(body);
 
   const foot = el("div", "book-page-foot");
+  const shamela = info.kind === "shamela";
   const credit = document.createElement("a");
   credit.className = "book-page-credit";
-  credit.href = BOOK_PAGE_CREDIT_URL;
+  credit.href = shamela ? SHAMELA_URL : BOOK_PAGE_CREDIT_URL;
   credit.target = "_blank"; credit.rel = "noopener noreferrer";
-  credit.textContent = t("Scan: Darussalam edition, shared on archive.org");
+  const edition = getAppLang() === "bn" ? book.edition?.bn : book.edition?.en;
+  credit.textContent = shamela
+    ? t("Printed text: Shamela Library, {edition}, vol. {vol}, p. {page}", { edition, vol: num(String(info.volume ?? "")), page: num(String(info.page ?? "")) })
+    : t("Scan: Darussalam edition, shared on archive.org");
   foot.appendChild(credit);
-  const dl = bookDownload(book);
-  const down = document.createElement("a");
-  down.className = "book-page-download";
-  down.dataset.bookPageDownload = "true";
-  down.href = dl.url;
-  down.target = "_blank"; down.rel = "noopener noreferrer";
-  down.textContent = t("Download this book (PDF, {mb} MB)", { mb: num(String(dl.megabytes)) });
-  foot.appendChild(down);
+  let down = null;
+  if (!shamela) {
+    const dl = bookDownload(book);
+    down = document.createElement("a");
+    down.className = "book-page-download";
+    down.dataset.bookPageDownload = "true";
+    down.href = dl.url;
+    down.target = "_blank"; down.rel = "noopener noreferrer";
+    down.textContent = t("Download this book (PDF, {mb} MB)", { mb: num(String(dl.megabytes)) });
+    foot.appendChild(down);
+  }
   const out = document.createElement("a");
   out.className = "book-page-open-link";
   out.dataset.bookPageOpenLink = "true";
   out.href = info.openUrl;
   out.target = "_blank"; out.rel = "noopener noreferrer";
-  out.textContent = t("Open on archive.org");
+  out.textContent = shamela ? t("Open on Shamela") : t("Open on archive.org");
   foot.appendChild(out);
   pane.appendChild(foot);
   overlay.appendChild(pane);
@@ -85,7 +92,7 @@ function showPane(info, number, opener) {
   const onKey = (e) => {
     if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closePane(); return; }
     if (e.key === "Tab") { // keep Tab inside the pane: × -> link -> credit -> ×
-      const ring = [close, credit, down, out];
+      const ring = [close, credit, down, out].filter(Boolean);
       const i = ring.indexOf(document.activeElement);
       e.preventDefault();
       ring[(i + (e.shiftKey ? ring.length - 1 : 1)) % ring.length].focus();
@@ -108,7 +115,7 @@ export function bookPageButton(versionUri, number) {
   const lazy = typeof number === "function";
   if (!hasBookPages(versionUri) || (!lazy && !(Math.trunc(Number(number)) > 0))) return null;
   const wrap = el("div", "book-page-row");
-  const btn = el("button", "hadith-view-source book-page-button", t("Original book page"));
+  const btn = el("button", "hadith-view-source book-page-button", isShamelaBook(versionUri) ? t("Printed page (Shamela)") : t("Original book page"));
   btn.type = "button";
   if (!lazy) btn.dataset.bookPageButton = String(number);
   const note = el("span", "book-page-error");
@@ -130,4 +137,4 @@ export function bookPageButton(versionUri, number) {
   return wrap;
 }
 
-export { BOOK_PAGE_BOOKS };
+export { BOOK_PAGE_BOOKS, isShamelaBook };

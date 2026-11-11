@@ -119,6 +119,36 @@
       "versionUri": "0303Nasai.SunanSughra.JK000130-ara1",
       "status": "blocked",
       "note": "BLOCKED (11 Nov 2026): Darussalam's Nasa'i numbering differs from the numbering of our English text (hadith-api) in places, e.g. our #288 is the Anas hadith but the scan's [288] is Maimunah's; our #100 matches. Mapping by number would show WRONG pages (cross-check only 67%). Needs a text-aligned bridge (match each of our hadith to the scan by content) before it can ship. The builder already supports two-file books."
+    },
+    {
+      "key": "muwatta",
+      "title": "Muwatta Malik (Yahya's narration, ed. al-A'zami, Zayed bin Sultan Al Nahyan Foundation)",
+      "kind": "shamela",
+      "versionUri": "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1",
+      "numbering": "al-A'zami's hadith numbers, 1-3670 (the same numbers our Arabic text carries)",
+      "lastNumber": 3670,
+      "shamela": {
+        "id": "28107",
+        "edition": "ed. al-A'zami",
+        "lastIndex": 4600
+      },
+      "status": "planned",
+      "note": "No usable scan (the archive.org file is a web printout without hadith numbers). Shamela typed text of the A'zami edition; volume/page read from each Shamela page."
+    },
+    {
+      "key": "ahmad",
+      "title": "Musnad Ahmad (ed. al-Arna'ut, Mu'assasat al-Risala)",
+      "kind": "shamela",
+      "versionUri": "0241IbnHanbal.Musnad.Shamela0025794-ara1",
+      "numbering": "the edition's own hadith numbers, 1-27647 (the numbers our Arabic text carries)",
+      "lastNumber": 27647,
+      "shamela": {
+        "id": "25794",
+        "edition": "ed. al-Arna'ut, al-Risala",
+        "lastIndex": 23340
+      },
+      "status": "planned",
+      "note": "The archive.org scan is image-only (no text layer). Shamela typed text; volume/page come from our OpenITI PageV marks, proven against Shamela by a sampled check with a control."
     }
   ]
 }
