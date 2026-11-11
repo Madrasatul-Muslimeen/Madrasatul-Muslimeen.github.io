@@ -137,3 +137,10 @@ Overall about **2½–3 weeks** of my time for P0–P3, spread over several smal
 | **Nasa'i** | 4,496 / 5,758 | 1,262 | **67%: numbering differs from ours in places** | **BLOCKED**: would show wrong pages. Needs a content-aligned bridge. Not shipped, no map in the app. |
 Known small error: Tirmidhi hadith 1 maps to the chapter heading "1. The Chapters on Purification" (leaf 32) instead of the hadith two pages later; a chapter-number heading can be mistaken for a hadith number in Tirmidhi. The checks avoid hadith 1.
 Next: a Nasa'i bridge (or skip it), then Muwatta / Ahmad and the Shamela fallback.
+
+## 12. BwN hosting is ON HOLD (PCA, 11 Nov 2026, about 01:04 UTC)
+The BwN session flagged copyright: the Darussalam translations are copyrighted, and an archive.org upload is no licence to host them again. It asked the
+Owner: A) archive.org link only, B) host only clearly free texts, C) get Darussalam's written permission first. Until the Owner answers:
+**"Download this book" points at archive.org and `mirrorUrl` stays empty.** Section 10's size table is kept as facts for whichever way the Owner decides.
+Branch note: the first slice is on `claude/hadith-book-pages-bukhari` (head 811a0290), held for the MSA Architect's review; later work goes on
+`claude/hadith-book-pages-more` so that branch head does not move.
