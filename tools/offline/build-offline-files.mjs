@@ -51,7 +51,8 @@ function grouped(rels) {
 const json = (rel) => walk(rel).filter((f) => /\.json$/i.test(f));
 
 const appFiles = walk("app").filter((f) => CACHEABLE.test(f) && !SKIP_APP.some((re) => re.test(f)));
-const quranFiles = walk("tools/quran-data-pull/output").filter((f) => CACHEABLE.test(f));
+// The printed-Mushaf page pictures (604 PNG, 51 MB) are the reader's own choice to keep: never part of "Get ready for offline".
+const quranFiles = walk("tools/quran-data-pull/output").filter((f) => CACHEABLE.test(f) && !/\/mushaf-printed\//.test(f));
 
 const sdk = [...new Set(walk("app").filter((f) => /\.(?:js|html)$/.test(f))
   .flatMap((f) => [...fs.readFileSync(path.join(ROOT, f), "utf8").matchAll(/https:\/\/www\.gstatic\.com\/firebasejs\/[\d.]+\/[a-z-]+\.js/g)].map((m) => m[0])))].sort();
