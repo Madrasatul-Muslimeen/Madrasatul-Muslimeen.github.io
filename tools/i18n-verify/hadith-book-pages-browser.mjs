@@ -19,11 +19,11 @@ const MUT = {
   wrongleaf: ["js/hadith-book-pages.js", "const n = Math.max(0, Math.trunc(Number(leaf) || 0));", "const n = Math.max(0, Math.trunc(Number(leaf) || 0)) + 1;"],
   noescape: ["js/hadith-book-viewer.js", 'if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closePane(); return; }', ""],
   nofocusback: ["js/hadith-book-viewer.js", "if (opener && document.contains(opener)) opener.focus();", ""],
-  nocredit: ["js/hadith-book-viewer.js", 'credit.textContent = t("Scan: Darussalam edition, shared on archive.org");', 'credit.textContent = "";'],
+  nocredit: ["js/hadith-book-viewer.js", ': t("Scan: Darussalam edition, shared on archive.org");', ': "";'], // re-anchored (98L, #1647 made the credit line a ternary; the old anchor no longer existed)
   noapprox: ["js/hadith-book-pages.js", "if (map.a[mid] === n) { approximate = true; break; }", "if (map.a[mid] === n) { break; }"],
   nodownload: ["js/hadith-book-viewer.js", "  foot.appendChild(down);\n", ""],
   noduabutton: ["js/dua-browser.js", "if (bp) card.appendChild(bp); }\n", "}\n"],
-  nobutton: ["js/hadith-browser.js", "{ const bp = cite ? bookPageButton(conc?.versionUri ?? versionUri, cite) : null; if (bp) card.appendChild(bp); }", ""],
+  nobutton: ["js/hadith-browser.js", "const bp = pageNo ? bookPageButton(vUri, pageNo) : null; if (bp) card.appendChild(bp); }", "}"],
   eagerload: ["js/hadith-book-viewer.js", "  const note = el(\"span\", \"book-page-error\");", "  loadBookPage(versionUri, lazy ? 1 : number).catch(() => {});\n  const note = el(\"span\", \"book-page-error\");"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -179,15 +179,15 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   // module-level: which books show a button, and the approximate flag
   const mod = await P.evaluate(async (buk) => {
     const m = await import("/app/js/hadith-book-pages.js"); const v = await import("/app/js/hadith-book-viewer.js");
-    const exact = await m.loadBookPage(buk, 112), approx = await m.loadBookPage(buk, 273), none = await m.loadBookPage(buk, 9999), other = await m.loadBookPage("0179MalikIbnAnas.Muwatta.Shamela0028107-ara1", 5);
+    const exact = await m.loadBookPage(buk, 112), approx = await m.loadBookPage(buk, 273), none = await m.loadBookPage(buk, 9999), other = await m.loadBookPage("0255CabdAllahDarimi.Sunan.JK000842-ara1", 5);
     const tirm = await m.loadBookPage("0279Tirmidhi.Sunan.JK000140-ara1", 500);
-    return { tirm: tirm && [tirm.leaf, tirm.embedUrl], hasMuslim: m.hasBookPages("0179MalikIbnAnas.Muwatta.Shamela0028107-ara1"), hasBukhari: m.hasBookPages(buk), muslimBtn: v.bookPageButton("0179MalikIbnAnas.Muwatta.Shamela0028107-ara1", 5) === null,
-      exact: exact && [exact.leaf, exact.approximate], approx: approx && [approx.leaf, approx.approximate], none, other, keys: Object.keys(m.BOOK_PAGE_BOOKS), all: m.BOOK_PAGE_BOOKS };
+    return { tirm: tirm && [tirm.leaf, tirm.embedUrl], hasMuslim: m.hasBookPages("0255CabdAllahDarimi.Sunan.JK000842-ara1"), hasBukhari: m.hasBookPages(buk), muslimBtn: v.bookPageButton("0255CabdAllahDarimi.Sunan.JK000842-ara1", 5) === null,
+      exact: exact && [exact.leaf, exact.approximate], approx: approx && [approx.leaf, approx.approximate], none, other, keys: Object.keys(m.BOOK_PAGE_BOOKS).filter((k) => m.BOOK_PAGE_BOOKS[k].kind !== "shamela"), all: m.BOOK_PAGE_BOOKS };
   }, BUK);
-  check(`${tag} a book with no scan yet (Muwatta) shows no button and no page`, !mod.hasMuslim && mod.hasBukhari && mod.muslimBtn && mod.other === null);
+  check(`${tag} a book with no scan and no Shamela page yet (Darimi) shows no button and no page`, !mod.hasMuslim && mod.hasBukhari && mod.muslimBtn && mod.other === null);
   check(`${tag} hadith 112 is exact on leaf 120; hadith 273 is flagged approximate; a number past the end has no page`, JSON.stringify(mod.exact) === "[120,false]" && mod.approx?.[1] === true && mod.none === null, JSON.stringify(mod));
   check(`${tag} Tirmidhi 500 is on leaf 501 of its own scan file`, mod.tirm?.[0] === 501 && mod.tirm?.[1] === "https://archive.org/embed/AllInOne-Hadiths-EngArabicDarusalam_201407/All%20in%20One-Jami%20At-Tirmidhi-Eng#page/n501/mode/1up", JSON.stringify(mod.tirm));
-  check(`${tag} the app's book list is bound to the registry (sources/book-pages.json), both ways`, JSON.stringify([...mod.keys].sort()) === JSON.stringify(reg.books.filter((b) => ["mapped", "verified"].includes(b.status)).map((b) => b.versionUri).sort()) && reg.books.filter((b) => ["mapped", "verified"].includes(b.status)).every((b) => mod.all[b.versionUri]?.archiveId === b.archiveId && mod.all[b.versionUri]?.slug === b.scanSlug && mod.all[b.versionUri]?.key === b.key && mod.all[b.versionUri]?.pdf === b.pdfFile && mod.all[b.versionUri]?.pdfBytes === b.pdfBytes), JSON.stringify(mod.keys));
+  check(`${tag} the app's book list is bound to the registry (sources/book-pages.json), both ways`, JSON.stringify([...mod.keys].sort()) === JSON.stringify(reg.books.filter((b) => ["mapped", "verified"].includes(b.status) && b.kind !== "shamela").map((b) => b.versionUri).sort()) && reg.books.filter((b) => ["mapped", "verified"].includes(b.status) && b.kind !== "shamela").every((b) => mod.all[b.versionUri]?.archiveId === b.archiveId && mod.all[b.versionUri]?.slug === b.scanSlug && mod.all[b.versionUri]?.key === b.key && mod.all[b.versionUri]?.pdf === b.pdfFile && mod.all[b.versionUri]?.pdfBytes === b.pdfBytes), JSON.stringify(mod.keys));
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
 }

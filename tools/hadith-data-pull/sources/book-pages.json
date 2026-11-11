@@ -119,6 +119,67 @@
       "versionUri": "0303Nasai.SunanSughra.JK000130-ara1",
       "status": "blocked",
       "note": "BLOCKED (11 Nov 2026): Darussalam's Nasa'i numbering differs from the numbering of our English text (hadith-api) in places, e.g. our #288 is the Anas hadith but the scan's [288] is Maimunah's; our #100 matches. Mapping by number would show WRONG pages (cross-check only 67%). Needs a text-aligned bridge (match each of our hadith to the scan by content) before it can ship. The builder already supports two-file books."
+    },
+    {
+      "key": "muwatta",
+      "title": "Muwatta Malik (Yahya's narration, ed. al-A'zami, Zayed bin Sultan Al Nahyan Foundation)",
+      "kind": "shamela",
+      "versionUri": "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1",
+      "numbering": "al-A'zami's hadith numbers, 1-3670 (the same numbers our Arabic text carries)",
+      "lastNumber": 3670,
+      "shamela": {
+        "id": "28107",
+        "edition": "ed. al-A'zami",
+        "lastIndex": 4600
+      },
+      "status": "mapped",
+      "note": "No usable scan (the archive.org file is a web printout without hadith numbers). Shamela typed text of the A'zami edition; volume/page read from each Shamela page. Map (11 Nov, after the number reader learned al-A'zami's two-part numbers and a number followed straight by a tag): 3670 of 3670 numbers, 2918 of 2920 reader hadith (99.9%); opening-words sample 392 of 399 on the mapped page, control 8; hand-read anchors 233, 396, 2000, 3600."
+    },
+    {
+      "key": "ahmad",
+      "title": "Musnad Ahmad (ed. al-Arna'ut, Mu'assasat al-Risala)",
+      "kind": "shamela",
+      "versionUri": "0241IbnHanbal.Musnad.Shamela0025794-ara1",
+      "numbering": "the edition's own hadith numbers, 1-27647 (the numbers our Arabic text carries)",
+      "lastNumber": 27647,
+      "shamela": {
+        "id": "25794",
+        "edition": "ed. al-Arna'ut, al-Risala",
+        "lastIndex": 23340
+      },
+      "status": "planned",
+      "note": "The archive.org scan is image-only (no text layer). Shamela typed text, read page by page by shamela-pages-build.py (exact). The OpenITI PageV marks of this book are too sparse (hadith 252 sits ~200 lines before its next mark): shamela-pages-from-marks.py's own sample check, with its control, proved that route WRONG here (0 of 534), so it is not used for Ahmad."
+    },
+    {
+      "key": "adabmufrad",
+      "title": "al-Adab al-Mufrad (Bukhari, ed. Abd al-Baqi)",
+      "kind": "shamela",
+      "versionUri": "0256Bukhari.AdabMufrad.JK000011-ara1",
+      "numbering": "Abd al-Baqi's hadith numbers, 1-1322 (the numbers our Arabic text carries; hadith 26 read on both)",
+      "lastNumber": 1322,
+      "shamela": {
+        "id": "12991",
+        "edition": "ed. Abd al-Baqi",
+        "lastIndex": 2010
+      },
+      "status": "mapped",
+      "note": "No scan in the archive.org item. Shamela 12991 matches our JK text (hadith 26 same words, same numbering). One-volume book: Shamela titles carry a page and no volume. Map: 1321 of 1322 numbers (hadith 895 not found; 21 numbers print twice, the first print is kept). Opening-words sample 371 of 400 on the mapped page (control 6); the misses read by hand are right pages with different narrator wording between editions. Hand-read anchors 26, 365, 689."
+    },
+    {
+      "key": "riyad",
+      "title": "Riyad al-Salihin (Nawawi, ed. al-Arna'ut, Mu'assasat al-Risala)",
+      "kind": "shamela",
+      "keyBy": "n",
+      "versionUri": "0676Nawawi.RiyadSalihin.Shamela0012014-ara1",
+      "numbering": "OUR RECORD ORDER n (1-2081, the position in the split files). The book's own hadith number is NOT used: it prints per chapter and our header has source typos",
+      "lastNumber": 2081,
+      "shamela": {
+        "id": "12014",
+        "edition": "ed. al-Arna'ut, al-Risala",
+        "lastIndex": 810
+      },
+      "status": "building",
+      "note": "Built by shamela-pages-riyad.py: our hadith records in order walked against Shamela's paragraphs in order, a pair accepted only when the opening words agree."
     }
   ]
 }
