@@ -20,8 +20,8 @@ REGISTRY = os.path.join(HERE, "sources", "book-pages.json")
 OUT_DIR = os.path.join(HERE, "output", "book-pages")
 ARABIC_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
 TITLE = re.compile(r"<title>\s*ج(\d+)\s*-\s*ص(\d+)\s*-")
-# a hadith paragraph starts with its number: <p><span id="p1" class="anchor"></span>٢٣٣ - ...
-PARA_NUMBER = re.compile(r'<p>\s*(?:<span\b[^>]*\bclass="anchor"[^>]*></span>\s*)?([٠-٩0-9]+)\s*[-–]\s')
+# a hadith paragraph starts with its number, or "global / in-book" (al-A'zami's Muwatta: "٣٩٦/ ١٢٠ -"; our OpenITI number is the first): <p><span id="p1" class="anchor"></span>٢٣٣ - ...
+PARA_NUMBER = re.compile(r'<p>\s*(?:<span\b[^>]*\bclass="anchor"[^>]*></span>\s*)?([٠-٩0-9]+)(?:\s*/\s*[٠-٩0-9]+)?\s*[-–]\s')
 
 
 def fetch(book_id, index, cache, retries=4):
