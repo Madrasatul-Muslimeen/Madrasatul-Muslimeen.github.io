@@ -1,6 +1,6 @@
 # MSA Master Architect 98L: handover, 11 Nov 2026 (~3:00 pm Sydney)
 
-Session `session_01PL2xbKJpJBPFyWmKuCNia6`, took over from 97L at ~12:20 pm. `main` = **v14.24** (merge `1249e120`); the ledger's next number is **14.25**.
+Session `session_01PL2xbKJpJBPFyWmKuCNia6`, took over from 97L at ~12:20 pm. `main` = **v14.25** (this release); the ledger's next number is **14.26**.
 On main: brief-integrity 15/0, programme-ledger 8/0, programme-ledger-mutations 49/0 (needs `git fetch --unshallow origin main` plus
 `claude/pensive-knuth-2pu3jj` and `claude/phase4-wiring`). Nothing deployed to Firestore.
 
@@ -16,15 +16,18 @@ Hadith Lead = 12L `session_01PL2xbMcdvCAqCs3zLe4vBV`. Dua Lead = `session_01PL2x
 - Also merged: **#1644** (Bangla Words Rules CANDIDATE; merged by the unattended Architect; checked after: emulator pass, mutate 28/28,
   rules-authorisation-executable 114/0, firestore.rules unchanged), **#1645** (604 Printed Mushaf PNGs, 51 MB, one commit, README, check 9/0, 11 mutations red).
 
-## IN REVIEW (my worktrees /tmp/claude-0/w47 and w49 are lost with this container; redo from the PR heads)
-1. **#1647** Hadith Shamela fallback (Muwatta, al-Adab al-Mufrad), head `ba254010`. Its last commit is a stray Riyad WIP (a builder script and a
-   `sources/book-pages.json` row only; the app does not read it; harmless, ride along). With main merged: hadith-shamela-pages 148/0,
-   hadith-book-pages 109/0. Still to read: both `--prove` runs and the neighbours (dua-tab, dua-card-r2, openiti, keyboard, a11y ~15 min,
-   night-hadith-dua ~15 min). Then merge main in, regenerate offline-files, push, merge pinned, release v14.25.
-2. **#1649** QR Lead debt round, head `2d45ab5b`: ONE REAL DEFECT (Show ▾ menu 9px past the edge at 768, fixed in `setMeaningLayersOpen()`),
-   stale checks updated in place (audit-part1, audit-part6, read-bar-bookmark-layers, qr-read-tall). read-bar-bookmark-layers stays RED BY NAME
-   at 360/390/412 on purpose (see the Owner choice below). Run the six suites and their mutations (twobm, nounit, inflow, notiles, jtclose, minbtn, panebtn).
-3. **#1650** Riyad al-Salihin (Hadith Lead), stacked on #1647's branch: review only after #1647 merges (retarget to main).
+## IN REVIEW (updated ~3:55 pm Sydney, 98L stopping)
+**#1647 is DONE: released as v14.25** (Shamela printed page: Muwatta, al-Adab al-Mufrad; my review re-anchored the `nocredit` mutation, 8/9 -> 9/9).
+1. **#1649** QR Lead debt round. Its head has MOVED since my run: now also a rewritten `read-bar-tools` (84/0, mutations notextsize,
+   nocomplete, nonote, nowriting, noasma, noescape, nofold) and a SECOND real fix, Escape closes the ⋮ sheet and gives the ⋮ its focus back
+   (`app/js/ayah-note-renderer.js`). My run on the OLD head 2d45ab5b (main merged): qr-j110 78/0, audit-part1 214/0, audit-part6 204/0,
+   qr-read-tall 160/0, read-one-bar 158/0, read-on-switch 160/0, read-bar-bookmark-layers 41/3 (the 3 are the deliberate RED BY NAME for the
+   three-line phone bar, waiting on the Owner's choice). Mutations: twobm 11 fails, notiles 4, jtclose 8, minbtn 8 (all red).
+   **FINDINGS to send back before merging:** (a) audit-part6 `--mutate=panebtn` stays GREEN (204/0): it proves nothing, so the QR Lead must
+   fix or replace it; (b) read-bar-bookmark-layers `--mutate=nounit` and `--mutate=inflow` crashed (TimeoutError, no summary line): make each
+   end with a counted FAIL rather than a crash. Re-run everything on the NEW head with main merged.
+2. **#1650** Riyad al-Salihin (Hadith Lead 12L): retarget to main now that #1647 is in. 12L knows its branch still has the old `nocredit` anchor
+   and will pick up the fix and re-run `--prove` on all three suites.
 
 ## OWNER CHOICE ASKED (in the PCF monitor, tick boxes; never re-ask)
 Read on, PHONE, range unit: the bar is THREE lines (151px). Short of two lines by 126px at 360, 66 at 390, 22 at 412. A keep three lines;
@@ -53,6 +56,6 @@ J110 round-2 look, J05 T11/T15, J122 n122a, J123 later. 18 Nov G02/pro1118. BwN 
 ## Opening message for the next Architect
 "You are the MSA Master Architect (99L), taking over from 98L (session_01PL2xbKJpJBPFyWmKuCNia6). Read CLAUDE.md, then
 docs/reports/2026-11-11-msa-architect-98L-handover.md, then the PCF https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ section p/mmsa. Set p/mmsa
-sessionUrl to your session and stamp claudeSeenAt (pin if_version). main = v14.24; next number 14.25. PCA = 35L session_01PL2xbJG7YpMtgc2Z4so2y7.
-FIRST JOB: finish reviewing #1647 (then release v14.25), #1649, then #1650 (after #1647), as the handover's IN REVIEW list says. Suites need
+sessionUrl to your session and stamp claudeSeenAt (pin if_version). main = v14.25; next number 14.26. PCA = 35L session_01PL2xbJG7YpMtgc2Z4so2y7.
+FIRST JOB: #1649 (send back the two findings in the handover's IN REVIEW list first), then #1650. Suites need
 `ln -s /opt/node22/lib/node_modules node_modules`. Stop serve.js before qr-verify. Merge pinned with expectedHeadSha."
