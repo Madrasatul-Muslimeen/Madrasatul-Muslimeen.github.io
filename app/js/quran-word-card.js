@@ -213,6 +213,8 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   progressHeading: "Word progress",
   recordHeading: "Record your Progress",
   statusHeading: "Know Your Status",
+  progressDataHide: "Hide progress data",
+  progressDataShow: "Show progress data",
   wordNumberLabel: "word {n}",
   ringLabel: "{percent} of the words of the Qur'an known",
   ringUnknown: "Share of the words of the Qur'an known: not loaded yet",
@@ -438,6 +440,16 @@ function percentCircle(pct, text, formatNumber) {
     `<b class="word-progress-percent-text" aria-hidden="true">${label}</b></span>`;
 }
 
+/** PCF MSA J129 (the Owner, B1): the Progress Data block (ring, WbW / Root / Family / Taṣrīf / Depth totals, the circles, "Learn next") has an
+ *  on/off switch. ON by default; the choice is remembered on this device (the QR Lead's default, told to the Owner). */
+const PROGRESS_DATA_KEY = "mm_word_card_progress_data.v1";
+export function progressDataOn() {
+  try { return localStorage.getItem(PROGRESS_DATA_KEY) !== "off"; } catch { return true; }
+}
+export function setProgressDataOn(on) {
+  try { localStorage.setItem(PROGRESS_DATA_KEY, on ? "on" : "off"); } catch { /* the switch still works for this view */ }
+}
+
 /**
  * Issue #303 -- the whole-Qur'an running total, read straight off
  * quranWordTotals (getWordTotals(), already gated by
@@ -615,10 +627,11 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
     </div>
     <div class="word-progress-status" data-word-progress-status>
     <h3 class="word-progress-heading word-progress-heading-pc">${escapeHtml(text.statusHeading)}</h3>
-    <div class="word-progress-status-top">${ring}${coverageLine}</div>
+    <button type="button" class="word-progress-data-switch" data-word-progress-data-toggle aria-pressed="${progressDataOn()}">${escapeHtml(String(progressDataOn() ? (text.progressDataHide ?? WORD_CARD_TEXT.progressDataHide) : (text.progressDataShow ?? WORD_CARD_TEXT.progressDataShow)))}</button>
+    ${progressDataOn() ? `<div class="word-progress-status-top">${ring}${coverageLine}</div>
     ${wholeQuranKnownLines(wbw.wholeQuranTotal, text, formatNumber, wbw.levelTotals, wbw.learnNext)}
     ${wbw.thisWordShareHtml ?? ""}
-    ${learnDeltaLine(wbw.learnDelta, text, formatNumber)}
+    ${learnDeltaLine(wbw.learnDelta, text, formatNumber)}` : ""}
     </div>
   </div>`;
 }

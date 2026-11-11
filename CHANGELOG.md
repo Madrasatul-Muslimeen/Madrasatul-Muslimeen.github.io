@@ -23746,3 +23746,13 @@ All four by the QR Lead 46L; reviewed by measurement and merged by the Architect
 **(4) A stale check (#1636, test only):** quran-word-card.mjs expected both meanings in one render; since J101 the card shows ONE meaning in the reader's language. Updated in place with the reason: 37/0.
 
 QR build and qr-verify on the merged main: 24/25, the one red `upgrade-browser` needs a QuranRevival clone this container lacks. No Firestore Rules change; nothing deployed to Firestore.
+
+## v14.22 — 11 Nov 2026 (Sydney) — The Read bar: one bookmark, WbW/Root/Derivatives in Read on, a quick 🔍
+
+The Owner's three asks of 11 Nov 2026, built by the QR Lead 46L (#1637, merged pinned at 3ed03d7; the PR's own files identical to the reviewed head 127b1a7, the later commits only main merging in), reviewed by measurement by the Architect 97L.
+
+- **One bookmark** ("Why two BM?"): `showBookmark: !unitBookmarkOpt()` on the bar's ⋮ sheets, so a unit wider than one āyah shows only "Bookmark · <unit>"; the "this āyah" tile stays for a one-āyah unit and on each āyah's own ⋮.
+- **WbW / Root / Derivatives in Read on's ⋮** (`ayah-note-renderer.js` `showTextTools` in the study-only sheet): Word by Word toggles the flow's own layer (kept per device, the place in the flow kept); Root and Derivatives are the shared reading ticks, which `meaningPageHtml` now draws in the flow too.
+- **A quick 🔍 on the Read bar** (`#readSearchBtn`, the banner's `openHeadSearch()`); hidden below 360px only while the way-back chip holds the bar's line. `fitReadListWord()` drops the ☰ button's word only when that leaves fewer rows (counted with and without it), on resize and on body class changes.
+
+Checks (97L): read-bar-asks-browser 64/1, the one red a web font blocked by CORS in this sandbox ([bn 390] no page errors, verses.quran.foundation); mutations nofit 62/3, noroot 61/4, nosearch 48/17, notools 55/4, twobm 63/2 (each red); bookmark-marks-back 426/0; read-one-bar 158/0; ayah-stripe 76/0; qr-read-tall 152/8 against 119/41 on clean main (better); read-bar-bookmark-layers (3 fails at line 61) and read-bar-tools (1 fail at line 108), qr-j110-reading-view 77/1: each IDENTICAL on clean main (pre-existing, given to the QR Lead as debt). Strings already in `bn.js`; `aria-label` and `title` are translated by `translateStatic`. QR build and qr-verify on the merged main: 29/30, the one red `upgrade-browser` needs a QuranRevival clone this container lacks. No Firestore Rules change.

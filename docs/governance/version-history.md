@@ -1124,3 +1124,4 @@ total). Allocated by the MMSA Architect.
 14.19: Recitation saved for offline per sūrah (PCF MSA J120 O6). Allocated by the MMSA Architect.
 14.20: Ayah stripe round 1 + J136 effort Rules on. Allocated by the MMSA Architect.
 14.21: Word Card nav together, Verb Form line, freeze fix. Allocated by the MMSA Architect.
+14.22: Read bar: one bookmark, WbW/Root/Derivatives, quick search. Allocated by the MMSA Architect.
