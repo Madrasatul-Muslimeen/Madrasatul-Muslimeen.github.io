@@ -72,7 +72,7 @@ async function openBook(P, uri, number) {
   if (mode) await mode.selectOption("edition");
   await P.fill("[data-openiti-goto-input]", String(number)); await P.click("[data-openiti-goto-btn]");
 }
-for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
+for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280], ["bn", 360], ["en", 1440], ["en", 195]]) {
   const tag = `[${lang} ${width}]`;
   const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 800 } });
   const asked = [];
