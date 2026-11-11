@@ -5,7 +5,7 @@
 import { el } from "./hadith-shared-ui.js";
 import { t, num } from "./i18n.js";
 import { getAppLang } from "./prefs.js";
-import { hasBookPages, loadBookPage, bookDownload, isShamelaBook, SHAMELA_URL, BOOK_PAGE_BOOKS, BOOK_PAGE_CREDIT_URL } from "./hadith-book-pages.js";
+import { hasBookPages, loadBookPage, bookDownload, isShamelaBook, isKeyedByN, SHAMELA_URL, BOOK_PAGE_BOOKS, BOOK_PAGE_CREDIT_URL } from "./hadith-book-pages.js";
 
 let openPane = null;
 
@@ -27,7 +27,8 @@ function showPane(info, number, opener) {
   overlay.dataset.bookPagePane = "true";
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-modal", "true");
-  const title = t("{book}, hadith {n}", { book: bookName, n: num(String(number)) });
+  // a book keyed by our record order has no number the reader would recognise (Riyad's prints per chapter): name the book only
+  const title = book.keyBy === "n" ? bookName : t("{book}, hadith {n}", { book: bookName, n: num(String(number)) });
   overlay.setAttribute("aria-label", t("Original book page") + ": " + title);
 
   const pane = el("div", "book-page-pane");
@@ -139,4 +140,4 @@ export function bookPageButton(versionUri, number) {
   return wrap;
 }
 
-export { BOOK_PAGE_BOOKS, isShamelaBook };
+export { BOOK_PAGE_BOOKS, isShamelaBook, isKeyedByN };
