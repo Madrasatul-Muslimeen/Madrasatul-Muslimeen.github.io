@@ -1128,3 +1128,4 @@ total). Allocated by the MMSA Architect.
 14.23: Ayah stripe round 2, Know Your Status switch, Bangla Words v2 data. Allocated by the MMSA Architect.
 14.24: Hadith Original book page (scan pop-up), five books, Dua cards. Allocated by the MMSA Architect.
 14.25: Hadith printed page on Shamela: Muwatta, al-Adab al-Mufrad. Allocated by the MMSA Architect.
+14.26: the Printed page view, the QR debt round and Riyad al-Salihin's printed page. Allocated by the MMSA Architect.
