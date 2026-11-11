@@ -23,6 +23,7 @@ const MUTATIONS = {
   "popup-inset": [HTML, "return nav ? nav.getBoundingClientRect().bottom + 8 : 0;", "return 0;"],
   "unit-pills": [HTML, ".wheel-show-switch { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.2rem; }", ".wheel-show-switch { display: flex; flex-wrap: nowrap; gap: 0.2rem; }"],
   "heading": [HTML, "    .ayah-sheet-header { flex-wrap: wrap; }\n", ""],
+  "notiles": ["app/js/ayah-note-renderer.js", 'showWriting ? tile("data-qm-writing", "✍", t("Writing sheet")) : ""', '""'], // the ⋮ sheet loses its Writing tile -> "the ⋮ sheet offers Notes, Writing sheet and Mark complete" FAILS (debt round, 11 Nov 2026)
   "ladder": [HTML, "display: grid; grid-template-columns: repeat(auto-fill, minmax(5.8rem, 1fr)); gap: 0.3rem; overflow-x: visible;", "display: flex; gap: 0.3rem; overflow-x: auto;"],
   "digits-word": [HTML, "return num(displayWordRef(surah, ayah, position, fatihaOn(), t(\"Bismillah\")));", "return displayWordRef(surah, ayah, position, fatihaOn(), t(\"Bismillah\"));"],
   "nav-summary": ["app/css/shell.css", "line-height: 40px; height: 40px;", "line-height: 1.2; height: auto;"],
@@ -44,8 +45,8 @@ async function open(lang, width, { baseline = false } = {}) {
     swaps.push([file, body.split(from).join(to)]);
   }
   for (const [file, body] of swaps) {
-    const glob = file.endsWith(".css") ? "**/css/shell.css*" : "**/app/quranrevival.html*";
-    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".css") ? "text/css" : "text/html; charset=utf-8", body }));
+    const glob = file.endsWith(".css") ? "**/css/shell.css*" : file.endsWith(".js") ? `**/js/${file.split("/").pop()}*` : "**/app/quranrevival.html*";
+    await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".css") ? "text/css" : file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body }));
   }
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   return { ctx, page };
@@ -103,7 +104,18 @@ for (const lang of ["en", "bn"]) {
       const bar = await rectsOf(page, ["#prevUnitBtn", "#nextUnitBtn", "#readPlayBtn", "#readStopBtn", "#prevAyahBtn", "#nextAyahBtn", "#hideChromeBtn", "#readToolsBtn", "#readWindowBtn", "#readNotesBtn", "#readWritingBtn", "#readCompleteBtn", "#readAttachAsmaBtn"]);
       needBox(`${tag} Read bar icon buttons`, bar, 40, 40);
       check(`${tag} Read bar has the transport buttons`, ["#prevUnitBtn", "#nextUnitBtn", "#readPlayBtn", "#readStopBtn"].every((s) => bar.some((b) => b.s === s)));
-      if (width >= 900) check(`${tag} Read bar shows Notes/Writing/Complete inline`, ["#readNotesBtn", "#readWritingBtn", "#readCompleteBtn"].every((s) => bar.some((b) => b.s === s)));
+      // UPDATED IN PLACE, MSA · QR J132 / v14.09 "one Read bar" (found by the debt round, 11 Nov 2026): from 900px the bar no longer carries Notes, Writing sheet
+      // and Mark complete in a line (the old #readToolsMenu is hidden at every width); they are tiles of the bar's ⋮ sheet. So assert what is true now: the ⋮ is on
+      // the bar and its sheet offers all three as tiles at least 40px tall. A positive control comes first: the old inline buttons really are not on the bar.
+      if (width >= 900) {
+        const inlineGone = ["#readNotesBtn", "#readWritingBtn", "#readCompleteBtn"].every((s) => !bar.some((b) => b.s === s && b.w > 0));
+        check(`${tag} the old inline Notes/Writing/Complete buttons are not on the bar (POSITIVE CONTROL for the tiles below)`, inlineGone, JSON.stringify(bar.filter((b) => /Notes|Writing|Complete/.test(b.s))));
+        await page.click("#readQuickMenuSlot .ayah-quick-btn"); await page.waitForTimeout(450);
+        // found by the tiles' own attributes, not their words, so the check reads the same in Bangla
+        const tiles = await page.evaluate(() => ["[data-qm-note]", "[data-qm-writing]", '[data-qm-act="complete"]'].map((sel) => { const x = document.querySelector(`#readQuickMenuSlot .quick-menu ${sel}`); const r = x?.getBoundingClientRect(); return { sel, w: r ? r.width : 0, h: r ? r.height : 0 }; }));
+        check(`${tag} the ⋮ sheet offers Notes, Writing sheet and Mark complete as tiles of at least 40px`, tiles.every((x) => x.w >= 40 && x.h >= 40), JSON.stringify(tiles));
+        await page.keyboard.press("Escape"); await page.waitForTimeout(250);
+      }
       // UPDATED IN PLACE, MSA · QR J132 (the Owner, 10 Nov 2026: "Study moves to dot"): the picker row is off the bar; the three pickers are the
       // mirrors at the top of the ⋮ sheet's Study group, so they are measured there (>= 40px), and the bar's own row is asserted gone.
       await page.evaluate(() => { if (!document.querySelector("#readQuickMenuSlot .quick-menu")?.classList.contains("open")) document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.click(); }); await page.waitForTimeout(400);
