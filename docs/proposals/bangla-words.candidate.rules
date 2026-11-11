@@ -14,7 +14,7 @@ service cloud.firestore {
     //   banglaWords/{tenantId}__{personId}         one reader's OWN list
     // MADRASAH document: every member reads; owner, prime and teacher write (the "admin" of demo v03).
     // PERSON document: read and written by exactly canRecordFor(); the person must belong to the tenant.
-    // `words` is a list of lemma ids (learn-next.json `l`). Rules cannot inspect each id, so the client validates them;
+    // `words` is a list of lemma ids (learn-next.json `l`); `kinds` (optional, stage 3) says which kinds each carries. Rules cannot inspect each id, so the client validates them;
     // the list is capped at 5000 so a document cannot grow without limit.
     // NO delete, ever (I4, D6): removing a word writes a shorter list.
     // Reads are by document id only (at most two per reader): no composite index is needed.
@@ -30,7 +30,7 @@ service cloud.firestore {
 
       function banglaShapeOk() {
         return d().keys().hasOnly([
-                 'tenantId', 'scope', 'words',
+                 'tenantId', 'scope', 'words', 'kinds',
                  'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
                ])
             && d().keys().hasAll([
@@ -41,9 +41,20 @@ service cloud.firestore {
             && d().scope is string && d().scope.size() > 0
             && listKey == d().tenantId + '__' + d().scope
             && d().words is list && d().words.size() <= 5000
+            && kindsOk()
             && d().schemaVersion is number
             && d().createdAt is timestamp && d().updatedAt is timestamp
             && d().createdBy is string && d().createdBy.size() > 0;
+      }
+
+      // Stage 3 (QR Lead 46L, 11 Nov 2026; the Owner's J119 answers: a word may be in more than one kind): the ONE new, OPTIONAL
+      // field `kinds`, a map from a lemma id to the list of kinds it carries ('names', 'rituals', 'bangla'; app/js/bangla-words.js).
+      // Absent on every document written under the first candidate, so those stay valid. The Rules bound the SHAPE and the SIZE
+      // (a map with no more entries than `words` lists, which the 5000 cap on `words` already bounds); the client validates the keys
+      // and the three words, because Rules cannot inspect every key of a map. Nothing else about the candidate changes.
+      function kindsOk() {
+        return !('kinds' in d())
+            || (d().kinds is map && d().kinds.size() <= d().words.size());
       }
 
       function banglaMayWrite(tenantId, scope) {
