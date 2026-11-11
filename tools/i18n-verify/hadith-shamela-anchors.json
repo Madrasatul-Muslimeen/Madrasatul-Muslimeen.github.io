@@ -46,5 +46,25 @@
         239
       ]
     }
+  },
+  "riyad": {
+    "keyedBy": "n",
+    "note": "Riyad is keyed by OUR record order n (the book's own number prints per chapter). n -> [Shamela index, printed page]; read on live shamela.ws 11 Nov 2026: the hadith's opening words are on the page and its title is ص<page>. n=3 is hadith 1 (Innama al-a'mal).",
+    "minCoverage": 0.985,
+    "maxBackwards": 12,
+    "at": {
+      "3": [
+        3,
+        29
+      ],
+      "1000": [
+        384,
+        284
+      ],
+      "2000": [
+        787,
+        505
+      ]
+    }
   }
 }
