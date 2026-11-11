@@ -53,6 +53,40 @@
       "status": "mapped",
       "pdfFile": "All in One-Jami At-Tirmidhi-Eng.pdf",
       "pdfBytes": 65882011
+    },
+    {
+      "key": "abudawud",
+      "title": "Sunan Abi Dawud (English, Darussalam)",
+      "archiveId": "AllInOne-Hadiths-EngArabicDarusalam_201407",
+      "scanFile": "All in One-Sunan Abu Dawud-Eng",
+      "scanSlug": "All%20in%20One-Sunan%20Abu%20Dawud-Eng",
+      "pdfFile": "All in One-Sunan Abu Dawud-Eng.pdf",
+      "pdfBytes": 52954531,
+      "numbering": "Darussalam, 1-5274",
+      "lastNumber": 5274,
+      "numberRegex": "(\\d{1,4}) ?[.,:] ?(?=[A-Z(\\[\\'\"*^‘`])",
+      "crossCheck": "names",
+      "translationDir": "abudawud",
+      "translationChunk": 500,
+      "versionUri": "0275AbuDawudSijistani.Sunan.JK000142-ara1",
+      "status": "mapped"
+    },
+    {
+      "key": "ibnmajah",
+      "title": "Sunan Ibn Majah (English, Darussalam)",
+      "archiveId": "AllInOne-Hadiths-EngArabicDarusalam_201407",
+      "scanFile": "All in One-Sunan-Ibn Majah-Eng",
+      "scanSlug": "All%20in%20One-Sunan-Ibn%20Majah-Eng",
+      "pdfFile": "All in One-Sunan-Ibn Majah-Eng.pdf",
+      "pdfBytes": 98028024,
+      "numbering": "Darussalam, 1-4341",
+      "lastNumber": 4341,
+      "numberRegex": "(\\d{1,4}) ?[.,:] ?(?=[A-Z(\\[\\'\"*^‘`])",
+      "crossCheck": "names",
+      "translationDir": "ibnmajah",
+      "translationChunk": 500,
+      "versionUri": "0273IbnMaja.Sunan.JK000141-ara1",
+      "status": "mapped"
     }
   ]
 }

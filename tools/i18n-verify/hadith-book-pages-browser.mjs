@@ -60,6 +60,16 @@ const tir = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/book-pages
 check("Tirmidhi: the map covers 1 to 3956, one page each, never going backwards, under 15% approximate", tir.numbers === 3956 && tir.p.length === 3956 && tir.p.every((v, i) => Number.isInteger(v) && v >= 0 && v < tir.leaves && (i === 0 || v >= tir.p[i - 1])) && tir.a.length < 3956 * 0.15, String(tir.a.length));
 check("Tirmidhi: hand-checked anchors (read against the scan): 500 -> leaf 501, 1526 -> 1416, 3956 -> 3393, exact", tir.p[499] === 501 && tir.p[1525] === 1416 && tir.p[3955] === 3393 && ![500, 1526, 3956].some((n) => tir.a.includes(n)), [tir.p[499], tir.p[1525], tir.p[3955]].join());
 
+// Abu Dawud and Ibn Majah: anchors read BY HAND against the scan's own text (the same hadith, the number at the head of the line).
+for (const [key, total, maxApprox, anchors] of [
+  ["abudawud", 5274, 0.05, { 36: 45, 229: 147, 490: 296, 497: 300, 2500: 1442, 4000: 2240 }],
+  ["ibnmajah", 4341, 0.10, { 500: 353, 2000: 1202, 4341: 2559 }],
+]) {
+  const mp = JSON.parse(fs.readFileSync(`tools/hadith-data-pull/output/book-pages/${key}.json`, "utf8"));
+  check(`${key}: the map covers 1 to ${total}, one page each, never going backwards, under ${maxApprox * 100}% approximate`, mp.numbers === total && mp.p.length === total && mp.p.every((v, i) => Number.isInteger(v) && v >= 0 && v < mp.leaves && (i === 0 || v >= mp.p[i - 1])) && mp.a.length < total * maxApprox, String(mp.a.length));
+  check(`${key}: hand-checked anchors ${Object.entries(anchors).map(([n, l]) => `${n} -> ${l}`).join(", ")}, exact`, Object.entries(anchors).every(([n, l]) => mp.p[n - 1] === l && !mp.a.includes(Number(n))), Object.keys(anchors).map((n) => mp.p[n - 1]).join());
+}
+
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const BUK = "0256Bukhari.Sahih.JK000110-ara1";
 for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
@@ -169,12 +179,12 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   // module-level: which books show a button, and the approximate flag
   const mod = await P.evaluate(async (buk) => {
     const m = await import("/app/js/hadith-book-pages.js"); const v = await import("/app/js/hadith-book-viewer.js");
-    const exact = await m.loadBookPage(buk, 112), approx = await m.loadBookPage(buk, 273), none = await m.loadBookPage(buk, 9999), other = await m.loadBookPage("0275AbuDawudSijistani.Sunan.JK000142-ara1", 5);
+    const exact = await m.loadBookPage(buk, 112), approx = await m.loadBookPage(buk, 273), none = await m.loadBookPage(buk, 9999), other = await m.loadBookPage("0179MalikIbnAnas.Muwatta.Shamela0028107-ara1", 5);
     const tirm = await m.loadBookPage("0279Tirmidhi.Sunan.JK000140-ara1", 500);
-    return { tirm: tirm && [tirm.leaf, tirm.embedUrl], hasMuslim: m.hasBookPages("0275AbuDawudSijistani.Sunan.JK000142-ara1"), hasBukhari: m.hasBookPages(buk), muslimBtn: v.bookPageButton("0275AbuDawudSijistani.Sunan.JK000142-ara1", 5) === null,
+    return { tirm: tirm && [tirm.leaf, tirm.embedUrl], hasMuslim: m.hasBookPages("0179MalikIbnAnas.Muwatta.Shamela0028107-ara1"), hasBukhari: m.hasBookPages(buk), muslimBtn: v.bookPageButton("0179MalikIbnAnas.Muwatta.Shamela0028107-ara1", 5) === null,
       exact: exact && [exact.leaf, exact.approximate], approx: approx && [approx.leaf, approx.approximate], none, other, keys: Object.keys(m.BOOK_PAGE_BOOKS), all: m.BOOK_PAGE_BOOKS };
   }, BUK);
-  check(`${tag} a book with no scan yet (Abu Dawud) shows no button and no page`, !mod.hasMuslim && mod.hasBukhari && mod.muslimBtn && mod.other === null);
+  check(`${tag} a book with no scan yet (Muwatta) shows no button and no page`, !mod.hasMuslim && mod.hasBukhari && mod.muslimBtn && mod.other === null);
   check(`${tag} hadith 112 is exact on leaf 120; hadith 273 is flagged approximate; a number past the end has no page`, JSON.stringify(mod.exact) === "[120,false]" && mod.approx?.[1] === true && mod.none === null, JSON.stringify(mod));
   check(`${tag} Tirmidhi 500 is on leaf 501 of its own scan file`, mod.tirm?.[0] === 501 && mod.tirm?.[1] === "https://archive.org/embed/AllInOne-Hadiths-EngArabicDarusalam_201407/All%20in%20One-Jami%20At-Tirmidhi-Eng#page/n501/mode/1up", JSON.stringify(mod.tirm));
   check(`${tag} the app's book list is bound to the registry (sources/book-pages.json), both ways`, JSON.stringify([...mod.keys].sort()) === JSON.stringify(reg.books.filter((b) => ["mapped", "verified"].includes(b.status)).map((b) => b.versionUri).sort()) && reg.books.filter((b) => ["mapped", "verified"].includes(b.status)).every((b) => mod.all[b.versionUri]?.archiveId === b.archiveId && mod.all[b.versionUri]?.slug === b.scanSlug && mod.all[b.versionUri]?.key === b.key && mod.all[b.versionUri]?.pdf === b.pdfFile && mod.all[b.versionUri]?.pdfBytes === b.pdfBytes), JSON.stringify(mod.keys));

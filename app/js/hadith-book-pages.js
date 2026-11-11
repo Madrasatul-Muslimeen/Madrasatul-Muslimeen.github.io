@@ -24,6 +24,20 @@ export const BOOK_PAGE_BOOKS = {
     title: { en: "Jami' at-Tirmidhi", bn: "জামে' আত-তিরমিযী" },
     pdf: "All in One-Jami At-Tirmidhi-Eng.pdf", pdfBytes: 65882011,
   },
+  "0275AbuDawudSijistani.Sunan.JK000142-ara1": {
+    key: "abudawud",
+    archiveId: "AllInOne-Hadiths-EngArabicDarusalam_201407",
+    slug: "All%20in%20One-Sunan%20Abu%20Dawud-Eng",
+    title: { en: "Sunan Abi Dawud", bn: "সুনানে আবু দাউদ" },
+    pdf: "All in One-Sunan Abu Dawud-Eng.pdf", pdfBytes: 52954531,
+  },
+  "0273IbnMaja.Sunan.JK000141-ara1": {
+    key: "ibnmajah",
+    archiveId: "AllInOne-Hadiths-EngArabicDarusalam_201407",
+    slug: "All%20in%20One-Sunan-Ibn%20Majah-Eng",
+    title: { en: "Sunan Ibn Majah", bn: "সুনানে ইবনে মাজাহ" },
+    pdf: "All in One-Sunan-Ibn Majah-Eng.pdf", pdfBytes: 98028024,
+  },
   "0261Muslim.Sahih.Shamela0001727-ara1": {
     key: "muslim",
     archiveId: "AllInOne-Hadiths-EngArabicDarusalam_201407",
