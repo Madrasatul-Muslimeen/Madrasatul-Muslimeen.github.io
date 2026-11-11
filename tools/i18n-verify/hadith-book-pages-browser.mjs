@@ -19,7 +19,7 @@ const MUT = {
   wrongleaf: ["js/hadith-book-pages.js", "const n = Math.max(0, Math.trunc(Number(leaf) || 0));", "const n = Math.max(0, Math.trunc(Number(leaf) || 0)) + 1;"],
   noescape: ["js/hadith-book-viewer.js", 'if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closePane(); return; }', ""],
   nofocusback: ["js/hadith-book-viewer.js", "if (opener && document.contains(opener)) opener.focus();", ""],
-  nocredit: ["js/hadith-book-viewer.js", 'credit.textContent = t("Scan: Darussalam edition, shared on archive.org");', 'credit.textContent = "";'],
+  nocredit: ["js/hadith-book-viewer.js", ': t("Scan: Darussalam edition, shared on archive.org");', ': "";'], // re-anchored (98L, #1647 made the credit line a ternary; the old anchor no longer existed)
   noapprox: ["js/hadith-book-pages.js", "if (map.a[mid] === n) { approximate = true; break; }", "if (map.a[mid] === n) { break; }"],
   nodownload: ["js/hadith-book-viewer.js", "  foot.appendChild(down);\n", ""],
   noduabutton: ["js/dua-browser.js", "if (bp) card.appendChild(bp); }\n", "}\n"],

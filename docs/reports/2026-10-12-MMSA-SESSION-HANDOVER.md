@@ -3326,3 +3326,6 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.20** (2026-11-10): Ayah stripe round 1 + J136 effort Rules on.
 - **v14.21** (2026-11-10): Word Card nav together, Verb Form line, freeze fix.
 - **v14.22** (2026-11-10): Read bar: one bookmark, WbW/Root/Derivatives, quick search.
+- **v14.23** (2026-11-11): Ayah stripe round 2, Know Your Status switch, Bangla Words v2 data.
+- **v14.24** (2026-11-11): Hadith Original book page (scan pop-up), five books, Dua cards.
+- **v14.25** (2026-11-11): Hadith printed page on Shamela: Muwatta, al-Adab al-Mufrad.
