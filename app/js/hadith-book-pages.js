@@ -57,6 +57,13 @@ export const BOOK_PAGE_BOOKS = {
     title: { en: "al-Adab al-Mufrad", bn: "আল-আদাবুল মুফরাদ" },
     edition: { en: "ed. Abd al-Baqi", bn: "মুহাম্মাদ ফুআদ আবদুল বাকী সম্পাদিত" },
   },
+  // Riyad al-Salihin: the book's own number prints per chapter (and our header has typos), so its map is keyed by OUR record order `n`
+  // (keyBy: "n"); the card passes h.n and the pane names the book without a hadith number.
+  "0676Nawawi.RiyadSalihin.Shamela0012014-ara1": {
+    key: "riyad", kind: "shamela", keyBy: "n", shamelaId: "12014",
+    title: { en: "Riyad al-Salihin", bn: "রিয়াযুস সালিহীন" },
+    edition: { en: "ed. al-Arna'ut, al-Risala", bn: "শু'আইব আল-আরনাউত সম্পাদিত, আর-রিসালা" },
+  },
 };
 
 export const BOOK_PAGE_CREDIT_URL = "https://archive.org/details/AllInOne-Hadiths-EngArabicDarusalam_201407";
@@ -71,6 +78,9 @@ function cached(key, loader) {
 export const isShamelaBook = (versionUri) => BOOK_PAGE_BOOKS[versionUri]?.kind === "shamela";
 export const shamelaUrl = (book, index) => `https://shamela.ws/book/${book.shamelaId}/${Math.trunc(Number(index))}`;
 export const SHAMELA_URL = "https://shamela.ws/";
+
+/** A book whose page map is keyed by our record order `n` (not by a hadith number). */
+export const isKeyedByN = (versionUri) => BOOK_PAGE_BOOKS[versionUri]?.keyBy === "n";
 
 export const hasBookPages = (versionUri) => Object.prototype.hasOwnProperty.call(BOOK_PAGE_BOOKS, versionUri);
 
