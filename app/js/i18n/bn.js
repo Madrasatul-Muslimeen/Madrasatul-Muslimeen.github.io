@@ -4563,6 +4563,8 @@ export const BN = {
   "Fill by all words up to it": "এ পর্যন্ত সব শব্দ দিয়ে ভরুন",
   "Green: the words of a step you know. ✓: every word of the step known.": "সবুজ: ধাপের যে শব্দগুলো আপনি জানেন। ✓: ধাপের সব শব্দ জানা।",
   "Marks": "চিহ্ন",
+  "Level of Difficulty": "কঠিনতার স্তর",
+  "Step-by-Step Learning": "ধাপে ধাপে শেখা",
   "Marks for this āyah": "এই আয়াতের চিহ্ন",
   "Marks wheel": "চিহ্নের চাকা",
   "Sign in as yourself to see your marks.": "আপনার চিহ্ন দেখতে নিজের পরিচয়ে সাইন ইন করুন।",
