@@ -218,6 +218,31 @@ test("candidate banglaWords Rules: isolated allow/deny cases", async () => {
     }
     await assertSucceeds(getDoc(ref(owner, id(T, "madrasah"))));
     await wipe();
+
+    // --- 7. Stage 3 (J119, the Owner's 11 Nov answers): the OPTIONAL `kinds` map. Each denial pairs with an allow differing in ONE fact. ---
+    const kb = () => list(T, "madrasah", { words: ["w1", "w2"] });
+    const kinds2 = { w1: ["names"], w2: ["rituals", "bangla"] };
+    await assertSucceeds(setDoc(ref(owner, id(T, "madrasah")), kb()));                                                    // absent: every first-candidate document stays valid
+    await wipe();
+    await assertSucceeds(setDoc(ref(owner, id(T, "madrasah")), { ...kb(), kinds: kinds2 }));                              // a map, no bigger than words
+    await wipe();
+    await assertFails(setDoc(ref(owner, id(T, "madrasah")), { ...kb(), kinds: ["names"] }));                              // is map
+    await assertFails(setDoc(ref(owner, id(T, "madrasah")), { ...kb(), kinds: "names" }));
+    await assertFails(setDoc(ref(owner, id(T, "madrasah")), { ...kb(), kinds: { w1: ["names"], w2: ["names"], w3: ["names"] } })); // more entries than words
+    await assertSucceeds(setDoc(ref(owner, id(T, "madrasah")), { ...kb(), kinds: { w1: ["names"] } }));                   // fewer is fine
+    await wipe();
+    const bigWords = Array.from({ length: 5000 }, (_, i) => `w${i}`);
+    const bigKinds = (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`w${i}`, ["bangla"]]));
+    await assertSucceeds(setDoc(ref(owner, id(T, "madrasah")), { ...kb(), words: bigWords, kinds: bigKinds(5000) }));       // exactly 5000
+    await wipe();
+    await assertFails(setDoc(ref(owner, id(T, "madrasah")), { ...kb(), words: bigWords, kinds: { ...bigKinds(5000), extra: ["bangla"] } })); // 5001
+    // the reader's own list carries kinds under the same rules (the actor differs, the shape check is the same)
+    await assertSucceeds(setDoc(ref(student, id(T, "pS")), list(T, "pS", { createdBy: "uid-student", kinds: kinds2 })));
+    await assertFails(setDoc(ref(student2, id(T, "pS")), list(T, "pS", { createdBy: "uid-student2", kinds: kinds2 })));     // another reader still refused
+    await assertSucceeds(updateDoc(ref(student, id(T, "pS")), { kinds: { w1: ["bangla"] }, updatedAt: ts }));              // update adds/changes it
+    await assertFails(updateDoc(ref(student, id(T, "pS")), { kinds: "x", updatedAt: ts }));
+    await assertFails(updateDoc(ref(student, id(T, "pS")), { kinds: { a: [], b: [], c: [] }, updatedAt: ts }));            // 3 > 2 words
+    await wipe();
   } finally {
     await env.cleanup();
   }
