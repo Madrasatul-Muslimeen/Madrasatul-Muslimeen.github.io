@@ -1,7 +1,7 @@
 // The printed-Mushaf page pictures (PCF MSA inbox qr46lmushafpdf01; 98L's conditions, 11 Nov 2026).
 //   node tools/i18n-verify/mushaf-printed-data.mjs [--mutate=NAME]        (repository root)
 // Asserts: 604 files 001.png..604.png, each a 622x917 PNG; the README names the source, the credit and the rights fact; .gitattributes marks the folder binary;
-// none is listed in app/offline-files.json or either service worker; the offline builder skips the folder.
+// no picture is listed in app/offline-files.json or named by either service worker (each refuses the folder); the offline builder skips the folder.
 // Mutations alter the INPUT each check reads (a file list, a header, a text), so each check is shown to fail:
 //   missing, extra, badsig, badsize, noreadme, nocredit, nonlicence, nobinary, inoffline, insw, builderall
 import fs from "node:fs";
@@ -33,7 +33,7 @@ if (MUTATE === "nonlicence") readme = readme.replace(/no written free-use licenc
 let attrs = fs.existsSync(".gitattributes") ? fs.readFileSync(".gitattributes", "utf8") : "";
 if (MUTATE === "nobinary") attrs = attrs.replace(/binary/g, "text");
 let offline = fs.readFileSync("app/offline-files.json", "utf8");
-if (MUTATE === "inoffline") offline += '"mushaf-printed"';
+if (MUTATE === "inoffline") offline += '"tools/quran-data-pull/output/mushaf-printed/ksu-madani/001.png"';
 let workers = [fs.readFileSync("app/sw.js", "utf8"), fs.readFileSync("apps/qr/site/app/sw.js", "utf8")];
 if (MUTATE === "insw") workers = [workers[0] + "\n// precache /tools/quran-data-pull/output/mushaf-printed/ksu-madani/001.png", workers[1]];
 let builder = fs.readFileSync("tools/offline/build-offline-files.mjs", "utf8");
@@ -54,8 +54,14 @@ check("README names the source, the credit and the rights fact", () => {
   need(/no written free-use licence/i.test(readme) && /qr46lmushafpdf01/.test(readme), "no plain rights fact");
 });
 check(".gitattributes marks the folder binary", () => need(/mushaf-printed\/\*\*\/\*\.png\s+binary/.test(attrs), "not marked binary"));
-check("none of the pictures is listed in app/offline-files.json", () => need(!/mushaf-printed/.test(offline) && !/ksu-madani/.test(offline), "listed"));
-check("none is named in app/sw.js or QR's own worker", () => need(workers.every((w) => !/mushaf-printed|ksu-madani/.test(w)), "named in a worker"));
+// UPDATED IN PLACE (99L review of #1653, 11 Nov 2026): the Printed page view adds a MODULE, js/mushaf-printed.js, which IS
+// precached (it is code, not a picture), and both workers now NAME the folder in order to REFUSE it. So the old
+// "the word mushaf-printed appears nowhere" went red on correct code. What these checks protect is unchanged: no picture
+// path is listed, and a worker mentions the folder only on a line that refuses it.
+check("none of the pictures is listed in app/offline-files.json", () => need(!/mushaf-printed\//.test(offline) && !/ksu-madani/.test(offline), "listed"));
+check("no worker names a picture, and each mention of the folder is a refusal", () => need(workers.every((w) => !/ksu-madani/.test(w)
+  && w.split("\n").filter((l) => /mushaf-printed/.test(l)).every((l) => /mushaf-printed\/"\)\) return false;/.test(l))), "named in a worker"));
+check("POSITIVE CONTROL: both workers carry the refusal line", () => need(workers.every((w) => /includes\("\/mushaf-printed\/"\)\) return false;/.test(w)), "a worker has no refusal"));
 check("the offline builder skips the folder", () => need(/mushaf-printed/.test(builder) && /!\/\\\/mushaf-printed\\\//.test(builder), "builder does not skip it"));
 console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation: ${MUTATE})` : ""}`);
 process.exit(fail ? 1 : 0);

@@ -117,8 +117,12 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   v = await view(page);
   const pill = await page.evaluate(() => { const p = document.getElementById("ayahCardBackPill"); return { shown: !!p && !p.hidden && p.getBoundingClientRect().width > 0, text: p?.textContent ?? "" }; });
   check(`${tag} "Open this page as text": the text Mushaf at page 538, no picture`, v.mushaf && v.printed === 0 && v.textPages > 0 && v.ref === "538", JSON.stringify(v));
-  check(`${tag} ...and a way back to the Printed page is on screen`, pill.shown && (lang === "bn" ? /ছাপা/.test(pill.text) : /Printed page/.test(pill.text) || pill.text.length > 0), pill.text);
-  await page.click("#ayahCardBackPill [data-ayah-card-back]"); await waitPrinted(page); v = await view(page);
+  check(`${tag} ...and a way back to the Printed page is on screen`, pill.shown && (lang === "bn" ? /ছাপা/.test(pill.text) : /Printed page/.test(pill.text)), pill.text);
+  // 99L review: the English side was `/Printed page/ || any text`, which any pill passed; and with no pill the click below
+  // timed out and crashed the run (no summary line). Both tightened: the label is required, and a missing pill is a counted FAIL.
+  const backed = await page.click("#ayahCardBackPill [data-ayah-card-back]", { timeout: 5000 }).then(() => true, () => false);
+  if (backed) await waitPrinted(page).catch(() => {});
+  v = await view(page);
   check(`${tag} the way back returns to the Printed page`, v.printed >= 1 && v.textPages === 0, JSON.stringify(v));
   // leave it: ONE Ayah View, and it is not remembered
   await click(page); v = await view(page);

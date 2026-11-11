@@ -178,8 +178,8 @@
         "edition": "ed. al-Arna'ut, al-Risala",
         "lastIndex": 810
       },
-      "status": "building",
-      "note": "Built by shamela-pages-riyad.py: our hadith records in order walked against Shamela's paragraphs in order, a pair accepted only when the opening words agree."
+      "status": "mapped",
+      "note": "Keyed by OUR record order n, not by the hadith number (it prints per chapter; our OpenITI header has typos: 11 numbers twice, 9 places backwards, one reads 1967). shamela-pages-riyad.py: our 1897 hadith records and Shamela 12014's 1883 paragraphs, matched by a banded longest-common-subsequence on the first 30 words (difflib ratio 0.8, our ordinal word skipped), then a second pass for blocks the two texts order differently (20, then 12 opening words, unique on both sides). Loose tests were tried and REJECTED: narrator name plus 8 of 10 words matched the wrong hadith (read by hand). Map: 1872 of 1897 hadith records (98.7%); 184 chapter headings have no page. Independent sample, 10 opening words found on the mapped page: 400/400, 398/400, 400/400 (seeds 7, 8, 9; the misses read by hand are the right hadith with a variant opening); control page 50 away 9-15 of 400 (generic openings). Pages run backwards at 9 places, the blocks where the two texts differ in order. Hand-read anchors n=3, 1000, 2000 (live shamela.ws)."
     }
   ]
 }

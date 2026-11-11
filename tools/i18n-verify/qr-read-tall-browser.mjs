@@ -28,7 +28,9 @@ const MUT = {
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const SHOT_DIR = process.env.SHOT_DIR || "";
 // The reading area's height at ordinary text, measured on main v12.135 (before this round) and written by hand.
-const PLAIN = { "en 360x740": 311, "en 390x844": 430, "en 414x896": 482, "en 768x1024": 634, "bn 360x740": 322, "bn 390x844": 426, "bn 414x896": 478, "bn 768x1024": 634 };
+// UPDATED IN PLACE (debt round, 11 Nov 2026): the reading area is TALLER than these v12.135 numbers by 49px on every phone and 97px on a tablet, because the Read bar lost its picker and
+// Study rows (v14.09 "one Read bar", J132). Re-measured on v14.22 and written by hand below; the check still asserts "ordinary text is not read-tall and the area does not move".
+const PLAIN = { "en 360x740": 360, "en 390x844": 479, "en 414x896": 531, "en 768x1024": 731, "bn 360x740": 371, "bn 390x844": 475, "bn 414x896": 527, "bn 768x1024": 731 };
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
 async function boot(lang, w, h, size) {

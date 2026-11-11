@@ -21914,6 +21914,12 @@
       const slot = document.getElementById("readMeaningLayersSlot");
       slot?.classList.toggle("ml-open", meaningLayersOpen);
       slot?.querySelector("[data-ml-menu]")?.setAttribute("aria-expanded", String(meaningLayersOpen));
+      // Found by the debt round (11 Nov 2026): at 768px the "Show ▾" button sits near the bar's right end, so the menu (left-aligned to it) ran 9px past the screen. Slide it back in.
+      const items = slot?.querySelector(".ml-items");
+      if (items) {
+        items.style.left = "";
+        if (meaningLayersOpen) { const over = items.getBoundingClientRect().right - (document.documentElement.clientWidth - 8); if (over > 0) items.style.left = `${-Math.ceil(over)}px`; }
+      }
     }
     document.addEventListener("click", (e) => {
       if (meaningLayersOpen && !document.getElementById("readMeaningLayersSlot")?.contains(e.target)) setMeaningLayersOpen(false);
