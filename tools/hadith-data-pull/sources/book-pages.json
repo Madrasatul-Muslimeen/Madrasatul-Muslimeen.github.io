@@ -164,6 +164,22 @@
       },
       "status": "mapped",
       "note": "No scan in the archive.org item. Shamela 12991 matches our JK text (hadith 26 same words, same numbering). One-volume book: Shamela titles carry a page and no volume. Map: 1321 of 1322 numbers (hadith 895 not found; 21 numbers print twice, the first print is kept). Opening-words sample 371 of 400 on the mapped page (control 6); the misses read by hand are right pages with different narrator wording between editions. Hand-read anchors 26, 365, 689."
+    },
+    {
+      "key": "riyad",
+      "title": "Riyad al-Salihin (Nawawi, ed. al-Arna'ut, Mu'assasat al-Risala)",
+      "kind": "shamela",
+      "keyBy": "n",
+      "versionUri": "0676Nawawi.RiyadSalihin.Shamela0012014-ara1",
+      "numbering": "OUR RECORD ORDER n (1-2081, the position in the split files). The book's own hadith number is NOT used: it prints per chapter and our header has source typos",
+      "lastNumber": 2081,
+      "shamela": {
+        "id": "12014",
+        "edition": "ed. al-Arna'ut, al-Risala",
+        "lastIndex": 810
+      },
+      "status": "building",
+      "note": "Built by shamela-pages-riyad.py: our hadith records in order walked against Shamela's paragraphs in order, a pair accepted only when the opening words agree."
     }
   ]
 }
