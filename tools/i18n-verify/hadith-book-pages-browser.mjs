@@ -192,5 +192,5 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await ctx.close();
 }
 await browser.close();
-console.log(`\n==== Hadith original book page (Bukhari, Muslim, Tirmidhi): ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== Hadith original book page (Bukhari, Muslim, Tirmidhi, Abu Dawud, Ibn Majah): ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);

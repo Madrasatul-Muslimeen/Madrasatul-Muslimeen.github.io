@@ -87,6 +87,38 @@
       "translationChunk": 500,
       "versionUri": "0273IbnMaja.Sunan.JK000141-ara1",
       "status": "mapped"
+    },
+    {
+      "key": "nasai",
+      "title": "Sunan an-Nasa'i (English, Darussalam, two volumes' files)",
+      "archiveId": "AllInOne-Hadiths-EngArabicDarusalam_201407",
+      "numbering": "Darussalam, 1-5758",
+      "lastNumber": 5758,
+      "parts": [
+        {
+          "scanFile": "All in One-Sunan Nasai-Eng-Vol 1-5",
+          "scanSlug": "All%20in%20One-Sunan%20Nasai-Eng-Vol%201-5",
+          "pdfFile": "All in One-Sunan Nasai-Eng-Vol 1-5.pdf",
+          "pdfBytes": 101597327,
+          "from": 1,
+          "to": 4990
+        },
+        {
+          "scanFile": "All in One-Sunan Nasai-Eng-Vol 6",
+          "scanSlug": "All%20in%20One-Sunan%20Nasai-Eng-Vol%206",
+          "pdfFile": "All in One-Sunan Nasai-Eng-Vol 6.pdf",
+          "pdfBytes": 15957364,
+          "from": 4991,
+          "to": 5758
+        }
+      ],
+      "numberRegex": "(\\d{1,4}) ?[.,:] ?(?=[A-Z(\\[\\'\"*^‘`])",
+      "crossCheck": "names",
+      "translationDir": "nasai",
+      "translationChunk": 500,
+      "versionUri": "0303Nasai.SunanSughra.JK000130-ara1",
+      "status": "blocked",
+      "note": "BLOCKED (11 Nov 2026): Darussalam's Nasa'i numbering differs from the numbering of our English text (hadith-api) in places, e.g. our #288 is the Anas hadith but the scan's [288] is Maimunah's; our #100 matches. Mapping by number would show WRONG pages (cross-check only 67%). Needs a text-aligned bridge (match each of our hadith to the scan by content) before it can ship. The builder already supports two-file books."
     }
   ]
 }

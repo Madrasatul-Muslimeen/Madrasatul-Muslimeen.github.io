@@ -125,3 +125,15 @@ Overall about **2½–3 weeks** of my time for P0–P3, spread over several smal
   page itself (PDF.js) and the reader could choose "keep on this device" for offline reading, which archive.org cannot give us.
   **Who:** the BwN session (or the Owner) uploads the files; then a `mirrorUrl` per book in `sources/book-pages.json` and `hadith-book-pages.js`
   switches the download link at once. I can prepare the exact file list and a split/compress script for the BwN session if wanted.
+
+## 11. Progress, 11 Nov 2026 (later): six of the seven books mapped; Nasa'i held back on purpose
+| Book | Direct | Approximate | Cross-check (a control passes a wrong page: only 26-57% / names checks) | Status |
+|---|---|---|---|---|
+| Bukhari | 7,100 / 7,563 (93.9%) | 463 | 98.8% (same translation, words) | live in branch |
+| Muslim | 7,504 / 7,563 (99.2%) | 59 | 99.0% (names; control 57%); 6 read by eye all match | live in branch |
+| Tirmidhi | 3,459 / 3,956 (87.4%) | 497 | 99.8% (same translation, words) | live in branch |
+| Abu Dawud | 5,164 / 5,274 (97.9%) | 110 | 93.2% (names; control 30.5%); 7 failures read by eye are all the same hadith, only spelling differs | live in branch |
+| Ibn Majah | 3,984 / 4,341 (91.8%) | 357 | 98.2% (names; control 28.5%); 3 read by eye match | live in branch |
+| **Nasa'i** | 4,496 / 5,758 | 1,262 | **67%: numbering differs from ours in places** | **BLOCKED**: would show wrong pages. Needs a content-aligned bridge. Not shipped, no map in the app. |
+Known small error: Tirmidhi hadith 1 maps to the chapter heading "1. The Chapters on Purification" (leaf 32) instead of the hadith two pages later; a chapter-number heading can be mistaken for a hadith number in Tirmidhi. The checks avoid hadith 1.
+Next: a Nasa'i bridge (or skip it), then Muwatta / Ahmad and the Shamela fallback.
