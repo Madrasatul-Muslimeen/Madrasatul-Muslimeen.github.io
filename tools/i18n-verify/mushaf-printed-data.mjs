@@ -53,7 +53,7 @@ check("README names the source, the credit and the rights fact", () => {
   need(/fetched/i.test(readme) && /11 Nov 2026/.test(readme), "no fetch date");
   need(/no written free-use licence/i.test(readme) && /qr46lmushafpdf01/.test(readme), "no plain rights fact");
 });
-check(".gitattributes marks the folder binary", () => need(/mushaf-printed\/\*\*\s+binary/.test(attrs), "not marked binary"));
+check(".gitattributes marks the folder binary", () => need(/mushaf-printed\/\*\*\/\*\.png\s+binary/.test(attrs), "not marked binary"));
 check("none of the pictures is listed in app/offline-files.json", () => need(!/mushaf-printed/.test(offline) && !/ksu-madani/.test(offline), "listed"));
 check("none is named in app/sw.js or QR's own worker", () => need(workers.every((w) => !/mushaf-printed|ksu-madani/.test(w)), "named in a worker"));
 check("the offline builder skips the folder", () => need(/mushaf-printed/.test(builder) && /!\/\\\/mushaf-printed\\\//.test(builder), "builder does not skip it"));
