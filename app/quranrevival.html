@@ -4706,6 +4706,17 @@
      The owner's "the right side is cut off ... it should be like the left". */
   .hifz-page { background: #fbf6e9; color: #1b1b16; border-radius: 10px; padding: 18px 16px; width: 100%; max-width: 560px; margin: 0 auto 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); container-type: inline-size; box-sizing: border-box; }
   .hifz-page-num { font-size: 11px; color: #8a7c55; text-align: center; margin-bottom: 10px; letter-spacing: 0.05em; }
+  /* Printed page view (the Owner, 11 Nov 2026): the Madinah Mushaf's real page picture (622x917), in the same strip as the text Mushaf. */
+  .mushaf-printed-page { padding: 10px; }
+  .mushaf-printed-page .printed-bar { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 8px; }
+  .mushaf-printed-page .printed-bar .hifz-page-num { margin: 0; flex: 1 1 100%; }
+  .mushaf-printed-page .printed-bar button { min-height: 40px; padding: 0 0.75rem; }
+  .mushaf-printed-page .printed-frame { overflow: hidden; border-radius: 6px; background: #fff; }
+  .mushaf-printed-page .printed-frame.zoomed { overflow: auto; max-height: 80vh; -webkit-overflow-scrolling: touch; }
+  .mushaf-printed-page .printed-img { display: block; width: 100%; height: auto; }
+  .mushaf-printed-page .printed-frame.zoomed .printed-img { width: 200%; max-width: none; }
+  .mushaf-printed-page .printed-missing { margin: 0; padding: 2rem 1rem; text-align: center; color: #5b4f2a; font: 14px/1.5 'Inter', system-ui, sans-serif; }
+  .mushaf-printed-page .printed-credit { margin: 8px 0 0; font: 11px/1.4 'Inter', system-ui, sans-serif; color: #6b5f3a; text-align: center; }
   /* Issue #332 Part B -- the per-page Tajweed toggle sits beside "Page N"
      (Owner decision 1: not a new bar), so both share one row now; the
      bottom margin moves from .hifz-page-num itself onto the row. */
@@ -7994,6 +8005,7 @@
     import { isLemmaProgressPersistenceReady } from "./js/study-lemma-progress-readiness.js";
     import { isTasrifLevelPersistenceReady } from "./js/study-tasrif-level-readiness.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah, scrollToAyahIfRendered, mushafPageAyahGroups } from "./js/hifz-renderer.js";
+    import { readPrintedOn, savePrintedOn, renderPrintedPages } from "./js/mushaf-printed.js";
     // Issue #286 -- the "This āyah" action sheet (Mushaf marker tap, Word
     // Card "This āyah ⋯") and its one new action, filing this reader's own
     // Note on the āyah into Mapping My Journey folder(s).
@@ -21707,6 +21719,10 @@
     // PCF MSA J99 (the Owner ticked B, 25 Oct 2026: one button for 📜 and 📖): the Read view is in one of three views,
     // and the one button moves on round them: Āyah (the plain reading) → Meaning → Mushaf → Āyah. Mushaf is the very
     // same switch as Options ▸ "Mushaf view" (#mushafToggle), so the tick and the button always agree.
+    // The Owner, 11 Nov 2026: the printed page is a THIRD view in this same switch: Āyah → Mushaf (text) → Printed page → Āyah.
+    // It is the Mushaf with the pictures drawn instead of the text, so it lives inside "mushaf" and `printedOn` says which.
+    let printedOn = readPrintedOn();
+    function printedNow() { return printedOn && mushafToggle.checked && !readMeaningOn; }
     function readViewNow() { return readMeaningOn ? "meaning" : (mushafToggle.checked ? "mushaf" : "plain"); }
     function paintReadMeaningBtn() {
       if (!readMeaningBtn) return;
@@ -21717,13 +21733,14 @@
       // The Owner, 9 Nov 2026 (Demo 1): the Reading View is now "Read on" inside the ONE Ayah view, so this one button moves
       // between the ONE Ayah view (with or without Read on) and the Mushaf.
       const [icon, word, tip] = view !== "mushaf" ? ["📜", t("Mushaf"), t("Mushaf view")]
-        : ["↩", t("ONE Ayah View"), t("ONE Ayah View: one āyah to study")];
+        : (printedNow() ? ["↩", t("ONE Ayah View"), t("ONE Ayah View: one āyah to study")]
+          : ["📄", t("Printed page"), t("Printed page: the Madinah Mushaf as printed")]);
       readMeaningBtn.querySelector('[aria-hidden="true"]').textContent = icon;
       // J110 B: the name's last word on a line of its own (see the .rmw-line CSS); the text read out stays the whole name.
       const parts = word.split(" "), tail = parts.length > 1 ? parts.pop() : null;
       readMeaningBtn.querySelector(".read-meaning-word").innerHTML = tail
         ? `<span class="rmw-line">${escapeHtml(parts.join(" "))}</span> <span class="rmw-line">${escapeHtml(tail)}</span>` : escapeHtml(word);
-      readMeaningBtn.dataset.readNext = view === "mushaf" ? "plain" : "mushaf";
+      readMeaningBtn.dataset.readNext = view === "mushaf" ? (printedNow() ? "plain" : "printed") : "mushaf";
       paintReadOnSwitch();
       readMeaningBtn.setAttribute("aria-label", tip);
       readMeaningBtn.title = tip;
@@ -21948,7 +21965,11 @@
       // The Owner, 9 Nov 2026 (Demo 1): ONE Ayah view (with or without Read on) → Mushaf (it opens at the page the reader had
       // reached; a Read on flow is closed first) → ONE Ayah view (the Options tick is cleared, exactly as unticking it there).
       const view = readViewNow();
-      if (view === "mushaf") { mushafToggle.checked = false; mushafToggle.dispatchEvent(new Event("change")); return; }
+      if (view === "mushaf") {
+        if (!printedNow()) { printedOn = true; savePrintedOn(true); mushafToggle.dispatchEvent(new Event("change")); return; } // Mushaf → Printed page
+        printedOn = false; savePrintedOn(false); // Printed page → ONE Ayah View
+        mushafToggle.checked = false; mushafToggle.dispatchEvent(new Event("change")); return;
+      }
       if (view === "meaning") {
         const keepKey = meaningTopKey();
         readMeaningOn = false;
@@ -22024,6 +22045,7 @@
       mushafToggle.checked = !mushafToggle.checked;
       mushafToggle.dispatchEvent(new Event("change"));
     });
+    mushafToggle.addEventListener("change", () => { if (!mushafToggle.checked && printedOn) { printedOn = false; savePrintedOn(false); } });
     mushafToggle.addEventListener("change", paintReadMushafBtn);
     mushafToggle.addEventListener("change", paintReadMeaningBtn); // J99: the Options tick moves the one button on too
     document.getElementById("unitTypeSelect")?.addEventListener("change", paintReadMeaningBtn); // "Āyah" or "Reading"
@@ -22037,6 +22059,23 @@
         pageViewContainer.innerHTML = `<p style="color:#888;">${t("Loading Mushaf page…")}</p>`;
         try {
           await ensureMushafData();
+          if (printedNow()) {
+            const pinned = currentUnitType === "page" ? currentUnitNumber() : null;
+            renderPrintedPages(pageViewContainer, pinned ? [pinned] : getMushafPagesForKeys(ayahKeys), {
+              onFirstPage: () => wireMushafPageRefScroll(),
+              onAsText: async (pageNum) => {
+                // "Open this page as text" (way-back law): the text Mushaf at this page, with a pill back to the printed page.
+                printedOn = false; savePrintedOn(false);
+                mushafToggle.dispatchEvent(new Event("change"));
+                try { await flowRenderPromise; } catch { /* renderFlowView() reports its own failure on-screen. */ }
+                const el = pageViewContainer.querySelector(`.hifz-page[data-mushaf-page="${pageNum}"]`);
+                if (el) { scrollToMushafPage(el); updateMushafPageRef(); }
+                setAppReturn(t("Back to Printed page"), t("Page {page}", { page: num(pageNum) }), () => { printedOn = true; savePrintedOn(true); mushafToggle.dispatchEvent(new Event("change")); });
+              },
+            });
+            wireMushafPageRefScroll();
+            return;
+          }
           // Mushaf fix round -- a Page unit names its own page outright, so
           // use it rather than deriving pages from ayah keys: an ayah that
           // straddles a page boundary would otherwise pull the NEXT page in

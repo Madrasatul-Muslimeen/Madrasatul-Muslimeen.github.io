@@ -218,11 +218,14 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 360], ["en", 768],
   check(`${tag} the ONE Ayah View is as it was: its 7 rows, each with its ⋮, and no switches on the bar`, plain.rows === 7 && plain.qm === 7 && plain.slotHidden === true, JSON.stringify(plain));
   const w2 = await word(page);
   check(`${tag} B: ...and there (Read on off) the button names "${W.mushaf}"`, w2.word === W.mushaf, JSON.stringify(w2));
-  // From the Mushaf the button names the ONE Ayah View.
+  // From the Mushaf the button names the Printed page (the third stop).
   await page.evaluate(() => { const t = document.getElementById("mushafToggle"); t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); });
   await page.waitForTimeout(1500);
   const w3 = await word(page);
-  check(`${tag} B: in the Mushaf the button names "${W.one}"`, w3.word === W.one && w3.label.startsWith(W.one), JSON.stringify(w3));
+  // UPDATED IN PLACE (11 Nov 2026, the Printed page view): the Mushaf now has a third stop after it, so here the button names the
+  // PRINTED PAGE; the ONE Ayah View is named from the Printed page (mushaf-printed-view-browser.mjs checks that one).
+  const PRINTED = lang === "bn" ? "ছাপা পৃষ্ঠা" : "Printed page";
+  check(`${tag} B: in the Mushaf the button names "${PRINTED}"`, w3.word === PRINTED && w3.label.startsWith(PRINTED), JSON.stringify(w3));
 
   const real = errors.filter((e) => !/ERR_CERT|ERR_|archive\.org|api\.quran\.com/.test(e));
   check(`${tag} no page errors`, real.length === 0, real.slice(0, 2).join(" | "));

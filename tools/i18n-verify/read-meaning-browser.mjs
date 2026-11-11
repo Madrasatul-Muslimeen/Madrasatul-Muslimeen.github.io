@@ -94,7 +94,9 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await openRange57(page);
   const b0 = await btn(page);
   // PCF MSA J110 B (the Owner ticked B, 2 Nov 2026): the plain reading is the "ONE Ayah View". Updated in place, reason recorded.
-  check(`${tag} 📖 sits on the Read bar beside ⤢, tappable, unpressed; in the Mushaf it names the plain reading next (J110: "${lang === "bn" ? "এক আয়াত দৃশ্য" : "ONE Ayah View"}")`, b0.shown && b0.tappable && b0.h >= 36 && b0.pressed === "false" && b0.word === (lang === "bn" ? "এক আয়াত দৃশ্য" : "ONE Ayah View"), JSON.stringify(b0));
+  // UPDATED IN PLACE AGAIN (11 Nov 2026, the Printed page view): from the text Mushaf the switch now names the PRINTED PAGE next
+  // (a third stop); the ONE Ayah View is named from the Printed page. The button's placement and size asserted here are unchanged.
+  check(`${tag} 📖 sits on the Read bar beside ⤢, tappable, unpressed; in the Mushaf it names the Printed page next ("${lang === "bn" ? "ছাপা পৃষ্ঠা" : "Printed page"}")`, b0.shown && b0.tappable && b0.h >= 36 && b0.pressed === "false" && b0.word === (lang === "bn" ? "ছাপা পৃষ্ঠা" : "Printed page"), JSON.stringify(b0));
   const pageInView = await page.evaluate(() => Number(document.getElementById("mushafPageRef")?.dataset.page || 0));
 
   await toMeaning(page);
