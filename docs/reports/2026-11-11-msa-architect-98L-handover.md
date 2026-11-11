@@ -26,7 +26,14 @@ Hadith Lead = 12L `session_01PL2xbMcdvCAqCs3zLe4vBV`. Dua Lead = `session_01PL2x
    **FINDINGS to send back before merging:** (a) audit-part6 `--mutate=panebtn` stays GREEN (204/0): it proves nothing, so the QR Lead must
    fix or replace it; (b) read-bar-bookmark-layers `--mutate=nounit` and `--mutate=inflow` crashed (TimeoutError, no summary line): make each
    end with a counted FAIL rather than a crash. Re-run everything on the NEW head with main merged.
-2. **#1650** Riyad al-Salihin (Hadith Lead 12L): retarget to main now that #1647 is in. 12L knows its branch still has the old `nocredit` anchor
+   Later news (5:35 pm): 46L resolved #1649's offline-files conflict, head now **e4534d34**; my two findings were sent, so check they are answered.
+2. **#1653** Printed page VIEW (stage 2, QR Lead 46L; 47L takes over the next two PRs): both MUST-DOs claimed in it (both workers refuse
+   `/mushaf-printed/`, proven by `mushaf-printed-worker-exclusion-browser.mjs` with MUT=msa/MUT=qr; `qr.json` gains `siteSkip`, honoured by
+   `build-app.mjs`, plus ONE counted edit, edits.json 34->35; apps-build-check 57/0). The view: 📖 gets a third stop, Āyah -> Mushaf -> Printed page.
+   `mushaf-printed-view-browser.mjs` 182/0, 8 mutations. It touches SHARED files (app/sw.js, apps/qr worker, qr.json, build-app.mjs), so review it
+   closely: build QR and confirm no PNG lands in build/qr; run qr-verify; check that the four older suites updated in place keep only reds
+   identical to clean main.
+3. **#1650** Riyad al-Salihin (Hadith Lead 12L): retarget to main now that #1647 is in. 12L knows its branch still has the old `nocredit` anchor
    and will pick up the fix and re-run `--prove` on all three suites.
 
 ## OWNER CHOICE ASKED (in the PCF monitor, tick boxes; never re-ask)
