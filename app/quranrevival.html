@@ -7580,6 +7580,7 @@
             <label><input type="checkbox" data-fs-hide="dock" /> Bottom menu</label>
           </div>
           <p class="opt-note" id="fullScreenNote" hidden>Nothing is ticked, so Full screen will leave the screen as it is.</p>
+          <div id="printedOfflineBox" class="recit-off"></div>
         </div>
 
         <!-- Listening: the same shape as Reading view above, on the owner's
@@ -8006,6 +8007,7 @@
     import { isTasrifLevelPersistenceReady } from "./js/study-tasrif-level-readiness.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah, scrollToAyahIfRendered, mushafPageAyahGroups } from "./js/hifz-renderer.js";
     import { readPrintedOn, savePrintedOn, renderPrintedPages } from "./js/mushaf-printed.js";
+    import { keptPages, scopeStatus, pageRange, estimateBytes as printedEstimateBytes, mbText as printedMbText, savePrintedPages, removePrintedPages, TOTAL_PAGES as PRINTED_TOTAL } from "./js/printed-offline.js";
     // Issue #286 -- the "This āyah" action sheet (Mushaf marker tap, Word
     // Card "This āyah ⋯") and its one new action, filing this reader's own
     // Note on the āyah into Mapping My Journey folder(s).
@@ -27537,8 +27539,76 @@
       box.querySelectorAll("[data-recit-remove]").forEach((b) => b.addEventListener("click", () => removeIt(Number(b.dataset.recitRemove))));
     }
 
+    // -----------------------------------------------------------------------
+    // Printed Mushaf pages kept in the app (the Owner, 11 Nov 2026, "1A"): the reader picks this sūrah, this juz' or the
+    // whole Mushaf and presses the button; the size is shown BEFORE (about) and AFTER (the real bytes). Nothing is
+    // kept unless that button is pressed. A failure is said in words (I15). printed-offline.js holds the cache.
+    // -----------------------------------------------------------------------
+    let printedOfflineScope = "surah", printedOfflineBusy = false, printedOfflineStatus = null, printedOfflineToken = 0;
+    async function printedOfflinePages(scope) {
+      if (scope === "all") return pageRange(1, PRINTED_TOTAL);
+      await ensureMushafData();
+      if (scope === "surah") {
+        const n = surahIndex.find((x) => x.surahNumber === currentSurahNum)?.ayahCount ?? 1;
+        const ends = getMushafPagesForKeys([`${currentSurahNum}:1`, `${currentSurahNum}:${n}`]);
+        return ends.length ? pageRange(ends[0], ends[ends.length - 1]) : [];
+      }
+      const rows = await ensureUnitIndex("juz");
+      const ay = currentAyahNum;
+      const row = rows.find((r) => (currentSurahNum > r.startSurah || (currentSurahNum === r.startSurah && ay >= r.startAyah)) && (currentSurahNum < r.endSurah || (currentSurahNum === r.endSurah && ay <= r.endAyah))) ?? rows[0];
+      return { juz: row.juz, pages: pageRange(row.startPage, row.endPage) };
+    }
+    async function renderPrintedOffline() {
+      const box = document.getElementById("printedOfflineBox");
+      // I9: nothing here may join the startup path. It reads the cache, the juz' table and the Mushaf layout, so it only
+      // does that while Study options is on screen (and again when that panel is opened: see the listener below).
+      if (!box || !box.offsetParent) return;
+      const token = ++printedOfflineToken;
+      let kept, surahPages, juz;
+      try { [kept, surahPages, juz] = await Promise.all([keptPages(), printedOfflinePages("surah"), printedOfflinePages("juz")]); } catch { kept = {}; surahPages = []; juz = { juz: 1, pages: [] }; }
+      if (token !== printedOfflineToken) return; // a newer render started while this one waited
+      const scopes = { surah: surahPages, juz: juz.pages, all: pageRange(1, PRINTED_TOTAL) };
+      if (!scopes[printedOfflineScope]?.length) printedOfflineScope = "all";
+      const pages = scopes[printedOfflineScope];
+      const st = scopeStatus(pages, kept), total = scopeStatus(scopes.all, kept);
+      const sig = JSON.stringify([printedOfflineScope, currentSurahNum, juz.juz, st, total.have, total.bytes, printedOfflineBusy, printedOfflineStatus, getAppLang()]);
+      if (box.dataset.sig === sig) return;
+      box.dataset.sig = sig;
+      const what = printedOfflineScope === "surah" ? surahDisplayName(currentSurahNum) : printedOfflineScope === "juz" ? t("Juz {juz}", { juz: num(juz.juz) }) : t("The whole Mushaf ({pages} pages)", { pages: num(PRINTED_TOTAL) });
+      const allKept = st.have === st.total;
+      box.innerHTML = `<h5>${t("Printed pages for offline")}</h5>` +
+        `<p class="opt-note">${t("Keep the printed Mushaf pages on this device to read them with no internet. Nothing is kept unless you press the button; about 0.1 MB for each page.")}</p>` +
+        `<div class="recit-off-row"><select id="printedOfflineScope" aria-label="${t("What to keep")}">` +
+          `<option value="surah"${printedOfflineScope === "surah" ? " selected" : ""}>${escapeHtml(t("This sūrah: {name} ({pages} pages)", { name: surahDisplayName(currentSurahNum), pages: num(surahPages.length) }))}</option>` +
+          `<option value="juz"${printedOfflineScope === "juz" ? " selected" : ""}>${escapeHtml(t("This juz': {n} ({pages} pages)", { n: num(juz.juz), pages: num(juz.pages.length) }))}</option>` +
+          `<option value="all"${printedOfflineScope === "all" ? " selected" : ""}>${escapeHtml(t("The whole Mushaf ({pages} pages)", { pages: num(PRINTED_TOTAL) }))}</option></select>` +
+        (allKept
+          ? `<button type="button" id="printedOfflineRemove"${printedOfflineBusy ? " disabled" : ""}>${t("Remove these pages")}</button>`
+          : `<button type="button" id="printedOfflineSave"${printedOfflineBusy ? " disabled" : ""}>${t("Keep in the app")} (${t("about")} ${printedMbText(printedEstimateBytes(st.total - st.have))})</button>`) + `</div>` +
+        `<p class="recit-off-status" id="printedOfflineStatus" role="${printedOfflineStatus?.kind === "error" ? "alert" : "status"}" data-kind="${printedOfflineStatus?.kind ?? ""}">${printedOfflineStatus ? escapeHtml(printedOfflineStatus.text) : ""}</p>` +
+        `<p class="opt-note" id="printedOfflineTotal">${total.have ? escapeHtml(t("On this device: {have} of {total} pages ({size}).", { have: num(total.have), total: num(PRINTED_TOTAL), size: printedMbText(total.bytes) })) : t("No printed pages are kept on this device.")}</p>` +
+        (total.have ? `<div class="recit-off-row"><button type="button" id="printedOfflineRemoveAll"${printedOfflineBusy ? " disabled" : ""}>${t("Remove all kept pages")}</button></div>` : "");
+      const redraw = () => { delete box.dataset.sig; return renderPrintedOffline(); };
+      document.getElementById("printedOfflineScope").addEventListener("change", (e) => { printedOfflineScope = e.target.value; printedOfflineStatus = null; redraw(); });
+      document.getElementById("printedOfflineSave")?.addEventListener("click", async () => {
+        if (printedOfflineBusy) return;
+        printedOfflineBusy = true; printedOfflineStatus = { kind: "info", text: t("Saving…") }; await redraw();
+        try {
+          await savePrintedPages({ pages, onProgress: (d, n) => { const el = document.getElementById("printedOfflineStatus"); if (el) el.textContent = t("Saving… {done} of {total}", { done: num(d), total: num(n) }); } });
+          const after = scopeStatus(pages, await keptPages());
+          printedOfflineStatus = { kind: "info", text: t("Kept in the app: {what} ({size}).", { what, size: printedMbText(after.bytes) }) };
+        } catch (err) { printedOfflineStatus = { kind: "error", text: err?.message || t("Could not keep these pages.") }; }
+        printedOfflineBusy = false; await redraw();
+      });
+      const removeThese = async (list, label) => { await removePrintedPages({ pages: list }); printedOfflineStatus = { kind: "info", text: t("Removed from this device: {what}.", { what: label }) }; await redraw(); };
+      document.getElementById("printedOfflineRemove")?.addEventListener("click", () => removeThese(pages, what));
+      document.getElementById("printedOfflineRemoveAll")?.addEventListener("click", () => removeThese(scopes.all, t("The whole Mushaf ({pages} pages)", { pages: num(PRINTED_TOTAL) })));
+    }
+
+    document.getElementById("tabStudyOptionsBtn")?.addEventListener("click", () => setTimeout(renderPrintedOffline, 0));
     function renderListeningControls() {
       renderRecitationOffline();
+      renderPrintedOffline();
       const reciters = Object.values(RECITERS).filter((r) => reciterIsReady(r.id) && reciterOffersSurah(r.id, currentSurahNum)); // a one-sūrah recording is offered only on its own sūrah (MSA · QR J121)
       if (drillSelectedReciterIds === null) drillSelectedReciterIds = [currentReciterId].filter((id) => reciterSupportsSingleAyah(id));
 

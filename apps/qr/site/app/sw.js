@@ -14,6 +14,7 @@
 //   qr-qf-fonts-v1    Quran Foundation's Mushaf page fonts, on first use, refreshed weekly (MMSA's mm-qf-fonts-v1).
 //   qr-ext-v1         the Firebase SDK files (www.gstatic.com/firebasejs/10.12.2/), on first use (MMSA's mm-ext-v1).
 //   qr-mushaf-v1      the Mushaf layout and surah-header font, on first use, refreshed daily (MMSA's mm-mushaf-v1).
+//   qr-printed-v1     printed Mushaf pages the reader chose to keep (Study options); never kept on the worker's own
 //   qr-audio-v1       recitation the reader chose to save for offline, one sūrah at a time (PCF MSA J120 O6, MMSA's
 //                     mm-audio-v1); served from here for archive.org recitation requests, Range included; never emptied
 //                     by a release.
@@ -392,6 +393,7 @@ self.addEventListener("activate", (event) => {
       else if (key.startsWith("qr-ext-") && key !== EXT_SDK_CACHE_NAME) await caches.delete(key);
       else if (key.startsWith("qr-mushaf-") && key !== MUSHAF_CACHE_NAME) await caches.delete(key);
       else if (key.startsWith("qr-audio-") && key !== AUDIO_CACHE_NAME) await caches.delete(key);
+      else if (key.startsWith("qr-printed-") && key !== PRINTED_CACHE_NAME) await caches.delete(key);
     }
     await self.clients.claim();
   })());
@@ -405,6 +407,7 @@ self.addEventListener("message", (event) => {
   if (data.type === "GET_VERSION") { event.ports?.[0]?.postMessage(APP_VERSION); return; }
   // J120 O6: the page saved or removed a sūrah's recitation: read the saved set again.
   if (data.type === "audio-saved-changed") { event.waitUntil(refreshSavedAudio()); return; }
+  if (data.type === "printed-saved-changed") { event.waitUntil(refreshSavedPrinted()); return; }
   // MMSA's sw-register.js: the files a page loaded before this worker controlled it, to keep now (MMSA's "warm").
   if (data.type === "warm" && Array.isArray(data.urls)) {
     event.waitUntil((async () => {
@@ -454,12 +457,31 @@ async function handleRecitationAudio(request) {
     "content-length": String(end - start + 1), "accept-ranges": "bytes" } });
 }
 
+// Printed Mushaf pages kept in the app: same rule as MMSA's worker (app/sw.js handlePrintedPage). In QR the pictures are
+// MSA's (a different address), so the request is cross-origin; a page the reader chose to keep is answered from here, any
+// other goes to the network as if no worker existed, and this worker never keeps a picture on its own (PRINTED-EXCLUDED).
+const PRINTED_CACHE_NAME = "qr-printed-v1";
+let savedPrinted = null;
+function refreshSavedPrinted() {
+  return caches.open(PRINTED_CACHE_NAME).then((c) => c.keys())
+    .then((keys) => { savedPrinted = new Set(keys.map((r) => r.url)); })
+    .catch(() => { savedPrinted = null; });
+}
+refreshSavedPrinted();
+const isPrintedPage = (request) => { if (request.method !== "GET") return false; try { return /\/mushaf-printed\/ksu-madani\/\d{3}\.png$/i.test(new URL(request.url).pathname); } catch { return false; } };
+async function handlePrintedPage(request) {
+  let hit = null;
+  try { hit = await caches.match(request.url, { cacheName: PRINTED_CACHE_NAME }); } catch { hit = null; }
+  return hit || fetch(request);
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (isQuranFoundationFont(req)) { event.respondWith(cacheFirstWithBackgroundRefresh(event, QF_FONT_CACHE_NAME, QF_FONT_MAX_AGE_MS)); return; }
   if (isFirebaseSdk(req)) { event.respondWith(handleFirebaseSdk(req)); return; }
   if (isMushafAsset(req)) { event.respondWith(cacheFirstWithBackgroundRefresh(event, MUSHAF_CACHE_NAME, MUSHAF_MAX_AGE_MS)); return; }
   if (isRecitationAudio(req) && (savedAudio === null || savedAudio.has(req.url))) { event.respondWith(handleRecitationAudio(req)); return; }
+  if (isPrintedPage(req) && (savedPrinted === null || savedPrinted.has(req.url))) { event.respondWith(handlePrintedPage(req)); return; }
   if (req.method === "GET" && req.url.startsWith(HADITH_HOME)) { event.respondWith(hadithFile(event)); return; }
   if (req.method !== "GET") return;
   const url = new URL(req.url);
