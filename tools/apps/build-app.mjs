@@ -200,7 +200,10 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
   if (s.pages) for (const pg of s.pages) if (!fs.existsSync(path.join(src, "app", pg)) && !inOverlay(`app/${pg}`)) throw new Error(`settings "${id}": page app/${pg} does not exist`);
   // PCF MSA J120 O1: MSA's own web app manifest (its name and icons) is never copied into another app.
   const msaOwnFile = (rel) => s.id !== base.id && !!base.manifest && rel === `app/${base.manifest.file}`;
-  const files = listSite(src, srcSite).filter(keepPage).filter((rel) => !msaOwnFile(rel));
+  // Settings "siteSkip" (optional): folders inside the site that this app does NOT copy. QR leaves out the ~51 MB of
+  // printed Mushaf page pictures and reads them from MSA's address instead (QR J-printed, 98L); the worker also refuses to keep them.
+  const skipped = (rel) => (s.siteSkip || []).some((p) => rel === p || rel.startsWith(p + "/"));
+  const files = listSite(src, srcSite).filter(keepPage).filter((rel) => !msaOwnFile(rel)).filter((rel) => !skipped(rel));
 
   const rs = rules(base, s);
   const found = rs.map(() => 0);

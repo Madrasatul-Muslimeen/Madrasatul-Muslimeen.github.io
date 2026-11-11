@@ -306,6 +306,24 @@ check("a file both edited and overlaid stops the build", () => {
 check("a page the settings name but nobody has stops the build", () => throws(() => buildFx({ pages: ["index.html", "nowhere.html"] }), /page app\/nowhere\.html does not exist/));
 check("an overlay inside app/ is refused (MSA would serve it)", () => throws(() => buildFx({ overlay: "app/fx" }), /overlay must be outside app\//));
 
+// Printed Mushaf (98L): QR leaves the printed page pictures out and reads them from MSA's address.
+check("QR's settings skip the printed Mushaf pictures", () => JSON.stringify(qs.siteSkip) === JSON.stringify(["tools/quran-data-pull/output/mushaf-printed"]));
+check("siteSkip leaves a folder out of the built app, and only that folder (positive control: without it the folder IS copied)", () => {
+  const dir = path.join(mutSrc, "app/skip-fx"), keepDir = path.join(mutSrc, "app/keep-fx");
+  fs.mkdirSync(dir, { recursive: true }); fs.mkdirSync(keepDir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "a.txt"), "a"); fs.writeFileSync(path.join(keepDir, "b.txt"), "b");
+  try {
+    buildFx(); const withAll = fs.existsSync(path.join(TMP, "fx/app/skip-fx/a.txt"));
+    buildFx({ siteSkip: ["app/skip-fx"] });
+    return withAll && !fs.existsSync(path.join(TMP, "fx/app/skip-fx/a.txt")) && fs.existsSync(path.join(TMP, "fx/app/keep-fx/b.txt"));
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); fs.rmSync(keepDir, { recursive: true, force: true }); }
+});
+check("siteSkip does not skip a folder that merely starts with the same letters", () => {
+  const dir = path.join(mutSrc, "app/skip-fx2");
+  fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(path.join(dir, "c.txt"), "c");
+  try { buildFx({ siteSkip: ["app/skip-fx"] }); return fs.existsSync(path.join(TMP, "fx/app/skip-fx2/c.txt")); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 fs.rmSync(TMP, { recursive: true, force: true });
 console.log(`\napps-build-check: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

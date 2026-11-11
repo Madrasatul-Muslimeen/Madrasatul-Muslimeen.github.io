@@ -52,6 +52,7 @@ function isCacheable(request) {
   if (url.origin !== self.location.origin) return false;
   if (url.pathname.startsWith("/legacy/") || url.pathname.startsWith("/legacy-v07/") || url.pathname.startsWith("/legacy-v08/") || url.pathname.startsWith("/legacy-v09/") || url.pathname.startsWith("/legacy-v10/") || url.pathname.startsWith("/legacy-v11/") || url.pathname.startsWith("/legacy-v12/") || url.pathname.startsWith("/legacy-v13/")) return false;
   if (!CACHEABLE_PATH_PREFIXES.some((p) => url.pathname.startsWith(p))) return false;
+  if (url.pathname.includes("/mushaf-printed/")) return false; // PRINTED-EXCLUDED: the 604 printed-page pictures (~100 MB) are only ever kept by the reader's own "keep in the app" choice (its own cache), never by this run-time cache
   // Firestore's OWN traffic -- every read, write and auth token exchange the
   // SDK makes once it's actually running, all *.googleapis.com -- never
   // reaches this worker's cache: different origin, refused above, exactly as

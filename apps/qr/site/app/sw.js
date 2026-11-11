@@ -257,6 +257,7 @@ function isCacheable(request) {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return false;
   if (!CACHEABLE_PATH_PREFIXES.some((p) => url.pathname.startsWith(p))) return false;
+  if (url.pathname.includes("/mushaf-printed/")) return false; // PRINTED-EXCLUDED: see app/sw.js
   return /\.(?:html|js|mjs|css|json|woff2?|ttf|otf|png|jpe?g|svg|webp)$/i.test(url.pathname);
 }
 
