@@ -13,6 +13,7 @@ import { bindDuaWordPopup } from "./dua-word-popup.js";
 import { buildCheckPanel, loadMemberTexts, applyMembers, checkChipText, checkState, duaSaveFailed } from "./dua-check.js";
 import { plainMessageFor } from "./errors.js";
 import { el, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
+import { bookPageButton } from "./hadith-book-viewer.js"; // the original printed page (Owner, 11 Nov 2026: Dua cards included)
 
 /**
  * Round H-DB4 (decision 87), the Dua tab, first cut: the Dua chapters of eleven books (research report §2), each
@@ -367,6 +368,7 @@ export function duaCard(c, summary, state, render, progressRows, wordLinks = nul
   if (c.hadeethenc?.length) card.appendChild(openitiTranslationFold(c.hadeethenc.map(String)));
   const anchorUri = summary.books[ab].versionUri;
   if (TRANSLATED_BOOKS.has(anchorUri)) card.appendChild(standardTranslationFolds(anchorUri, () => loadOpenitiConcordance(anchorUri).then((cc) => cc?.stdByN?.get(an) ?? null).catch(() => null)));
+  { const bp = bookPageButton(anchorUri, () => loadOpenitiConcordance(anchorUri).then((cc) => cc?.stdByN?.get(an) ?? null).catch(() => null)); if (bp) card.appendChild(bp); }
 
   const box = el("div", "dua-also");
   // Decision 96: members a check moved out are left out of the count and listed below it.

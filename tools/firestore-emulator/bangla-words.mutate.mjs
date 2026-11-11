@@ -35,6 +35,11 @@ const M = [
   ["update-no-write-check", "&& banglaMayWrite(resource.data.tenantId, resource.data.scope)", ""],
   ["update-createdBy-free", "\n                    && d().createdBy == resource.data.createdBy;", ";"],
   ["update-no-shape", "allow update: if resource != null\n                    && banglaShapeOk()", "allow update: if resource != null"],
+  ["kinds-field-refused", "'tenantId', 'scope', 'words', 'kinds',", "'tenantId', 'scope', 'words',"],
+  ["kinds-check-gone", "\n            && kindsOk()\n", "\n"],
+  ["kinds-not-map-ok", "(d().kinds is map && d().kinds.size() <= d().words.size())", "(d().kinds.size() <= d().words.size())"],
+  ["kinds-more-than-words", " && d().kinds.size() <= d().words.size())", ")"],
+  ["kinds-required", "!('kinds' in d())\n            || (", "(false) || ("],
   ["delete-allowed", "allow delete: if false;", "allow delete: if banglaMayWrite(resource.data.tenantId, resource.data.scope);"],
 ];
 let caught = 0;

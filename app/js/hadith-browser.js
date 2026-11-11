@@ -25,6 +25,7 @@ import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPe
 import { HADEETHENC_LANGS, HADEETHENC_STRUCTURE_LANG, loadHadeethEncCategories, childCategories, directHadithIds, resolveCategoryTitle, loadHadithRecords, hadithArabicText, hadeethEncSourceUrl } from "./hadeethenc-corpus.js";
 import { OPENITI_CREDIT_URL, loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber, loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadHadeethEncReferences, loadDuaIndex } from "./openiti-corpus.js";
 import { el, readFailedNote, langNameInProse, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
+import { bookPageButton } from "./hadith-book-viewer.js"; // the original printed page of a hadith (Owner, 11 Nov 2026)
 import { renderDua } from "./dua-browser.js";
 import { hadithWordsSection } from "./hadith-word-card.js";
 import { hadithMarksRow } from "./hadith-key-marks.js";
@@ -1524,6 +1525,9 @@ function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null, versi
   if (h.pageRefs && h.pageRefs.length) {
     card.appendChild(el("p", "hadith-availability openiti-page-refs", h.pageRefs.map(openitiPageRef).join(" · ")));
   }
+
+  // The Owner's "original book page" (11 Nov 2026): the scanned page of this hadith, for the books we have a scan of.
+  { const bp = cite ? bookPageButton(conc?.versionUri ?? versionUri, cite) : null; if (bp) card.appendChild(bp); }
 
   if (versionUri && (h.kind === "hadith" || h.kind === "passage")) card.appendChild(ayatQuotedSection(versionUri, h.n));
 

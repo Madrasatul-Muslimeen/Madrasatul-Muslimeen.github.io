@@ -4995,6 +4995,17 @@ export const BN = {
   "Bright navy (A2)": "উজ্জ্বল নেভি (A2)",
   "Copper border (A6)": "তামার কিনারা (A6)",
   "As sourced": "উৎসে যেমন আছে",
+  // The original printed page of a hadith (Owner, 11 Nov 2026): app/js/hadith-book-viewer.js
+  "Original book page": "মূল বইয়ের পাতা",
+  "{book}, hadith {n}": "{book}, হাদীস {n}",
+  "This hadith is on this page or the one just after it.": "এই হাদিসটি এই পাতায় অথবা এর ঠিক পরের পাতায় আছে।",
+  "The book page needs an internet connection.": "বইয়ের পাতা দেখতে ইন্টারনেট লাগবে।",
+  "Loading the book page…": "বইয়ের পাতা আসছে…",
+  "Scan: Darussalam edition, shared on archive.org": "স্ক্যান: দারুস সালাম সংস্করণ, archive.org-এ শেয়ার করা",
+  "Open on archive.org": "archive.org-এ খুলুন",
+  "Download this book (PDF, {mb} MB)": "এই বইটি ডাউনলোড করুন (PDF, {mb} MB)",
+  "No book page is listed for this hadith.": "এই হাদিসের জন্য বইয়ের পাতা তালিকায় নেই।",
+  "The book page could not be loaded. Check your connection and try again.": "বইয়ের পাতা আনা যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।",
   // PCF MSA J120 O2: "Get ready for offline" in My account (app/js/offline-ready.js).
   "Use the app without internet": "ইন্টারনেট ছাড়া অ্যাপ ব্যবহার",
   "Keeps the app, the Qur'an and every Hadith and Dua book on this device, so they open with no internet.": "অ্যাপ, কুরআন আর হাদীস ও দু‘আর সব কিতাব এই ডিভাইসে রেখে দেয়, যাতে ইন্টারনেট ছাড়াই খোলে।",
