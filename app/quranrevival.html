@@ -3078,6 +3078,9 @@
   .ayah-stripe-chip i { box-sizing: border-box; font-style: normal; display: grid; place-items: center; min-width: 24px; height: 22px; padding: 0 5px; border-radius: 7px; font-size: 0.7rem; font-weight: 700; line-height: 1; border: 1px solid transparent; }
   .ayah-stripe-chip.appr i { background: #f6ead0; color: #7a5710; border-color: #b8892b; }
   .ayah-stripe-chip.note i { background: #1F3A6E; color: #fff; }
+  .ayah-stripe-chip.wmark i { background: #ece3f7; color: #4b2a7a; border-color: #7d5bb0; }
+  .ayah-stripe-chip.qcr i { background: #e1f0ec; color: #12564a; border-color: #2f8f7c; }
+  .ayah-stripe-chip.asma i { background: #f3e1e6; color: #6b1f33; border-color: #a64560; font-family: var(--arabic-font, inherit); }
   .ayah-stripe-chip:focus-visible { outline: 3px solid #B8862F; outline-offset: 1px; border-radius: 8px; }
   .ayah-quick-header { align-items: center; gap: 0.5rem; }
   .meaning-more { min-height: 44px; border: 1px dashed #c9b98f; border-radius: 0.6rem; background: #fdf8ea; color: #5e4418; font: inherit; font-weight: 600; cursor: pointer; }
@@ -21722,8 +21725,6 @@
       if (mushafBtn) mushafBtn.hidden = true; // J99: 📖 is the one switch now (its own handler is kept for the Options tick's sake below)
     }
 
-    /** PCF MSA J110 C: the same ⋮ the ONE Ayah View carries on every āyah (Copy, Share, Play this āyah, Bookmark,
-        Note & more…, QCR), without its Word by Word / Root / Derivatives rows: the Reading View has its own switches. */
     /** The āyah's status stripe (inbox qr46lstripe01, the Owner ticked A): a small button for each status this āyah HAS, nothing for one it lacks.
         Round 1: Approaches (how many Approaches have a stage on it; opens the Āyah card, which lists each) and Notes (opens the latest Note).
         No new read: Approaches come from the surah's records already in memory (approachStatusesForAyah), Notes from ayahHasAnyNote(). */
@@ -21734,9 +21735,19 @@
       const chip = (kind, glyph, label, key) => `<button type="button" class="ayah-stripe-chip ${kind}" data-ayah-stripe="${kind}" data-ayah-stripe-key="${key}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"><i aria-hidden="true">${glyph}</i></button>`;
       if (started > 0) chips.push(chip("appr", `${escapeHtml(num(started))}/${escapeHtml(num(statuses.length))}`, t("Approaches on this āyah: {done} of {total} started", { done: num(started), total: num(statuses.length) }), `${surahNum}:${ayahNum}`));
       if (ayahHasAnyNote(buildUnitKey.ayah(surahNum, ayahNum))) chips.push(chip("note", "📝", t("Notes on this āyah"), `${surahNum}:${ayahNum}`));
+      // Round 2 (97L approved): three more statuses, each ONLY from data already in memory (no new read, I9). A status whose data is not
+      // loaded yet draws nothing, exactly as a status the āyah lacks does.
+      const wordMarked = marksReadyFor(surahNum) ? Object.keys(marksStore.mine).filter((k) => k.startsWith(`qword:${surahNum}:${ayahNum}:`) && (marksStore.mine[k] ?? []).length).length : 0;
+      if (wordMarked > 0) chips.push(chip("wmark", `★${escapeHtml(num(wordMarked))}`, t("Words marked on this āyah: {n}", { n: num(wordMarked) }), `${surahNum}:${ayahNum}`));
+      const inQcr = (qcrCollections ?? []).filter((c) => c?.status !== "archived" && Array.isArray(c?.items) && c.items.includes(buildUnitKey.ayah(surahNum, ayahNum))).length;
+      if (inQcr > 0) chips.push(chip("qcr", "QCR", t("In {n} of your QCR collections", { n: num(inQcr) }), `${surahNum}:${ayahNum}`));
+      const asmaHits = asmaXCollections ? asmaXAllNameEntries().filter((e) => e.ref && parseAsmaRef(e.ref).some((c) => c.kind === "quran" && c.surah === surahNum && c.ayah === ayahNum)).length : 0;
+      if (asmaHits > 0) chips.push(chip("asma", "اسم", t("This āyah is a reference for {n} of Allah's Names", { n: num(asmaHits) }), `${surahNum}:${ayahNum}`));
       return chips.length ? `<span class="ayah-stripe" role="group" aria-label="${escapeHtml(t("Āyah status"))}">${chips.join("")}</span>` : "";
     }
 
+    /** PCF MSA J110 C: the same ⋮ the ONE Ayah View carries on every āyah (Copy, Share, Play this āyah, Bookmark,
+        Note & more…, QCR), without its Word by Word / Root / Derivatives rows: the Reading View has its own switches. */
     function meaningQuickMenuHtml(surahNum, ayahNum) {
       const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
       const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
