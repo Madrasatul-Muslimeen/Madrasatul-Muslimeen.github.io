@@ -15,7 +15,7 @@ const MUTATIONS = {
   "the ring ignores its switch": ["ring: w.ring ? { ratio } : null,", "ring: { ratio },"],
   "the plan draws while the list is off": ["if (!state || !state.on ||", "if (!state ||"],
   "a wheel switch accepts any key": ['if (!["ring", "centre", "tenth"].includes(key)) return state;', ""],
-  "bad storage throws": ["catch { return emptyBanglaState(); }", "catch (e) { throw e; }"],
+  "bad storage throws": ["catch { return null; } };", "catch (e) { throw e; } };"],
 };
 
 async function run(file) {
@@ -62,7 +62,8 @@ async function run(file) {
   const ls = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, v) };
   check("empty storage gives the empty state", JSON.stringify(m.loadBanglaState(ls)) === JSON.stringify(m.emptyBanglaState()));
   check("save then load round-trips", m.saveBanglaState(s, ls) && JSON.stringify(m.loadBanglaState(ls)) === JSON.stringify(s));
-  store.set(m.BANGLA_STORAGE_KEY, "{not json");
+  // J119 stage 1 (11 Nov 2026): saving writes the v2 key and v2 wins on load, so "bad storage" means BOTH keys are bad (updated in place, 98L).
+  store.set(m.BANGLA_STORAGE_KEY, "{not json"); store.set(m.BANGLA_STORAGE_KEY_V2, "{not json");
   check("bad storage gives the empty state", JSON.stringify(m.loadBanglaState(ls)) === JSON.stringify(m.emptyBanglaState()));
   check("storage that throws gives the empty state", JSON.stringify(m.loadBanglaState({ getItem() { throw new Error("blocked"); } })) === JSON.stringify(m.emptyBanglaState()));
   check("a hostile state is cleaned", m.normaliseBanglaState({ list: "x", admin: ["ok", 3, "", "ok"], mine: "no", wheel: { tenth: "yes" } }).admin.length === 1);
