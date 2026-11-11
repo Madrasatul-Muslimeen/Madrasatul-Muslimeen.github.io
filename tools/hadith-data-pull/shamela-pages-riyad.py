@@ -15,7 +15,7 @@ Writes output/book-pages/riyad.json = { i[n-1], v[n-1], g[n-1] } for n = 1..last
 
     python3 -I tools/hadith-data-pull/shamela-pages-riyad.py --cache /path/outside/the/repo [--fetch]
 """
-import argparse, glob, importlib.util, json, os, re, sys, unicodedata
+import argparse, difflib, glob, importlib.util, json, os, re, sys, unicodedata
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REGISTRY = os.path.join(HERE, "sources", "book-pages.json")
@@ -35,28 +35,40 @@ def norm(s):
     return re.sub(r"[^ء-ي ]", " ", s).split()
 
 
-def head(words, k=7):
+def head(words, k=34):
     return words[:k]
 
 
 def shamela_head(text):
-    """Opening words of a Shamela paragraph, minus the ordinal word ("السابع:") that precedes the narrator's name."""
-    t = TAGS.sub("", text)
-    m = re.match(r"\s*([^:：]{1,24})[:：]\s*", t)  # "السابع: عنه ..."
-    if m and len(m.group(1).split()) <= 3:
-        t = t[m.end():]
-    return head(norm(t))
+    """Opening words of a Shamela paragraph (tags dropped)."""
+    return head(norm(TAGS.sub("", text)))
 
 
-def close(a, b):
-    """Two openings agree when they share most of their first words in order (editions differ in small wording)."""
-    if not a or not b:
+SPAN = 30  # words compared
+THRESHOLD = 0.8
+
+
+def close(ours, theirs, threshold=THRESHOLD):
+    """Do two paragraphs open with the same words? Their first SPAN words, compared as sequences (difflib ratio >= THRESHOLD), our text
+    from offset 0, 1 or 2 because it carries the ordinal word ("الثاني", "فالأول", "الحادي عشر") that Shamela puts before a colon.
+    The narrator's name and "رضي الله عنه قال" alone cannot pass: many hadith share those first 8 words, and 8-of-10 matched
+    the wrong hadith in the first runs of this tool."""
+    if len(theirs) < 8:
         return False
-    a, b = a[:6], b[:6]
-    if a[0] == "و" or a[0].startswith("و") and len(a[0]) > 3:
-        pass
-    same = sum(1 for x, y in zip(a, b) if x == y)
-    return same >= max(2, min(len(a), len(b)) - 2)
+    key = (tuple(ours[:SPAN + 2]), tuple(theirs[:SPAN]))
+    hit = _CACHE.get(key)
+    if hit is None:
+        hit = False
+        for off in (0, 1, 2):
+            a, b = ours[off:off + SPAN], theirs[:SPAN]
+            if len(a) >= 8 and difflib.SequenceMatcher(None, a, b, autojunk=False).ratio() >= threshold:
+                hit = True
+                break
+        _CACHE[key] = hit
+    return hit
+
+
+_CACHE = {}
 
 
 def read_shamela(cache, last):
@@ -85,39 +97,64 @@ def our_head(text):
     return head(w)
 
 
-def align(ours, sh, window=6):
-    """Walk both lists; returns {n: shamela_entry}, plus a report of every place the walk had to re-sync or give up."""
+def align(ours, sh, band=80):
+    """Longest common subsequence of the two lists, where two entries are "the same" when their opening words agree (see close()).
+    A banded dynamic programme (the books differ by a few dozen paragraphs, so the two lists never drift more than `band` apart).
+    Returns {n: shamela_entry} for every matched record, and notes naming each run of records left unmatched."""
+    oh = [our_head(r["text"]) for r in ours]
+    N, M = len(ours), len(sh)
+    # L[k][j] = LCS of ours[k:] and sh[j:], only for |k - j| <= band (offset-adjusted storage)
+    L = [dict() for _ in range(N + 2)]
+    def get(k, j):
+        return L[k].get(j, 0) if k <= N and j <= M else 0
+    for k in range(N - 1, -1, -1):
+        for j in range(min(M - 1, k + band), max(-1, k - band - 1), -1):
+            if close(oh[k], sh[j]["w"]):
+                L[k][j] = get(k + 1, j + 1) + 1
+            else:
+                L[k][j] = max(get(k + 1, j), get(k, j + 1))
     res, notes = {}, []
-    j = 0
-    k = 0
-    while k < len(ours) and j < len(sh):
-        o = our_head(ours[k]["text"])
-        if close(o, sh[j]["w"]):
+    k = j = 0
+    while k < N and j < M:
+        if close(oh[k], sh[j]["w"]) and L[k].get(j, 0) == get(k + 1, j + 1) + 1:
             res[ours[k]["n"]] = sh[j]
             k += 1
             j += 1
-            continue
-        # re-sync: nearest pair (dk, dj) with a match, preferring the smallest total skip
-        best = None
-        for tot in range(1, window * 2 + 1):
-            for dk in range(0, min(tot, window) + 1):
-                dj = tot - dk
-                if dj > window or k + dk >= len(ours) or j + dj >= len(sh) or (dk == 0 and dj == 0):
-                    continue
-                if close(our_head(ours[k + dk]["text"]), sh[j + dj]["w"]):
-                    best = (dk, dj)
-                    break
-            if best:
-                break
-        if not best:
-            notes.append(f"no match: our n={ours[k]['n']} vs Shamela index {sh[j]['i']} ({sh[j]['in']}/{sh[j]['gl']})")
+        elif get(k + 1, j) >= get(k, j + 1):
+            notes.append(f"ours only: n={ours[k]['n']} (no Shamela paragraph with these opening words)")
             k += 1
+        else:
+            notes.append(f"Shamela only: {sh[j]['in']}/{sh[j]['gl']} on index {sh[j]['i']}")
             j += 1
-            continue
-        dk, dj = best
-        notes.append(f"re-sync: skipped {dk} of ours (from n={ours[k]['n']}) and {dj} of Shamela's (from {sh[j]['in']}/{sh[j]['gl']}, index {sh[j]['i']})")
-        k += dk
-        j += dj
+    # second pass: the two texts do not always keep one order (OpenITI's copy and Shamela's differ in places). A record still unmapped is
+    # matched to a Shamela paragraph still unused ONLY when its opening words (5 words after the ordinal) occur once on each side.
+    used = {id(e) for e in res.values()}
+    moved = 0
+    for width in (20, 12):  # the longer the shared opening, the surer: 20 words, then 12, each time only on what is still free
+        def key(w, off):
+            return " ".join(w[off:off + width]) if len(w[off:off + width]) == width else None
+        idx, count = {}, {}
+        for e in sh:
+            if id(e) not in used:
+                for off in (0, 1, 2):
+                    kx = key(e["w"], off)
+                    if kx:
+                        idx.setdefault(kx, []).append(e)
+        free_ours = [(r, h) for r, h in zip(ours, oh) if r["n"] not in res]
+        for r, h in free_ours:
+            for off in (0, 1, 2):
+                kx = key(h, off)
+                if kx:
+                    count[kx] = count.get(kx, 0) + 1
+        for r, h in free_ours:
+            for off in (0, 1, 2):
+                kx = key(h, off)
+                if kx and count.get(kx) == 1 and len(idx.get(kx, [])) == 1 and id(idx[kx][0]) not in used:
+                    res[r["n"]] = idx[kx][0]
+                    used.add(id(idx[kx][0]))
+                    moved += 1
+                    break
+    notes.append(f"second pass (out-of-order, unique opening words): {moved} records")
     return res, notes
 
 
