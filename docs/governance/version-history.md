@@ -1126,3 +1126,4 @@ total). Allocated by the MMSA Architect.
 14.21: Word Card nav together, Verb Form line, freeze fix. Allocated by the MMSA Architect.
 14.22: Read bar: one bookmark, WbW/Root/Derivatives, quick search. Allocated by the MMSA Architect.
 14.23: Ayah stripe round 2, Know Your Status switch, Bangla Words v2 data. Allocated by the MMSA Architect.
+14.24: Hadith Original book page (scan pop-up), five books, Dua cards. Allocated by the MMSA Architect.
