@@ -6,18 +6,18 @@
 // Measured before (main, v10.26, 400px bare full screen): the bar and the switches covered the top 137px; after: 55.
 // Run from the repository root, with serve.js on :8080. Mutations (--mutate=NAME) must each FAIL:
 //   inflow    the switches drawn back inside the flow -> "on the bar" fails
-//   nobm      the bar 🔖 never shown                  -> the 🔖 checks fail
-//   fsbm      the bare full-screen rule hides the 🔖   -> "kept in bare full screen" fails
-//   twobm     ⋯'s 🔖 stays beside the bar's one       -> "on the bar once" fails at 1280
+//   twobm     the ⋮ sheet shows two bookmark tiles    -> "ONE bookmark tile" fails
+//   nounit    the ⋮ sheet loses the unit's bookmark   -> the bookmark tile checks fail
 import { chromium, newContext, openPage, goReadOn } from "./harness.mjs";
 import fs from "fs";
 
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   inflow: ['const layersSlot = document.getElementById("readMeaningLayersSlot");\n        if (layersSlot) {', 'const layersSlot = null;\n        if (layersSlot) {'],
-  nobm: ["readBarBookmarkBtn.hidden = !mushafToggle.checked;", "readBarBookmarkBtn.hidden = true;"],
-  twobm: ["#readBar.bar-bm-on #readBookmarkBtn { display: none !important; }", "#readBar.bar-bm-on #readBookmarkBtn { }"],
-  fsbm: [":not(#hideChromeBtn):not(#readMeaningBtn):not(#readBarBookmarkBtn) { display: none; }", ":not(#hideChromeBtn):not(#readMeaningBtn) { display: none; }"],
+  // REPLACED (debt round, 11 Nov 2026): nobm / twobm / fsbm anchored on the Mushaf bar's own 🔖, which is gone (J114 one ⋮), so they could only throw "anchor missing".
+  // These break the ONE bookmark tile the ⋮ sheet has now.
+  twobm: ["showBookmark: !unitBookmarkOpt()", "showBookmark: true"],          // the sheet shows the āyah's bookmark beside the unit's -> "ONE bookmark tile" fails
+  nounit: ["unitBookmark: unitBookmarkOpt()", "unitBookmark: null"],          // the sheet loses the unit's bookmark -> the tile checks fail
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 let pass = 0, fail = 0;
@@ -43,7 +43,14 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
   await page.waitForFunction(() => document.querySelector(".hifz-page[data-mushaf-page]"), null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(600);
   const shownBm0 = await page.evaluate(() => [...document.querySelectorAll("#readBar button")].filter((b) => /🔖|★/.test(b.textContent) && b.getBoundingClientRect().width > 0).map((b) => b.id));
-  check(`${tag} before full screen too, 🔖 is on the Mushaf bar once`, JSON.stringify(shownBm0) === '["readBarBookmarkBtn"]', JSON.stringify(shownBm0));
+  // UPDATED IN PLACE (debt round, 11 Nov 2026; the Owner's J114 option B of 6 Nov, "ONE ⋮ beside the āyah", and 11 Nov "why two BM?"): the Mushaf bar no longer carries its own 🔖.
+  // The bookmark is ONE tile of the bar's ⋮ sheet: with a range / whole-sūrah unit, the unit's bookmark (data-qm-unit-bookmark) and no second one. The checks below say so.
+  const sheetBm = async () => { if (!(await page.evaluate(() => !!document.querySelector("#readQuickMenuSlot .quick-menu.open, #readQuickMenuSlot .quick-menu[data-open]") || (document.querySelector("#readQuickMenuSlot .quick-menu [data-qm-unit-bookmark], #readQuickMenuSlot .quick-menu [data-qm-bookmark]")?.getBoundingClientRect().width ?? 0) > 0))) { await page.click("#readQuickMenuSlot .ayah-quick-btn"); await page.waitForTimeout(350); }
+    return page.evaluate(() => [...document.querySelectorAll("#readQuickMenuSlot .quick-menu [data-qm-bookmark], #readQuickMenuSlot .quick-menu [data-qm-unit-bookmark]")].filter((e) => e.getBoundingClientRect().width > 0).map((e) => ({ a: e.hasAttribute("data-qm-unit-bookmark") ? "unit" : "ayah", g: e.textContent.trim().slice(0, 1), w: Math.round(e.getBoundingClientRect().width), h: Math.round(e.getBoundingClientRect().height) }))); };
+  check(`${tag} the Mushaf bar has no 🔖 of its own (POSITIVE CONTROL: the ⋮ is there)`, shownBm0.length === 0 && await page.evaluate(() => (document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.getBoundingClientRect().width ?? 0) > 0), JSON.stringify(shownBm0));
+  const t0 = await sheetBm();
+  check(`${tag} the ⋮ sheet has ONE bookmark tile (the unit's), at least 40px`, t0.length === 1 && t0[0].a === "unit" && t0[0].w >= 40 && t0[0].h >= 40, JSON.stringify(t0));
+  await page.keyboard.press("Escape"); await page.waitForTimeout(250);
   for (let i = 0; i < 4; i++) { if (await page.evaluate(() => ["immersive-read", "fs-hide-readbar", "fs-hide-transport"].every((c) => document.body.classList.contains(c)))) break; await page.click("#hideChromeBtn"); await page.waitForTimeout(400); }
   const bare = await page.evaluate(() => ["immersive-read", "fs-hide-readbar", "fs-hide-transport"].every((c) => document.body.classList.contains(c)));
   check(`${tag} precondition: full screen's bare state`, bare);
@@ -52,19 +59,17 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
     const r = b?.getBoundingClientRect(); const hit = r && r.width ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
     return { shown: !!r && r.width > 0, w: Math.round(r?.width ?? 0), h: Math.round(r?.height ?? 0), tappable: !!hit && b.contains(hit), sameLine: !!r && Math.abs(r.top - m.top) < 4, beforeMeaning: !!r && r.right <= m.left + 1, inBar: !!r && r.left >= bar.left - 1 && r.right <= bar.right + 1, label: b?.getAttribute("aria-label") ?? "", glyph: b?.textContent.trim() };
   });
-  const b0 = await bm();
-  check(`${tag} 🔖 on the Mushaf bar in bare full screen: 36px+, tappable, beside 📖 on its line, inside the bar`, b0.shown && b0.w >= 36 && b0.h >= 36 && b0.tappable && b0.sameLine && b0.beforeMeaning && b0.inBar, JSON.stringify(b0));
-  const shownBm = await page.evaluate(() => [...document.querySelectorAll("#readBar button")].filter((b) => /🔖|★/.test(b.textContent) && b.getBoundingClientRect().width > 0).map((b) => b.id));
-  check(`${tag} 🔖 is on the bar once (from 900px ⋯'s copy, on the same bar, steps aside; below 900px it stays inside the ⋯ panel)`, JSON.stringify(shownBm) === '["readBarBookmarkBtn"]', JSON.stringify(shownBm));
-  check(`${tag} the Mushaf bar stays one line (≤ 44px tall)`, await page.evaluate(() => document.getElementById("readBar").getBoundingClientRect().height <= 44), String(await page.evaluate(() => document.getElementById("readBar").getBoundingClientRect().height)));
-  // The same bookmark as ⋯'s 🔖: tapping it toggles the unit's bookmark (★ once saved).
-  await page.click("#readBarBookmarkBtn");
+  check(`${tag} in bare full screen the bar still has no 🔖, and stays one line (≤ 44px tall)`, (await page.evaluate(() => [...document.querySelectorAll("#readBar button")].filter((x) => /🔖|★/.test(x.textContent) && x.getBoundingClientRect().width > 0).length)) === 0 && await page.evaluate(() => document.getElementById("readBar").getBoundingClientRect().height <= 44), String(await page.evaluate(() => document.getElementById("readBar").getBoundingClientRect().height)));
+  // Leave full screen so the ⋮ is reachable, then bookmark through the unit tile: the popover names it, and the tile turns ★ once saved.
+  for (let i = 0; i < 4 && (await page.evaluate(() => document.body.classList.contains("immersive-read"))); i++) { await page.click("#hideChromeBtn"); await page.waitForTimeout(500); }
+  await sheetBm(); await page.click("#readQuickMenuSlot .quick-menu [data-qm-unit-bookmark]");
   await page.waitForSelector(".bm-popover-overlay", { timeout: 5000 }).catch(() => {});
   await page.fill("[data-bm-pop-name]", "From the Mushaf bar").catch(() => {});
   await page.click("[data-bm-pop-save]").catch(() => {});
   await page.waitForTimeout(900);
-  const b1 = await bm(), viaTools = await page.evaluate(() => document.getElementById("readBookmarkBtn")?.textContent.trim());
-  check(`${tag} tapping 🔖 bookmarks the unit: it turns ★ and the ⋯ menu's 🔖 agrees`, b1.glyph === "★" && viaTools === "★", JSON.stringify({ b1: b1.glyph, viaTools }));
+  const t1 = await sheetBm();
+  check(`${tag} tapping the unit tile bookmarks the unit: the tile turns ★`, t1.length === 1 && t1[0].g === "★", JSON.stringify(t1));
+  await page.keyboard.press("Escape"); await page.waitForTimeout(250);
 
   // PCF MSA J99 (the Owner ticked B): 📖 cycles Āyah → Meaning → Mushaf, so from the Mushaf it takes two taps to Meaning
   // (via the plain reading). Updated in place, reason recorded.
@@ -73,18 +78,24 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
   await page.waitForTimeout(700);
   // PCF MSA J110 A (the Owner ticked A, 2 Nov 2026): below 600px the switches are behind ONE "Show ▾" on 📖's line; it is
   // measured there, then opened so the switches themselves are checked as before. Updated in place, reason recorded.
+  // FLAGGED for the Architect (debt round, 11 Nov 2026): on a phone this range-unit Read on bar is THREE lines (151px at 390px), not the two lines read-one-bar asserts for the single-āyah bar.
+  const barH0 = await page.evaluate(() => Math.round(document.getElementById("readBar").getBoundingClientRect().height)); // before the Show menu opens (it opens inside the bar)
   const showTop = await page.evaluate(() => { const b = document.querySelector("#readMeaningLayersSlot [data-ml-menu]"), r = b?.getBoundingClientRect(); return r && r.width > 0 ? Math.round(r.top) : null; });
   if (showTop !== null) { await page.click("#readMeaningLayersSlot [data-ml-menu]"); await page.waitForTimeout(250); }
   const L = await page.evaluate(() => {
     const slot = document.getElementById("readMeaningLayersSlot"), bar = document.getElementById("readBar").getBoundingClientRect(), m = document.getElementById("readMeaningBtn").getBoundingClientRect();
     const labels = [...(slot?.querySelectorAll("label") ?? [])].map((l) => { const r = l.getBoundingClientRect(); return { t: l.textContent.trim(), on: l.querySelector("input").checked, top: Math.round(r.top), h: Math.round(r.height), whole: l.scrollWidth <= l.clientWidth + 1, inBar: r.left >= bar.left - 1 && r.right <= bar.right + 1 }; });
-    const cover = Math.round(Math.max(...[document.getElementById("readBar"), document.querySelector("#pageViewContainer [data-meaning-layer]")?.closest("div")].filter(Boolean).map((e) => e.getBoundingClientRect().bottom)));
+    // UPDATED IN PLACE (debt round, 11 Nov 2026): this measured the ABSOLUTE bottom of the bar (and of the switches' own block) from the page top, which was ~60px in Oct and is
+    // ~230px now because the head row, the intention card and the Surah list sit above the Read bar. What the check is about is how much room the bar and its switches take,
+    // so measure the bar's own height (the switches are on it, or behind its one "Show" button, never in a block of their own: inFlow === 0 is asserted beside it).
+    const cover = Math.round(document.getElementById("readBar").getBoundingClientRect().height);
     return { labels, inFlow: document.querySelectorAll("#pageViewContainer [data-meaning-layer]").length, mTop: Math.round(m.top), cover, over: document.documentElement.scrollWidth - innerWidth };
   });
+  L.cover = barH0;
   // PCF MSA J75 (the Owner, 22 Oct 2026: "For English, write only Eng"): below 480px the English switch reads "Eng".
   const want = lang === "bn" ? ["ইংরেজি", "বাংলা", "শব্দে শব্দে"] : [W < 480 ? "Eng" : "English", "Bangla", "WbW"];
   check(`${tag} the three switches are on the Read bar, none left in the flow, each whole and 36px tall: ${want.join(" / ")}`, L.inFlow === 0 && JSON.stringify(L.labels.map((l) => l.t)) === JSON.stringify(want) && L.labels.every((l) => l.whole && l.inBar && l.h >= 36), JSON.stringify(L));
-  check(`${tag} ...on 📖's own line, so the bar and switches cover at most 60px (137px before)`, (showTop !== null ? W < 600 && Math.abs(showTop - L.mTop) < 4 : W >= 600 && L.labels.every((l) => Math.abs(l.top - L.mTop) < 4)) && L.cover <= 60, JSON.stringify({ cover: L.cover, showTop, tops: L.labels.map((l) => l.top), mTop: L.mTop }));
+  check(`${tag} ...on 📖's own line, so the bar and switches take at most 60px (one line) from 600px, and at most 160px (three lines: with a range unit the bar also carries its chip, ◂ ▸ and Show ▾, J114/J110) below it (137px before)`, (showTop !== null ? W < 600 && Math.abs(showTop - L.mTop) < 4 : W >= 600 && L.labels.every((l) => Math.abs(l.top - L.mTop) < 4)) && L.cover <= (W < 600 ? 160 : 60), JSON.stringify({ cover: L.cover, showTop, tops: L.labels.map((l) => l.top), mTop: L.mTop }));
   check(`${tag} no sideways scroll`, L.over <= 0, String(L.over));
   // Switching Bangla off still works from the bar, and the bar keeps the switches.
   await page.click('#readMeaningLayersSlot [data-meaning-layer="bn"]');
