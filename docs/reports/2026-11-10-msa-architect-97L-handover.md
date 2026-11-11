@@ -1,4 +1,4 @@
-# MSA Master Architect 97L: handover, 10 Nov 2026, ~8:35 pm Sydney (updated 10:55 pm)
+# MSA Master Architect 97L: handover, 10–11 Nov 2026 (LATEST UPDATE 11 Nov ~11:05 am Sydney, at the top)
 
 Session `session_01PL2xbMP1cjoPSSKucQC1FD`, took over from 96L at 7:35 pm. `main` = **v14.19** (merge `419a36d5`, 10:52 pm).
 Governance on main: brief-integrity 15/0, programme-ledger 8/0, mutations 49/0 (full clone needed: `git fetch --unshallow origin main`
@@ -7,6 +7,40 @@ plus `claude/pensive-knuth-2pu3jj`, `claude/phase4-wiring`). Nothing deployed to
 **PCA is now 34L `session_01PL2xbMuD5EbaWRuvuMUick` (since 10:58 pm; 32L and 33L have stopped). Send every "PCA ▸" line
 to that id EXPLICITLY, never "@parent".** QR Lead is now 46L: `session_01PL2xbKuYcFzuK32jDvmAXJ` (45L stopped; its handover
 `docs/reports/2026-11-10-qr-lead-handover-16.md`).
+
+
+## ⇢ LATEST UPDATE, 11 Nov 2026 ~11:05 am Sydney (read this first)
+
+`main` = **v14.22** (this release). PCA = 34L `session_01PL2xbMuD5EbaWRuvuMUick`; QR Lead = 46L `session_01PL2xbKuYcFzuK32jDvmAXJ`
+(46L opened its own docs-only handover PR #1642, so a new QR Lead may follow: check with the PCA).
+
+**Released since the block below:** v14.20 (#1630 āyah status stripe round 1; #1631 J136 effort Rules adopted after the Owner's
+"Rules Published", 10 Nov 20:25 UTC, checked in 46L's own session record; I fixed the emulator suite's published-Rules case in place),
+v14.21 (#1633 J127 ‹ › together; #1634 J122 Verb Form on Taṣrīf; #1635 a real ~18 s Word Card freeze fixed; #1636 stale check),
+v14.22 (#1637, the Owner's three Read-bar asks: one bookmark tile, WbW/Root/Derivatives in Read on's ⋮, a quick 🔍; qr-read-tall
+41 → 8 fails). QR rebuilt to v14.21 by the PCA at 10:41 am; v14.22 asked.
+
+**REVIEW QUEUE (46L, in this order; each needs offline-files.json regenerated after the previous merge: merge main into the branch,
+`node tools/offline/build-offline-files.mjs`, push, then merge pinned):**
+1. **#1638** Āyah stripe round 2 (★ Words marked, QCR, اسم Asma chips, all from data already in memory; both round-1 nits done).
+   Agreed with 46L: chips only from loaded data, NO extra read (option 1). Option 2 (load per sūrah) is the Owner's I9 call, offered in J110 later.
+2. **#1640** J129 "Know Your Status" block with an on/off switch, ON by default (Owner B1), remembered on this device.
+3. **#1641** Bangla Words stage 1 (kinds under NEW key mm_bangla_words.v2; v1 only read, never written) + the stage 2 report
+   `docs/reports/2026-11-11-bangla-words-stage2-match-quality.md` (docs commit on the same branch; accepted: the 55 matches are a hidden seed).
+4. **#1642** 46L's docs-only handover.
+5. Stage 3 Rules CANDIDATE (`kinds` map) waits on branch `claude/qr-lead-46l-bw3`, no PR: say "go" to the QR Lead. It is a candidate only;
+   the Owner publishes; the flag flips only on the Owner's own word (check it in the session record, as for J136).
+**How I reviewed each** (keep doing it): fetch `pull/N/head`, read the diff, check every function/string it names exists (`bn.js`),
+run its own suite + every mutation + the neighbouring suites on the branch, and any failing neighbour on clean `origin/main` too
+(same line + same pass count = pre-existing). Then QR build + `bash tools/apps/qr-verify/run-all.sh` with serve.js STOPPED
+(24/25 is normal here: `upgrade-browser` needs a QR clone at /home/user/quranrevival, absent). Merge with `expectedHeadSha`.
+
+**Pre-existing reds on main (not any PR's):** read-bar-bookmark-layers (3, line 61, [en 400]), read-bar-tools (1, line 108, [en 360]
+timeout), qr-j110-reading-view 77/1 ([en 768]), qr-read-tall 8, audit-part1 4, audit-part6 32. Give them to the QR Lead as a debt round,
+like the three it already fixed (#1635/#1636 found a real defect that way).
+
+**Waiting on the Owner (never re-ask):** J120 n120r (phone save + airplane mode), J120 n120q (A/B), J136 check (tap Very Hard; it saves),
+J119 n119g (A/B/C, a word list for suggestions), J110 round-2 look, J05 T11/T15, J122 n122a, J123 later. 18 Nov G02/pro1118.
 
 ## Released this session
 - **v14.15** (#1615, 7:56 pm): J120 O4. `app/js/offline-own-data.js` (new): Get ready for offline also reads the reader's own Notes
