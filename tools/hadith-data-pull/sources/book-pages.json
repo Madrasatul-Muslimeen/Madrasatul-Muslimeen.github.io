@@ -196,6 +196,26 @@
       },
       "status": "mapped",
       "note": "Owner ticked hd1111n E (11 Nov 2026). Shamela's page text read page by page and aligned to our records by text, in order, by shamela-pages-align.py (3,422 of 3,514 hadith; the rest print no page rather than a guess)."
+    },
+    {
+      "key": "nawawi40",
+      "title": "al-Nawawi's Forty Hadith (ed. Dar al-Minhaj)",
+      "kind": "shamela",
+      "keyBy": "n",
+      "versionUri": "0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1",
+      "numbering": "OUR RECORD ORDER n (1-138, the passages of the split files; the book carries no hadith numbers in our text)",
+      "lastNumber": 138,
+      "alignKinds": [
+        "hadith",
+        "passage"
+      ],
+      "shamela": {
+        "id": "12836",
+        "edition": "Dar al-Minhaj, 1st ed. 1430 AH",
+        "lastIndex": 81
+      },
+      "status": "mapped",
+      "note": "Owner ticked hd1111n G (11 Nov 2026). Built by shamela-pages-text.py: each of our passages found in Shamela's typed pages by its first 8 words, forward only."
     }
   ]
 }

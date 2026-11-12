@@ -57,6 +57,13 @@ export const BOOK_PAGE_BOOKS = {
     title: { en: "al-Adab al-Mufrad", bn: "আল-আদাবুল মুফরাদ" },
     edition: { en: "ed. Abd al-Baqi", bn: "মুহাম্মাদ ফুআদ আবদুল বাকী সম্পাদিত" },
   },
+  // Forty Nawawi (the Owner ticked hd1111n G, 11 Nov 2026): our copy carries no hadith numbers, so each passage was found in the typed pages by its
+  // opening words and the map is keyed by OUR record order `n` (tools/hadith-data-pull/shamela-pages-text.py).
+  "0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1": {
+    key: "nawawi40", kind: "shamela", keyBy: "n", shamelaId: "12836",
+    title: { en: "al-Nawawi's Forty Hadith", bn: "আন-নাওয়াবীর চল্লিশ হাদীস" },
+    edition: { en: "Dar al-Minhaj, 1st ed. 1430 AH", bn: "দারুল মিনহাজ, ১ম সংস্করণ, ১৪৩০ হিজরী" },
+  },
   // Riyad al-Salihin: the book's own number prints per chapter (and our header has typos), so its map is keyed by OUR record order `n`
   // (keyBy: "n"); the card passes h.n and the pane names the book without a hadith number.
   "0676Nawawi.RiyadSalihin.Shamela0012014-ara1": {

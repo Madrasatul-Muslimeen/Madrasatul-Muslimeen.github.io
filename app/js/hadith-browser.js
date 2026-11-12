@@ -1529,7 +1529,7 @@ function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null, versi
   // The Owner's "original book page" (11 Nov 2026): the scanned page of this hadith, for the books we have a scan of.
   // Books with no scan (Muwatta, Musnad Ahmad) get the Shamela printed page instead, keyed by the book's OWN hadith number.
   { const vUri = conc?.versionUri ?? versionUri;
-    const pageNo = isKeyedByN(vUri) ? (h.kind === "hadith" && Number(h.n) > 0 ? Math.trunc(Number(h.n)) : null) : isShamelaBook(vUri) ? (h.kind === "hadith" && Number(h.number) > 0 ? Math.trunc(Number(h.number)) : null) : cite;
+    const pageNo = isKeyedByN(vUri) ? ((h.kind === "hadith" || h.kind === "passage") && Number(h.n) > 0 ? Math.trunc(Number(h.n)) : null) : isShamelaBook(vUri) ? (h.kind === "hadith" && Number(h.number) > 0 ? Math.trunc(Number(h.number)) : null) : cite;
     const bp = pageNo ? bookPageButton(vUri, pageNo) : null; if (bp) card.appendChild(bp); }
 
   if (versionUri && (h.kind === "hadith" || h.kind === "passage")) card.appendChild(ayatQuotedSection(versionUri, h.n));

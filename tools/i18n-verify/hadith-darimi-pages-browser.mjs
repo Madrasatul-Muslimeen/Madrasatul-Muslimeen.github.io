@@ -17,7 +17,7 @@ const MUT = {
   wrongindex: ["js/hadith-book-pages.js", "/${Math.trunc(Number(index))}`;", "/${Math.trunc(Number(index)) + 1}`;"],
   wrongbook: ["js/hadith-book-pages.js", 'key: "darimi", kind: "shamela", keyBy: "n", shamelaId: "21795"', 'key: "darimi", kind: "shamela", keyBy: "n", shamelaId: "21796"'],
   nobutton: ["js/hadith-browser.js", "const bp = pageNo ? bookPageButton(vUri, pageNo) : null; if (bp) card.appendChild(bp); }", "}"],
-  usesnumber: ["js/hadith-browser.js", 'isKeyedByN(vUri) ? (h.kind === "hadith" && Number(h.n) > 0 ? Math.trunc(Number(h.n)) : null)', 'isKeyedByN(vUri) ? (h.kind === "hadith" && Number(h.number) > 0 ? Math.trunc(Number(h.number)) : null)'],
+  usesnumber: ["js/hadith-browser.js", 'isKeyedByN(vUri) ? ((h.kind === "hadith" || h.kind === "passage") && Number(h.n) > 0 ? Math.trunc(Number(h.n)) : null)', 'isKeyedByN(vUri) ? ((h.kind === "hadith" || h.kind === "passage") && Number(h.number) > 0 ? Math.trunc(Number(h.number)) : null)'], // re-anchored by 100L when #1663 (Forty Nawawi passages) changed this line
   notkeyedbyn: ["js/hadith-book-pages.js", 'key: "darimi", kind: "shamela", keyBy: "n",', 'key: "darimi", kind: "shamela",'],
   titlehadith: ["js/hadith-book-viewer.js", 'book.keyBy === "n" ? bookName : t(', 'false ? bookName : t('],
   nocredit: ["js/hadith-book-viewer.js", "? t(\"Printed text: Shamela Library, {edition}, vol. {vol}, p. {page}\", { edition, vol: num(String(info.volume ?? \"\")), page: num(String(info.page ?? \"\")) })", "? \"\""],
