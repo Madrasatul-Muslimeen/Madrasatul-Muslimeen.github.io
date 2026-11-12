@@ -64,7 +64,7 @@ for (const [lang, width, pct] of QUICK ? cells.filter((c) => c[1] === 360 && c[2
   // UPDATED IN PLACE (MSA · QR J136, 10 Nov 2026): the Word card row is the FIVE "Mark the Word" buttons (data-word-mark), not three marks.
   await page.waitForSelector(".quran-word-card [data-word-marks-row]", { timeout: 6000 }).catch(() => {});
   g = await geo(".quran-word-card [data-word-marks-row]", ".quran-word-card", "[data-word-mark]");
-  check(`${tag} Word card marks whole, inside, tall`, !g.none && g.n === 5 && g.cut.length === 0 && g.short === 0 && g.inside && g.over <= 0, JSON.stringify(g));
+  check(`${tag} Word card marks whole, inside, tall`, !g.none && g.n === 6 /* six since 12 Nov 2026: Little Difficult */ && g.cut.length === 0 && g.short === 0 && g.inside && g.over <= 0, JSON.stringify(g));
   if (width === 360 && pct === 200) await page.screenshot({ path: `/tmp/marks-k2-matrix-word-${lang}-360-200.png` }).catch(() => {});
   await ev(page, () => document.querySelector("[data-word-card-close]")?.click());
   await settle(page, 300);
