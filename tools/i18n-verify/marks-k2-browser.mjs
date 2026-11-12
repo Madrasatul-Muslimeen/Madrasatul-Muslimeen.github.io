@@ -131,7 +131,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   // three marks of the Āyah card; the seeded Done mark reads as Learned Easy, and Difficult is its own button. The saved keys are unchanged.
   await page.waitForSelector(".quran-word-card [data-word-marks-row]", { timeout: 6000 }).catch(() => {});
   m = await ev(page, () => [...document.querySelectorAll(".quran-word-card [data-word-mark]")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => ({ id: b.dataset.wordMark, on: b.getAttribute("aria-pressed") === "true" })));
-  check(`${tag} (3) the Word card shows the five marks, Learned Easy (the old Done) pressed`, m.length === 5 && m.map((x) => x.id).join() === "known,difficult,learn,easy,very" && m.filter((x) => x.on).map((x) => x.id).join() === "easy", JSON.stringify(m));
+  check(`${tag} (3) the Word card shows the six marks (Little Difficult added 12 Nov 2026), Learned Easy (the old Done) pressed`, m.length === 6 && m.map((x) => x.id).join() === "known,little,difficult,learn,easy,very" && m.filter((x) => x.on).map((x) => x.id).join() === "easy", JSON.stringify(m));
   const wb = (await writesOf(page)).length;
   await ev(page, () => [...document.querySelectorAll('.quran-word-card [data-word-mark="difficult"]')].find((b) => b.getBoundingClientRect().width > 0)?.click());
   await page.waitForFunction((n) => (window.__stubWriteData || []).filter((x) => x.col === "ayahKeyMarks").length > n, wb, { timeout: 5000 }).catch(() => {});

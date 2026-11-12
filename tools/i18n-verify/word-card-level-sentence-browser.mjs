@@ -36,6 +36,15 @@ const CIRC = 2 * Math.PI * 15;
 
 async function mutate(ctx) {
   if (!MUTATE) return;
+  // 12 Nov 2026 (the Owner: "make the percentage little bigger"): the ring was 60px (50px on a phone), the number 0.82rem (0.7rem).
+  if (MUTATE === "smallring") {
+    await ctx.route("**/quranrevival.html", async (route) => {
+      const res = await route.fetch();
+      const body = (await res.text()).replace("width: 68px; height: 68px; vertical-align: middle;", "width: 60px; height: 60px; vertical-align: middle;").replace("width: 58px; height: 58px; } .word-progress-percent-text { font-size: 0.78rem; }", "width: 50px; height: 50px; } .word-progress-percent-text { font-size: 0.7rem; }");
+      await route.fulfill({ response: res, body });
+    });
+    return;
+  }
   await ctx.route("**/js/quran-word-card.js", async (route) => {
     const res = await route.fetch();
     let body = await res.text();
@@ -87,7 +96,7 @@ const read = (page) => page.evaluate(() => {
       dash: arc ? Number(arc.getAttribute("stroke-dasharray").split(" ")[0]) : null,
       overflow: p ? p.scrollWidth - p.clientWidth : null,
       stroke: arc ? getComputedStyle(arc).stroke : null,
-      ringText: inRing?.textContent ?? null, outside,
+      ringText: inRing?.textContent ?? null, outside, numPx: inRing ? parseFloat(getComputedStyle(inRing).fontSize) : null,
       textInside: !!(rr && tr && tr.left >= rr.left - 0.5 && tr.right <= rr.right + 0.5 && tr.top >= rr.top - 0.5 && tr.bottom <= rr.bottom + 0.5),
       discBg: disc ? getComputedStyle(disc).backgroundColor : null, discText: disc?.textContent ?? null,
     };
@@ -122,6 +131,7 @@ for (const lang of ["en", "bn"]) {
       const a = ascii(v.text ?? "");
       check(`${tag} ${l}: the sentence starts with the level name "${NAMES[lang][l]}"`, (v.text ?? "").startsWith(NAMES[lang][l]), v.text);
       check(`${tag} ${l}: the percentage ${WANT[l]}% sits in the same sentence`, new RegExp(`(^|\\D)${WANT[l]}%`).test(a), v.text);
+      check(`${tag} ${l}: MUTATION TARGET (smallring): the percentage circle is a little bigger (at least ${width > 600 ? 66 : 56}px; the number inside it at least ${width > 600 ? 14 : 12}px) and the number still sits wholly inside it`, v.circle && v.size[0] >= (width > 600 ? 66 : 56) && v.numPx >= (width > 600 ? 14 : 12) && v.textInside, JSON.stringify({ size: v.size, numPx: v.numPx, inside: v.textInside }));
       check(`${tag} ${l}: the circle is drawn, at least 20px, labelled "${WANT[l]}%"`, v.circle && v.size[0] >= 20 && v.size[1] >= 20 && ascii(v.label ?? "") === `${WANT[l]}%`, JSON.stringify(v));
       check(`${tag} ${l}: "${WANT[l]}%" is written inside the circle`, ascii(v.ringText ?? "") === `${WANT[l]}%` && v.textInside, JSON.stringify({ t: v.ringText, inside: v.textInside }));
       check(`${tag} ${l}: the percentage is NOT printed a second time outside the circle`, !/%/.test(v.outside ?? "%"), v.outside);
