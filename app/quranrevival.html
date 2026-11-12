@@ -4901,7 +4901,8 @@
   /* QR Lead (24 Oct 2026, the MSA Architect's regression sweep): J72's ← Back (40px) joined line one, so at 390px the
      heading had 222px for 222.7px of text and wrapped again. Line one's three gaps go from 0.4rem to 0.25rem (+7.2px), so it
      is one line again from 390px; the 40px buttons are untouched. */
-  @media (max-width: 599.98px), (min-width: 900px) {
+  /* phone layout part 2 (11 Nov 2026): the ONE row [Location][Ayah][‹ ▶ ›][⋮] takes the whole line under the reference at EVERY width, so the header wraps from 600 to 899px too */
+  @media all {
     .ayah-sheet-header { flex-wrap: wrap; column-gap: 0.25rem; }
     .ayah-sheet-ref { order: 1; flex: 1 1 12rem; }
     .ayah-sheet-close, .ayah-sheet-homeback { order: 2; }
@@ -5147,6 +5148,21 @@
   .ayah-sheet-panes, .ayah-sheet-pane-info { display: contents; }
   .ayah-sheet-pane-text, .ayah-sheet-splitter, .ayah-sheet-squeezed { display: none; }
   .ayah-sheet-tilebar { display: block; }
+  .ayah-sheet-tilebar[hidden], .ayah-sheet-location[hidden] { display: none; }
+  /* MSA · QR phone layout part 2 (the Owner, 11 Nov 2026, demo v3): ONE row [📍 Location ▾][📖 Ayah][‹ ▶ ›][⋮] at every width. The two words
+     share what the 40px buttons leave and are cut with an ellipsis rather than wrapped; on a very narrow phone Location keeps just 📍 ▾. The ⋮
+     opens the tiles (Note, Writing sheet, QCR, Bookmark, Poster, Asma, Folder, Copy, Share), the Location button the six unit buttons. */
+  .ayah-sheet-header .ayah-sheet-head-tools:not([hidden]) { display: flex; flex-wrap: wrap; align-items: stretch; justify-content: stretch; gap: 0.25rem; flex: 1 0 100%; max-width: 100%; min-width: 0; }
+  .ayah-sheet-loc, .ayah-sheet-head-tools .ayah-sheet-noteview { flex: 1 1 auto; min-width: max-content; height: 40px; padding: 0 0.3rem; margin: 0; border: 1px solid var(--card-line); border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-heading); font: inherit; font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .ayah-sheet-loc[aria-expanded="true"], .ayah-sheet-more[aria-expanded="true"] { background: #1f3a6e; color: #fff; border-color: #1f3a6e; }
+  .ayah-sheet-more { flex: 0 0 40px; width: 40px; height: 40px; padding: 0; margin: 0; border: 1px solid var(--card-line); border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-heading); font-size: min(1.4rem, 26px); line-height: 1; cursor: pointer; }
+  .ayah-sheet-nav-pair { flex: 0 0 auto; }
+  .ayah-sheet-nav-play { font-size: 1.05rem; }
+  /* below 380px the two words do not both fit beside the 120px ‹ ▶ › and the 40px ⋮ (measured: Location needs about 100px, Ayah about 67px): Location keeps 📍 ▾ (its name stays in aria-label) and Ayah takes the rest */
+  @media (max-width: 379.98px) { .ayah-sheet-loc-label { display: none; } .ayah-sheet-loc { flex: 0 0 auto; padding: 0 0.55rem; } }
+  /* at large text (A+ 150-200%) four controls cannot share one line of a phone: each keeps its whole word (min-width: max-content) and ‹ ▶ › and ⋮ take a line of their own, never cut and never off the card */
+  .ayah-sheet-location { padding: 0.35rem 0 0.2rem; }
+  .ayah-sheet-tilebar[data-ayah-sheet-menu] .ayah-sheet-actrow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .ayah-sheet-pane-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .ayah-sheet-pane-max { width: 40px; height: 40px; border: 1px solid var(--card-line); border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-heading); font: inherit; font-size: 1.15rem; cursor: pointer; }
   .ayah-sheet-squeezed { align-items: center; gap: 0.5rem; width: 100%; min-height: 40px; padding: 0.3rem 0.7rem; border: 1px solid var(--card-line); border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-heading); font: inherit; font-weight: 600; cursor: pointer; text-align: start; }
@@ -22912,6 +22928,9 @@
         dlg.remove(); window.removeEventListener("keydown", onKey, true);
         const { half } = parseAyahUnitKey(unitKey);
         openAyahActionSheet(`${surah}:${ayah}`, half ?? null);
+        // phone layout part 2: 📋 Copy is a tile of the ⋮ menu, so the card comes back with ⋮ open and the keyboard on Copy.
+        const more = ayahActionSheetMountEl.querySelector("[data-ayah-sheet-more]");
+        if (more && more.getAttribute("aria-expanded") !== "true") more.click();
         ayahActionSheetMountEl.querySelector("[data-ayah-sheet-copy]")?.focus({ preventScroll: true });
       };
       const onKey = (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); close(); } };
@@ -24447,6 +24466,8 @@
       attachAyahActionSheetHandlers(ayahActionSheetMountEl, {
         onStep: (unitKey, dir) => { const n = ayahCardNeighbour(unitKey, dir); if (n) openAyahActionSheet(n.key, n.half); },
         onNoteView: (unitKey) => openAyahNoteViewPopup(unitKey),
+        // MSA · QR phone layout part 2: the ⋮ menu's Writing sheet, for this āyah -- the same choice the sheet's own "Show" applies to the Study Unit.
+        onWriting: (unitKey) => { const p = parseAyahUnitKey(unitKey); if (p) { rememberAyahCardReturn(unitKey); applyWritingSheetChoice({ type: "ayah", surah: p.surah, from: p.ayah, to: p.ayah }); } }, // the way-back law: "Back to Āyah card" (100L/101L review)
         onRelatedJump: (s, a) => { rememberAyahCardReturn(sheetKeyAtRender); navigateToAyah(s, a, "read"); },
         onHadithOpen: (i) => openRelatedHadith(sheetKeyAtRender, i),
         onClose: closeAyahActionSheet,

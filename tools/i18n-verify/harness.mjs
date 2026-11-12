@@ -148,3 +148,14 @@ export async function goReadOn(page) {
     const c = document.getElementById("readOnCheck"); if (c && !c.checked) c.click();
   });
 }
+
+/** MSA · QR phone layout part 2 (the Owner, 11 Nov 2026): the Āyah card's tiles (Note, Writing sheet, QCR, Bookmark, Poster, Asma, Folder, Copy,
+ *  Share) sit behind the card's ⋮ button. Press a tile the way a reader does: open ⋮ if the tile is not on screen, then click it. */
+export async function clickAyahTile(page, selector, options) {
+  const shown = await page.evaluate((s) => { const e = document.querySelector(s); return !!e && e.getClientRects().length > 0; }, selector);
+  if (!shown) {
+    await page.evaluate(() => { const b = document.querySelector("[data-ayah-sheet-more]"); if (b && b.getAttribute("aria-expanded") !== "true") b.click(); });
+    await page.waitForTimeout(150);
+  }
+  return page.click(selector, options);
+}

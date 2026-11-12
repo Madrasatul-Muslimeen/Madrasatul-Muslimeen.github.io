@@ -309,6 +309,7 @@ for (const lang of ["en", "bn"]) {
 
     // A Unit Card, from the Ayah Card's own ladder.
     await page.waitForFunction(() => !!document.querySelector('.unit-ladder-rung[data-unit-ladder-rung^="ruku:"]'), null, { timeout: 8000 }).catch(() => {});
+    await page.evaluate(() => { const b = document.querySelector("[data-ayah-sheet-location-btn]"); if (b && b.getAttribute("aria-expanded") !== "true") b.click(); }); /* UPDATED IN PLACE (phone layout part 2, 11 Nov 2026): the unit buttons sit behind the card's Location button */
     await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="ruku:"]');
     await page.waitForFunction(() => !!document.querySelector(".ayah-sheet.unit-card"), null, { timeout: 8000 }).catch(() => {});
     const unitSheet = await page.evaluate(() => {
@@ -400,7 +401,8 @@ for (const lang of ["en", "bn"]) {
   const ay = await read();
   check(`[${lang} student] the Ayah Card: the same five, and the teacher note`, ay?.stages === "not_started,learning,practising,achieved,not_applicable" && ay?.note === T[lang].mastered, JSON.stringify(ay));
   await page.waitForFunction(() => !!document.querySelector('.unit-ladder-rung[data-unit-ladder-rung^="ruku:"]'), null, { timeout: 8000 }).catch(() => {});
-  await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="ruku:"]');
+  await page.evaluate(() => { const b = document.querySelector("[data-ayah-sheet-location-btn]"); if (b && b.getAttribute("aria-expanded") !== "true") b.click(); }); /* UPDATED IN PLACE (phone layout part 2, 11 Nov 2026): the unit buttons sit behind the card's Location button */
+    await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="ruku:"]');
   await page.waitForFunction(() => !!document.querySelector(".ayah-sheet.unit-card"), null, { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(300);
   const un = await read();

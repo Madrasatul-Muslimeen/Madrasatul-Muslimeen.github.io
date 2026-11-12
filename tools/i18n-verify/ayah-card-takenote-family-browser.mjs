@@ -12,6 +12,7 @@
 //                       changes nothing the suite can see; kept so its anchor still names the code.
 //   --mutate=self-only  claimApproachStatus writes only for the Student -> the two-person check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { clickAyahTile } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -72,14 +73,14 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [128
   // a Note already -> the pane listing it. Both carry "← Back to Āyah card" on the pane's bar.
   const paneFrame = async () => { for (let i = 0; i < 80; i++) { const f = P.frames().find((x) => /journey-map\.html\?embed=1&unit=ayah%3A2%3A/.test(x.url())); if (f) return f; await P.waitForTimeout(100); } return null; };
   await openCard(P, 255);
-  const doors = await ev(() => ({ note: document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-note]").length, isNew: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), take: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-takenote]"), pen: [...document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-actions] button")].some((b) => b.textContent.includes("✍")) }));
+  const doors = await ev(() => ({ note: document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-note]").length, isNew: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), take: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-takenote]"), pen: [...document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-actions] button")].some((b) => b.textContent.includes("✍") && !b.hasAttribute("data-ayah-sheet-writing")) /* UPDATED IN PLACE (phone layout part 2): ✍ is the Writing sheet tile's icon now; no OTHER ✍ button may exist */ }));
   check(`${tag} the card has ONE 📝 Note (no separate ✍ Take Note), and with no Note yet it is the take-a-note door`, doors.note === 1 && doors.isNew && !doors.take && !doors.pen, JSON.stringify(doors));
   // UPDATED IN PLACE (J108, v13.01, the Owner: "Q2:A. Q3. Build it."), reason recorded: both doors now open the shared Note
   // opener -- a NEW Note at once, the Āyah inside it, its toolbar's ← carrying "Back to Āyah card". With earlier Notes the
   // opener says "You have N other Notes on this āyah — open", and "open" is the Notes pane listing them (the old plain door).
   const openerFrame = async (a) => { for (let i = 0; i < 80; i++) { const f = P.frames().find((x) => new RegExp(`journey-map\\.html\\?embed=1&new=1&unit=ayah%3A2%3A${a}`).test(x.url())); if (f) return f; await P.waitForTimeout(100); } return null; };
   const backWord = lang === "bn" ? "আয়াত কার্ডে ফিরুন" : "Back to Āyah card";
-  await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  await clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-note]");
   const F = await openerFrame(255);
   await F?.waitForSelector("[data-edit-body] .mm-ref", { timeout: 20000 }).catch(() => {});
   await P.waitForTimeout(500);
@@ -98,7 +99,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [128
   await P.waitForTimeout(700);
   const nowHas = await ev(() => ({ isNew: !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), label: document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note]")?.getAttribute("aria-label") }));
   check(`${tag} on 2:256, which has a Note, the card's one 📝 Note is "Note & more…", not the take-a-note door`, !nowHas.isNew && nowHas.label === (lang === "bn" ? "নোট ও আরও…" : "Note & more…"), JSON.stringify(nowHas));
-  await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  await clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-note]");
   await P.waitForSelector("#noteOpener:not([hidden]) [data-no-count-open]", { timeout: 20000 }).catch(() => {});
   const line = await ev(() => document.querySelector("#noteOpener [data-no-count]")?.textContent ?? "");
   check(`${tag} ...it opens a new Note with "You have 1 other Note on this āyah — open"`, lang === "bn" ? /১টি নোট/.test(line) : /You have 1 other Note on this āyah/.test(line), line);

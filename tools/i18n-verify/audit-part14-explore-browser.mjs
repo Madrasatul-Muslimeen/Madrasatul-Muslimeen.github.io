@@ -340,7 +340,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await ev(page, () => { const el = document.getElementById("ayahSelect"); el.value = "255"; el.dispatchEvent(new Event("change", { bubbles: true })); });
     await settle(page, 900);
     await ev(page, () => document.querySelector('[data-ayah-num-badge="2:255"]')?.click());
-    await page.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-qcr]", { timeout: 8000 });
+    await page.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-qcr]", { timeout: 8000, state: "attached" });
     await settle(page, 400);
     const unit = await ev(page, () => document.querySelector("[data-ayah-sheet]").dataset.unitKey);
     await ev(page, () => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-qcr]").click());
