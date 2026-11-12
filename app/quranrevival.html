@@ -8022,6 +8022,7 @@
     // PCF MSA J119 -- words the Qur'an shares with Bangla (Word Card button + list; marks stay on this device until the Rules are published).
     import { loadBanglaState, saveBanglaState, setBanglaWord, setBanglaWheel, banglaWheelPlan, activeBanglaSet, banglaFigures, banglaTagText } from "./js/bangla-words.js";
     import { banglaBlockHtml, wireBanglaBlock, banglaWheelSwitchesHtml, wireBanglaWheelSwitches, BANGLA_CSS } from "./js/bangla-words-ui.js";
+    import { TITLE_LINE_CSS } from "./js/title-line.js";
     import { marksRowHtml, wireMarksRow, wheelPieces, marksWheelHtml, wireMarksWheel, marksLegendHtml, MARKS_CSS, MARKS_WHEEL_VIEWS } from "./js/marks-ui.js";
     import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
     import { renderReadNext } from "./js/read-next-ui.js"; // J03 K3 "Study Next" (was "Read next") on the Āyah card and the Word card
@@ -18744,6 +18745,7 @@
         tasrifGated: t("Saving Taṣrīf marks waits for one settings step by the Owner."),
         tasrifNotApplicable: t("Not applicable"),
         levelNameTasrif: t("Taṣrīf"),
+        stepByStep: t("Step-by-Step Learning"),
         meaningsOfWord: t("Meanings of this word, {word}"),
         meaningsOfWordNote: t("How the Qur'an's word-by-word translation renders it, grouped by its main English word."),
         meaningsOfWordOne: t("The word-by-word translation renders this word one way throughout the Qur'an."),
@@ -24221,7 +24223,7 @@
         onOnOff: (on) => { banglaCardOn = on; if (quranWordCardState?.open) renderPersistentWordCard(); }, // J134: the card's own switch, never saved
       });
     }
-    const marksStyleEl = document.createElement("style"); marksStyleEl.textContent = MARKS_CSS + WORD_EFFORT_CSS; document.head.appendChild(marksStyleEl);
+    const marksStyleEl = document.createElement("style"); marksStyleEl.textContent = MARKS_CSS + WORD_EFFORT_CSS + TITLE_LINE_CSS; document.head.appendChild(marksStyleEl);
     let marksStore = { id: "", mine: {}, mineEffort: {}, state: "idle" }, marksBusy = new Set(), marksWheelView = "ayat", wordEffortNote = { unitKey: "", text: "" };
     // J03 (the Owner, 5 Nov 2026): Monitor's "Show on wheel" opens Quran Study with ?surah=&keysFor=<personId>&back=1: the Marks wheel
     // shows THAT student's marks, read-only (a teacher / guardian / owner reads them, the Rules' call). Nothing here ever writes.
@@ -24264,11 +24266,11 @@
     // MSA · QR J135 (the Owner, 9 Nov 2026): on the Word card the marks read Difficult · Learn · Learned (the same saved marks as
     // Difficult · Need practice · Done on the Āyah card and the Marks wheel).
     function wordMarkNames() { return { practice: t("Learn"), done: t("Learned") }; }
-    function marksRowFor(unitKey, surah, heading, names = null) {
+    function marksRowFor(unitKey, surah, heading, names = null, ariaLabel = "") {
       if (!marksCtx()) return "";
       ensureSurahMarks(surah);
       if (!marksReadyFor(surah)) return "";
-      return marksRowHtml({ unitKey, keys: marksStore.mine[unitKey] ?? [], lang: marksLang(), heading, busy: marksBusy.has(unitKey), names });
+      return marksRowHtml({ unitKey, keys: marksStore.mine[unitKey] ?? [], lang: marksLang(), heading, busy: marksBusy.has(unitKey), names, ariaLabel });
     }
     // MSA · QR J136 (the Owner, 10 Nov 2026: "Approved with recommended"): ONE "Mark the Word" set on the Word card --
     // Already Known · Difficult · Learn · Learned Easy · Very Hard (js/word-effort.js). Difficult / Learn / Learned Easy are
@@ -24387,7 +24389,7 @@
         connected: ayahSheetConnected,
         hadith: ayahSheetHadith,
         ladderHtml,
-        marksHtml: isOpeningSheet ? "" : (() => { const r = parseAyahUnitKey(ayahSheetUnitKey).record ?? ayahNum; return marksRowFor(`ayah:${surah}:${r}`, surah, t("Marks for this āyah")); })(),
+        marksHtml: isOpeningSheet ? "" : (() => { const r = parseAyahUnitKey(ayahSheetUnitKey).record ?? ayahNum; return marksRowFor(`ayah:${surah}:${r}`, surah, "", null, t("Level of Difficulty")); })(),
         canPrev: !!ayahCardNeighbour(ayahSheetUnitKey, -1),
         canNext: !!ayahCardNeighbour(ayahSheetUnitKey, 1),
         // PCF MSA J70 -- the left pane of the card as a window: the āyah's own text, from the sūrah already on screen.
