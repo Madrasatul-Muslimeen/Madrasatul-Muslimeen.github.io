@@ -84,7 +84,9 @@ function readout(scope) {
   const vis = (e) => { const r = e.getBoundingClientRect(), c = getComputedStyle(e); return (r.width > 0 && r.height > 0 && c.visibility !== "hidden" && c.display !== "none" && !e.closest("[hidden]") && !folded(e)); };
   // The Qur'an's own text, its translations and the reader's own data are CONTENT, not interface: not read here.
   // (A card that sits INSIDE the Read view is read: only content between the card and its scope is skipped.)
-  const CONTENT = "script, style, svg, canvas, option, #readView, #readScroll, .mushaf, [data-word-occurrence], .ayah-sheet-ar, .ayah-sheet-tr, [data-content], [lang=ar], .note-card-title, .word-card-gloss-segment, .word-card-learnnext-line, .word-card-meaning, .note-pane-title, [data-pane-body], .ayah-ft-tr p";
+  const CONTENT = "script, style, svg, canvas, option, #readView, #readScroll, .mushaf, [data-word-occurrence], .ayah-sheet-ar, .ayah-sheet-tr, [data-content], [lang=ar], .note-card-title, .word-card-gloss-segment, .word-card-learnnext-line, .word-card-meaning, .note-pane-title, [data-pane-body], .ayah-ft-tr p, .title-line .tl-tr";
+  // #1659 (100L review): the gold title line's transliteration ("Mustawa al-Ṣuʿūbah", "Tadarruj") is the title itself and stays in every
+  // language (the Owner's demo, data-i18n-skip); its English part (.tl-en) is still read here and must turn Bangla.
   const notInterface = (e) => { const c = e.closest(CONTENT); return !!c && !c.contains(root); };
   const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   for (let n = w.nextNode(); n; n = w.nextNode()) {
