@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.28",
+    "version": "14.29",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7025,8 +7025,20 @@
     {
       "version": "14.28",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Gold title lines (#1659), Darimi/Forty Nawawi/Ahmad/Nasa'i printed pages (#1662, #1663, #1665, #1668), Bukhari My index (#1664); reviewed by 100L.",
+      "integration": {
+        "authorizedOn": "2026-11-12",
+        "integratedOn": "2026-11-12",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "14.29",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Owner's 12 Nov asks (#1670), printed pages as a PDF (#1657), Arabic twice its size (#1671); reviewed by 100L.",
       "integration": {
         "authorizedOn": "2026-11-12",
         "integratedOn": "2026-11-12",
@@ -7035,8 +7047,9 @@
       }
     }
   ],
-  "nextUnallocated": "14.29",
+  "nextUnallocated": "14.30",
   "nextUnallocatedNote": [
+    "v14.29 was allocated to Little Difficult, Read on word tap and bookmarks, printed pages as a PDF, Arabic twice its size, 2026-11-12.",
     "v14.28 was allocated to gold title lines, four Hadith printed-page books and Bukhari My index, 2026-11-12.",
     "v14.27 was allocated to keeping printed Mushaf pages in the app, 2026-11-12.",
     "v14.26 was allocated to the Printed page view, the QR debt round and Riyad al-Salihin's printed page, 2026-11-11.",
