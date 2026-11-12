@@ -21363,6 +21363,25 @@
       hydrateWordCardLemmaExtras();
     }
 
+    // The Owner, 12 Nov 2026 (a photo of Read on running from Al-Hijr into An-Nahl: "below the Surah line those words do not popup
+    // to Word Card while above ones do"): Read on carries on past the end of a sūrah, so the flow holds words of a sūrah that is
+    // NOT the current one, and the persistent Word Card draws only for the current sūrah (renderPersistentWordCard), so a tap
+    // opened nothing. A word of another sūrah now makes its sūrah the current one first (the same step "go to its āyah" takes),
+    // opens the card, and leaves a way back to the place the reader was (the way-back law).
+    async function openWordCardFromRead(occurrenceId, triggerEl) {
+      let ref = null;
+      try { ref = parseQuranWordOccurrenceId(occurrenceId); } catch { ref = null; }
+      if (!ref || ref.surah === currentSurahNum) { openWordCardForOccurrenceId(occurrenceId, triggerEl); return; }
+      const was = { surah: currentSurahNum, ayah: currentAyahNum, scrollY: readViewScrollTop() };
+      await navigateToAyah(ref.surah, ref.ayah, "read");
+      openWordCardForOccurrenceId(occurrenceId, null);
+      setAppReturn(t("Back to {ref}", { ref: `${surahDisplayName(was.surah)} ${was.ayah}` }), `${was.surah}:${was.ayah}`, async () => {
+        quranWordCardState = closeWordCard(quranWordCardState); clearWordCardMounts();
+        await navigateToAyah(was.surah, was.ayah, "read");
+        setReadViewScrollTop(was.scrollY);
+      });
+    }
+
     // v08.20 -- the Read view and the Note view share ONE set of handlers.
     // Neither is named inside them: every lookup goes through
     // activeWordCardMount(), so the card behaves identically in both.
@@ -21380,7 +21399,7 @@
     document.getElementById(viewId).addEventListener("click", (event) => {
       if (!(event.target instanceof Element)) return;
       const occurrence = event.target.closest("[data-word-occurrence]");
-      if (occurrence) { openWordCardForOccurrenceId(occurrence.dataset.wordOccurrence, occurrence); return; }
+      if (occurrence) { openWordCardFromRead(occurrence.dataset.wordOccurrence, occurrence); return; }
       // Issue #286 -- (a) the Mushaf page's own round ayah-end marker.
       const ayahMarker = event.target.closest("[data-ayah-marker]");
       if (ayahMarker) { openAyahActionSheet(ayahMarker.dataset.ayahMarker, mushafMarkerHalf(ayahMarker)); return; }
