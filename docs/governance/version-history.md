@@ -1129,3 +1129,5 @@ total). Allocated by the MMSA Architect.
 14.24: Hadith Original book page (scan pop-up), five books, Dua cards. Allocated by the MMSA Architect.
 14.25: Hadith printed page on Shamela: Muwatta, al-Adab al-Mufrad. Allocated by the MMSA Architect.
 14.26: the Printed page view, the QR debt round and Riyad al-Salihin's printed page. Allocated by the MMSA Architect.
+14.27: keeping printed Mushaf pages in the app. Allocated by the MMSA Architect.
+14.28: gold title lines, four Hadith printed-page books and Bukhari My index. Allocated by the MMSA Architect.

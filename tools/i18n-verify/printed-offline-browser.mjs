@@ -113,7 +113,7 @@ try {
     if (width === 390) { await page.evaluate(() => document.getElementById("printedOfflineBox").scrollIntoView({ block: "center" })); await page.waitForTimeout(200); await page.screenshot({ path: `${process.env.SHOTS || "/tmp"}/printed-offline-${lang}-${width}.png` }); }
 
     // ---- 2. keep Juz 1
-    await page.click("#printedOfflineSave");
+    await page.click("#printedOfflineSave").catch(() => {}); // 99L review: a mutation that hides the button is a counted FAIL below, not a crash
     await page.waitForFunction(() => /Kept in the app:|অ্যাপে রাখা হয়েছে:/.test(document.getElementById("printedOfflineStatus")?.textContent ?? ""), null, { timeout: 30000 }).catch(() => {});
     const status = await page.evaluate(() => document.getElementById("printedOfflineStatus")?.textContent ?? "");
     check(`${tag} the keep ends "Kept in the app: … (size)" with the real size`, (lang === "bn" ? /অ্যাপে রাখা হয়েছে:.*\(.*(এমবি|MB)/ : /Kept in the app: Juz 1 \([\d.]+ MB\)/).test(status), status);
@@ -145,7 +145,7 @@ try {
     await ctx.setOffline(false); net = true;
 
     // ---- 5. Remove
-    await page.click("#printedOfflineRemove");
+    await page.click("#printedOfflineRemove").catch(() => {}); // 99L review: as above
     await page.waitForFunction(() => !document.getElementById("printedOfflineRemove"), null, { timeout: 8000 }).catch(() => {});
     check(`${tag} Remove: the cache holds none of the pages`, (await cacheKeys(page)).length === 0, JSON.stringify((await cacheKeys(page)).length));
     const afterRm = await page.evaluate(() => document.getElementById("printedOfflineTotal")?.textContent ?? "");
@@ -156,7 +156,7 @@ try {
 
     // ---- 6. a failure part-way
     failPage = 8;
-    await page.click("#printedOfflineSave");
+    await page.click("#printedOfflineSave").catch(() => {}); // 99L review: as above (MUT=noremove left Save hidden and hung here)
     await page.waitForFunction(() => /Could not keep|রাখা যায়নি/.test(document.getElementById("printedOfflineStatus")?.textContent ?? ""), null, { timeout: 30000 }).catch(() => {});
     const bad = await page.evaluate(() => ({ text: document.getElementById("printedOfflineStatus")?.textContent ?? "", role: document.getElementById("printedOfflineStatus")?.getAttribute("role"), save: !!document.getElementById("printedOfflineSave"), total: document.getElementById("printedOfflineTotal")?.textContent ?? "" }));
     check(`${tag} a page that cannot be fetched: the keep says so in words (role=alert)`, /Could not keep these pages|এই পৃষ্ঠাগুলো রাখা যায়নি/.test(bad.text) && bad.role === "alert", JSON.stringify(bad));

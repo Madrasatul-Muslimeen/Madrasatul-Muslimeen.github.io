@@ -3441,6 +3441,14 @@ export const BN = {
   "You can view this, but only the person's own record can record progress.": "আপনি এটি দেখতে পারেন, কিন্তু অগ্রগতি শুধু সেই ব্যক্তির নিজের রেকর্ডে লেখা যায়।", // ?
   "Not saved: {why}": "সংরক্ষিত হয়নি: {why}", // ?
   "Page {n} of {total}": "পৃষ্ঠা {n} / {total}", // ?
+  "Which index": "কোন সূচি",
+  "Original index": "মূল সূচি",
+  "My index": "আমার সূচি",
+  "Show what the app holds": "অ্যাপে কী আছে দেখান",
+  "Proposed Bangla name": "প্রস্তাবিত বাংলা নাম",
+  "{b} books · {h} hadith": "{b}টি কিতাব · {h}টি হাদীস",
+  "Arabic {a} · English {e} · Bangla {b}": "আরবি {a} · ইংরেজি {e} · বাংলা {b}",
+  "Could not load this index. {msg}": "এই সূচি লোড করা যায়নি। {msg}",
   "Show more ({remaining} more)": "আরও দেখুন (আরও {remaining}টি)", // ?
   "Hadith {n}": "হাদীস {n}", // ?
   "Passage {n} (position in this edition, not the book's own number)": "অংশ {n} (এই সংস্করণে অবস্থান, বইয়ের নিজস্ব নম্বর নয়)", // ?
@@ -4603,6 +4611,8 @@ export const BN = {
   "Fill by all words up to it": "এ পর্যন্ত সব শব্দ দিয়ে ভরুন",
   "Green: the words of a step you know. ✓: every word of the step known.": "সবুজ: ধাপের যে শব্দগুলো আপনি জানেন। ✓: ধাপের সব শব্দ জানা।",
   "Marks": "চিহ্ন",
+  "Level of Difficulty": "কঠিনতার স্তর",
+  "Step-by-Step Learning": "ধাপে ধাপে শেখা",
   "Marks for this āyah": "এই আয়াতের চিহ্ন",
   "Marks wheel": "চিহ্নের চাকা",
   "Sign in as yourself to see your marks.": "আপনার চিহ্ন দেখতে নিজের পরিচয়ে সাইন ইন করুন।",

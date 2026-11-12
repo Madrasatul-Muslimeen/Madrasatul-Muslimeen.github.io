@@ -1,0 +1,1531 @@
+{
+ "schemaVersion": 1,
+ "kind": "hadith-alternate-index",
+ "collection": "bukhari",
+ "versionUri": "0256Bukhari.Sahih.JK000110-ara1",
+ "numbering": "standard hadith number (the concordance's cite)",
+ "source": "The Owner's Bukhari MyIndex sheet (claude.ai artifact XnZTCs6XzRS9ntHcXbaq4v), read 12 Nov 2026. Book 46's Bangla name is cut short in the sheet and Book 65's range was blank there (filled from the standard numbering): both await the Owner.",
+ "groups": [
+  {
+   "en": "MINDSET (Eemaan, Tawheed, Taqwa, Tawaqqul)",
+   "ar": "العقيدة والقلب (الإيمان، التوحيد، التقوى، التوكل)",
+   "bn": "মানসিকতা (ঈমান, তাওহীদ, তাক্বওয়া, তাওয়াক্কুল)",
+   "bnProposed": true,
+   "books": [
+    1,
+    2,
+    59,
+    97,
+    82
+   ]
+  },
+  {
+   "en": "WAHEE (Quran and Hadith)",
+   "ar": "الوحي (القرآن والحديث)",
+   "bn": "ওয়াহী (কুরআন ও হাদীস)",
+   "bnProposed": true,
+   "books": [
+    3,
+    66,
+    65,
+    96
+   ]
+  },
+  {
+   "en": "PROPHETS / SAHABA",
+   "ar": "الأنبياء والصحابة",
+   "bn": "নবী ও সাহাবীগণ",
+   "bnProposed": true,
+   "books": [
+    60,
+    61,
+    29,
+    62,
+    63
+   ]
+  },
+  {
+   "en": "RITUALS – Salah",
+   "ar": "العبادات – الصلاة",
+   "bn": "ইবাদত – সলাত",
+   "bnProposed": true,
+   "books": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    31,
+    32,
+    33,
+    80,
+    24,
+    25,
+    26,
+    27,
+    28,
+    30
+   ]
+  },
+  {
+   "en": "HUDUD / STATE LAW / Functions",
+   "ar": "الحدود وأحكام الدولة ووظائفها",
+   "bn": "দণ্ডবিধি / রাষ্ট্রীয় আইন / দায়িত্ব",
+   "bnProposed": true,
+   "books": [
+    93,
+    52,
+    53,
+    44,
+    46,
+    54,
+    56,
+    64,
+    57,
+    58,
+    86,
+    87,
+    88,
+    89,
+    90
+   ]
+  },
+  {
+   "en": "FAMILY LAW & Family Affairs",
+   "ar": "أحكام الأسرة وشؤونها",
+   "bn": "পারিবারিক আইন ও পারিবারিক বিষয়",
+   "bnProposed": true,
+   "books": [
+    85,
+    55,
+    83,
+    84,
+    67,
+    68,
+    69
+   ]
+  },
+  {
+   "en": "DEEN (The WAY of LIFE) – Business, Trade, Economy",
+   "ar": "الدين منهج الحياة – البيوع والتجارة والاقتصاد",
+   "bn": "দ্বীন (জীবনবিধান) – ব্যবসা, বাণিজ্য, অর্থনীতি",
+   "bnProposed": true,
+   "books": [
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    47,
+    43,
+    48,
+    49,
+    50
+   ]
+  },
+  {
+   "en": "DEEN (The WAY of LIFE) – Daily Life & Occasions",
+   "ar": "الدين منهج الحياة – الحياة اليومية والمناسبات",
+   "bn": "দ্বীন (জীবনবিধান) – দৈনন্দিন জীবন ও উপলক্ষ",
+   "bnProposed": true,
+   "books": [
+    70,
+    74,
+    77,
+    78,
+    79,
+    81,
+    94,
+    71,
+    72,
+    73,
+    51,
+    95,
+    45,
+    75,
+    76,
+    91,
+    92
+   ]
+  }
+ ],
+ "books": {
+  "1": {
+   "en": "Revelation",
+   "ar": "كتاب بدء الوحي",
+   "bn": "ওয়াহয়ীর সূচনা",
+   "first": 1,
+   "last": 7,
+   "note": "",
+   "held": {
+    "range": 7,
+    "ar": 7,
+    "en": 7,
+    "bn": 7
+   }
+  },
+  "2": {
+   "en": "Belief",
+   "ar": "كتاب الإيمان",
+   "bn": "ঈমান (বিশ্বাস)",
+   "first": 8,
+   "last": 58,
+   "note": "",
+   "held": {
+    "range": 51,
+    "ar": 51,
+    "en": 51,
+    "bn": 51
+   }
+  },
+  "3": {
+   "en": "Knowledge",
+   "ar": "كتاب العلم",
+   "bn": "আল-ইলম (ধর্মীয় জ্ঞান)",
+   "first": 59,
+   "last": 134,
+   "note": "",
+   "held": {
+    "range": 76,
+    "ar": 76,
+    "en": 76,
+    "bn": 76
+   }
+  },
+  "4": {
+   "en": "Ablutions (Wudu')",
+   "ar": "كتاب الوضوء",
+   "bn": "উযূ",
+   "first": 135,
+   "last": 247,
+   "note": "",
+   "held": {
+    "range": 113,
+    "ar": 109,
+    "en": 113,
+    "bn": 111
+   }
+  },
+  "5": {
+   "en": "Bathing (Ghusl)",
+   "ar": "كتاب الغسل",
+   "bn": "গোসল",
+   "first": 248,
+   "last": 293,
+   "note": "",
+   "held": {
+    "range": 46,
+    "ar": 45,
+    "en": 46,
+    "bn": 46
+   }
+  },
+  "6": {
+   "en": "Menstrual Periods",
+   "ar": "كتاب الحيض",
+   "bn": "হায়েয [ঋতুস্রাব]",
+   "first": 294,
+   "last": 333,
+   "note": "",
+   "held": {
+    "range": 40,
+    "ar": 37,
+    "en": 40,
+    "bn": 40
+   }
+  },
+  "7": {
+   "en": "Rubbing hands and feet with dust (Tayammum)",
+   "ar": "كتاب التيمم",
+   "bn": "তায়াম্মুম",
+   "first": 334,
+   "last": 348,
+   "note": "",
+   "held": {
+    "range": 15,
+    "ar": 15,
+    "en": 15,
+    "bn": 15
+   }
+  },
+  "8": {
+   "en": "Prayers (Salat)",
+   "ar": "كتاب الصلاة",
+   "bn": "সলাত",
+   "first": 349,
+   "last": 520,
+   "note": "",
+   "held": {
+    "range": 172,
+    "ar": 156,
+    "en": 172,
+    "bn": 172
+   }
+  },
+  "9": {
+   "en": "Times of the Prayers",
+   "ar": "كتاب مواقيت الصلاة",
+   "bn": "সলাতের সময়সমূহ",
+   "first": 521,
+   "last": 602,
+   "note": "",
+   "held": {
+    "range": 82,
+    "ar": 77,
+    "en": 82,
+    "bn": 82
+   }
+  },
+  "10": {
+   "en": "Call to Prayers (Adhaan)",
+   "ar": "كتاب الأذان",
+   "bn": "আযান",
+   "first": 603,
+   "last": 875,
+   "note": "",
+   "held": {
+    "range": 273,
+    "ar": 258,
+    "en": 273,
+    "bn": 272
+   }
+  },
+  "11": {
+   "en": "Friday Prayer",
+   "ar": "كتاب الجمعة",
+   "bn": "জুমু‘আহ",
+   "first": 876,
+   "last": 941,
+   "note": "",
+   "held": {
+    "range": 66,
+    "ar": 64,
+    "en": 66,
+    "bn": 66
+   }
+  },
+  "12": {
+   "en": "Fear Prayer",
+   "ar": "كتاب صلاة الخوف",
+   "bn": "খাওফ (শত্রুভীতির অবস্থায় সলাত)",
+   "first": 942,
+   "last": 947,
+   "note": "",
+   "held": {
+    "range": 6,
+    "ar": 6,
+    "en": 6,
+    "bn": 6
+   }
+  },
+  "13": {
+   "en": "The Two Festivals (Eids)",
+   "ar": "كتاب العيدين",
+   "bn": "দুই ‘ঈদ",
+   "first": 948,
+   "last": 989,
+   "note": "",
+   "held": {
+    "range": 42,
+    "ar": 40,
+    "en": 42,
+    "bn": 42
+   }
+  },
+  "14": {
+   "en": "Witr Prayer",
+   "ar": "كتاب الوتر",
+   "bn": "বিতর",
+   "first": 990,
+   "last": 1004,
+   "note": "",
+   "held": {
+    "range": 15,
+    "ar": 14,
+    "en": 15,
+    "bn": 15
+   }
+  },
+  "15": {
+   "en": "Invoking Allah for Rain (Istisqaa)",
+   "ar": "كتاب الاستسقاء",
+   "bn": "পানি প্রার্থনা",
+   "first": 1005,
+   "last": 1039,
+   "note": "",
+   "held": {
+    "range": 35,
+    "ar": 33,
+    "en": 35,
+    "bn": 35
+   }
+  },
+  "16": {
+   "en": "Eclipses",
+   "ar": "كتاب الكسوف",
+   "bn": "সূর্যগ্রহণ",
+   "first": 1040,
+   "last": 1066,
+   "note": "Last No. was 1065; set 1066 so the numbers run on with no gap or overlap",
+   "held": {
+    "range": 27,
+    "ar": 24,
+    "en": 27,
+    "bn": 27
+   }
+  },
+  "17": {
+   "en": "Prostration During Recital of Qur'an",
+   "ar": "كتاب سجود القرآن",
+   "bn": "কুরআন তিলাওয়াতের সাজদাহ",
+   "first": 1067,
+   "last": 1079,
+   "note": "",
+   "held": {
+    "range": 13,
+    "ar": 13,
+    "en": 13,
+    "bn": 13
+   }
+  },
+  "18": {
+   "en": "Shortening the Prayers (At-Taqseer)",
+   "ar": "كتاب تقصير الصلاة",
+   "bn": "সলাত ক্বসর করা",
+   "first": 1080,
+   "last": 1119,
+   "note": "",
+   "held": {
+    "range": 40,
+    "ar": 39,
+    "en": 40,
+    "bn": 40
+   }
+  },
+  "19": {
+   "en": "Prayer at Night (Tahajjud)",
+   "ar": "كتاب التهجد",
+   "bn": "তাহাজ্জুদ",
+   "first": 1120,
+   "last": 1187,
+   "note": "",
+   "held": {
+    "range": 68,
+    "ar": 62,
+    "en": 68,
+    "bn": 68
+   }
+  },
+  "20": {
+   "en": "Virtues of Prayer at Masjid Makkah and Madinah",
+   "ar": "كتاب فضل الصلاة في مسجد مكة والمدينة",
+   "bn": "মাক্কাহ ও মাদীনাহর মাসজিদে সলাতের মর্যাদা",
+   "first": 1188,
+   "last": 1197,
+   "note": "",
+   "held": {
+    "range": 10,
+    "ar": 8,
+    "en": 10,
+    "bn": 10
+   }
+  },
+  "21": {
+   "en": "Actions while Praying",
+   "ar": "كتاب العمل في الصلاة",
+   "bn": "সলাতের সাথে সংশ্লিষ্ট কাজ",
+   "first": 1198,
+   "last": 1223,
+   "note": "",
+   "held": {
+    "range": 26,
+    "ar": 26,
+    "en": 26,
+    "bn": 26
+   }
+  },
+  "22": {
+   "en": "Forgetfulness in Prayer",
+   "ar": "كتاب السهو",
+   "bn": "সাহু সিজদা",
+   "first": 1224,
+   "last": 1236,
+   "note": "",
+   "held": {
+    "range": 13,
+    "ar": 13,
+    "en": 13,
+    "bn": 13
+   }
+  },
+  "23": {
+   "en": "Funerals (Al-Janaa'iz)",
+   "ar": "كتاب الجنائز",
+   "bn": "জানাযা",
+   "first": 1237,
+   "last": 1394,
+   "note": "",
+   "held": {
+    "range": 158,
+    "ar": 149,
+    "en": 158,
+    "bn": 157
+   }
+  },
+  "24": {
+   "en": "Zakah",
+   "ar": "كتاب الزكاة",
+   "bn": "যাকাত",
+   "first": 1395,
+   "last": 1512,
+   "note": "",
+   "held": {
+    "range": 118,
+    "ar": 110,
+    "en": 118,
+    "bn": 118
+   }
+  },
+  "25": {
+   "en": "Hajj",
+   "ar": "كتاب الحج",
+   "bn": "হাজ্জ/হজ্জ",
+   "first": 1513,
+   "last": 1772,
+   "note": "Last No. was 1771; set 1772 so the numbers run on with no gap or overlap",
+   "held": {
+    "range": 260,
+    "ar": 239,
+    "en": 260,
+    "bn": 260
+   }
+  },
+  "26": {
+   "en": "‘Umrah",
+   "ar": "كتاب العمرة",
+   "bn": "উমরাহ",
+   "first": 1773,
+   "last": 1805,
+   "note": "",
+   "held": {
+    "range": 33,
+    "ar": 29,
+    "en": 33,
+    "bn": 33
+   }
+  },
+  "27": {
+   "en": "Pilgrims Prevented from Completing the Pilgrimage",
+   "ar": "كتاب المحصر",
+   "bn": "পথে আটকে পড়া ও ইহরাম অবস্থায় শিকারকারীর বিধান",
+   "first": 1806,
+   "last": 1820,
+   "note": "",
+   "held": {
+    "range": 15,
+    "ar": 13,
+    "en": 15,
+    "bn": 15
+   }
+  },
+  "28": {
+   "en": "Penalty of Hunting while on Pilgrimage",
+   "ar": "كتاب جزاء الصيد",
+   "bn": "ইহরাম অবস্থায় শিকার এবং অনুরূপ কিছুর বদলা",
+   "first": 1821,
+   "last": 1866,
+   "note": "",
+   "held": {
+    "range": 46,
+    "ar": 43,
+    "en": 46,
+    "bn": 46
+   }
+  },
+  "29": {
+   "en": "Virtues of Madinah",
+   "ar": "كتاب فضائل المدينة",
+   "bn": "মদীনার ফাযীলাত",
+   "first": 1867,
+   "last": 1890,
+   "note": "",
+   "held": {
+    "range": 24,
+    "ar": 24,
+    "en": 24,
+    "bn": 24
+   }
+  },
+  "30": {
+   "en": "Sawm",
+   "ar": "كتاب الصوم",
+   "bn": "সাওম/রোযা",
+   "first": 1891,
+   "last": 2007,
+   "note": "",
+   "held": {
+    "range": 117,
+    "ar": 111,
+    "en": 117,
+    "bn": 116
+   }
+  },
+  "31": {
+   "en": "Praying at Night in Ramadaan (Taraweeh)",
+   "ar": "كتاب صلاة التراويح",
+   "bn": "তারাবীহর সালাত",
+   "first": 2008,
+   "last": 2013,
+   "note": "",
+   "held": {
+    "range": 6,
+    "ar": 6,
+    "en": 6,
+    "bn": 6
+   }
+  },
+  "32": {
+   "en": "Virtues of the Night of Qadr",
+   "ar": "كتاب فضل ليلة القدر",
+   "bn": "লাইলাতুল ক্বদর-এর ফাযীলাত",
+   "first": 2014,
+   "last": 2024,
+   "note": "",
+   "held": {
+    "range": 11,
+    "ar": 11,
+    "en": 11,
+    "bn": 11
+   }
+  },
+  "33": {
+   "en": "Retiring to a Mosque for Remembrance of Allah (I'tikaf)",
+   "ar": "كتاب الاعتكاف",
+   "bn": "ই‘তিকাফ",
+   "first": 2025,
+   "last": 2046,
+   "note": "",
+   "held": {
+    "range": 22,
+    "ar": 21,
+    "en": 22,
+    "bn": 22
+   }
+  },
+  "34": {
+   "en": "Sales and Trade",
+   "ar": "كتاب البيوع",
+   "bn": "ক্রয়-বিক্রয়",
+   "first": 2047,
+   "last": 2238,
+   "note": "",
+   "held": {
+    "range": 192,
+    "ar": 181,
+    "en": 192,
+    "bn": 191
+   }
+  },
+  "35": {
+   "en": "Sales in which a Price is paid for Goods to be Delivered Later (As-Salam)",
+   "ar": "كتاب السلم",
+   "bn": "সলম (অগ্রিম ক্রয়-বিক্রয়)",
+   "first": 2239,
+   "last": 2256,
+   "note": "",
+   "held": {
+    "range": 18,
+    "ar": 13,
+    "en": 18,
+    "bn": 17
+   }
+  },
+  "36": {
+   "en": "Shuf'a",
+   "ar": "كتاب الشفعة",
+   "bn": "শুফ‘আহ",
+   "first": 2257,
+   "last": 2259,
+   "note": "",
+   "held": {
+    "range": 3,
+    "ar": 3,
+    "en": 3,
+    "bn": 3
+   }
+  },
+  "37": {
+   "en": "Hiring",
+   "ar": "كتاب الإجارة",
+   "bn": "ইজারা",
+   "first": 2260,
+   "last": 2286,
+   "note": "Last No. was 2285; set 2286 so the numbers run on with no gap or overlap",
+   "held": {
+    "range": 27,
+    "ar": 25,
+    "en": 27,
+    "bn": 27
+   }
+  },
+  "38": {
+   "en": "Transference of a Debt from One Person to Another (Al-Hawaala)",
+   "ar": "كتاب الحوالات",
+   "bn": "হাওয়ালাত (ঋণ আদায়ের দায়িত্ব গ্রহণ করা)",
+   "first": 2287,
+   "last": 2289,
+   "note": "",
+   "held": {
+    "range": 3,
+    "ar": 3,
+    "en": 3,
+    "bn": 3
+   }
+  },
+  "39": {
+   "en": "Kafalah",
+   "ar": "كتاب الكفالة",
+   "bn": "যামিন হওয়া",
+   "first": 2290,
+   "last": 2298,
+   "note": "",
+   "held": {
+    "range": 9,
+    "ar": 8,
+    "en": 9,
+    "bn": 9
+   }
+  },
+  "40": {
+   "en": "Representation, Authorization, Business by Proxy",
+   "ar": "كتاب الوكالة",
+   "bn": "ওয়াকালাহ (প্রতিনিধিত্ব)",
+   "first": 2299,
+   "last": 2319,
+   "note": "",
+   "held": {
+    "range": 21,
+    "ar": 18,
+    "en": 21,
+    "bn": 21
+   }
+  },
+  "41": {
+   "en": "Agriculture",
+   "ar": "كتاب المزارعة",
+   "bn": "চাষাবাদ",
+   "first": 2320,
+   "last": 2350,
+   "note": "",
+   "held": {
+    "range": 31,
+    "ar": 29,
+    "en": 31,
+    "bn": 31
+   }
+  },
+  "42": {
+   "en": "Distribution of Water",
+   "ar": "كتاب المساقاة",
+   "bn": "পানি সেচ",
+   "first": 2351,
+   "last": 2384,
+   "note": "Last No. was 2383; set 2384 so the numbers run on with no gap or overlap",
+   "held": {
+    "range": 34,
+    "ar": 31,
+    "en": 34,
+    "bn": 34
+   }
+  },
+  "43": {
+   "en": "Loans, Payment of Loans, Freezing of Property, Bankruptcy",
+   "ar": "كتاب الاستقراض وأداء الديون والحجر والتفليس",
+   "bn": "ঋণ গ্রহণ, ঋণ পরিশোধ, নিষেধাজ্ঞা আরোপ ও দেউলিয়া ঘোষণা",
+   "first": 2385,
+   "last": 2409,
+   "note": "",
+   "held": {
+    "range": 25,
+    "ar": 24,
+    "en": 25,
+    "bn": 25
+   }
+  },
+  "44": {
+   "en": "Khusoomaat",
+   "ar": "كتاب الخصومات",
+   "bn": "ঝগড়া-বিবাদ মীমাংসা",
+   "first": 2410,
+   "last": 2425,
+   "note": "",
+   "held": {
+    "range": 16,
+    "ar": 15,
+    "en": 16,
+    "bn": 16
+   }
+  },
+  "45": {
+   "en": "Lost Things Picked up by Someone (Luqatah)",
+   "ar": "كتاب اللقطة",
+   "bn": "পড়ে থাকা জিনিস উঠিয়ে নেয়া",
+   "first": 2426,
+   "last": 2439,
+   "note": "",
+   "held": {
+    "range": 14,
+    "ar": 13,
+    "en": 14,
+    "bn": 14
+   }
+  },
+  "46": {
+   "en": "Oppressions",
+   "ar": "كتاب المظالم والغصب",
+   "bn": "অত্যাচার, কিসাস ও …",
+   "first": 2440,
+   "last": 2482,
+   "note": "Last No. was 2483; set 2482 so the numbers run on with no gap or overlap",
+   "held": {
+    "range": 43,
+    "ar": 43,
+    "en": 43,
+    "bn": 43
+   }
+  },
+  "47": {
+   "en": "Partnership",
+   "ar": "كتاب الشركة",
+   "bn": "অংশীদারিত্ব",
+   "first": 2483,
+   "last": 2507,
+   "note": "",
+   "held": {
+    "range": 25,
+    "ar": 22,
+    "en": 25,
+    "bn": 25
+   }
+  },
+  "48": {
+   "en": "Mortgaging",
+   "ar": "كتاب الرهن",
+   "bn": "বন্ধক",
+   "first": 2508,
+   "last": 2516,
+   "note": "Last No. was 2515; set 2516 so the numbers run on with no gap or overlap",
+   "held": {
+    "range": 9,
+    "ar": 8,
+    "en": 9,
+    "bn": 9
+   }
+  },
+  "49": {
+   "en": "Manumission of Slaves",
+   "ar": "كتاب العتق",
+   "bn": "ক্রীতদাস আযাদ করা",
+   "first": 2517,
+   "last": 2559,
+   "note": "",
+   "held": {
+    "range": 43,
+    "ar": 40,
+    "en": 43,
+    "bn": 43
+   }
+  },
+  "50": {
+   "en": "Makaatib",
+   "ar": "كتاب المكاتب",
+   "bn": "চুক্তিবদ্ধ দাসের বর্ণনা",
+   "first": 2560,
+   "last": 2565,
+   "note": "",
+   "held": {
+    "range": 6,
+    "ar": 6,
+    "en": 6,
+    "bn": 6
+   }
+  },
+  "51": {
+   "en": "Gifts",
+   "ar": "كتاب الهبة وفضلها والتحريض عليها",
+   "bn": "হিবা ও এর ফযীলত",
+   "first": 2566,
+   "last": 2636,
+   "note": "",
+   "held": {
+    "range": 71,
+    "ar": 67,
+    "en": 71,
+    "bn": 71
+   }
+  },
+  "52": {
+   "en": "Witnesses",
+   "ar": "كتاب الشهادات",
+   "bn": "সাক্ষ্যদান",
+   "first": 2637,
+   "last": 2689,
+   "note": "",
+   "held": {
+    "range": 53,
+    "ar": 50,
+    "en": 53,
+    "bn": 53
+   }
+  },
+  "53": {
+   "en": "Peacemaking",
+   "ar": "كتاب الصلح",
+   "bn": "বিবাদ মীমাংসা",
+   "first": 2690,
+   "last": 2710,
+   "note": "",
+   "held": {
+    "range": 21,
+    "ar": 20,
+    "en": 21,
+    "bn": 21
+   }
+  },
+  "54": {
+   "en": "Conditions",
+   "ar": "كتاب الشروط",
+   "bn": "শর্তাবলী",
+   "first": 2711,
+   "last": 2737,
+   "note": "",
+   "held": {
+    "range": 27,
+    "ar": 23,
+    "en": 27,
+    "bn": 27
+   }
+  },
+  "55": {
+   "en": "Wills and Testaments (Wasaayaa)",
+   "ar": "كتاب الوصايا",
+   "bn": "ওয়াসিয়াত",
+   "first": 2738,
+   "last": 2781,
+   "note": "",
+   "held": {
+    "range": 44,
+    "ar": 43,
+    "en": 44,
+    "bn": 44
+   }
+  },
+  "56": {
+   "en": "Jihaad",
+   "ar": "كتاب الجهاد والسير",
+   "bn": "জিহাদ ও যুদ্ধকালীন আচার ব্যবহার",
+   "first": 2782,
+   "last": 3090,
+   "note": "",
+   "held": {
+    "range": 309,
+    "ar": 291,
+    "en": 309,
+    "bn": 308
+   }
+  },
+  "57": {
+   "en": "One-fifth of Booty to the Cause of Allah (Khumus)",
+   "ar": "كتاب فرض الخمس",
+   "bn": "খুমুস (এক পঞ্চমাংশ)",
+   "first": 3091,
+   "last": 3155,
+   "note": "",
+   "held": {
+    "range": 65,
+    "ar": 62,
+    "en": 65,
+    "bn": 65
+   }
+  },
+  "58": {
+   "en": "Jizyah and Mawaada'ah",
+   "ar": "كتاب الجزية والموادعة",
+   "bn": "জিযইয়াহ কর ও সন্ধি",
+   "first": 3156,
+   "last": 3189,
+   "note": "",
+   "held": {
+    "range": 34,
+    "ar": 31,
+    "en": 34,
+    "bn": 34
+   }
+  },
+  "59": {
+   "en": "Beginning of Creation",
+   "ar": "كتاب بدء الخلق",
+   "bn": "সৃষ্টির সূচনা",
+   "first": 3190,
+   "last": 3325,
+   "note": "",
+   "held": {
+    "range": 136,
+    "ar": 130,
+    "en": 136,
+    "bn": 136
+   }
+  },
+  "60": {
+   "en": "Prophets",
+   "ar": "كتاب أحاديث الأنبياء",
+   "bn": "আম্বিয়া কিরাম ('আঃ)",
+   "first": 3326,
+   "last": 3488,
+   "note": "",
+   "held": {
+    "range": 163,
+    "ar": 152,
+    "en": 163,
+    "bn": 163
+   }
+  },
+  "61": {
+   "en": "Virtues and Merits of the Prophet (pbuh) and his Companions",
+   "ar": "كتاب المناقب",
+   "bn": "মর্যাদা ও বৈশিষ্ট্য",
+   "first": 3489,
+   "last": 3648,
+   "note": "",
+   "held": {
+    "range": 160,
+    "ar": 146,
+    "en": 160,
+    "bn": 159
+   }
+  },
+  "62": {
+   "en": "Companions of the Prophet",
+   "ar": "كتاب فضائل أصحاب النبي ﷺ",
+   "bn": "সহাবীগণ [রাযিয়াল্লাহু ‘আনহুম]-এর মর্যাদা",
+   "first": 3649,
+   "last": 3775,
+   "note": "",
+   "held": {
+    "range": 127,
+    "ar": 115,
+    "en": 127,
+    "bn": 126
+   }
+  },
+  "63": {
+   "en": "Merits of the Helpers in Madinah (Ansaar)",
+   "ar": "كتاب مناقب الأنصار",
+   "bn": "আনসারগণ [রাযিয়াল্লাহু ‘আনহুম]-এর মর্যাদা",
+   "first": 3776,
+   "last": 3948,
+   "note": "",
+   "held": {
+    "range": 173,
+    "ar": 167,
+    "en": 173,
+    "bn": 167
+   }
+  },
+  "64": {
+   "en": "Military Expeditions led by the Prophet (pbuh) (Al-Maghaazi)",
+   "ar": "كتاب المغازي",
+   "bn": "মাগাযী [যুদ্ধ]",
+   "first": 3949,
+   "last": 4473,
+   "note": "",
+   "held": {
+    "range": 525,
+    "ar": 467,
+    "en": 525,
+    "bn": 520
+   }
+  },
+  "65": {
+   "en": "Tafseer of the Prophet",
+   "ar": "كتاب التفسير",
+   "bn": "কুরআন মাজীদের তাফসীর",
+   "first": 4474,
+   "last": 4977,
+   "note": "First–Last were blank; set 4474–4977 (standard numbering)",
+   "held": {
+    "range": 504,
+    "ar": 488,
+    "en": 504,
+    "bn": 503
+   }
+  },
+  "66": {
+   "en": "Virtues of the Qur'an",
+   "ar": "كتاب فضائل القرآن",
+   "bn": "আল-কুরআনের ফাযীলাতসমূহ",
+   "first": 4978,
+   "last": 5062,
+   "note": "",
+   "held": {
+    "range": 85,
+    "ar": 80,
+    "en": 85,
+    "bn": 85
+   }
+  },
+  "67": {
+   "en": "Wedlock, Marriage (Nikaah)",
+   "ar": "كتاب النكاح",
+   "bn": "বিয়ে",
+   "first": 5063,
+   "last": 5250,
+   "note": "",
+   "held": {
+    "range": 188,
+    "ar": 177,
+    "en": 188,
+    "bn": 188
+   }
+  },
+  "68": {
+   "en": "Divorce",
+   "ar": "كتاب الطلاق",
+   "bn": "ত্বলাক",
+   "first": 5251,
+   "last": 5350,
+   "note": "",
+   "held": {
+    "range": 100,
+    "ar": 83,
+    "en": 100,
+    "bn": 98
+   }
+  },
+  "69": {
+   "en": "Supporting the Family",
+   "ar": "كتاب النفقات",
+   "bn": "ভরণ-পোষণ",
+   "first": 5351,
+   "last": 5372,
+   "note": "",
+   "held": {
+    "range": 22,
+    "ar": 22,
+    "en": 22,
+    "bn": 22
+   }
+  },
+  "70": {
+   "en": "Food, Meals",
+   "ar": "كتاب الأطعمة",
+   "bn": "খাওয়া সংক্রান্ত",
+   "first": 5373,
+   "last": 5466,
+   "note": "",
+   "held": {
+    "range": 94,
+    "ar": 91,
+    "en": 94,
+    "bn": 94
+   }
+  },
+  "71": {
+   "en": "Sacrifice on Occasion of Birth (`Aqiqa)",
+   "ar": "كتاب العقيقة",
+   "bn": "আক্বীক্বাহ",
+   "first": 5467,
+   "last": 5474,
+   "note": "",
+   "held": {
+    "range": 8,
+    "ar": 8,
+    "en": 8,
+    "bn": 7
+   }
+  },
+  "72": {
+   "en": "Hunting, Slaughtering",
+   "ar": "كتاب الذبائح والصيد",
+   "bn": "যব্হ ও শিকার",
+   "first": 5475,
+   "last": 5544,
+   "note": "",
+   "held": {
+    "range": 70,
+    "ar": 66,
+    "en": 70,
+    "bn": 70
+   }
+  },
+  "73": {
+   "en": "Al-Adha Festival Sacrifice (Adaahi)",
+   "ar": "كتاب الأضاحي",
+   "bn": "কুরবানী",
+   "first": 5545,
+   "last": 5574,
+   "note": "",
+   "held": {
+    "range": 30,
+    "ar": 28,
+    "en": 30,
+    "bn": 30
+   }
+  },
+  "74": {
+   "en": "Drinks",
+   "ar": "كتاب الأشربة",
+   "bn": "পানীয়",
+   "first": 5575,
+   "last": 5639,
+   "note": "",
+   "held": {
+    "range": 65,
+    "ar": 64,
+    "en": 65,
+    "bn": 65
+   }
+  },
+  "75": {
+   "en": "Patients",
+   "ar": "كتاب المرضى",
+   "bn": "রোগী",
+   "first": 5640,
+   "last": 5677,
+   "note": "",
+   "held": {
+    "range": 38,
+    "ar": 37,
+    "en": 38,
+    "bn": 38
+   }
+  },
+  "76": {
+   "en": "Medicine",
+   "ar": "كتاب الطب",
+   "bn": "চিকিৎসা",
+   "first": 5678,
+   "last": 5782,
+   "note": "",
+   "held": {
+    "range": 105,
+    "ar": 92,
+    "en": 100,
+    "bn": 101
+   }
+  },
+  "77": {
+   "en": "Dress",
+   "ar": "كتاب اللباس",
+   "bn": "পোশাক",
+   "first": 5783,
+   "last": 5969,
+   "note": "",
+   "held": {
+    "range": 187,
+    "ar": 177,
+    "en": 187,
+    "bn": 186
+   }
+  },
+  "78": {
+   "en": "Good Manners and Form (Al-Adab)",
+   "ar": "كتاب الأدب",
+   "bn": "আচার-ব্যবহার",
+   "first": 5970,
+   "last": 6226,
+   "note": "",
+   "held": {
+    "range": 257,
+    "ar": 247,
+    "en": 253,
+    "bn": 254
+   }
+  },
+  "79": {
+   "en": "Asking Permission",
+   "ar": "كتاب الاستئذان",
+   "bn": "অনুমতি প্রার্থনা",
+   "first": 6227,
+   "last": 6303,
+   "note": "",
+   "held": {
+    "range": 77,
+    "ar": 72,
+    "en": 77,
+    "bn": 77
+   }
+  },
+  "80": {
+   "en": "Dua",
+   "ar": "كتاب الدعوات",
+   "bn": "দু‘আসমূহ",
+   "first": 6304,
+   "last": 6411,
+   "note": "",
+   "held": {
+    "range": 108,
+    "ar": 104,
+    "en": 108,
+    "bn": 108
+   }
+  },
+  "81": {
+   "en": "To make the Heart Tender (Ar-Riqaq)",
+   "ar": "كتاب الرقاق",
+   "bn": "সদয় হওয়া",
+   "first": 6412,
+   "last": 6593,
+   "note": "",
+   "held": {
+    "range": 182,
+    "ar": 172,
+    "en": 182,
+    "bn": 182
+   }
+  },
+  "82": {
+   "en": "Divine Will (Al-Qadar)",
+   "ar": "كتاب القدر",
+   "bn": "তাকদীর",
+   "first": 6594,
+   "last": 6620,
+   "note": "",
+   "held": {
+    "range": 27,
+    "ar": 26,
+    "en": 27,
+    "bn": 27
+   }
+  },
+  "83": {
+   "en": "Oaths and Vows",
+   "ar": "كتاب الأيمان والنذور",
+   "bn": "শপথ ও মানত",
+   "first": 6621,
+   "last": 6707,
+   "note": "",
+   "held": {
+    "range": 87,
+    "ar": 83,
+    "en": 87,
+    "bn": 87
+   }
+  },
+  "84": {
+   "en": "Expiation for Unfulfilled Oaths",
+   "ar": "كتاب كفارات الأيمان",
+   "bn": "শপথের কাফ্ফারাসমূহ",
+   "first": 6708,
+   "last": 6722,
+   "note": "Last No. was 6723; set 6722 so the numbers run on with no gap or overlap",
+   "held": {
+    "range": 15,
+    "ar": 14,
+    "en": 15,
+    "bn": 15
+   }
+  },
+  "85": {
+   "en": "Laws of Inheritance (Al-Faraa'id)",
+   "ar": "كتاب الفرائض",
+   "bn": "ফারায়িয",
+   "first": 6723,
+   "last": 6771,
+   "note": "",
+   "held": {
+    "range": 49,
+    "ar": 46,
+    "en": 49,
+    "bn": 49
+   }
+  },
+  "86": {
+   "en": "Limits and Punishments set by Allah (Hudood)",
+   "ar": "كتاب الحدود",
+   "bn": "দন্ডবিধি",
+   "first": 6772,
+   "last": 6860,
+   "note": "Last No. was 6859; set 6860 so the numbers run on with no gap or overlap",
+   "held": {
+    "range": 89,
+    "ar": 78,
+    "en": 89,
+    "bn": 89
+   }
+  },
+  "87": {
+   "en": "Blood Money (Ad-Diyat)",
+   "ar": "كتاب الديات",
+   "bn": "রক্তপণ",
+   "first": 6861,
+   "last": 6917,
+   "note": "",
+   "held": {
+    "range": 57,
+    "ar": 51,
+    "en": 57,
+    "bn": 57
+   }
+  },
+  "88": {
+   "en": "Apostates",
+   "ar": "كتاب استتابة المرتدين والمعاندين وقتالهم",
+   "bn": "আল্লাহদ্রোহী ও ধর্মত্যাগীদেরকে তাওবাহর প্রতি আহ্বান ও তাদের সঙ্গে যুদ্ধ",
+   "first": 6918,
+   "last": 6939,
+   "note": "",
+   "held": {
+    "range": 22,
+    "ar": 21,
+    "en": 22,
+    "bn": 22
+   }
+  },
+  "89": {
+   "en": "(Statements made under) Coercion",
+   "ar": "كتاب الإكراه",
+   "bn": "বল প্রয়োগের মাধ্যমে বাধ্য করা",
+   "first": 6940,
+   "last": 6952,
+   "note": "",
+   "held": {
+    "range": 13,
+    "ar": 12,
+    "en": 13,
+    "bn": 13
+   }
+  },
+  "90": {
+   "en": "Tricks",
+   "ar": "كتاب الحيل",
+   "bn": "কূটচাল অবলম্বন",
+   "first": 6953,
+   "last": 6981,
+   "note": "",
+   "held": {
+    "range": 29,
+    "ar": 28,
+    "en": 29,
+    "bn": 29
+   }
+  },
+  "91": {
+   "en": "Interpretation of Dreams",
+   "ar": "كتاب التعبير",
+   "bn": "স্বপ্নের ব্যাখ্যা করা",
+   "first": 6982,
+   "last": 7047,
+   "note": "",
+   "held": {
+    "range": 66,
+    "ar": 60,
+    "en": 66,
+    "bn": 66
+   }
+  },
+  "92": {
+   "en": "Afflictions and the End of the World",
+   "ar": "كتاب الفتن",
+   "bn": "ফিতনা",
+   "first": 7048,
+   "last": 7136,
+   "note": "",
+   "held": {
+    "range": 89,
+    "ar": 78,
+    "en": 89,
+    "bn": 88
+   }
+  },
+  "93": {
+   "en": "Judgments (Ahkaam)",
+   "ar": "كتاب الأحكام",
+   "bn": "আহকাম",
+   "first": 7137,
+   "last": 7225,
+   "note": "",
+   "held": {
+    "range": 89,
+    "ar": 81,
+    "en": 89,
+    "bn": 89
+   }
+  },
+  "94": {
+   "en": "Wishes",
+   "ar": "كتاب التمني",
+   "bn": "কামনা",
+   "first": 7226,
+   "last": 7245,
+   "note": "",
+   "held": {
+    "range": 20,
+    "ar": 20,
+    "en": 20,
+    "bn": 20
+   }
+  },
+  "95": {
+   "en": "Accepting Information Given by a Truthful Person",
+   "ar": "كتاب أخبار الآحاد",
+   "bn": "'খবরে ওয়াহিদ' গ্রহণযোগ্য",
+   "first": 7246,
+   "last": 7267,
+   "note": "",
+   "held": {
+    "range": 22,
+    "ar": 21,
+    "en": 22,
+    "bn": 22
+   }
+  },
+  "96": {
+   "en": "Holding Fast to the Qur'an and Sunnah",
+   "ar": "كتاب الاعتصام بالكتاب والسنة",
+   "bn": "কুরআন ও সুন্নাহকে শক্তভাবে ধরে থাকা",
+   "first": 7268,
+   "last": 7370,
+   "note": "",
+   "held": {
+    "range": 103,
+    "ar": 97,
+    "en": 103,
+    "bn": 103
+   }
+  },
+  "97": {
+   "en": "Oneness, Uniqueness of Allah (Tawheed)",
+   "ar": "كتاب التوحيد",
+   "bn": "তাওহীদ",
+   "first": 7371,
+   "last": 7563,
+   "note": "",
+   "held": {
+    "range": 193,
+    "ar": 186,
+    "en": 193,
+    "bn": 193
+   }
+  }
+ }
+}

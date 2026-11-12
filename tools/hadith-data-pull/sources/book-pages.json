@@ -117,8 +117,8 @@
       "translationDir": "nasai",
       "translationChunk": 500,
       "versionUri": "0303Nasai.SunanSughra.JK000130-ara1",
-      "status": "blocked",
-      "note": "BLOCKED (11 Nov 2026): Darussalam's Nasa'i numbering differs from the numbering of our English text (hadith-api) in places, e.g. our #288 is the Anas hadith but the scan's [288] is Maimunah's; our #100 matches. Mapping by number would show WRONG pages (cross-check only 67%). Needs a text-aligned bridge (match each of our hadith to the scan by content) before it can ship. The builder already supports two-file books."
+      "status": "mapped",
+      "note": "Mapped 12 Nov 2026 by CONTENT alignment (tools/hadith-data-pull/book-pages-nasai.py; design docs/reports/2026-11-12-hadith-nasai-bridge-design.md): Darussalam's printed numbers differ from the standard numbers the reader cites, so our English text of each standard number is found in the scan's OCR (three monotone passes) and a page is kept only on 8 exact words or a close 14-word window; the rest have no page. parts[].from/to here are the PRINTED numbers; the map's own parts[].from/to are STANDARD numbers."
     },
     {
       "key": "muwatta",
@@ -147,8 +147,8 @@
         "edition": "ed. al-Arna'ut, al-Risala",
         "lastIndex": 23340
       },
-      "status": "planned",
-      "note": "The archive.org scan is image-only (no text layer). Shamela typed text, read page by page by shamela-pages-build.py (exact). The OpenITI PageV marks of this book are too sparse (hadith 252 sits ~200 lines before its next mark): shamela-pages-from-marks.py's own sample check, with its control, proved that route WRONG here (0 of 534), so it is not used for Ahmad."
+      "status": "mapped",
+      "note": "Owner ticked hd1111n A (11 Nov 2026). The archive.org scan is image-only (no text layer). Shamela typed text, read page by page by shamela-pages-build.py (exact). The OpenITI PageV marks of this book are too sparse (hadith 252 sits ~200 lines before its next mark): shamela-pages-from-marks.py's own sample check, with its control, proved that route WRONG here (0 of 534), so it is not used for Ahmad. Route used: every page read by shamela-pages-build.py, then shamela-pages-verified.py keeps a number's page only when our text's opening words agree with the paragraph found there (26,316 of 26,810 numbered hadith; the rest print no page rather than a guess)."
     },
     {
       "key": "adabmufrad",
@@ -180,6 +180,42 @@
       },
       "status": "mapped",
       "note": "Keyed by OUR record order n, not by the hadith number (it prints per chapter; our OpenITI header has typos: 11 numbers twice, 9 places backwards, one reads 1967). shamela-pages-riyad.py: our 1897 hadith records and Shamela 12014's 1883 paragraphs, matched by a banded longest-common-subsequence on the first 30 words (difflib ratio 0.8, our ordinal word skipped), then a second pass for blocks the two texts order differently (20, then 12 opening words, unique on both sides). Loose tests were tried and REJECTED: narrator name plus 8 of 10 words matched the wrong hadith (read by hand). Map: 1872 of 1897 hadith records (98.7%); 184 chapter headings have no page. Independent sample, 10 opening words found on the mapped page: 400/400, 398/400, 400/400 (seeds 7, 8, 9; the misses read by hand are the right hadith with a variant opening); control page 50 away 9-15 of 400 (generic openings). Pages run backwards at 9 places, the blocks where the two texts differ in order. Hand-read anchors n=3, 1000, 2000 (live shamela.ws)."
+    },
+    {
+      "key": "darimi",
+      "title": "Sunan al-Darimi (Shamela 21795, ed. Husayn Asad)",
+      "kind": "shamela",
+      "keyBy": "n",
+      "versionUri": "0255CabdAllahDarimi.Sunan.JK000842-ara1",
+      "numbering": "OUR RECORD ORDER n (1-3515). Our text (ed. Zimrali / al-Sab' al-'Ilmi) and Shamela's printed edition (Husayn Asad) number their hadith differently after the first few (our #1634 is not Shamela's #1634), so the map is aligned by text, not by number",
+      "lastNumber": 3515,
+      "shamela": {
+        "id": "21795",
+        "edition": "ed. Husayn Asad",
+        "lastIndex": 4840
+      },
+      "status": "mapped",
+      "note": "Owner ticked hd1111n E (11 Nov 2026). Shamela's page text read page by page and aligned to our records by text, in order, by shamela-pages-align.py (3,422 of 3,514 hadith; the rest print no page rather than a guess)."
+    },
+    {
+      "key": "nawawi40",
+      "title": "al-Nawawi's Forty Hadith (ed. Dar al-Minhaj)",
+      "kind": "shamela",
+      "keyBy": "n",
+      "versionUri": "0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1",
+      "numbering": "OUR RECORD ORDER n (1-138, the passages of the split files; the book carries no hadith numbers in our text)",
+      "lastNumber": 138,
+      "alignKinds": [
+        "hadith",
+        "passage"
+      ],
+      "shamela": {
+        "id": "12836",
+        "edition": "Dar al-Minhaj, 1st ed. 1430 AH",
+        "lastIndex": 81
+      },
+      "status": "mapped",
+      "note": "Owner ticked hd1111n G (11 Nov 2026). Built by shamela-pages-text.py: each of our passages found in Shamela's typed pages by its first 8 words, forward only."
     }
   ]
 }
