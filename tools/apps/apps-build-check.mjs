@@ -168,11 +168,11 @@ check("files no rule touches are copied exactly (only the expected files differ)
 });
 // 38 -> 34 (25 Oct 2026, the Owner: "Range is missing here"): QR's four Range-bookmark edits (#4a-#4d, QR J03) moved
 // into app/quranrevival.html itself, so MSA offers Range too and QR no longer needs to edit it in.
-check("every one of QR's edits is in the built file (and there are 34)", () => {
+check("every one of QR's edits is in the built file (and there are 35)", () => {
   const edits = JSON.parse(read(SRC, qs.edits));
   const missing = edits.filter((e) => !read(qrPre, e.file).includes(e.to));
   if (missing.length) throw new Error(missing.map((e) => e.id).join(", "));
-  return edits.length === 34;
+  return edits.length === 35;
 });
 check("every one of QR's own files is in the built app byte for byte (the Asma app, the front page, the fonts)", () => {
   const own = listFiles(path.join(SRC, qs.overlay), ["app", "index.html", "404.html", ".nojekyll"]);
@@ -244,8 +244,11 @@ check("the Qur'an cache renamed in sw.js stops the qr build (PCF MSA J120 O2)", 
 check("the recitation cache renamed in sw.js, or named by the page module, stops the qr build (PCF MSA J120 O6)", () =>
   mutate("app/sw.js", 'const AUDIO_CACHE_NAME = "mm-audio-v1";', 'const AUDIO_CACHE_NAME = "mmx-audio-v1";', () => throws(() => buildMut("qr"), /offline cache "audio"/)) &&
   mutate("app/js/recitation-offline.js", 'export const RECITATION_CACHE = "mm-audio-v1";', 'export const RECITATION_CACHE = "mmx-audio-v1";', () => throws(() => buildMut("qr"), /offline cache "audio" in recitation-offline\.js/)));
+check("the printed-pages cache renamed in sw.js, or named by the page module, stops the qr build (printed Mushaf, PR 3)", () =>
+  mutate("app/sw.js", 'const PRINTED_CACHE_NAME = "mm-printed-v1";', 'const PRINTED_CACHE_NAME = "mmx-printed-v1";', () => throws(() => buildMut("qr"), /offline cache "printed"/)) &&
+  mutate("app/js/printed-offline.js", 'export const PRINTED_CACHE = "mm-printed-v1";', 'export const PRINTED_CACHE = "mmx-printed-v1";', () => throws(() => buildMut("qr"), /offline cache "printed" in printed-offline\.js/)));
 check("msa.json's caches list missing a cache sw.js keeps stops even the msa build", () =>
-  mutate("app/apps/msa.json", '"quran", "audio"]', '"quran"]', () => throws(() => buildMut("msa"), /"caches" .* is not the list build-app\.mjs counts/)));
+  mutate("app/apps/msa.json", '"audio", "printed"]', '"audio"]', () => throws(() => buildMut("msa"), /"caches" .* is not the list build-app\.mjs counts/)));
 check("a hidden module nav.js cannot hide stops the build", () =>
   mutate("app/apps/qr.json", '"naturelife",', '"naturelife", "hadith",', () => throws(() => buildMut("qr"), /hidden module "hadith"/)));
 check("the hidden-modules list changed in the source stops the build", () =>
@@ -305,6 +308,24 @@ check("a file both edited and overlaid stops the build", () => {
 });
 check("a page the settings name but nobody has stops the build", () => throws(() => buildFx({ pages: ["index.html", "nowhere.html"] }), /page app\/nowhere\.html does not exist/));
 check("an overlay inside app/ is refused (MSA would serve it)", () => throws(() => buildFx({ overlay: "app/fx" }), /overlay must be outside app\//));
+
+// Printed Mushaf (98L): QR leaves the printed page pictures out and reads them from MSA's address.
+check("QR's settings skip the printed Mushaf pictures", () => JSON.stringify(qs.siteSkip) === JSON.stringify(["tools/quran-data-pull/output/mushaf-printed"]));
+check("siteSkip leaves a folder out of the built app, and only that folder (positive control: without it the folder IS copied)", () => {
+  const dir = path.join(mutSrc, "app/skip-fx"), keepDir = path.join(mutSrc, "app/keep-fx");
+  fs.mkdirSync(dir, { recursive: true }); fs.mkdirSync(keepDir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "a.txt"), "a"); fs.writeFileSync(path.join(keepDir, "b.txt"), "b");
+  try {
+    buildFx(); const withAll = fs.existsSync(path.join(TMP, "fx/app/skip-fx/a.txt"));
+    buildFx({ siteSkip: ["app/skip-fx"] });
+    return withAll && !fs.existsSync(path.join(TMP, "fx/app/skip-fx/a.txt")) && fs.existsSync(path.join(TMP, "fx/app/keep-fx/b.txt"));
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); fs.rmSync(keepDir, { recursive: true, force: true }); }
+});
+check("siteSkip does not skip a folder that merely starts with the same letters", () => {
+  const dir = path.join(mutSrc, "app/skip-fx2");
+  fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(path.join(dir, "c.txt"), "c");
+  try { buildFx({ siteSkip: ["app/skip-fx"] }); return fs.existsSync(path.join(TMP, "fx/app/skip-fx2/c.txt")); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
 
 fs.rmSync(TMP, { recursive: true, force: true });
 console.log(`\napps-build-check: ${pass} passed, ${fail} failed`);

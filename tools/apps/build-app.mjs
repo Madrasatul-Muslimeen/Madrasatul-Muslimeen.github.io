@@ -121,7 +121,7 @@ function rules(base, s) {
   // Exact counts: each cache's name, its clean-up test, and (for the fonts) one comment.
   // A cache renamed or added in sw.js must be counted here, or an app would keep MSA's name.
   // app: 3 since the J120 review (9 Nov 2026): moveQuranDataFromAppCaches() also reads the old app caches, so an app's worker moves out of ITS old caches.
-  const CACHES = { '"': { app: 3, "qf-fonts": 3, ext: 2, mushaf: 2, hadith: 2, quran: 2, audio: 2 }, "`": { app: 1, "qf-fonts": 0, ext: 0, mushaf: 0, hadith: 0, quran: 0, audio: 0 } };
+  const CACHES = { '"': { app: 3, "qf-fonts": 3, ext: 2, mushaf: 2, hadith: 2, quran: 2, audio: 2, printed: 2 }, "`": { app: 1, "qf-fonts": 0, ext: 0, mushaf: 0, hadith: 0, quran: 0, audio: 0, printed: 0 } };
   // msa.json's "caches" names every cache sw.js keeps (PCF MSA J120 O2 added "quran"); the counts here must cover exactly those.
   if (JSON.stringify(Object.keys(CACHES['"'])) !== JSON.stringify(base.caches)) throw new Error(`app/apps/msa.json "caches" (${JSON.stringify(base.caches)}) is not the list build-app.mjs counts (${JSON.stringify(Object.keys(CACHES['"']))})`);
   for (const [q, names] of Object.entries(CACHES)) {
@@ -137,6 +137,9 @@ function rules(base, s) {
 
   // PCF MSA J120 O6: recitation saved for offline (recitation-offline.js) writes into the worker's "audio" cache, so it names it too.
   add((p) => p === "app/js/recitation-offline.js", `"${base.cachePrefix}-audio-`, `"${s.cachePrefix}-audio-`, { exact: 1 }, `offline cache "audio" in recitation-offline.js`);
+
+  // Printed Mushaf pages kept in the app (printed-offline.js) write into the worker's "printed" cache, so it names it too.
+  add((p) => p === "app/js/printed-offline.js", `"${base.cachePrefix}-printed-`, `"${s.cachePrefix}-printed-`, { exact: 1 }, `offline cache "printed" in printed-offline.js`);
 
   // PCF MSA J120 O1: MSA's install line (its manifest link, home-screen icon and theme colour) is on every MSA reader page
   // (tools/offline/install-links.mjs). It is MSA's own, so every other app's pages lose it; the theme colour and manifest
@@ -200,7 +203,10 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
   if (s.pages) for (const pg of s.pages) if (!fs.existsSync(path.join(src, "app", pg)) && !inOverlay(`app/${pg}`)) throw new Error(`settings "${id}": page app/${pg} does not exist`);
   // PCF MSA J120 O1: MSA's own web app manifest (its name and icons) is never copied into another app.
   const msaOwnFile = (rel) => s.id !== base.id && !!base.manifest && rel === `app/${base.manifest.file}`;
-  const files = listSite(src, srcSite).filter(keepPage).filter((rel) => !msaOwnFile(rel));
+  // Settings "siteSkip" (optional): folders inside the site that this app does NOT copy. QR leaves out the ~51 MB of
+  // printed Mushaf page pictures and reads them from MSA's address instead (QR J-printed, 98L); the worker also refuses to keep them.
+  const skipped = (rel) => (s.siteSkip || []).some((p) => rel === p || rel.startsWith(p + "/"));
+  const files = listSite(src, srcSite).filter(keepPage).filter((rel) => !msaOwnFile(rel)).filter((rel) => !skipped(rel));
 
   const rs = rules(base, s);
   const found = rs.map(() => 0);

@@ -126,6 +126,9 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   await page.waitForTimeout(600);
   const s5 = await sw(page);
   check(`${tag} 📖 from Read on goes to the Mushaf (switch hidden, flow closed)`, s5.mushaf && !s5.shown && s5.flow === 0, JSON.stringify(s5));
+  // UPDATED IN PLACE (11 Nov 2026, the Printed page view): the switch now has a THIRD stop after the Mushaf, so 📖 from the
+  // Mushaf goes to the Printed page and one press MORE returns to the ONE Ayah view. What this check asserts is unchanged.
+  await page.click("#readMeaningBtn"); await page.waitForTimeout(900);
   await page.click("#readMeaningBtn"); await page.waitForTimeout(900);
   const s6 = await sw(page);
   check(`${tag} 📖 again returns to the ONE Ayah view with Read on off`, !s6.mushaf && s6.shown && !s6.on && s6.flow === 0, JSON.stringify(s6));

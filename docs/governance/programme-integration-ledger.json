@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.25",
+    "version": "14.27",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -6989,7 +6989,7 @@
     {
       "version": "14.25",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Books with no scan get the printed page on Shamela in the same pop-up: Muwatta Malik and al-Adab al-Mufrad (#1647, MSA-Hadith Lead).",
       "integration": {
         "authorizedOn": "2026-11-11",
@@ -6997,10 +6997,36 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "14.26",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Printed page view (#1653), QR debt round (#1649), Riyad al-Salihin printed page on Shamela (#1650); reviewed by 99L.",
+      "integration": {
+        "authorizedOn": "2026-11-11",
+        "integratedOn": "2026-11-11",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "14.27",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Keep printed Mushaf pages in the app (#1656); reviewed by 99L.",
+      "integration": {
+        "authorizedOn": "2026-11-12",
+        "integratedOn": "2026-11-12",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "14.26",
+  "nextUnallocated": "14.28",
   "nextUnallocatedNote": [
+    "v14.27 was allocated to keeping printed Mushaf pages in the app, 2026-11-12.",
+    "v14.26 was allocated to the Printed page view, the QR debt round and Riyad al-Salihin's printed page, 2026-11-11.",
     "v14.25 was allocated to Hadith printed page on Shamela: Muwatta, al-Adab al-Mufrad, 2026-11-11.",
     "v14.24 was allocated to Hadith Original book page (scan pop-up), five books, Dua cards, 2026-11-11.",
     "v14.23 was allocated to Ayah stripe round 2, Know Your Status switch, Bangla Words v2 data, 2026-11-11.",

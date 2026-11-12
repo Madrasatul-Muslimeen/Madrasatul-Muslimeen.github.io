@@ -46,8 +46,8 @@ const NEXT = {
   // PCF MSA J110 B (the Owner ticked B, 2 Nov 2026): the views are named "Reading View" (was "Meaning") and "ONE Ayah View"
   // (was "Āyah", or "Reading" for a longer unit; one name now for every unit). Updated in place, reason recorded: the
   // cycle and every tap's destination are unchanged.
-  en: { meaning: ["📖", "Reading View", "Reading View: translations and word by word"], mushaf: ["📜", "Mushaf", "Mushaf view"], ayah: ["↩", "ONE Ayah View", "ONE Ayah View: one āyah to study"], reading: ["↩", "ONE Ayah View", "ONE Ayah View: one āyah to study"] },
-  bn: { meaning: ["📖", "পড়ার দৃশ্য", "পড়ার দৃশ্য: অনুবাদ ও শব্দে শব্দে"], mushaf: ["📜", "মুসহাফ", "মুসহাফ দৃশ্য"], ayah: ["↩", "এক আয়াত দৃশ্য", "এক আয়াত দৃশ্য: অধ্যয়নের জন্য এক আয়াত"], reading: ["↩", "এক আয়াত দৃশ্য", "এক আয়াত দৃশ্য: অধ্যয়নের জন্য এক আয়াত"] },
+  en: { meaning: ["📖", "Reading View", "Reading View: translations and word by word"], mushaf: ["📜", "Mushaf", "Mushaf view"], printed: ["📄", "Printed page", "Printed page: the Madinah Mushaf as printed"], ayah: ["↩", "ONE Ayah View", "ONE Ayah View: one āyah to study"], reading: ["↩", "ONE Ayah View", "ONE Ayah View: one āyah to study"] },
+  bn: { meaning: ["📖", "পড়ার দৃশ্য", "পড়ার দৃশ্য: অনুবাদ ও শব্দে শব্দে"], mushaf: ["📜", "মুসহাফ", "মুসহাফ দৃশ্য"], printed: ["📄", "ছাপা পৃষ্ঠা", "ছাপা পৃষ্ঠা: মদিনা মুসহাফ যেভাবে ছাপা হয়েছে"], ayah: ["↩", "এক আয়াত দৃশ্য", "এক আয়াত দৃশ্য: অধ্যয়নের জন্য এক আয়াত"], reading: ["↩", "এক আয়াত দৃশ্য", "এক আয়াত দৃশ্য: অধ্যয়নের জন্য এক আয়াত"] },
 };
 
 async function start(lang, width) {
@@ -147,14 +147,19 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await page.click("#readMeaningBtn"); await waitMushaf(page, true);
     const s2 = await state(page);
     check(`${t} tap 2 → the Mushaf (the Options tick on), the flow closed, 57:2 marked on the page`, s2.tick && s2.pages > 0 && s2.flow === 0 && s2.pressed === "false" && s2.stored === "0" && s2.marked.includes("57:2"), JSON.stringify({ tick: s2.tick, pages: s2.pages, flow: s2.flow, marked: s2.marked, stored: s2.stored }));
-    check(`${t} ...it names the next view, ONE Ayah View; Read on is out of sight in the Mushaf`, names(lang, s2, "ayah", width) && await page.evaluate(() => document.getElementById("readOnSwitch").getBoundingClientRect().width === 0), JSON.stringify({ icon: s2.icon, word: s2.word, label: s2.label }));
+    check(`${t} ...it names the next view, Printed page; Read on is out of sight in the Mushaf`, names(lang, s2, "printed", width) && await page.evaluate(() => document.getElementById("readOnSwitch").getBoundingClientRect().width === 0), JSON.stringify({ icon: s2.icon, word: s2.word, label: s2.label }));
     const r2 = await rows(page);
     check(`${t} ...one row, no line added (${r2.withIt} vs ${r2.without})`, r2.oneRow && r2.withIt === r2.without && r2.over <= 0, JSON.stringify(r2));
     if (width === 390) await page.screenshot({ path: `${SHOT_DIR}/read-switch-${lang}-${width}${fs ? "-fullscreen" : ""}-mushaf.png` });
 
+    // UPDATED IN PLACE (11 Nov 2026, the Printed page view): the Mushaf is no longer the last stop. Tap 3 goes to the Printed page
+    // (still a Mushaf strip, so "the tick" stays on), which names ONE Ayah View next; tap 4 is the old tap 3.
+    await page.click("#readMeaningBtn"); await page.waitForSelector(".mushaf-printed-page", { timeout: 15000 }).catch(() => {}); await page.waitForTimeout(500);
+    const sp = await state(page);
+    check(`${t} tap 3 → the Printed page, which names ONE Ayah View next`, sp.tick && (await page.evaluate(() => document.querySelectorAll(".mushaf-printed-page").length)) > 0 && names(lang, sp, "ayah", width), JSON.stringify(sp));
     await page.click("#readMeaningBtn"); await waitMushaf(page, false);
     const s3 = await state(page);
-    check(`${t} tap 3 → back to the Āyah view: tick off, no page, no flow, still āyah 57:2${fs ? ", still full screen" : ""}`, !s3.tick && s3.pages === 0 && s3.flow === 0 && s3.ayah === "2" && (!fs || (await bare(page))) && names(lang, s3, "mushaf", width), JSON.stringify(s3));
+    check(`${t} tap 4 → back to the Āyah view: tick off, no page, no flow, still āyah 57:2${fs ? ", still full screen" : ""}`, !s3.tick && s3.pages === 0 && s3.flow === 0 && s3.ayah === "2" && (!fs || (await bare(page))) && names(lang, s3, "mushaf", width), JSON.stringify(s3));
   }
   await page.click("#hideChromeBtn"); await page.waitForTimeout(300);
   for (let i = 0; i < 4 && (await page.evaluate(() => document.body.classList.contains("immersive-read"))); i++) { await page.click("#hideChromeBtn"); await page.waitForTimeout(300); }
@@ -163,7 +168,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   await page.evaluate(() => { const t = document.getElementById("mushafToggle"); t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); });
   await waitMushaf(page, true);
   const o1 = await state(page);
-  check(`${tag} ticking Mushaf view in Options → the switch names Āyah next`, o1.tick && names(lang, o1, "ayah", width), JSON.stringify(o1));
+  check(`${tag} ticking Mushaf view in Options → the switch names the Printed page next`, o1.tick && names(lang, o1, "printed", width), JSON.stringify(o1));
   // POSITIVE CONTROL: the āyah-mark detector finds the mark on a page opened through the Options tick.
   check(`${tag} POSITIVE CONTROL: the mark detector finds 57:2 on a page opened by the Options tick`, o1.marked.includes("57:2"), JSON.stringify(o1.marked));
   await page.evaluate(() => { const t = document.getElementById("mushafToggle"); t.checked = false; t.dispatchEvent(new Event("change", { bubbles: true })); });
@@ -176,7 +181,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   await page.click("#readOnCheck", { force: true }); await waitFlow(page, true);
   await page.click("#readMeaningBtn"); await waitMushaf(page, true);
   const u1 = await state(page);
-  check(`${tag} Whole Surah: Read on then 📖 reach the Mushaf, and the switch names ONE Ayah View next`, u1.tick && u1.pages > 0 && names(lang, u1, "reading", width), JSON.stringify({ tick: u1.tick, pages: u1.pages, icon: u1.icon, word: u1.word, label: u1.label }));
+  check(`${tag} Whole Surah: Read on then 📖 reach the Mushaf, and the switch names the Printed page next (UPDATED IN PLACE 11 Nov 2026: the third stop; was ONE Ayah View)`, u1.tick && u1.pages > 0 && names(lang, u1, "printed", width), JSON.stringify({ tick: u1.tick, pages: u1.pages, icon: u1.icon, word: u1.word, label: u1.label }));
 
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|archive\.org|net::|api\.quran/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();

@@ -38,6 +38,9 @@
     "tools/hadith-data-pull/output/asma-cited-hadith.json",
     "__/auth"
   ],
+  "siteSkip": [
+    "tools/quran-data-pull/output/mushaf-printed"
+  ],
   "later": [
     "QR's heading: name.short is QuranRevival, so the heading reads QuranRevival at every width, as QR does today (QR's edits #11a-#11c are not used: the title and heading come from these settings, and the version is MSA's one number, QR J22)",
     "pages: the built QR holds only today's QR's 6 pages; any other page address gives QR's 404, and qr-links.js sends links to those pages to MSA, as today. hiddenModules stays as MSA's until nav.js tags every module",

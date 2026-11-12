@@ -346,6 +346,15 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
       if (e.target.closest(".ayah-quick-wrap")) return;
       closeAllQuickMenus(container);
     });
+    // Found by the debt round (11 Nov 2026): the ⋮ sheet had no keyboard way out (the retired ⋯ menu closed on Escape). Escape closes it and hands the focus back to its ⋮.
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      const open = container.querySelector(".quick-menu.open");
+      if (!open) return;
+      const wrap = open.closest(".ayah-quick-wrap");
+      closeAllQuickMenus(container);
+      wrap?.querySelector("[data-qm-toggle]")?.focus();
+    });
   }
 }
 

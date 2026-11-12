@@ -52,6 +52,7 @@ function isCacheable(request) {
   if (url.origin !== self.location.origin) return false;
   if (url.pathname.startsWith("/legacy/") || url.pathname.startsWith("/legacy-v07/") || url.pathname.startsWith("/legacy-v08/") || url.pathname.startsWith("/legacy-v09/") || url.pathname.startsWith("/legacy-v10/") || url.pathname.startsWith("/legacy-v11/") || url.pathname.startsWith("/legacy-v12/") || url.pathname.startsWith("/legacy-v13/")) return false;
   if (!CACHEABLE_PATH_PREFIXES.some((p) => url.pathname.startsWith(p))) return false;
+  if (url.pathname.includes("/mushaf-printed/")) return false; // PRINTED-EXCLUDED: the 604 printed-page pictures (~100 MB) are only ever kept by the reader's own "keep in the app" choice (its own cache), never by this run-time cache
   // Firestore's OWN traffic -- every read, write and auth token exchange the
   // SDK makes once it's actually running, all *.googleapis.com -- never
   // reaches this worker's cache: different origin, refused above, exactly as
@@ -401,6 +402,11 @@ self.addEventListener("message", (event) => {
     event.waitUntil(refreshSavedAudio());
     return;
   }
+  // The page kept or removed printed Mushaf pages (printed-offline.js): read the kept set again.
+  if (data.type === "printed-saved-changed") {
+    event.waitUntil(refreshSavedPrinted());
+    return;
+  }
   // Architect review: the first open of a page happens BEFORE this worker
   // controls it, so nothing that page loaded passed through the fetch handler
   // and the SECOND open still went to the network. The page sends the list of
@@ -444,7 +450,8 @@ self.addEventListener("activate", (event) => {
             (n.startsWith("mm-mushaf-") && n !== MUSHAF_CACHE_NAME) ||
             (n.startsWith("mm-hadith-") && n !== HADITH_CACHE_NAME) ||
             (n.startsWith("mm-quran-") && n !== QURAN_CACHE_NAME) ||
-            (n.startsWith("mm-audio-") && n !== AUDIO_CACHE_NAME)
+            (n.startsWith("mm-audio-") && n !== AUDIO_CACHE_NAME) ||
+            (n.startsWith("mm-printed-") && n !== PRINTED_CACHE_NAME)
           )
           .map((n) => caches.delete(n))
       );
@@ -493,6 +500,29 @@ async function handleRecitationAudio(request) {
       "accept-ranges": "bytes",
     },
   });
+}
+
+// Printed Mushaf pages kept in the app (the Owner, 11 Nov 2026): the reader chooses sūrahs, a juz' or the whole Mushaf in
+// Study options and printed-offline.js puts each page picture, as a plain full Response, in this cache. THIS worker answers
+// a printed-page request from it when that page is kept; a page that is not kept goes to the network exactly as if no
+// worker existed, and the pictures are still never kept by this worker on its own (PRINTED-EXCLUDED above). Its own cache
+// like the audio one: NEVER emptied by a release, since the reader chose what is in it.
+const PRINTED_CACHE_NAME = "mm-printed-v1";
+let savedPrinted = null;
+function refreshSavedPrinted() {
+  return caches.open(PRINTED_CACHE_NAME).then((c) => c.keys())
+    .then((keys) => { savedPrinted = new Set(keys.map((r) => r.url)); })
+    .catch(() => { savedPrinted = null; });
+}
+refreshSavedPrinted();
+function isPrintedPage(request) {
+  if (request.method !== "GET") return false;
+  try { return /\/mushaf-printed\/ksu-madani\/\d{3}\.png$/i.test(new URL(request.url).pathname); } catch { return false; }
+}
+async function handlePrintedPage(request) {
+  let hit = null;
+  try { hit = await caches.match(request.url, { cacheName: PRINTED_CACHE_NAME }); } catch { hit = null; }
+  return hit || fetch(request);
 }
 
 // Audit part 53 (PCF MSA J29): background refreshes wait for a quiet page.
@@ -568,6 +598,11 @@ self.addEventListener("fetch", (event) => {
 
   if (isRecitationAudio(request) && (savedAudio === null || savedAudio.has(request.url))) {
     event.respondWith(handleRecitationAudio(request));
+    return;
+  }
+
+  if (isPrintedPage(request) && (savedPrinted === null || savedPrinted.has(request.url))) {
+    event.respondWith(handlePrintedPage(request));
     return;
   }
 
