@@ -6,7 +6,7 @@
 //   MUT=notabline ... mutation: the Word Card has no step line                        -> the step-line checks
 //   MUT=latinonly ... mutation: the line drops its Arabic                             -> the "all three scripts" check
 //   MUT=cut ...       mutation: the type is fixed at its biggest size (the cut-off \"Level of Dif…\" the first build had at 390px)  -> the \"nothing cut\" check
-//   MUT=wrap ...      mutation: the line is allowed to wrap onto a second row         -> the "one thin row" check
+//   MUT=wrap ...      mutation: the line is allowed to wrap onto a second row (type pinned at its biggest, so it must wrap) -> the "one thin row" check
 // What it proves, rendered and measured at 320, 360, 390, 768 and 1280, English and Bangla:
 //   1. The Ayah card has ONE gold line "Mustawa al-Ṣuʿūbah · مستوى الصعوبة · Level of Difficulty" (Bangla: the English part is
 //      Bangla, the title and the Arabic stay) directly over the Difficult / Need practice / Done chips, in one thin row,
@@ -44,7 +44,7 @@ else if (MUT === "noline") mutate("app/js/ayah-action-sheet.js", /\$\{titleLineH
 else if (MUT === "notabline") mutate("app/js/quran-word-card.js", /    \$\{titleLineHtml\(\{ key: "word-card-steps"[^\n]*\n/g, "");
 else if (MUT === "latinonly") mutate("app/js/title-line.js", /<span class="tl-ar"[^`]*?<\/span>/g, "");
 else if (MUT === "cut") { mutate("app/js/title-line.js", /font: 600 clamp\(0\.62rem, 2\.9vw, 0\.78rem\)/g, "font: 600 0.78rem"); mutate("app/js/title-line.js", /font-size: 1\.3em;/g, "font-size: 1.3em; margin-inline: 0.5rem;"); }
-else if (MUT === "wrap") mutate("app/js/title-line.js", /white-space: nowrap; /g, "white-space: normal; ");
+else if (MUT === "wrap") { mutate("app/js/title-line.js", /white-space: nowrap; /g, "white-space: normal; "); mutate("app/js/title-line.js", /font: 600 clamp\(0\.62rem, 2\.9vw, 0\.78rem\)/g, "font: 600 0.78rem"); mutate("app/js/title-line.js", /font-size: 1\.3em;/g, "font-size: 1.3em; margin-inline: 0.5rem;"); } // 100L review: wrap alone changed nothing (the line fits at every width), so it pins the type at its biggest, as cut does; then wrapping is what keeps it uncut
 
 const TENANT = "t1";
 const SEED = `\nDATA.ayahKeyMarks = [{ _id: "${TENANT}__p1__1", tenantId: "${TENANT}", scope: "p1", surah: 1, entries: { "ayah:1:2": ["hard"], "qword:1:1:1": ["done"], "qword:1:2:1": ["practice"] }, schemaVersion: 1, createdAt: "2026-11-04T00:00:00.000Z", updatedAt: "2026-11-04T00:00:00.000Z", createdBy: "test-uid" }];\n`;
