@@ -59,8 +59,17 @@ check(".gitattributes marks the folder binary", () => need(/mushaf-printed\/\*\*
 // "the word mushaf-printed appears nowhere" went red on correct code. What these checks protect is unchanged: no picture
 // path is listed, and a worker mentions the folder only on a line that refuses it.
 check("none of the pictures is listed in app/offline-files.json", () => need(!/mushaf-printed\//.test(offline) && !/ksu-madani/.test(offline), "listed"));
-check("no worker names a picture, and each mention of the folder is a refusal", () => need(workers.every((w) => !/ksu-madani/.test(w)
-  && w.split("\n").filter((l) => /mushaf-printed/.test(l)).every((l) => /mushaf-printed\/"\)\) return false;/.test(l))), "named in a worker"));
+// UPDATED IN PLACE (47L, PR 3 "keep pages in the app", 11 Nov 2026): each worker now also RECOGNISES a printed-page request, on ONE
+// line (isPrintedPage), so that it can answer a page the reader chose to keep from its own cache (printed-offline-browser.mjs proves it
+// serves only kept pages and never keeps one itself). That line names the folder and "ksu-madani" as a pattern, never one picture.
+// What this protects is unchanged: no picture path is listed, and every other mention of the folder is the refusal.
+check("no worker names a picture; each mention of the folder is the refusal or the one kept-page recogniser", () => need(workers.every((w) => {
+  const code = w.split("\n").filter((l) => /mushaf-printed|ksu-madani/.test(l)).filter((l) => !/^\s*\/\//.test(l));
+  const refusal = code.filter((l) => /mushaf-printed\/"\)\) return false;/.test(l));
+  const recogniser = code.filter((l) => /mushaf-printed\\\/ksu-madani\\\/\\d\{3\}\\\.png\$/.test(l)); // a pattern for any page number, never one picture's name
+  if (/ksu-madani\/\d{3}\.png/.test(w)) return false; // a literal picture path anywhere, comments included
+  return code.length === refusal.length + recogniser.length && refusal.length === 1 && recogniser.length === 1;
+}), "a worker names the folder somewhere other than its refusal and its one recogniser"));
 check("POSITIVE CONTROL: both workers carry the refusal line", () => need(workers.every((w) => /includes\("\/mushaf-printed\/"\)\) return false;/.test(w)), "a worker has no refusal"));
 check("the offline builder skips the folder", () => need(/mushaf-printed/.test(builder) && /!\/\\\/mushaf-printed\\\//.test(builder), "builder does not skip it"));
 console.log(`\n${pass} passed, ${fail} failed${MUTATE ? ` (mutation: ${MUTATE})` : ""}`);
