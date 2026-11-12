@@ -244,8 +244,11 @@ check("the Qur'an cache renamed in sw.js stops the qr build (PCF MSA J120 O2)", 
 check("the recitation cache renamed in sw.js, or named by the page module, stops the qr build (PCF MSA J120 O6)", () =>
   mutate("app/sw.js", 'const AUDIO_CACHE_NAME = "mm-audio-v1";', 'const AUDIO_CACHE_NAME = "mmx-audio-v1";', () => throws(() => buildMut("qr"), /offline cache "audio"/)) &&
   mutate("app/js/recitation-offline.js", 'export const RECITATION_CACHE = "mm-audio-v1";', 'export const RECITATION_CACHE = "mmx-audio-v1";', () => throws(() => buildMut("qr"), /offline cache "audio" in recitation-offline\.js/)));
+check("the printed-pages cache renamed in sw.js, or named by the page module, stops the qr build (printed Mushaf, PR 3)", () =>
+  mutate("app/sw.js", 'const PRINTED_CACHE_NAME = "mm-printed-v1";', 'const PRINTED_CACHE_NAME = "mmx-printed-v1";', () => throws(() => buildMut("qr"), /offline cache "printed"/)) &&
+  mutate("app/js/printed-offline.js", 'export const PRINTED_CACHE = "mm-printed-v1";', 'export const PRINTED_CACHE = "mmx-printed-v1";', () => throws(() => buildMut("qr"), /offline cache "printed" in printed-offline\.js/)));
 check("msa.json's caches list missing a cache sw.js keeps stops even the msa build", () =>
-  mutate("app/apps/msa.json", '"quran", "audio"]', '"quran"]', () => throws(() => buildMut("msa"), /"caches" .* is not the list build-app\.mjs counts/)));
+  mutate("app/apps/msa.json", '"audio", "printed"]', '"audio"]', () => throws(() => buildMut("msa"), /"caches" .* is not the list build-app\.mjs counts/)));
 check("a hidden module nav.js cannot hide stops the build", () =>
   mutate("app/apps/qr.json", '"naturelife",', '"naturelife", "hadith",', () => throws(() => buildMut("qr"), /hidden module "hadith"/)));
 check("the hidden-modules list changed in the source stops the build", () =>

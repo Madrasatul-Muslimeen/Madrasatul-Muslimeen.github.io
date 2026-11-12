@@ -45,6 +45,17 @@ export const BOOK_PAGE_BOOKS = {
     title: { en: "Sahih Muslim", bn: "সহীহ মুসলিম" },
     pdf: "All in One-Sahih Muslim-Eng-Arabic-Darusalam.pdf", pdfBytes: 153338585,
   },
+  // Sunan an-Nasa'i comes as TWO scan files (vol. 1-5 and vol. 6). Its printed numbers differ from the standard numbers the reader cites, so
+  // the map (tools/hadith-data-pull/book-pages-nasai.py) is aligned by content and says which file holds which STANDARD number (`parts[i].from/to`).
+  "0303Nasai.SunanSughra.JK000130-ara1": {
+    key: "nasai",
+    archiveId: "AllInOne-Hadiths-EngArabicDarusalam_201407",
+    title: { en: "Sunan an-Nasa'i", bn: "সুনানে নাসাঈ" },
+    parts: [
+      { slug: "All%20in%20One-Sunan%20Nasai-Eng-Vol%201-5", pdf: "All in One-Sunan Nasai-Eng-Vol 1-5.pdf", pdfBytes: 101597327 },
+      { slug: "All%20in%20One-Sunan%20Nasai-Eng-Vol%206", pdf: "All in One-Sunan Nasai-Eng-Vol 6.pdf", pdfBytes: 15957364 },
+    ],
+  },
   // Books with NO usable scan: the printed page as typed text on Shamela (the Owner, 10-11 Nov 2026: "Shamela is the fallback").
   // These are keyed by the book's OWN hadith number (the one in our Arabic text), not a concordance standard number.
   "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1": {
@@ -57,12 +68,30 @@ export const BOOK_PAGE_BOOKS = {
     title: { en: "al-Adab al-Mufrad", bn: "আল-আদাবুল মুফরাদ" },
     edition: { en: "ed. Abd al-Baqi", bn: "মুহাম্মাদ ফুআদ আবদুল বাকী সম্পাদিত" },
   },
+  // Musnad Ahmad: Shamela's typed text of ed. al-Arna'ut carries the edition's own hadith number, which our text carries too, so the map is keyed by that number.
+  "0241IbnHanbal.Musnad.Shamela0025794-ara1": {
+    key: "ahmad", kind: "shamela", shamelaId: "25794",
+    title: { en: "Musnad Ahmad", bn: "মুসনাদে আহমাদ" },
+    edition: { en: "ed. al-Arna'ut, al-Risala", bn: "শু'আইব আল-আরনাউত সম্পাদিত, আর-রিসালা" },
+  },
+  // Forty Nawawi (the Owner ticked hd1111n G, 11 Nov 2026): our copy carries no hadith numbers, so each passage was found in the typed pages by its
+  // opening words and the map is keyed by OUR record order `n` (tools/hadith-data-pull/shamela-pages-text.py).
+  "0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1": {
+    key: "nawawi40", kind: "shamela", keyBy: "n", shamelaId: "12836",
+    title: { en: "al-Nawawi's Forty Hadith", bn: "আন-নাওয়াবীর চল্লিশ হাদীস" },
+    edition: { en: "Dar al-Minhaj, 1st ed. 1430 AH", bn: "দারুল মিনহাজ, ১ম সংস্করণ, ১৪৩০ হিজরী" },
+  },
   // Riyad al-Salihin: the book's own number prints per chapter (and our header has typos), so its map is keyed by OUR record order `n`
   // (keyBy: "n"); the card passes h.n and the pane names the book without a hadith number.
   "0676Nawawi.RiyadSalihin.Shamela0012014-ara1": {
     key: "riyad", kind: "shamela", keyBy: "n", shamelaId: "12014",
     title: { en: "Riyad al-Salihin", bn: "রিয়াযুস সালিহীন" },
     edition: { en: "ed. al-Arna'ut, al-Risala", bn: "শু'আইব আল-আরনাউত সম্পাদিত, আর-রিসালা" },
+  },  // Sunan al-Darimi: our text and Shamela's print number their hadith differently after the first few, so the map is keyed by OUR record order `n`.
+  "0255CabdAllahDarimi.Sunan.JK000842-ara1": {
+    key: "darimi", kind: "shamela", keyBy: "n", shamelaId: "21795",
+    title: { en: "Sunan al-Darimi", bn: "সুনানুদ দারিমী" },
+    edition: { en: "ed. Husayn Asad", bn: "হুসাইন আসাদ সম্পাদিত" },
   },
 };
 
@@ -125,8 +154,16 @@ export async function loadBookPage(versionUri, standardNumber, { fetchImpl = fet
   }
   if (!map || n > map.numbers || !Number.isInteger(map.p?.[n - 1])) return null;
   const leaf = map.p[n - 1];
+  // A book in several scan files: the map says which file holds this STANDARD number; the pane then links to that file (and its PDF).
+  let scan = book;
+  if (book.parts) {
+    const i = (map.parts || []).findIndex((pt) => n >= pt.from && n <= pt.to);
+    const pt = i >= 0 ? book.parts[i] : null;
+    if (!pt) return null;
+    scan = { ...book, slug: pt.slug, pdf: pt.pdf, pdfBytes: pt.pdfBytes };
+  }
   // `a` is sorted: binary search
   let lo = 0, hi = (map.a?.length ?? 0) - 1, approximate = false;
   while (lo <= hi) { const mid = (lo + hi) >> 1; if (map.a[mid] === n) { approximate = true; break; } if (map.a[mid] < n) lo = mid + 1; else hi = mid - 1; }
-  return { book, leaf, approximate, ...bookPageUrls(book, leaf) };
+  return { book: scan, leaf, approximate, ...bookPageUrls(scan, leaf) };
 }

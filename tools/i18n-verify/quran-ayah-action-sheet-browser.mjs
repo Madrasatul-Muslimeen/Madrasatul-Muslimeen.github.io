@@ -203,7 +203,7 @@ for (const viewport of [
         const header = box(sheet?.querySelector(".ayah-sheet-tilebar") ?? statusEl?.previousElementSibling);
         const status = box(sheet?.querySelector("[data-ayah-sheet-status]"));
         const play = box(sheet?.querySelector("[data-ayah-sheet-play]"));
-        const title = sheet?.querySelector("[data-ayah-sheet-status] .ayah-sheet-section-title");
+        const title = sheet?.querySelector('[data-ayah-sheet-status] [data-title-line="difficulty"]'); // 11 Nov 2026: the old "Status of this āyah" title became the ONE difficulty line
         const tb = box(title);
         const scroller = sheet;
         const sb = box(scroller);
@@ -214,11 +214,11 @@ for (const viewport of [
           titleVisible: tb.top >= sb.top && tb.bottom <= Math.min(sb.bottom, innerHeight), titleText: title.textContent.trim(),
         } : null;
       });
-      if (order?.windowed) check(`${lang} ${viewport.label} (the card as a window, J70) "Status of this āyah" is in the right half, under Take an Approach, above Info`, order.inRightHalf === true, JSON.stringify(order));
-      else check(`${lang} ${viewport.label} "Status of this āyah" sits straight under the action row (gap ${order?.gapUnderHeader}px)`, !!order && order.gapUnderHeader >= 0 && order.gapUnderHeader <= 12, JSON.stringify(order));
+      if (order?.windowed) check(`${lang} ${viewport.label} (the card as a window, J70) the difficulty line (was "Status of this āyah") is in the right half, under Take an Approach, above Info`, order.inRightHalf === true, JSON.stringify(order));
+      else check(`${lang} ${viewport.label} the difficulty line (was "Status of this āyah") sits straight under the action row (gap ${order?.gapUnderHeader}px)`, !!order && order.gapUnderHeader >= 0 && order.gapUnderHeader <= 12, JSON.stringify(order));
       check(`${lang} ${viewport.label} ...with Play this āyah in the row above it`, !!order && order.statusAbovePlay, JSON.stringify(order));
-      check(`${lang} ${viewport.label} ...and its heading is in view the moment the card opens ("${{ en: "Status of this āyah", bn: order?.titleText }[lang]}")`,
-        !!order && order.titleVisible && (lang !== "en" || order.titleText === "Status of this āyah"), JSON.stringify(order));
+      check(`${lang} ${viewport.label} ...and its heading is in view the moment the card opens (the difficulty line)`,
+        !!order && order.titleVisible && (lang !== "en" || /Mustawa al-Ṣuʿūbah/.test(order.titleText) && /Level of Difficulty/.test(order.titleText)), JSON.stringify(order));
 
       // Escape closes it.
       await page.keyboard.press("Escape");
