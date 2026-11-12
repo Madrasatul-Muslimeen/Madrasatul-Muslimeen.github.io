@@ -23,6 +23,7 @@ import { listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterL
 import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
 import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
 import { HADEETHENC_LANGS, HADEETHENC_STRUCTURE_LANG, loadHadeethEncCategories, childCategories, directHadithIds, resolveCategoryTitle, loadHadithRecords, hadithArabicText, hadeethEncSourceUrl } from "./hadeethenc-corpus.js";
+import { hasMyIndex, renderIndexSwitch, renderMyIndex } from "./hadith-myindex.js";
 import { OPENITI_CREDIT_URL, loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber, loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadHadeethEncReferences, loadDuaIndex } from "./openiti-corpus.js";
 import { el, readFailedNote, langNameInProse, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
 import { bookPageButton, isShamelaBook, isKeyedByN } from "./hadith-book-viewer.js"; // the original printed page of a hadith (Owner, 11 Nov 2026)
@@ -1208,7 +1209,7 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   };
   const reader = hadithReader({
     oi, localRefresh,
-    chapters: (pane) => renderOpenitiChapterList(pane, oi, index, localRefresh, conc, babs),
+    chapters: (pane) => renderOpenitiChapterList(pane, oi, index, localRefresh, conc, babs, versionUri),
     hadiths: (pane) => renderReaderHadithList(pane, passages, oi, localRefresh, conc),
     text: (pane, head) => renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks, duaCtx, versionUri, jumped, subjectRef),
     titles: { chapters: t("Chapters"), hadiths: chapter ? t("Hadith · {n}", { n: num(passages.length) }) : t("Hadith"), text: t("Text") },
@@ -1346,7 +1347,10 @@ function renderOpenitiBookList(body, oi, localRefresh) {
   body.appendChild(list);
 }
 
-function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, babs = null) {
+function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, babs = null, versionUri = null) {
+  // The Owner's alternate index (Bukhari): two buttons at the top; the original index stays exactly as it was.
+  const alt = versionUri && conc && hasMyIndex(versionUri);
+  if (alt) body.appendChild(renderIndexSwitch(oi, localRefresh));
   const goBox = el("div", "openiti-goto");
   const editionNumbers = index.numbering !== "sequential-by-paragraph";
   if (!editionNumbers && !conc) {
@@ -1416,6 +1420,7 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
   }
   body.appendChild(goBox);
 
+  if (alt && oi.indexMode === "my") { renderMyIndex(body, versionUri, oi, localRefresh, conc); return; }
   const shown = oi.showAllChapters ? index.chapters.length : Math.min(OPENITI_CHAPTER_PAGE, index.chapters.length);
   const list = el("div", "hadith-list");
   list.dataset.openitiChapterList = String(shown);
