@@ -31,3 +31,12 @@ Owner ticked hd1111n C/D (11 Nov). Registry row `nasai` in `tools/hadith-data-pu
 
 ## Next step
 Build the aligner (`tools/hadith-data-pull/book-pages-nasai.py`), measure coverage, report. No version bump, no merge by the Lead; the PR goes to the MSA Architect (100L).
+
+## Pilot 2 (12 Nov, later; throwaway script, still not committed)
+Two passes, monotone by construction:
+1. Anchors: each numbered scan line vs standard numbers in [s-14, s+5], difflib >= 0.6 on 30 words, then the longest increasing chain by (cite, page order): 3,148 candidates, **3,028 anchors**.
+2. Gap fill: between two neighbouring anchors, scan lines in order may take only the standard numbers strictly between them (within 6 of the expected shift), threshold 0.42 (the OCR garbles names): **+784**.
+
+Result: **3,812 of 5,672 standard numbers (67.2%), 0 pages going backwards.**
+
+Failures read by eye: (a) OCR-garbled names ("ju y j f y a yn muhammad") which pass 2 recovers; (b) numbered **footnotes and commentary** ("1 we learn that for men the use of gold...") that are false candidates and are rejected by the chain; (c) the 5,289 numbered lines are fewer than the 5,758 printed hadith, so about 1,860 standard numbers have **no scan line to match**. Closing that needs the aligner to find hadith starts by text (the "It was narrated that..." opening after a chapter heading), not only by a leading number. That is the next step, then the independent sample check.
