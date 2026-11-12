@@ -3332,3 +3332,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.26** (2026-11-11): the Printed page view, the QR debt round and Riyad al-Salihin's printed page.
 - **v14.27** (2026-11-12): keeping printed Mushaf pages in the app.
 - **v14.28** (2026-11-12): gold title lines, four Hadith printed-page books and Bukhari My index.
+- **v14.29** (2026-11-12): Little Difficult, Read on word tap and bookmarks, printed pages as a PDF, Arabic twice its size.

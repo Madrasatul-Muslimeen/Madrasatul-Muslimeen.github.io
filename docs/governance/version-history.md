@@ -1131,3 +1131,4 @@ total). Allocated by the MMSA Architect.
 14.26: the Printed page view, the QR debt round and Riyad al-Salihin's printed page. Allocated by the MMSA Architect.
 14.27: keeping printed Mushaf pages in the app. Allocated by the MMSA Architect.
 14.28: gold title lines, four Hadith printed-page books and Bukhari My index. Allocated by the MMSA Architect.
+14.29: Little Difficult, Read on word tap and bookmarks, printed pages as a PDF, Arabic twice its size. Allocated by the MMSA Architect.
