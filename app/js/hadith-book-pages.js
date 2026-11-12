@@ -45,6 +45,17 @@ export const BOOK_PAGE_BOOKS = {
     title: { en: "Sahih Muslim", bn: "সহীহ মুসলিম" },
     pdf: "All in One-Sahih Muslim-Eng-Arabic-Darusalam.pdf", pdfBytes: 153338585,
   },
+  // Sunan an-Nasa'i comes as TWO scan files (vol. 1-5 and vol. 6). Its printed numbers differ from the standard numbers the reader cites, so
+  // the map (tools/hadith-data-pull/book-pages-nasai.py) is aligned by content and says which file holds which STANDARD number (`parts[i].from/to`).
+  "0303Nasai.SunanSughra.JK000130-ara1": {
+    key: "nasai",
+    archiveId: "AllInOne-Hadiths-EngArabicDarusalam_201407",
+    title: { en: "Sunan an-Nasa'i", bn: "সুনানে নাসাঈ" },
+    parts: [
+      { slug: "All%20in%20One-Sunan%20Nasai-Eng-Vol%201-5", pdf: "All in One-Sunan Nasai-Eng-Vol 1-5.pdf", pdfBytes: 101597327 },
+      { slug: "All%20in%20One-Sunan%20Nasai-Eng-Vol%206", pdf: "All in One-Sunan Nasai-Eng-Vol 6.pdf", pdfBytes: 15957364 },
+    ],
+  },
   // Books with NO usable scan: the printed page as typed text on Shamela (the Owner, 10-11 Nov 2026: "Shamela is the fallback").
   // These are keyed by the book's OWN hadith number (the one in our Arabic text), not a concordance standard number.
   "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1": {
@@ -143,8 +154,16 @@ export async function loadBookPage(versionUri, standardNumber, { fetchImpl = fet
   }
   if (!map || n > map.numbers || !Number.isInteger(map.p?.[n - 1])) return null;
   const leaf = map.p[n - 1];
+  // A book in several scan files: the map says which file holds this STANDARD number; the pane then links to that file (and its PDF).
+  let scan = book;
+  if (book.parts) {
+    const i = (map.parts || []).findIndex((pt) => n >= pt.from && n <= pt.to);
+    const pt = i >= 0 ? book.parts[i] : null;
+    if (!pt) return null;
+    scan = { ...book, slug: pt.slug, pdf: pt.pdf, pdfBytes: pt.pdfBytes };
+  }
   // `a` is sorted: binary search
   let lo = 0, hi = (map.a?.length ?? 0) - 1, approximate = false;
   while (lo <= hi) { const mid = (lo + hi) >> 1; if (map.a[mid] === n) { approximate = true; break; } if (map.a[mid] < n) lo = mid + 1; else hi = mid - 1; }
-  return { book, leaf, approximate, ...bookPageUrls(book, leaf) };
+  return { book: scan, leaf, approximate, ...bookPageUrls(scan, leaf) };
 }
