@@ -22908,6 +22908,9 @@
         dlg.remove(); window.removeEventListener("keydown", onKey, true);
         const { half } = parseAyahUnitKey(unitKey);
         openAyahActionSheet(`${surah}:${ayah}`, half ?? null);
+        // phone layout part 2: 📋 Copy is a tile of the ⋮ menu, so the card comes back with ⋮ open and the keyboard on Copy.
+        const more = ayahActionSheetMountEl.querySelector("[data-ayah-sheet-more]");
+        if (more && more.getAttribute("aria-expanded") !== "true") more.click();
         ayahActionSheetMountEl.querySelector("[data-ayah-sheet-copy]")?.focus({ preventScroll: true });
       };
       const onKey = (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); close(); } };
