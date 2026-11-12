@@ -66,5 +66,29 @@
         505
       ]
     }
+  },
+  "nawawi40": {
+    "keyedBy": "n",
+    "note": "Forty Nawawi is keyed by OUR record order n (our copy has no numbers). n -> [Shamela index, printed page]; read on live shamela.ws 12 Nov 2026: title is ص<page> and the passage's opening 8 words are on the page. n=19 opens al-Hadith al-Awwal. `unmapped` = the passages the typed pages did not hold.",
+    "minCoverage": 0.98,
+    "maxBackwards": 0,
+    "unmapped": [
+      1,
+      12
+    ],
+    "at": {
+      "19": [
+        12,
+        46
+      ],
+      "70": [
+        40,
+        74
+      ],
+      "130": [
+        76,
+        110
+      ]
+    }
   }
 }

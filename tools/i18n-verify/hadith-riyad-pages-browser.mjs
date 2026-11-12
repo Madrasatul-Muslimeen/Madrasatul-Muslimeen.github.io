@@ -18,7 +18,7 @@ const MUT = {
   wrongindex: ["js/hadith-book-pages.js", "/${Math.trunc(Number(index))}`;", "/${Math.trunc(Number(index)) + 1}`;"],
   wrongbook: ["js/hadith-book-pages.js", 'key: "riyad", kind: "shamela", keyBy: "n", shamelaId: "12014"', 'key: "riyad", kind: "shamela", keyBy: "n", shamelaId: "12015"'],
   nobutton: ["js/hadith-browser.js", "const bp = pageNo ? bookPageButton(vUri, pageNo) : null; if (bp) card.appendChild(bp); }", "}"],
-  usesnumber: ["js/hadith-browser.js", 'isKeyedByN(vUri) ? (h.kind === "hadith" && Number(h.n) > 0 ? Math.trunc(Number(h.n)) : null)', 'isKeyedByN(vUri) ? (h.kind === "hadith" && Number(h.number) > 0 ? Math.trunc(Number(h.number)) : null)'],
+  usesnumber: ["js/hadith-browser.js", 'isKeyedByN(vUri) ? ((h.kind === "hadith" || h.kind === "passage") && Number(h.n) > 0 ? Math.trunc(Number(h.n)) : null)', 'isKeyedByN(vUri) ? ((h.kind === "hadith" || h.kind === "passage") && Number(h.number) > 0 ? Math.trunc(Number(h.number)) : null)'],
   notkeyedbyn: ["js/hadith-book-pages.js", 'key: "riyad", kind: "shamela", keyBy: "n",', 'key: "riyad", kind: "shamela",'],
   titlehadith: ["js/hadith-book-viewer.js", 'book.keyBy === "n" ? bookName : t(', 'false ? bookName : t('],
   nocredit: ["js/hadith-book-viewer.js", "      : t(\"Printed text: Shamela Library, {edition}, p. {page}\", { edition, page: num(String(info.page ?? \"\")) }))", "      : \"\")"],
