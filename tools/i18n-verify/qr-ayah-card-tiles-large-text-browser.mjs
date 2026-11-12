@@ -8,7 +8,9 @@
 //   node tools/i18n-verify/qr-ayah-card-tiles-large-text-browser.mjs [--mutate=NAME]   (serve.js on :8080, repo root)
 //   no-fit    the fit returns at once                 -> "no tile's word is cut" FAILS at 150/200%
 //   no-shrink the words are never made smaller        -> "the tiles take at most 3 rows" FAILS at 320/390 200%
-//   no-cols   the columns are never widened           -> "no tile's word is cut" FAILS at 320/390 200%
+//   (no-cols RETIRED by phone layout part 2, 11 Nov 2026: the ⋮ menu is a fixed three columns, whose words the shrink step alone keeps whole
+//    at every size measured, so the widen-the-columns step is never reached by this card and a mutant of it cannot fail here; the step stays for any
+//    grid that needs it. Measured: with it removed, 184 passed, 0 failed. Recorded rather than deleted silently.)
 //   no-floor  the 7/10 floor lowered to 4/10          -> "tile words keep at least 7/10 of their size" FAILS at 200%
 //   no-ro     the row's width is not watched          -> "after A± to 200% no word is cut" FAILS (A± widens the row)
 //   no-back   the ← Back box fixed at 40x40 again     -> "the ← Back arrow sits inside its box" FAILS at 150/200%
@@ -23,14 +25,13 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const MUT = {
   "no-fit": ["js", "export function fitAyahActionRow(row) {\n  if (!row) return;", "export function fitAyahActionRow(row) {\n  if (row) return;"],
   "no-shrink": ["js", "const scale = Math.min(1, Math.max(0.7, ordinary / px, room / widest));", "const scale = 1;"],
-  "no-cols": ["js", "  row.style.gridTemplateColumns = `repeat(auto-fit, minmax(min(100%, ${Math.ceil(need) + 2}px), 1fr))`;", "  void need;"],
   "no-floor": ["js", "Math.max(0.7, ordinary / px, room / widest)", "Math.max(0.4, room / widest)"],
   "no-ro": ["js", "  new ResizeObserver(() => { const w = Math.round(row.getBoundingClientRect().width); if (w !== lastW) { lastW = w; fitAyahActionRow(row); } }).observe(row);", "  void lastW;"],
   "no-back": ["html", "min-width: 40px; min-height: 40px; padding: 0.15rem 0.35rem; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #c9a24b;", "width: 40px; height: 40px; border: 1px solid #c9a24b;"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 // Rows of tiles at ordinary text, measured on main v13.11 before this round and written by hand.
-const PLAIN_ROWS = { "320x640": 2, "390x844": 2, "768x1024": 1, "1280x800": 1, "844x390": 1 }; // UPDATED IN PLACE (J131, 9 Nov 2026): eight tiles (the Note moved to the bar), so 320px takes two rows, not three
+const PLAIN_ROWS = { "320x640": 3, "390x844": 3, "768x1024": 3, "1280x800": 3, "844x390": 3 }; /* UPDATED IN PLACE (phone layout part 2, 11 Nov 2026): the ⋮ menu is nine tiles, THREE to a line at every width (the Owner, demo v3), so three rows everywhere; */ // UPDATED IN PLACE (J131, 9 Nov 2026): eight tiles (the Note moved to the bar), so 320px takes two rows, not three
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const setSelect = (page, id, v) => page.evaluate(([i, x]) => { const s = document.getElementById(i); s.value = String(x); s.dispatchEvent(new Event("change", { bubbles: true })); }, [id, v]);
 
@@ -54,6 +55,9 @@ async function boot(lang, w, h, size) {
   await setSelect(page, "surahSelect", 2); await page.waitForTimeout(800); await setSelect(page, "ayahSelect", 13);
   await page.waitForFunction(() => document.querySelector('[data-ayah-num-badge="2:13"]'), null, { timeout: 15000 });
   await page.evaluate(() => document.querySelector('[data-ayah-num-badge="2:13"]').click());
+  // UPDATED IN PLACE (phone layout part 2, 11 Nov 2026): the tiles are the ⋮ menu, shown only while ⋮ is open: open it, as a reader does.
+  await page.waitForSelector("[data-ayah-sheet-more]", { timeout: 15000 });
+  await page.evaluate(() => { const b = document.querySelector("[data-ayah-sheet-more]"); if (b.getAttribute("aria-expanded") !== "true") b.click(); });
   await page.waitForFunction(() => [...document.querySelectorAll("[data-ayah-sheet-actions]")].some((r) => r.getClientRects().length), null, { timeout: 15000 });
   await page.waitForTimeout(500);
   return { ctx, page };
@@ -82,7 +86,7 @@ const measure = (page) => page.evaluate(() => {
 const CASES = [[320, 640, "en"], [320, 640, "bn"], [390, 844, "en"], [390, 844, "bn"], [768, 1024, "en"], [768, 1024, "bn"], [1280, 800, "en"], [1280, 800, "bn"], [844, 390, "en"]];
 for (const [w, h, lang] of CASES) for (const size of ["100%", "150%", "200%"]) {
   const t = `${lang} ${w}x${h} ${size}`, { ctx, page } = await boot(lang, w, h, size), m = await measure(page);
-  check(`${t}: positive control, the nine tiles are there`, m.n === 8, String(m.n)); // UPDATED IN PLACE (J131, 9 Nov 2026): the ONE 📝 Note moved from the tile row to the bar, so eight tiles
+  check(`${t}: positive control, the nine tiles of the ⋮ menu are there`, m.n === 9, String(m.n)); // UPDATED IN PLACE (phone layout part 2, 11 Nov 2026): Note and the Writing sheet join the menu, Play leaves it for the ‹ ▶ › group: nine tiles
   check(`${t}: no tile's word is cut`, m.cut.length === 0, m.cut.join(", "));
   check(`${t}: tile words keep at least 7/10 of their size and never go below ordinary (${Math.min(...m.sizes).toFixed(1)}px of ${m.intended.toFixed(1)})`, m.sizes.every((s) => s >= Math.max(0.68 * 16, 0.7 * m.intended) - 0.1));
   check(`${t}: the tiles take at most 3 rows`, m.rows <= 3, String(m.rows));

@@ -654,13 +654,10 @@ function headerLines(header) {
   return lines;
 }
 export function fitAyahSheetHeader(header) {
-  if (!header) return;
-  header.classList.remove("ayah-head-stack");
-  if (!header.getClientRects().length || header.closest("[data-ayah-win]")) return;
-  if (headerLines(header) < 3) return;
-  const before = header.getBoundingClientRect().height;
-  header.classList.add("ayah-head-stack");
-  if (header.getBoundingClientRect().height >= before - 1) header.classList.remove("ayah-head-stack");
+  // MSA · QR phone layout part 2 (11 Nov 2026): the stacking this used to do (audit 10: buttons on line one, the reference on line two) is
+  // retired. The header is now always the reference and ✕ on line one and the ONE row [Location][Ayah][‹ ▶ ›][⋮] on line two, so there is
+  // nothing left to stack; this only takes off a class a previous version may have left.
+  header?.classList.remove("ayah-head-stack");
 }
 function watchAyahSheetHeader(header) {
   if (!header || typeof ResizeObserver !== "function") return;

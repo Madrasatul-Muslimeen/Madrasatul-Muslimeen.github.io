@@ -5152,15 +5152,15 @@
   /* MSA · QR phone layout part 2 (the Owner, 11 Nov 2026, demo v3): ONE row [📍 Location ▾][📖 Ayah][‹ ▶ ›][⋮] at every width. The two words
      share what the 40px buttons leave and are cut with an ellipsis rather than wrapped; on a very narrow phone Location keeps just 📍 ▾. The ⋮
      opens the tiles (Note, Writing sheet, QCR, Bookmark, Poster, Asma, Folder, Copy, Share), the Location button the six unit buttons. */
-  .ayah-sheet-header .ayah-sheet-head-tools:not([hidden]) { display: flex; flex-wrap: nowrap; align-items: stretch; justify-content: stretch; gap: 0.3rem; flex: 1 0 100%; max-width: 100%; min-width: 0; }
-  .ayah-sheet-loc, .ayah-sheet-head-tools .ayah-sheet-noteview { flex: 1 1 0; min-width: 0; height: 40px; padding: 0 0.4rem; margin: 0; border: 1px solid var(--card-line); border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-heading); font: inherit; font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
-  .ayah-sheet-loc { flex-grow: 1.4; }
+  .ayah-sheet-header .ayah-sheet-head-tools:not([hidden]) { display: flex; flex-wrap: wrap; align-items: stretch; justify-content: stretch; gap: 0.25rem; flex: 1 0 100%; max-width: 100%; min-width: 0; }
+  .ayah-sheet-loc, .ayah-sheet-head-tools .ayah-sheet-noteview { flex: 1 1 auto; min-width: max-content; height: 40px; padding: 0 0.3rem; margin: 0; border: 1px solid var(--card-line); border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-heading); font: inherit; font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
   .ayah-sheet-loc[aria-expanded="true"], .ayah-sheet-more[aria-expanded="true"] { background: #1f3a6e; color: #fff; border-color: #1f3a6e; }
-  .ayah-sheet-more { flex: 0 0 40px; width: 40px; height: 40px; padding: 0; margin: 0; border: 1px solid var(--card-line); border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-heading); font-size: 1.4rem; line-height: 1; cursor: pointer; }
+  .ayah-sheet-more { flex: 0 0 40px; width: 40px; height: 40px; padding: 0; margin: 0; border: 1px solid var(--card-line); border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-heading); font-size: min(1.4rem, 26px); line-height: 1; cursor: pointer; }
   .ayah-sheet-nav-pair { flex: 0 0 auto; }
   .ayah-sheet-nav-play { font-size: 1.05rem; }
   /* below 380px the two words do not both fit beside the 120px ‹ ▶ › and the 40px ⋮ (measured: Location needs about 100px, Ayah about 67px): Location keeps 📍 ▾ (its name stays in aria-label) and Ayah takes the rest */
   @media (max-width: 379.98px) { .ayah-sheet-loc-label { display: none; } .ayah-sheet-loc { flex: 0 0 auto; padding: 0 0.55rem; } }
+  /* at large text (A+ 150-200%) four controls cannot share one line of a phone: each keeps its whole word (min-width: max-content) and ‹ ▶ › and ⋮ take a line of their own, never cut and never off the card */
   .ayah-sheet-location { padding: 0.35rem 0 0.2rem; }
   .ayah-sheet-tilebar[data-ayah-sheet-menu] .ayah-sheet-actrow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .ayah-sheet-pane-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }

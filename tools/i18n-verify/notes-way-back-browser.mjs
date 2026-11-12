@@ -97,7 +97,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
     const { page: P } = await openPage(ctx, "/app/quranrevival.html");
     await toAyah255(P);
     await P.evaluate(() => document.querySelector('[data-ayah-num-badge="2:255"]')?.click());
-    await P.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-poster]", { timeout: 8000 });
+    await P.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-poster]", { timeout: 8000, state: "attached" });
     await P.waitForTimeout(500);
     let went = true;
     await Promise.all([P.waitForURL(/ayah-poster\.html\?/, { timeout: 15000 }), clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-poster]")]).catch(() => { went = false; });

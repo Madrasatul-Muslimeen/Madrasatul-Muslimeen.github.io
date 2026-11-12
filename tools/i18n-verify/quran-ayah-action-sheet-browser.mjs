@@ -200,7 +200,8 @@ for (const viewport of [
         // On a computer the card is a window whose right half puts Status UNDER Take an Approach (the Owner's order), so
         // there the check reads "Status is in the right half, above Info" instead.
         const windowed = sheet?.hasAttribute("data-ayah-win");
-        const header = box(sheet?.querySelector(".ayah-sheet-tilebar") ?? statusEl?.previousElementSibling);
+        // UPDATED IN PLACE (phone layout part 2, 11 Nov 2026): the tile bar is the ⋮ menu, closed until ⋮ is pressed, so the line sits under the card's header (its ONE row of Location, Ayah, ‹ ▶ ›, ⋮)
+        const header = box(sheet?.querySelector(".ayah-sheet-header") ?? statusEl?.previousElementSibling);
         const status = box(sheet?.querySelector("[data-ayah-sheet-status]"));
         const play = box(sheet?.querySelector("[data-ayah-sheet-play]"));
         const title = sheet?.querySelector('[data-ayah-sheet-status] [data-title-line="difficulty"]'); // 11 Nov 2026: the old "Status of this āyah" title became the ONE difficulty line
@@ -215,7 +216,7 @@ for (const viewport of [
         } : null;
       });
       if (order?.windowed) check(`${lang} ${viewport.label} (the card as a window, J70) the difficulty line (was "Status of this āyah") is in the right half, under Take an Approach, above Info`, order.inRightHalf === true, JSON.stringify(order));
-      else check(`${lang} ${viewport.label} the difficulty line (was "Status of this āyah") sits straight under the action row (gap ${order?.gapUnderHeader}px)`, !!order && order.gapUnderHeader >= 0 && order.gapUnderHeader <= 12, JSON.stringify(order));
+      else check(`${lang} ${viewport.label} the difficulty line (was "Status of this āyah") sits straight under the header row (gap ${order?.gapUnderHeader}px)`, !!order && order.gapUnderHeader >= 0 && order.gapUnderHeader <= 12, JSON.stringify(order));
       check(`${lang} ${viewport.label} ...with Play this āyah in the row above it`, !!order && order.statusAbovePlay, JSON.stringify(order));
       check(`${lang} ${viewport.label} ...and its heading is in view the moment the card opens (the difficulty line)`,
         !!order && order.titleVisible && (lang !== "en" || /Mustawa al-Ṣuʿūbah/.test(order.titleText) && /Level of Difficulty/.test(order.titleText)), JSON.stringify(order));

@@ -205,7 +205,7 @@ const realErrors = (errs) => errs.filter((e) => !/ERR_CERT|net::|archive\.org|ap
   await page.evaluate(() => { const ss = document.getElementById("surahSelect"); ss.value = "112"; ss.dispatchEvent(new Event("change", { bubbles: true })); });
   await page.waitForFunction(() => !!document.querySelector('[data-ayah-num-badge="112:1"]'), null, { timeout: 15000 }).catch(() => {});
   await page.evaluate(() => document.querySelector('[data-ayah-num-badge="112:1"]')?.click());
-  await page.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-poster]", { timeout: 10000 }).catch(() => {});
+  await page.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-poster]", { timeout: 10000, state: "attached" }).catch(() => {});
   let went = true;
   await Promise.all([page.waitForURL(/ayah-poster\.html\?/, { timeout: 15000 }), clickAyahTile(page, "[data-ayah-sheet] [data-ayah-sheet-poster]")]).catch(() => { went = false; });
   const u = went ? new URL(page.url()) : null;

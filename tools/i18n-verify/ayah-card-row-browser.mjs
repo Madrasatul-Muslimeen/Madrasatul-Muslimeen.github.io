@@ -6,7 +6,7 @@
 //   MUT=oldlabel ... mutation: the button reads "Full text" again          -> the "Ayah" label check
 //   MUT=playtile ... mutation: Play is a tile again, not in the row        -> the Play-in-the-row and no-Play-tile checks
 //   MUT=nowriting .. mutation: the Writing sheet tile is missing           -> the nine-tile order check
-//   MUT=wrap ...     mutation: the row may wrap onto a second line         -> the "one line" check
+//   MUT=wrap ...     mutation: the two words are made too wide to share a line with ‹ ▶ › and ⋮  -> the "one line" check
 //   MUT=nowritingcb  mutation: the Writing sheet tile does nothing         -> the "opens the Writing sheet for this āyah" check
 // Rendered and measured at 320, 360, 390, 768 and 1280, English and Bangla.
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -40,7 +40,7 @@ else if (MUT === "locopen") mutate(SHEET, /data-ayah-sheet-location\$\{uiOpen\.l
 else if (MUT === "oldlabel") mutate(SHEET, /\$\{escapeHtml\(t\("Ayah"\)\)\}<\/button>/g, '${escapeHtml(t("Full text"))}</button>');
 else if (MUT === "playtile") mutate(SHEET, /    \{ attr: "data-ayah-sheet-copy"/g, '    { attr: "data-ayah-sheet-play", icon: "▶", short: t("Play"), label: t("Play this āyah") },\n    { attr: "data-ayah-sheet-copy"');
 else if (MUT === "nowriting") mutate(SHEET, /    \{ attr: "data-ayah-sheet-writing"[^\n]*\n/g, "");
-else if (MUT === "wrap") { mutate("app/quranrevival.html", /flex-wrap: nowrap; align-items: stretch; justify-content: stretch/g, "flex-wrap: wrap; align-items: stretch; justify-content: stretch"); mutate("app/quranrevival.html", /\.ayah-sheet-loc, \.ayah-sheet-head-tools \.ayah-sheet-noteview \{ flex: 1 1 0;/g, ".ayah-sheet-loc, .ayah-sheet-head-tools .ayah-sheet-noteview { flex: 1 0 140px;"); }
+else if (MUT === "wrap") mutate("app/quranrevival.html", /flex: 1 1 auto; min-width: max-content;/g, "flex: 1 1 auto; min-width: 150px;");
 else if (MUT === "nowritingcb") mutate("app/quranrevival.html", /        onWriting: \(unitKey\) => \{[^\n]*\n/g, "        onWriting: () => {},\n");
 
 const TENANT = "t1";

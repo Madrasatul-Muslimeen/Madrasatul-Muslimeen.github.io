@@ -1013,7 +1013,7 @@ if (want("notes")) {
     await page.evaluate(() => { const el = document.getElementById("ayahSelect"); el.value = "258"; el.dispatchEvent(new Event("change", { bubbles: true })); });
     await page.waitForTimeout(900);
     await page.evaluate(() => document.querySelector('[data-ayah-num-badge="2:258"]')?.click());
-    await page.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-file-folder]", { timeout: 10000 });
+    await page.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-file-folder]", { timeout: 10000, state: "attached" });
     await page.waitForTimeout(500);
     const label = await page.evaluate(() => document.querySelector("[data-ayah-sheet-file-folder]").getAttribute("aria-label") || document.querySelector("[data-ayah-sheet-file-folder]").textContent.trim());
     check(`[${tag}] File in folder(s): the Āyah card offers "File in folder(s)…"`, /File in folder/.test(label), label);
