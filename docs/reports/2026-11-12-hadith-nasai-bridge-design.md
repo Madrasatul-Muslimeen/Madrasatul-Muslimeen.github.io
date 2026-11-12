@@ -40,3 +40,6 @@ Two passes, monotone by construction:
 Result: **3,812 of 5,672 standard numbers (67.2%), 0 pages going backwards.**
 
 Failures read by eye: (a) OCR-garbled names ("ju y j f y a yn muhammad") which pass 2 recovers; (b) numbered **footnotes and commentary** ("1 we learn that for men the use of gold...") that are false candidates and are rejected by the chain; (c) the 5,289 numbered lines are fewer than the 5,758 printed hadith, so about 1,860 standard numbers have **no scan line to match**. Closing that needs the aligner to find hadith starts by text (the "It was narrated that..." opening after a chapter heading), not only by a leading number. That is the next step, then the independent sample check.
+
+## Lesson from 100L's review of #1663 (applied)
+`tools/i18n-verify` was grepped for the versionUri this book would give pages to (`0303Nasai.SunanSughra.JK000130-ara1`): no suite names it. The two suites that name a Nasa'i book (`openiti-browser.mjs`, `dua-check-browser.mjs`) use a different one (`0303Nasai.CamalYawmWaLayla.JK000735-ara1`, 'Amal al-Yawm), so the "a book with no scan and no Shamela page" check is unaffected. Re-grep when the data PR is built, since main moves.
