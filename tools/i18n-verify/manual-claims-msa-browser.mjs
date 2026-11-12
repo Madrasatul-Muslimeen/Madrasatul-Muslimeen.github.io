@@ -13,6 +13,7 @@
 //        hadith     breaks one claim per entry: Text language, Go to number, Studied, Next ›, a progress stage, ✓ Check this dua
 import fs from "node:fs";
 import { chromium, newContext, openPage, BASE as BASE_URL } from "./harness.mjs";
+import { clickAyahTile } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 
 let pass = 0, fail = 0, skip = 0;
 const check = (name, ok, detail = "") => {
@@ -1017,7 +1018,7 @@ if (want("notes")) {
     const label = await page.evaluate(() => document.querySelector("[data-ayah-sheet-file-folder]").getAttribute("aria-label") || document.querySelector("[data-ayah-sheet-file-folder]").textContent.trim());
     check(`[${tag}] File in folder(s): the Āyah card offers "File in folder(s)…"`, /File in folder/.test(label), label);
     if (MUTATE === "notes") await page.evaluate(() => document.querySelector("[data-ayah-sheet-file-folder]")?.remove());
-    await page.click("[data-ayah-sheet] [data-ayah-sheet-file-folder]", { timeout: 4000 }).catch(() => {});
+    await clickAyahTile(page, "[data-ayah-sheet] [data-ayah-sheet-file-folder]", { timeout: 4000 }).catch(() => {});
     await page.waitForSelector("[data-ayah-folder-picker]", { timeout: 8000 }).catch(() => {});
     await page.waitForTimeout(600);
     const pick = await page.evaluate(() => ({ search: !!document.querySelector("[data-ayah-folder-search]"), heads: [...document.querySelectorAll("[data-ayah-folder-sechead]")].map((x) => x.textContent.trim()), ticks: [...document.querySelectorAll("[data-ayah-folder-toggle]")].map((x) => x.dataset.ayahFolderToggle), save: !!document.querySelector("[data-ayah-folder-save]"), fold: document.querySelectorAll("[data-ayah-folder-fold]").length }));
@@ -1031,7 +1032,7 @@ if (want("notes")) {
     await page.click("#ayahFolderFilingBackBtn"); await page.waitForTimeout(600);
     const cardAgain = await page.evaluate(() => ({ card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), picker: document.getElementById("ayahFolderFilingOverlay")?.classList.contains("open") ?? !!document.querySelector("[data-ayah-folder-picker]")?.getBoundingClientRect().width }));
     check(`[${tag}] File in folder(s): pressing it returns to the Āyah card (the picker closes)`, cardAgain.card && !cardAgain.picker, JSON.stringify(cardAgain));
-    await page.click("[data-ayah-sheet] [data-ayah-sheet-file-folder]"); await page.waitForSelector("[data-ayah-folder-picker]", { timeout: 8000 }); await page.waitForTimeout(600);
+    await clickAyahTile(page, "[data-ayah-sheet] [data-ayah-sheet-file-folder]"); await page.waitForSelector("[data-ayah-folder-picker]", { timeout: 8000 }); await page.waitForTimeout(600);
     await page.evaluate(() => { window.__stubWriteData = []; });
     await page.evaluate(() => document.querySelector('[data-ayah-folder-toggle="fB"]').click());
     await page.click("[data-ayah-folder-save]"); await page.waitForTimeout(1500);

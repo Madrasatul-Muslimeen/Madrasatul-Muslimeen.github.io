@@ -17,6 +17,7 @@
 //   --mutate=nohome     placeAtHome() does nothing                -> (2) the Read list and Learn next fail
 //   --mutate=nozabrefit the Zab bar's arrival does not refit the landing window -> (0) fails
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { clickAyahTile } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -125,7 +126,7 @@ for (const lang of ["en", "bn"]) {
   check(`${tag} the Āyah card opens at that rect`, same(await R(P, cardSel), home), JSON.stringify(await R(P, cardSel)));
   const cb = await P.evaluate(() => { const b = document.querySelector("[data-ayah-sheet] [data-ayah-sheet-homeback]"); const r = b?.getBoundingClientRect(); return r ? { w: r.width, h: r.height, t: b.textContent } : null; });
   check(`${tag} the Āyah card has a 40px ← Back`, cb && cb.w >= 39.5 && cb.h >= 39.5 && /←/.test(cb.t), JSON.stringify(cb));
-  await P.click("[data-ayah-sheet] [data-ayah-sheet-note]"); await P.waitForTimeout(1500);
+  await clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-note]"); await P.waitForTimeout(1500);
   check(`${tag} the Notes window (from the Āyah card) opens at that rect`, same(await R(P, "#readNotePane"), home), JSON.stringify(await R(P, "#readNotePane")));
   await P.click("#readNotePane .rnp-close"); await P.waitForTimeout(400); await P.keyboard.press("Escape"); await P.waitForTimeout(300);
   await P.evaluate(() => document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-close]")[0]?.click()); await P.waitForTimeout(300);

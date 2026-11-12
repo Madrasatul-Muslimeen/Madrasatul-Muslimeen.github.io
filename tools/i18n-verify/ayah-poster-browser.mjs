@@ -19,6 +19,7 @@
 //     cardnotes  the Āyah card's Poster still opens the Notes page -> "the Āyah card's 🖨 Poster opens the posters page"
 //     bnleak     one Bangla string is missing                    -> "Bangla: no English in the page's own words"
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { clickAyahTile } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 import fs from "fs";
 
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
@@ -206,7 +207,7 @@ const realErrors = (errs) => errs.filter((e) => !/ERR_CERT|net::|archive\.org|ap
   await page.evaluate(() => document.querySelector('[data-ayah-num-badge="112:1"]')?.click());
   await page.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-poster]", { timeout: 10000 }).catch(() => {});
   let went = true;
-  await Promise.all([page.waitForURL(/ayah-poster\.html\?/, { timeout: 15000 }), page.click("[data-ayah-sheet] [data-ayah-sheet-poster]")]).catch(() => { went = false; });
+  await Promise.all([page.waitForURL(/ayah-poster\.html\?/, { timeout: 15000 }), clickAyahTile(page, "[data-ayah-sheet] [data-ayah-sheet-poster]")]).catch(() => { went = false; });
   const u = went ? new URL(page.url()) : null;
   check("the Āyah card's 🖨 Poster opens the posters page for 112:1 with back=1 (no Note needed)", !!u && u.searchParams.get("surah") === "112" && u.searchParams.get("ayah") === "1" && u.searchParams.get("back") === "1", page.url());
   if (went) {

@@ -189,9 +189,13 @@ check("Make a poster: hasPosterNote=false shows the sheet's own hint and a Take 
   // (decision 94, "we got 3 notes. It's confusing"): it is the ONE 📝 Note button itself, named "Take Note".
   // UPDATED IN PLACE (J131, 9 Nov 2026): the Owner moved the ONE 📝 Note from the action row to the bar beside 📖 Full text.
   const row = noNote.slice(noNote.indexOf("data-ayah-sheet-actions"), noNote.indexOf("</div>", noNote.indexOf("data-ayah-sheet-actions")));
-  assert.ok(!row.includes("data-ayah-sheet-note"), "the Note button is still in the action row as well as the bar");
+  // UPDATED IN PLACE (phone layout part 2, 11 Nov 2026): the Owner asked for ONE ⋮ menu with Note first, so the ONE 📝 Note is a tile of the
+  // action row again (J131's bar button is gone, because the bar is now [Location][Ayah][‹ ▶ ›][⋮]); it is still exactly one Note button.
+  assert.ok(row.includes("data-ayah-sheet-note"), "the Note button is not in the action row (the ⋮ menu)");
+  assert.equal((noNote.match(/data-ayah-sheet-note(?![\w-])/g) || []).length, 1, "more than one Note button");
   assert.ok(/data-ayah-sheet-note data-ayah-sheet-note-new aria-label="Take Note"/.test(noNote), "the one Note button is not named Take Note");
-  assert.ok(!row.includes("✍"), "a separate ✍ Take Note is still in the row");
+  // UPDATED IN PLACE (phone layout part 2): ✍ is now the Writing sheet's icon in the ⋮ menu, so the check is that no ✍ button is named Take Note.
+  assert.ok(!/✍[^]*?aria-label="Take Note"|aria-label="Take Note"[^>]*>\s*<span[^>]*>✍/.test(row.replace(/<button/g, "\n<button").split("\n").filter((b) => b.includes('aria-label="Take Note"')).join("")), "a separate ✍ Take Note is still in the row");
   assert.ok(!noNote.includes("ayah-sheet-hint-btn"), "the old separate Take Note line is still drawn");
   for (const val of [true, null, undefined]) {
     const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", hasPosterNote: val });
@@ -497,11 +501,13 @@ check("one 📝 Note: no Note yet -> onTakeNote (ready to write); a Note already
   assert.deepEqual(calls, ["take:ayah:1:1", "note:ayah:1:1"]);
   assert.equal(c2.querySelector("[data-ayah-sheet]").querySelectorAll("[data-ayah-sheet-note]").length, 1);
 });
-check("the header's 📖 is named Full text, not Note view (decision 94)", () => {
+check("the header's 📖 is named Ayah (it was Full text until phone layout part 2, 11 Nov 2026), not Note view (decision 94)", () => {
   const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", isSelf: true });
   const tag = findAllTags(html, "data-ayah-sheet-noteview")[0] ?? "";
   const btn = html.slice(html.indexOf(tag), html.indexOf("</button>", html.indexOf(tag)));
-  assert.ok(btn.includes("Full text") && !btn.includes("Note view"), btn);
+  // UPDATED IN PLACE (phone layout part 2, 11 Nov 2026, the Owner: "Full Text" renamed "Ayah"); its spoken name still says full text.
+  assert.ok(btn.includes(">Ayah") || /📖<\/span> Ayah/.test(btn), btn);
+  assert.ok(!/<\/span> Full text/.test(btn) && !btn.includes("Note view"), btn);
 });
 
 check("tapping a Word by Word chip closes the sheet and opens that word's occurrence, without touching any other button", () => {

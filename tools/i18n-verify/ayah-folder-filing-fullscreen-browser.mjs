@@ -13,6 +13,7 @@
 //   --mutate=nofold   every folder drawn open, no fold button  -> the fold checks fail
 //   --mutate=slow     the old one-chain load, nothing started early or kept -> the timing check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { clickAyahTile } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -76,7 +77,7 @@ async function openChooser(page) {
   await clean(page);
   await page.evaluate(() => document.querySelector('[data-ayah-num-badge="2:255"]')?.click());
   await page.waitForFunction(() => document.querySelector("[data-ayah-sheet] .ayah-sheet-ref"), null, { timeout: 8000 });
-  await page.click("[data-ayah-sheet] [data-ayah-sheet-file-folder]");
+  await clickAyahTile(page, "[data-ayah-sheet] [data-ayah-sheet-file-folder]");
   await page.waitForFunction(() => document.querySelectorAll("#ayahFolderFilingPickerMount [data-ayah-folder-toggle]").length >= 2, null, { timeout: 10000 });
   await page.waitForTimeout(200);
 }
@@ -168,7 +169,7 @@ for (const lang of ["en", "bn"]) {
 async function openChooserAgainFn(page) {
   await page.evaluate(() => document.querySelector('[data-ayah-num-badge="2:255"]')?.click());
   await page.waitForFunction(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-file-folder]"), null, { timeout: 8000 });
-  await page.click("[data-ayah-sheet] [data-ayah-sheet-file-folder]");
+  await clickAyahTile(page, "[data-ayah-sheet] [data-ayah-sheet-file-folder]");
   await page.waitForFunction(() => document.querySelectorAll("#ayahFolderFilingPickerMount [data-ayah-folder-toggle]").length >= 2, null, { timeout: 10000 });
 }
 // 5. Loading time, with 250 folders and every read taking 300ms (the stub answers instantly otherwise).
@@ -191,7 +192,7 @@ async function openChooserAgainFn(page) {
   await page.waitForFunction(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-file-folder]"), null, { timeout: 10000 });
   await page.waitForTimeout(2500); // a reader looks at the card before choosing "File in folder(s)"
   const t0 = Date.now();
-  await page.click("[data-ayah-sheet] [data-ayah-sheet-file-folder]");
+  await clickAyahTile(page, "[data-ayah-sheet] [data-ayah-sheet-file-folder]");
   await page.waitForFunction(() => document.querySelectorAll("#ayahFolderFilingPickerMount [data-ayah-folder-toggle]").length >= 200, null, { timeout: 20000 }).catch(() => {});
   const first = Date.now() - t0;
   const rows = await page.evaluate(() => document.querySelectorAll("#ayahFolderFilingPickerMount [data-ayah-folder-toggle]").length);
@@ -200,7 +201,7 @@ async function openChooserAgainFn(page) {
   await page.evaluate(() => document.querySelector('[data-ayah-num-badge="2:255"]')?.click());
   await page.waitForFunction(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-file-folder]"), null, { timeout: 10000 });
   const t1 = Date.now();
-  await page.click("[data-ayah-sheet] [data-ayah-sheet-file-folder]");
+  await clickAyahTile(page, "[data-ayah-sheet] [data-ayah-sheet-file-folder]");
   await page.waitForFunction(() => document.querySelectorAll("#ayahFolderFilingPickerMount [data-ayah-folder-toggle]").length >= 200, null, { timeout: 20000 }).catch(() => {});
   const second = Date.now() - t1;
   check(`[timing] opened again at once, the kept folders show ${second}ms after the tap (under 1,000ms)`, second < 1000, `${second}ms`);

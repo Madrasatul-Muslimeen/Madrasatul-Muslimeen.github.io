@@ -10,6 +10,7 @@
 //   --mutate=nosections  the sections are never read             -> the header checks fail
 //   --mutate=noremember  the chosen section is not kept          -> the reopen check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { clickAyahTile } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -58,7 +59,7 @@ async function toAyah(page) {
 async function openChooser(page) {
   await page.evaluate(() => document.querySelector('[data-ayah-num-badge="2:255"]')?.click());
   await page.waitForFunction(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-file-folder]"), null, { timeout: 8000 });
-  await page.click("[data-ayah-sheet] [data-ayah-sheet-file-folder]");
+  await clickAyahTile(page, "[data-ayah-sheet] [data-ayah-sheet-file-folder]");
   await page.waitForFunction(() => document.querySelectorAll("#ayahFolderFilingPickerMount [data-ayah-folder-toggle]").length >= 1, null, { timeout: 10000 });
   await page.waitForTimeout(200);
 }
