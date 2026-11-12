@@ -24,10 +24,10 @@ if (!fs.existsSync(sw)) {
   const literal = names.map((n) => consts[n] ?? n.replace(/^["'`]|["'`]$/g, "")).filter((n) => n !== "key");
   check(literal.length > 0 && literal.every((n) => n.startsWith("qr-")), `every cache ${sw} opens starts with qr- (${literal.join(", ")})`);
   // J02 S3: the worker now also holds MMSA's three other caches under QR names (QR-PLAN's table).
-  for (const name of ["qr-qf-fonts-v1", "qr-ext-v1", "qr-mushaf-v1", "qr-quran-v1", "qr-hadith-v1", "qr-audio-v1"]) check(src.includes(`"${name}"`), `${sw} uses ${name}`);
+  for (const name of ["qr-qf-fonts-v1", "qr-ext-v1", "qr-mushaf-v1", "qr-quran-v1", "qr-hadith-v1", "qr-audio-v1", "qr-printed-v1"]) check(src.includes(`"${name}"`), `${sw} uses ${name}`);
   const prefixes = [...src.matchAll(/startsWith\(\s*["'`]([a-z-]+)["'`]/g)].map((m) => m[1]).filter((p) => p.endsWith("-"));
   // PCF MSA J120 O6: "qr-audio-" joins the list -- its clean-up fires only on a future FORMAT bump (qr-audio-v1 is kept), like the others.
-  const allowed = ["qr-app-", "qr-qf-fonts-", "qr-ext-", "qr-mushaf-", "qr-audio-"];
+  const allowed = ["qr-app-", "qr-qf-fonts-", "qr-ext-", "qr-mushaf-", "qr-audio-", "qr-printed-"];
   check(prefixes.length > 0 && prefixes.every((p) => allowed.includes(p)), `old-cache clean-up only touches qr- caches, never qr-quran (${prefixes.join(", ") || "none"})`);
   check(/key\.startsWith\("qr-app-"\) && key !== APP_CACHE\) await caches\.delete\(key\)/.test(src), "the clean-up keeps the current app cache and deletes only other qr-app- ones");
 }
