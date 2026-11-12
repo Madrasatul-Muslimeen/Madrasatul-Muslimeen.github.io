@@ -165,8 +165,8 @@ export async function setWordKey(db, ctx, { scope, surah, ayah, position, keyId,
 
 /**
  * MSA · QR J136 -- save ALL of one word's marks at once: its key ids (`keys`, the whole next list) and its effort word
- * (`effort`: "known" | "easy" | "very" | null). One document, one update.
- *   * `effort` is written only when WORD_EFFORT_RULES_PUBLISHED; if the request needs it before then ("known" or "very"),
+ * (`effort`: "known" | "easy" | "little" | "very" | null). One document, one update.
+ *   * `effort` is written only when WORD_EFFORT_RULES_PUBLISHED; if the request needs it before then ("known", "little" or "very"),
  *     NOTHING is read or written and `{ ok: false, refused: "rules-not-published" }` comes back, so the page can say so in words.
  *   * Clearing a result writes `null` (never a deletion, I4/D6).
  */
@@ -177,7 +177,7 @@ export async function setWordMarks(db, ctx, { scope, surah, ayah, position, keys
   if (!validScope(scope)) return { ok: false, refused: "bad-scope" };
   if (!Array.isArray(keys) || !keys.every(isKeyId)) return { ok: false, refused: "unknown-key" };
   if (effort !== null && !isEffortWord(effort)) return { ok: false, refused: "unknown-effort" };
-  const wantsEffortField = effort === "known" || effort === "very";
+  const wantsEffortField = effort === "known" || effort === "little" || effort === "very";
   if (wantsEffortField && !WORD_EFFORT_RULES_PUBLISHED) return { ok: false, refused: "rules-not-published" };
   const unitKey = buildUnitKey.qword(surah, ayah, position);
   const id = docKey(ctx.tenantId, scope, surah);

@@ -1,5 +1,5 @@
 // MSA · QR J136 (the Owner, 10 Nov 2026: "Approved with recommended") -- "Mark the Word" on the REAL Word card.
-// (1) five buttons, the seeded marks pressed (Learned Easy = the old Done), names in English and Bangla.
+// (1) six buttons, the seeded marks pressed (Learned Easy = the old Done), names in English and Bangla.
 // (2) "How hard was it, in this sūrah": the four degrees with count and %, from the seeded marks and effort.
 // (3) THE REFUSAL PATH (the day the flag is false): Very Hard and Already Known say in words that they cannot be saved yet, write NOTHING,
 //     and stay unpressed; Difficult / Learn / Learned Easy still save, as the old keys, with no `effort` field sent.
@@ -26,6 +26,8 @@ const HTML = "app/quranrevival.html", EFF = "app/js/word-effort.js", UI = "app/j
 const MUT = {
   nonote: [HTML, "wordEffortNote = { unitKey, text: t(", "wordEffortNote = { unitKey: '', text: t("],
   flagfalse: [EFF, "export const WORD_EFFORT_RULES_PUBLISHED = true;", "export const WORD_EFFORT_RULES_PUBLISHED = false;"],
+  nolittle: [EFF, 'EFFORT_STORED = Object.freeze(["known", "easy", "little", "very"])', 'EFFORT_STORED = Object.freeze(["known", "easy", "very"])'], // 12 Nov 2026: Little Difficult can no longer be stored
+  nolegend: [UI, '["little", lang === "bn" ? "একটু কঠিন" : "Little Difficult"], ', ""],
   notally: [HTML, 'const detailsHtml = `<details class="we-details"', 'const detailsHtml = "" && `<details class="we-details"'],
   noband: [UI, "const eff = effort?.[p.key] === \"known\"", "const eff = null && effort?.[p.key] === \"known\""],
   bnleak: [BN, '  "This mark cannot be saved yet: the new saving rule has not been published in Firebase. Difficult, Learn and Learned Easy save as before.": ', '  "x-unused": '],
@@ -40,7 +42,8 @@ const ev = (page, f, a) => page.evaluate(f, a);
 const settle = (page, ms = 500) => page.waitForTimeout(ms);
 const writesOf = (page) => ev(page, () => (window.__stubWriteData || []).filter((x) => x.col === "ayahKeyMarks").map((x) => JSON.stringify(x)));
 const rowState = (page) => ev(page, () => [...document.querySelectorAll(".quran-word-card [data-word-mark]")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => ({ id: b.dataset.wordMark, on: b.getAttribute("aria-pressed") === "true", name: b.querySelector(".we-name")?.textContent.trim(), h: Math.round(b.getBoundingClientRect().height) })));
-const NAMES = { en: ["Already Known", "Difficult", "Learn", "Learned Easy", "Very Hard"], bn: ["আগে থেকেই জানা", "কঠিন", "শিখুন", "সহজে শেখা", "খুব কঠিন"] };
+// UPDATED IN PLACE (12 Nov 2026, the Owner: "Place another level before Difficult, 'Little Difficult'"): six buttons now.
+const NAMES = { en: ["Already Known", "Little Difficult", "Difficult", "Learn", "Learned Easy", "Very Hard"], bn: ["আগে থেকেই জানা", "একটু কঠিন", "কঠিন", "শিখুন", "সহজে শেখা", "খুব কঠিন"] };
 
 async function routeMutation(ctx) {
   const [file, a, b] = MUT[MUTATE];
@@ -79,9 +82,9 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 1440, 900], ["bn",
 
   // (1)
   let m = await rowState(page);
-  check(`${tag} (1) five buttons in order, named in ${lang}`, m.length === 5 && m.map((x) => x.id).join() === "known,difficult,learn,easy,very" && m.every((x, i) => x.name === NAMES[lang][i]), JSON.stringify(m));
+  check(`${tag} (1) six buttons in order, named in ${lang}`, m.length === 6 && m.map((x) => x.id).join() === "known,little,difficult,learn,easy,very" && m.every((x, i) => x.name === NAMES[lang][i]), JSON.stringify(m));
   check(`${tag} (1) only Learned Easy (the seeded Done) is pressed`, m.filter((x) => x.on).map((x) => x.id).join() === "easy", JSON.stringify(m));
-  check(`${tag} (1) every button is at least 40px tall`, m.length === 5 && m.every((x) => x.h >= 40), JSON.stringify(m.map((x) => x.h)));
+  check(`${tag} (1) every button is at least 40px tall`, m.length === 6 && m.every((x) => x.h >= 40), JSON.stringify(m.map((x) => x.h)));
   // (2)
   await ev(page, () => { const d = document.querySelector(".quran-word-card [data-word-effort-details]"); if (d) d.open = true; });
   await settle(page, 200);
@@ -121,6 +124,7 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 1440, 900], ["bn",
   await settle(page, 500);
   const bands = await ev(page, () => { const g = (k) => document.querySelector(`#wheelContainer .mk-piece[data-mk-key="${k}"]`); const eff = (k) => [...(g(k)?.querySelectorAll(".mk-eff-known.on, .mk-eff-very.on") ?? [])].map((p) => p.getAttribute("class")); return { very: eff("qword:1:1:2"), known: eff("qword:1:1:4"), plain: eff("qword:1:1:3"), legend: document.querySelector("[data-mk-legend]")?.innerText ?? "" }; });
   check(`${tag} (4) the wheel lights Very Hard's inner band purple, Already Known's blue, a plain Difficult word neither`, bands.very.length >= 1 && bands.very.every((c) => /mk-eff-very/.test(c)) && bands.known.length >= 1 && bands.known.every((c) => /mk-eff-known/.test(c)) && bands.plain.length === 0, JSON.stringify(bands));
+  check(`${tag} (4) MUTATION TARGET (nolegend): the legend also names Little Difficult`, lang === "bn" ? /একটু কঠিন/.test(bands.legend) : /Little Difficult/.test(bands.legend), JSON.stringify(bands.legend));
   check(`${tag} (4) the legend names both new colours`, lang === "bn" ? /আগে থেকেই জানা/.test(bands.legend) && /খুব কঠিন/.test(bands.legend) : /Already Known/.test(bands.legend) && /Very Hard/.test(bands.legend), JSON.stringify(bands.legend));
   await page.close(); await ctx.close();
 }
@@ -130,7 +134,7 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 1440, 900], ["bn",
   console.log(`\n=== Mark the Word ${tag} ===`);
   const ctx = await newContext(browser, { banner: false, viewport: { width: 390, height: 844 }, extraSeedJs: SEED + "window.__stubApplyBatches = true;" });
   await ctx.route("**/archive.org/**", (r) => r.abort());
-  if (MUTATE === "flagfalse") await routeMutation(ctx);
+  if (MUTATE === "flagfalse" || MUTATE === "nolittle") await routeMutation(ctx);
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
   await settle(page, 1200);
@@ -161,6 +165,11 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 1440, 900], ["bn",
   await tap("known");
   w = (await writesOf(page)).slice(w0);
   check(`${tag} (3b) Already Known SAVES effort "known" (the second write)`, w.length === 2 && w[1].includes('"effort.qword:1:1:1":"known"'), JSON.stringify(w));
+  await tap("little");
+  w = (await writesOf(page)).slice(w0);
+  const m3 = await rowState(page);
+  check(`${tag} (3b) MUTATION TARGET (nolittle): Little Difficult SAVES effort "little" (the third write), replacing Already Known, with no Difficult key`, w.length === 3 && w[2].includes('"effort.qword:1:1:1":"little"') && w[2].includes('"entries.qword:1:1:1":[]'), JSON.stringify(w));
+  check(`${tag} (3b) ...and only Little Difficult is pressed (not Already Known, not Difficult)`, m3.filter((x) => x.on).map((x) => x.id).join() === "little", JSON.stringify(m3));
   await page.close(); await ctx.close();
 }
 await browser.close();
