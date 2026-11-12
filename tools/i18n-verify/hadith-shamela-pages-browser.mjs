@@ -46,7 +46,7 @@ if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const ANCHORS = JSON.parse(fs.readFileSync("tools/i18n-verify/hadith-shamela-anchors.json", "utf8"));
 const reg = JSON.parse(fs.readFileSync("tools/hadith-data-pull/sources/book-pages.json", "utf8"));
 const maps = {};
-for (const key of Object.keys(ANCHORS).filter((k) => k !== "note" && k !== "riyad") /* Riyad is keyed by n: its own suite, hadith-riyad-pages-browser.mjs */) {
+for (const key of Object.keys(ANCHORS).filter((k) => k !== "note" && k !== "riyad" && k !== "darimi" && k !== "nawawi40" && k !== "ahmad") /* Riyad, Darimi, Forty Nawawi and Musnad Ahmad have their own suites: hadith-riyad-, hadith-darimi-, hadith-nawawi- and hadith-ahmad-pages-browser.mjs */) {
   const row = reg.books.find((b) => b.key === key);
   const mp = JSON.parse(fs.readFileSync(`tools/hadith-data-pull/output/book-pages/${key}.json`, "utf8"));
   maps[key] = mp;

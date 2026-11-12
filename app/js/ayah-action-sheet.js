@@ -31,6 +31,7 @@
 import { t, num } from "./i18n.js";
 import { statusLabel } from "./unit-keys.js";
 import { wireUnitLadder } from "./unit-ladder.js";
+import { titleLineHtml } from "./title-line.js";
 import { STATUS_COLORS } from "./mastery-wheel.js";
 
 function escapeHtml(s) {
@@ -550,9 +551,9 @@ export function renderAyahActionSheetHtml({
       <div class="ayah-sheet-pane-info" data-ayah-sheet-paneinfo>
       <button type="button" class="ayah-sheet-squeezed" data-ayah-sheet-showboth data-squeezed-for="info"><span aria-hidden="true">🎯</span> ${escapeHtml(t("Status, Approach and Info"))} <span class="ayah-sheet-squeezed-hint">${escapeHtml(t("Show both halves"))}</span></button>
       <div class="ayah-sheet-status" data-ayah-sheet-status>
-        <h3 class="ayah-sheet-section-title">${escapeHtml(intro?.opening ? t("Status") : t("Status of this āyah"))}</h3>
+        ${intro?.opening ? `<h3 class="ayah-sheet-section-title">${escapeHtml(t("Status"))}</h3>` : ""}
         ${marksHtml && !intro?.opening ? `<div class="ayah-status-block" data-ayah-sheet-marks>
-          <h4 class="ayah-status-heading">${escapeHtml(t("Marks"))}</h4>
+          ${titleLineHtml({ key: "difficulty", translit: "Mustawa al-Ṣuʿūbah", ar: "مستوى الصعوبة", label: t("Level of Difficulty") })}
           ${marksHtml}
         </div>` : ""}
         <div class="ayah-status-block">

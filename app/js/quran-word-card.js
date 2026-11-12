@@ -7,6 +7,7 @@ import { arabicToBuckwalter } from "./buckwalter.js";
 import { partName, partMeaning, PART_KINDS, FORM_NAMES, STEM_NAMES, DERIV_NAMES, DERIVED_GROUP_LABELS, orderDerivedForms } from "./word-grammar-tables.js";
 import { depthSectionsHtml, rootFamilyHtml, tasrifSectionsHtml } from "./word-card-depth.js";
 import { stageColourStyle } from "./ayah-action-sheet.js";
+import { titleLineHtml } from "./title-line.js";
 import { lemmaText } from "./lemma-text.js";
 import { banglaTranslit, BANGLA_TRANSLIT_NOTE } from "./quran-translit-bn.js";
 import { isTasrifLevelPersistenceReady } from "./study-tasrif-level-readiness.js";
@@ -123,6 +124,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   tasrifGated: "Saving Taṣrīf marks waits for one settings step by the Owner.",
   tasrifNotApplicable: "Not applicable",
   levelNameTasrif: "Taṣrīf",
+  stepByStep: "Step-by-Step Learning",
   // The Intermediate tab (decision 103: the different meanings of the same word and of the same root).
   meaningsOfWord: "Meanings of this word, {word}",
   meaningsOfWordNote: "How the Qur'an's word-by-word translation renders it, grouped by its main English word.",
@@ -1779,6 +1781,7 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
     ${state.level === "wbw" ? meaningBarHtml(word, layers, context, text) : ""}
     ${state.level === "wbw" && context.formsOpen && layers.root ? formsCardHtml(word, layers, context, formatNumber) : ""}
     ${originBar(context.origin, text)}
+    ${titleLineHtml({ key: "word-card-steps", translit: "Tadarruj", ar: "تدرج", label: text.stepByStep })}
     <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabsHtml(state.level, text)}</div>
     ${panelWithMarks}
   </section>`;

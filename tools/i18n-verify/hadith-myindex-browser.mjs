@@ -11,10 +11,11 @@ const check = (name, ok, detail = "") => {
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
 };
 const MUT = {
+  firstonly: ["js/hadith-myindex.js", "for (let k = b.first; k <= b.last; k++) {", "for (let k = b.first; k <= b.first; k++) {"], // 100L: a book opens only its exact first number
   noswitch: ["js/hadith-browser.js", "if (alt) body.appendChild(renderIndexSwitch(oi, localRefresh));", ""],
   alwaysmy: ["js/hadith-myindex.js", '(oi.indexMode || "original") === mode', "true"],
   eager: ["js/hadith-browser.js", "const alt = versionUri && conc && hasMyIndex(versionUri);", "const alt = versionUri && conc && hasMyIndex(versionUri); if (alt) import('./hadith-myindex.js').then((m) => m.loadMyIndex(versionUri));"],
-  wrongfirst: ["js/hadith-myindex.js", "conc?.firstNByCite?.get(b.first)", "conc?.firstNByCite?.get(b.first + 1)"],
+  wrongfirst: ["js/hadith-myindex.js", "conc?.firstNByCite?.get(k)", "conc?.firstNByCite?.get(k + 1)"], // re-anchored by 100L (firstHeldN)
   nobnname: ["js/hadith-myindex.js", 'lang === "bn" && o.bn &&', "false &&"],
   noheld: ["js/hadith-myindex.js", "if (oi.myIndexHeld) {", "if (false) {"],
   cutname: ["js/hadith-myindex.js", "!/[…]$/.test(o.bn)", "true"],
@@ -94,6 +95,16 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280], ["bn", 360]
     const shown = await P.evaluate(() => ({ focused: !!document.querySelector('[data-openiti-focused="true"]'), row: document.querySelector(".hadith-reader-row.on")?.textContent ?? "" }));
     const f2 = lang === "bn" ? bnd(D.books[2].first) : String(D.books[2].first);
     check(`${tag} pressing book 2 opens its first hadith (standard number ${D.books[2].first}) as the focused card, its row marked`, shown.focused && shown.row.startsWith(f2) && !new RegExp(`^${f2}\\d`).test(shown.row), JSON.stringify(shown));
+    // 100L review: every one of the 97 books opens a hadith (books 39, 54 and 97 start on a number the app does not hold).
+    const opens = await P.evaluate(async () => {
+      const [m, c] = await Promise.all([import("./js/hadith-myindex.js"), import("./js/openiti-corpus.js")]);
+      const conc = await c.loadOpenitiConcordance("0256Bukhari.Sahih.JK000110-ara1");
+      const d = await m.loadMyIndex("0256Bukhari.Sahih.JK000110-ara1");
+      const dead = Object.entries(d.books).filter(([, b]) => m.firstHeldN(b, conc) == null).map(([no]) => no);
+      const n39 = m.firstHeldN(d.books[39], conc);
+      return { dead, n39cite: conc.byN.get(n39) };
+    });
+    check(`${tag} every one of the 97 books opens a hadith; book 39 (starts on 2290, not held) opens 2291`, opens.dead.length === 0 && opens.n39cite === "2291", JSON.stringify(opens));
     const ov = await P.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (lang === "bn") {
       const g46 = D.groups.find((g) => g.books.map(Number).includes(46));

@@ -43,6 +43,13 @@ export function renderIndexSwitch(oi, localRefresh) {
   return bar;
 }
 
+/** The record n a book opens: its first standard number the app holds. Books 39, 54 and 97 start on a number with no record
+ *  (2290, 2711, 7371), so the first one held within the book's range is used (100L review: those taps did nothing). */
+export function firstHeldN(b, conc) {
+  for (let k = b.first; k <= b.last; k++) { const n = conc?.firstNByCite?.get(k); if (n != null) return n; }
+  return null;
+}
+
 /** My index: 8 groups of books; a book opens its first hadith by standard number. `conc.firstNByCite` maps standard number -> record n. */
 export function renderMyIndex(body, versionUri, oi, localRefresh, conc) {
   const wrap = el("div", "myindex");
@@ -85,7 +92,7 @@ export function renderMyIndex(body, versionUri, oi, localRefresh, conc) {
           row.appendChild(el("span", "hadith-note myindex-held", t("Arabic {a} · English {e} · Bangla {b}", { a: num(h.ar), e: num(h.en), b: num(h.bn) })));
         }
         row.addEventListener("click", () => {
-          const n = conc?.firstNByCite?.get(b.first);
+          const n = firstHeldN(b, conc);
           if (n == null) return;
           oi.chapterId = null; oi.focusPassage = n; localRefresh();
         });
