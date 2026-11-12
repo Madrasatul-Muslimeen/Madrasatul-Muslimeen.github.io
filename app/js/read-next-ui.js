@@ -75,7 +75,7 @@ const CSS = `
 .rn-era-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
 .rn-era-tabs > button { flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0 6px; border: 1px solid #c9b98f; border-radius: 10px; background: #fff; color: #1F3A6E; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
 .rn-era-tabs > button[aria-pressed="true"] { border-color: #1F3A6E; background: #eef2fa; box-shadow: inset 0 -3px 0 #c9a24b; }
-.rn-era-quote { margin: 4px 0 0; font-size: 1.05rem; line-height: 1.8; }
+.rn-era-quote { margin: 4px 0 0; font-size: 2.1rem; line-height: 1.8; } /* the Owner, 12 Nov 2026: every Arabic in the Study Next tabs is twice its size */
 [data-card-look="night"] .rn-era-tabs > button { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }
 [data-card-look="night"] .rn-era-tabs > button[aria-pressed="true"] { background: var(--card-bg); color: var(--card-heading); border-color: var(--card-heading); }
 .read-next-tabs > button[aria-pressed="true"] { border-color: #1F3A6E; background: #eef2fa; box-shadow: inset 0 -3px 0 #c9a24b; }
@@ -91,8 +91,9 @@ const CSS = `
 .read-next-item { display: grid; gap: 0.25rem; padding: 0.5rem 0.6rem; border: 1px solid #e3dcc8; border-radius: 10px; background: #fffdf7; color: #222; min-width: 0; overflow-wrap: anywhere; }
 .read-next-item p { margin: 0; }
 .read-next-item .rn-ref { font-weight: 700; color: #1F3A6E; }
-.read-next-item .rn-ar { font-family: "KFGQPC Uthmanic Script HAFS", "Amiri Quran", "Amiri", "Noto Naskh Arabic", serif; font-size: 1.2rem; line-height: 1.9; text-align: right; }
+.read-next-item .rn-ar { font-family: "KFGQPC Uthmanic Script HAFS", "Amiri Quran", "Amiri", "Noto Naskh Arabic", serif; font-size: 2.4rem; line-height: 1.8; text-align: right; }
 .read-next-item .rn-small { font-size: 0.82rem; color: #555; }
+.read-next-item .rn-ar-name { font-size: 1.64rem; line-height: 1.7; text-align: right; font-family: "KFGQPC Uthmanic Script HAFS", "Amiri Quran", "Amiri", "Noto Naskh Arabic", serif; }
 a.read-next-go, a.read-next-item { color: #1F3A6E; text-decoration: none; }
 a.read-next-go { display: inline-flex; align-items: center; justify-self: start; min-height: 40px; padding: 0 0.8rem; border: 1px solid #1F3A6E; border-radius: 10px; font-weight: 600; }
 a.read-next-item { min-height: 40px; }
@@ -295,7 +296,7 @@ function scholarRow(s, lang, extra) {
   const ref = el("span", "rn-ref");
   ref.append(scholarLink(s, lang), lifeLine(s) ? ` · ${lifeLine(s)}` : "");
   item.appendChild(ref);
-  if (s.ar) item.appendChild(arabic("span", "rn-small", s.ar));
+  if (s.ar) item.appendChild(arabic("span", "rn-small rn-ar-name", s.ar));
   if (extra) item.appendChild(el("span", null, extra));
   item.appendChild(el("span", "rn-small", `${t("Approaches")}: ${s.approaches.join(" · ") || "—"} · ${s.id}`));
   return item;

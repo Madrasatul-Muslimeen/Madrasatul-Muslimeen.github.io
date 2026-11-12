@@ -36,6 +36,8 @@ const MUTANTS = {
   "very-not-hard": ["word-effort.js", /if \(markId === "very"\) \{ add\("hard"\)/, "if (markId === \"very\") { /*x*/"],
   "known-keeps-hard": ["word-effort.js", /if \(markId === "known"\) \{ drop\("hard"\); e = "known"; \}/, "if (markId === \"known\") { e = \"known\"; }"],
   "easy-not-done": ["word-effort.js", /if \(markId === "easy"\) \{ drop\("hard"\); add\("done"\); e = "easy"; \}/, "if (markId === \"easy\") { drop(\"hard\"); e = \"easy\"; }"],
+  "little-keeps-hard": ["word-effort.js", /if \(markId === "little"\) \{ drop\("hard"\); e = "little"; \}/, "if (markId === \"little\") { e = \"little\"; }"],
+  "little-no-effort": ["word-effort.js", /if \(markId === "little"\) \{ drop\("hard"\); e = "little"; \}/, "if (markId === \"little\") { drop(\"hard\"); }"],
   "old-done-not-easy": ["word-effort.js", /if \(k\.includes\("done"\)\) return "easy";/, ""],
   "old-hard-not-hard": ["word-effort.js", /if \(k\.includes\("hard"\)\) return "hard";/, ""],
   "result-stacks": ["word-effort.js", /  drop\("done"\);\n  if \(e === "very"/, "  if (e === \"very\""],
@@ -76,19 +78,20 @@ check("the flag in the repository is TRUE, because the Owner published the Rules
   assert.match(real, /export const WORD_EFFORT_RULES_PUBLISHED = true;/);
   assert.equal(WREAL.WORD_EFFORT_RULES_PUBLISHED, true);
 });
-check("the five marks, in the Owner's order, with their kinds", () => {
-  assert.deepEqual(W.WORD_MARKS.map((m) => m.id), ["known", "difficult", "learn", "easy", "very"]);
-  assert.deepEqual(W.WORD_MARKS.map((m) => m.names.en), ["Already Known", "Difficult", "Learn", "Learned Easy", "Very Hard"]);
-  assert.deepEqual(W.WORD_MARKS.map((m) => m.kind), ["result", "assessment", "act", "result", "result"]);
+// UPDATED IN PLACE (12 Nov 2026, the Owner: "Place another level before Difficult, 'Little Difficult'"): the five marks became six.
+check("the six marks, in the Owner's order, with their kinds", () => {
+  assert.deepEqual(W.WORD_MARKS.map((m) => m.id), ["known", "little", "difficult", "learn", "easy", "very"]);
+  assert.deepEqual(W.WORD_MARKS.map((m) => m.names.en), ["Already Known", "Little Difficult", "Difficult", "Learn", "Learned Easy", "Very Hard"]);
+  assert.deepEqual(W.WORD_MARKS.map((m) => m.kind), ["result", "result", "assessment", "act", "result", "result"]);
 });
-check("four counted degrees, in the Owner's order, both languages filled (I11)", () => {
-  assert.deepEqual(W.EFFORT_DEGREES.map((d) => d.id), ["known", "easy", "hard", "very"]);
-  assert.deepEqual(W.EFFORT_DEGREES.map((d) => d.names.en), ["Already Known", "Learned Easy", "Hard", "Very Hard"]);
+check("five counted degrees (Little Difficult between Learned Easy and Hard), both languages filled (I11)", () => {
+  assert.deepEqual(W.EFFORT_DEGREES.map((d) => d.id), ["known", "easy", "little", "hard", "very"]);
+  assert.deepEqual(W.EFFORT_DEGREES.map((d) => d.names.en), ["Already Known", "Learned Easy", "Little Difficult", "Hard", "Very Hard"]);
   for (const d of W.EFFORT_DEGREES) assert.ok(d.names.bn && d.names.bn !== d.names.en, `${d.id} has no Bangla name`);
   for (const m of W.WORD_MARKS) assert.ok(m.names.bn && m.sub.bn, `${m.id} has no Bangla`);
 });
-check("the stored effort words are exactly known / easy / very (hard is never stored: it is the key `hard`)", () => {
-  assert.deepEqual([...W.EFFORT_STORED], ["known", "easy", "very"]);
+check("the stored effort words are exactly known / easy / little / very (hard is never stored: it is the key `hard`)", () => {
+  assert.deepEqual([...W.EFFORT_STORED], ["known", "easy", "little", "very"]);
   assert.equal(W.isEffortWord("hard"), false);
   assert.equal(W.isEffortWord("easy"), true);
   assert.equal(W.isEffortWord(undefined), false);
@@ -146,6 +149,15 @@ check("Learned Easy and Already Known switch Difficult OFF (an easy word is not 
   assert.deepEqual(tap({ keys: ["hard"], effort: null }, "easy").keys, ["done"]);
   assert.deepEqual(tap({ keys: ["hard"], effort: null }, "known").keys, []);
 });
+check("Little Difficult (12 Nov 2026) is a RESULT: effort little, no Difficult key, no done key, needs the effort field; again clears it; another result replaces it", () => {
+  assert.deepEqual(tap(S0, "little"), { keys: [], effort: "little", needsRules: true });
+  assert.deepEqual(tap({ keys: ["hard"], effort: null }, "little"), { keys: [], effort: "little", needsRules: true }, "a little-difficult word is not Hard");
+  assert.deepEqual(tap({ keys: ["done"], effort: "easy" }, "little"), { keys: [], effort: "little", needsRules: true }, "it replaces Learned Easy and takes its done key away");
+  assert.deepEqual(tap(tap(S0, "little"), "little"), { keys: [], effort: null, needsRules: false });
+  assert.deepEqual(tap(tap(S0, "little"), "very"), { keys: ["hard"], effort: "very", needsRules: true });
+  assert.deepEqual(tap({ keys: ["practice"], effort: null }, "little").keys, ["practice"], "Learn is untouched");
+  assert.equal(W.degreeOf([], "little"), "little");
+});
 check("Learn is untouched by a result", () => {
   assert.deepEqual(tap({ keys: ["practice"], effort: null }, "very").keys, ["practice", "hard"]);
   assert.deepEqual(tap({ keys: ["practice", "hard"], effort: "very" }, "easy").keys, ["practice", "done"]);
@@ -155,9 +167,10 @@ check("switching Difficult off ends a stored Very Hard (it was hard by key)", ()
 });
 check("an unknown mark id throws by name", () => assert.throws(() => W.tapMark([], null, "banana"), /unknown mark banana/));
 check("pressedMarks follows the state (one result at a time)", () => {
-  assert.deepEqual(W.pressedMarks(["hard"], "very"), { known: false, difficult: false, learn: false, easy: false, very: true });
-  assert.deepEqual(W.pressedMarks(["hard", "practice"], null), { known: false, difficult: true, learn: true, easy: false, very: false });
-  assert.deepEqual(W.pressedMarks(["done"], null), { known: false, difficult: false, learn: false, easy: true, very: false });
+  assert.deepEqual(W.pressedMarks(["hard"], "very"), { known: false, little: false, difficult: false, learn: false, easy: false, very: true });
+  assert.deepEqual(W.pressedMarks(["hard", "practice"], null), { known: false, little: false, difficult: true, learn: true, easy: false, very: false });
+  assert.deepEqual(W.pressedMarks(["done"], null), { known: false, little: false, difficult: false, learn: false, easy: true, very: false });
+  assert.deepEqual(W.pressedMarks([], "little"), { known: false, little: true, difficult: false, learn: false, easy: false, very: false });
 });
 
 // ---- the tally and the table ------------------------------------------------------------------------------------------------
@@ -165,7 +178,8 @@ check("tallyDegrees counts each word once, in the four degrees, over the given w
   const entries = { a: ["hard"], b: ["done"], c: ["hard"], d: ["practice"], z: ["hard"] };
   const effort = { c: "very", e: "known" };
   const t = W.tallyDegrees(["a", "b", "c", "d", "e", "f"], entries, effort);
-  assert.deepEqual(t, { known: 1, easy: 1, hard: 1, very: 1, total: 6 });
+  assert.deepEqual(t, { known: 1, easy: 1, little: 0, hard: 1, very: 1, total: 6 });
+  assert.deepEqual(W.tallyDegrees(["a", "b"], {}, { a: "little", b: "little" }), { known: 0, easy: 0, little: 2, hard: 0, very: 0, total: 2 });
 });
 check("percentOf is two decimals and never NaN on an empty total", () => {
   assert.equal(W.percentOf(1, 4), "25.00");
@@ -173,28 +187,28 @@ check("percentOf is two decimals and never NaN on an empty total", () => {
   assert.equal(W.percentOf(5, 0), "0.00");
 });
 check("the table lists the four degrees with count and %, and says 'of N words'", () => {
-  const html = W.effortTableHtml({ known: 1, easy: 1, hard: 2, very: 0, total: 8 }, { lang: "en" });
-  for (const [id, c, p] of [["known", "1", "12.50"], ["easy", "1", "12.50"], ["hard", "2", "25.00"], ["very", "0", "0.00"]]) {
+  const html = W.effortTableHtml({ known: 1, easy: 1, little: 3, hard: 2, very: 0, total: 8 }, { lang: "en" });
+  for (const [id, c, p] of [["known", "1", "12.50"], ["easy", "1", "12.50"], ["little", "3", "37.50"], ["hard", "2", "25.00"], ["very", "0", "0.00"]]) {
     assert.match(html, new RegExp(`data-effort-row="${id}"[^]*?<td class="n">${c}</td><td class="n">${p}%</td>`), id);
   }
   assert.match(html, /of 8 words/);
-  assert.match(W.effortTableHtml({ known: 0, easy: 0, hard: 0, very: 0, total: 0 }, {}), /0\.00%/);
-  assert.ok(!/NaN/.test(W.effortTableHtml({ known: 0, easy: 0, hard: 0, very: 0, total: 0 }, {})));
+  assert.match(W.effortTableHtml({ known: 0, easy: 0, little: 0, hard: 0, very: 0, total: 0 }, {}), /0\.00%/);
+  assert.ok(!/NaN/.test(W.effortTableHtml({ known: 0, easy: 0, little: 0, hard: 0, very: 0, total: 0 }, {})));
 });
 check("the table is in Bangla when asked (I11)", () => {
-  const html = W.effortTableHtml({ known: 0, easy: 0, hard: 0, very: 0, total: 3 }, { lang: "bn" });
-  assert.match(html, /আগে থেকেই জানা/); assert.match(html, /সহজে শেখা/); assert.match(html, /খুব কঠিন/);
+  const html = W.effortTableHtml({ known: 0, easy: 0, little: 0, hard: 0, very: 0, total: 3 }, { lang: "bn" });
+  assert.match(html, /আগে থেকেই জানা/); assert.match(html, /একটু কঠিন/); assert.match(html, /সহজে শেখা/); assert.match(html, /খুব কঠিন/);
 });
-check("the row: five buttons, the pressed ones say so, a busy/viewer row is locked, a note is shown as plain text (escaped)", () => {
+check("the row: six buttons, the pressed ones say so, a busy/viewer row is locked, a note is shown as plain text (escaped)", () => {
   const row = W.wordMarksRowHtml({ unitKey: "qword:4:1:2", keys: ["hard"], effort: "very", lang: "en", heading: "Mark the Word", note: "<b>x</b>" });
-  assert.equal((row.match(/data-word-mark="/g) || []).length, 5);
+  assert.equal((row.match(/data-word-mark="/g) || []).length, 6);
   assert.match(row, /data-word-mark="very" aria-pressed="true"/);
   assert.match(row, /data-word-mark="known" aria-pressed="false"/);
   assert.match(row, /data-marks-unit="qword:4:1:2"/);
   assert.ok(!/<b>x<\/b>/.test(row), "a note must be escaped");
   assert.match(row, /&lt;b&gt;x&lt;\/b&gt;/);
-  assert.equal((W.wordMarksRowHtml({ unitKey: "u", busy: true }).match(/ disabled/g) || []).length, 5);
-  assert.equal((W.wordMarksRowHtml({ unitKey: "u", disabled: true }).match(/ disabled/g) || []).length, 5);
+  assert.equal((W.wordMarksRowHtml({ unitKey: "u", busy: true }).match(/ disabled/g) || []).length, 6);
+  assert.equal((W.wordMarksRowHtml({ unitKey: "u", disabled: true }).match(/ disabled/g) || []).length, 6);
 });
 
 // ---- saving: setWordMarks against a store that really mutates -----------------------------------------------------------------

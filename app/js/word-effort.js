@@ -23,12 +23,13 @@
 export const WORD_EFFORT_RULES_PUBLISHED = true;
 
 /** The three effort words a document may hold (the Rules cannot check them: the client does, here). "hard" is never stored: it is the key `hard`. */
-export const EFFORT_STORED = Object.freeze(["known", "easy", "very"]);
+export const EFFORT_STORED = Object.freeze(["known", "easy", "little", "very"]);
 
 /** The four degrees that are counted, in the order a table lists them. Names are language-keyed (I11). */
 export const EFFORT_DEGREES = Object.freeze([
   { id: "known", names: { en: "Already Known", bn: "আগে থেকেই জানা" }, colour: "known" },
   { id: "easy", names: { en: "Learned Easy", bn: "সহজে শেখা" }, colour: "easy" },
+  { id: "little", names: { en: "Little Difficult", bn: "একটু কঠিন" }, colour: "little" },
   { id: "hard", names: { en: "Hard", bn: "কঠিন" }, colour: "hard" },
   { id: "very", names: { en: "Very Hard", bn: "খুব কঠিন" }, colour: "very" },
 ]);
@@ -36,6 +37,8 @@ export const EFFORT_DEGREES = Object.freeze([
 /** The five buttons of the Word card, in order. `kind` tells the tap what it means. */
 export const WORD_MARKS = Object.freeze([
   { id: "known", kind: "result", names: { en: "Already Known", bn: "আগে থেকেই জানা" }, sub: { en: "result", bn: "ফলাফল" } },
+  // The Owner, 12 Nov 2026 ("Place another level before Difficult, 'Little Difficult'"): a RESULT between Learned Easy and Hard, effort "little".
+  { id: "little", kind: "result", names: { en: "Little Difficult", bn: "একটু কঠিন" }, sub: { en: "result", bn: "ফলাফল" } },
   { id: "difficult", kind: "assessment", names: { en: "Difficult", bn: "কঠিন" }, sub: { en: "counts as Hard", bn: "কঠিন হিসেবে গণ্য" } },
   { id: "learn", kind: "act", names: { en: "Learn", bn: "শিখুন" }, sub: { en: "act on", bn: "শেখার জন্য" } },
   { id: "easy", kind: "result", names: { en: "Learned Easy", bn: "সহজে শেখা" }, sub: { en: "result", bn: "ফলাফল" } },
@@ -56,7 +59,7 @@ const listOf = (keys) => (Array.isArray(keys) ? keys : []);
  */
 export function degreeOf(keys, effort) {
   const k = listOf(keys);
-  if (effort === "known" || effort === "very" || effort === "easy") return effort;
+  if (effort === "known" || effort === "very" || effort === "easy" || effort === "little") return effort;
   if (k.includes("done")) return "easy";
   if (k.includes("hard")) return "hard";
   return null;
@@ -71,6 +74,7 @@ export function pressedMarks(keys, effort) {
     difficult: k.includes("hard") && deg !== "very",
     learn: k.includes("practice"),
     easy: deg === "easy",
+    little: deg === "little",
     very: deg === "very",
   };
 }
@@ -95,22 +99,23 @@ export function tapMark(keys, effort, markId) {
     if (markId === "difficult" && e === "very" && !k.includes("hard")) e = null;
     return { keys: k, effort: e, needsRules: false };
   }
-  if (!["known", "easy", "very"].includes(markId)) throw new Error(`word-effort: unknown mark ${markId}`);
+  if (!["known", "easy", "little", "very"].includes(markId)) throw new Error(`word-effort: unknown mark ${markId}`);
   const already = degreeOf(k, e) === markId;
   // clearing / replacing a result removes what the previous result put in place
   drop("done");
   if (e === "very" || markId === "very") drop("hard");
   if (already) { e = null; return { keys: k, effort: e, needsRules: false }; }
   if (markId === "known") { drop("hard"); e = "known"; }
+  if (markId === "little") { drop("hard"); e = "little"; }
   if (markId === "easy") { drop("hard"); add("done"); e = "easy"; }
   if (markId === "very") { add("hard"); e = "very"; }
   // "easy" is carried by the saved key `done` alone until the Rules are published, so it never needs them
-  return { keys: k, effort: e, needsRules: e === "known" || e === "very" };
+  return { keys: k, effort: e, needsRules: e === "known" || e === "little" || e === "very" };
 }
 
 /** Tally the four degrees over `unitKeys`: { known, easy, hard, very, total } from `entries` (key -> ids) and `effort` (key -> word). */
 export function tallyDegrees(unitKeys, entries, effort) {
-  const out = { known: 0, easy: 0, hard: 0, very: 0, total: unitKeys.length };
+  const out = { known: 0, easy: 0, little: 0, hard: 0, very: 0, total: unitKeys.length };
   for (const u of unitKeys) {
     const d = degreeOf(entries?.[u], effort?.[u]);
     if (d) out[d]++;
@@ -167,15 +172,15 @@ export function effortTableHtml(tally, { lang = "en", scopeLabel = "", countLabe
  * palette per card look: light tones on the Night card, deep tones on the Light card (a palette belongs to a SURFACE).
  */
 export const WORD_EFFORT_CSS = `
-.we-row { --we-known:#6aa8e8; --we-hard:#f89480; --we-learn:#e5b04a; --we-easy:#58c08c; --we-very:#b48be6; --we-on:#0e1630; margin:.4rem 0; }
-[data-card-look="light"] .we-row { --we-known:#1f5f9f; --we-hard:#b3321d; --we-learn:#7a5410; --we-easy:#1b6f45; --we-very:#5a2c94; --we-on:#ffffff; }
+.we-row { --we-known:#6aa8e8; --we-little:#d6d36a; --we-hard:#f89480; --we-learn:#e5b04a; --we-easy:#58c08c; --we-very:#b48be6; --we-on:#0e1630; margin:.4rem 0; }
+[data-card-look="light"] .we-row { --we-known:#1f5f9f; --we-little:#6b6a10; --we-hard:#b3321d; --we-learn:#7a5410; --we-easy:#1b6f45; --we-very:#5a2c94; --we-on:#ffffff; }
 .we-label { display:block; font-size:.82rem; margin-bottom:.25rem; opacity:.85; }
 .we-buttons { display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:.4rem; }
 .we-row .we-btn { min-height:44px; min-width:0; border-radius:9px; border:1.5px solid currentColor; background:transparent; font:inherit; font-size:.85rem; font-weight:600; cursor:pointer; padding:.25rem .4rem; line-height:1.2; overflow-wrap:anywhere; color:var(--we-c); }
 .we-row .we-btn:disabled { opacity:.55; cursor:default; }
 .we-sub { display:block; font-weight:500; font-size:.68rem; opacity:.9; }
 .we-row .we-known { --we-c:var(--we-known); } .we-row .we-difficult { --we-c:var(--we-hard); } .we-row .we-learn { --we-c:var(--we-learn); }
-.we-row .we-easy { --we-c:var(--we-easy); } .we-row .we-very { --we-c:var(--we-very); }
+.we-row .we-easy { --we-c:var(--we-easy); } .we-row .we-little { --we-c:var(--we-little); } .we-row .we-very { --we-c:var(--we-very); }
 .we-row .we-btn[aria-pressed="true"] { background:var(--we-c); color:var(--we-on); border-color:var(--we-c); }
 .we-counts { margin:.3rem 0 0; font-size:.78rem; }
 .we-note { margin:.35rem 0 0; font-size:.82rem; color:var(--we-learn); font-weight:600; }
@@ -187,6 +192,6 @@ export const WORD_EFFORT_CSS = `
 .we-table th, .we-table td { text-align:start; padding:.3rem .4rem; border-bottom:1px solid rgba(143,160,194,.35); }
 .we-table .n { text-align:end; } .we-of { opacity:.85; }
 .we-swatch { display:inline-block; width:.7rem; height:.7rem; border-radius:3px; margin-inline-end:.4rem; vertical-align:-1px; }
-.we-swatch-known { background:var(--we-known,#6aa8e8); } .we-swatch-easy { background:var(--we-easy,#58c08c); } .we-swatch-hard { background:var(--we-hard,#f89480); } .we-swatch-very { background:var(--we-very,#b48be6); }
+.we-swatch-known { background:var(--we-known,#6aa8e8); } .we-swatch-easy { background:var(--we-easy,#58c08c); } .we-swatch-little { background:var(--we-little,#d6d36a); } .we-swatch-hard { background:var(--we-hard,#f89480); } .we-swatch-very { background:var(--we-very,#b48be6); }
 @media (max-width:520px) { .we-buttons { grid-template-columns:repeat(3,minmax(0,1fr)); } .we-row .we-btn { font-size:.8rem; padding:.25rem .25rem; } }
 `;
