@@ -92,12 +92,23 @@ for a, b in zip(order, order[1:]):
         if best[0] >= 0.5: pos = best[1] + 12; res[c] = (mp[a][0], st[best[1]][1])
 aligned = len(res)
 
-# verification: 6 consecutive words of OUR text on the mapped leaf or the next, else no page
+# verification: a number keeps its page only when our text is really on the mapped leaf (or the next):
+#   tier A: 8 consecutive words of OUR text appear there exactly; or
+#   tier B: the best 14-word window there is >= 0.65 similar to our first 14 words (OCR inserts junk glyph runs into names).
+# Anything weaker has no page: a missing page beats a wrong one (100L, 12 Nov 2026).
 def lw(pi, l): return norm(" ".join(" ".join(w) for w in LV[pi][l])) if 0 <= l < len(LV[pi]) else []
-def has6(ws, t):
-    grams = {tuple(ws[j:j + 6]) for j in range(len(ws) - 5)}
-    return any(tuple(t[i:i + 6]) in grams for i in range(len(t) - 5))
-ok = {c: v for c, v in res.items() if has6(lw(v[0], v[1]) + lw(v[0], v[1] + 1), full[c])}
+def has_k(ws, t, k):
+    grams = {tuple(ws[j:j + k]) for j in range(len(ws) - k + 1)}
+    return any(tuple(t[i:i + k]) in grams for i in range(len(t) - k + 1))
+def local(ws, t):
+    t = t[:14]
+    return max((sc(ws[i:i + 14], t) for i in range(max(1, len(ws) - 13))), default=0)
+ok, tierB, dropped = {}, 0, 0
+for c, v in res.items():
+    ws = lw(v[0], v[1]) + lw(v[0], v[1] + 1)
+    if has_k(ws, full[c], 8): ok[c] = v
+    elif local(ws, full[c]) >= 0.65: ok[c] = v; tierB += 1
+    else: dropped += 1
 
 top = row["lastNumber"] + 7   # standard numbering runs to 5765
 p = [None] * top
@@ -113,5 +124,5 @@ out = {
 }
 op = os.path.join(ROOT, "tools/hadith-data-pull/output/book-pages/nasai.json")
 json.dump(out, open(op, "w"), separators=(",", ":"))
-print(f"scan lines {len(recs)}; anchors {anchors1}; +fill {pass12 - anchors1}; text-only +{aligned - pass12}; aligned {aligned}; "
+print(f"tier B {tierB}; dropped {dropped}; scan lines {len(recs)}; anchors {anchors1}; +fill {pass12 - anchors1}; text-only +{aligned - pass12}; aligned {aligned}; "
       f"verified {len(ok)} of {len(Tn)} standard numbers ({100 * len(ok) / len(Tn):.1f}%); in order: {mono}; parts: {[(x['from'], x['to']) for x in out['parts']]}")
