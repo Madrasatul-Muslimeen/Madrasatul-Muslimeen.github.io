@@ -22980,7 +22980,7 @@
         // The tiles the page adds to the bar's ⋮ (barUnitTilesHtml): each presses the bar button it stands for.
         onExtra: (key) => { document.getElementById({ complete: "readCompleteBtn", approach: "readBarTakeBtn", record: "readBarRecordBtn", status: "readBarStatusBtn" }[key])?.click(); },
         onTakeNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { fromQuickMenu: true }); }, // the Owner, 3 Nov 2026: no Note yet, so a new Note
-        onToggleBookmark: toggleAyahBookmark,
+        onToggleBookmark: async (unitKey) => { await toggleAyahBookmark(unitKey, undefined, undefined, { unitChoices: await quickMenuBookmarkChoices(unitKey) }); },
         // The Owner, 9 Oct 2026 (Read view): "there's no button for attaching this Ayah to QCR." The same route as the
         // Āyah card's 📚 QCR: the QCR pop-up (decision 95) opened on Attach, over the view the reader is on. ← Back
         // closes it, and the reader is exactly where they were (nothing was navigated, so nothing needs restoring).
@@ -25866,31 +25866,35 @@
     // QR Lead (the Owner's tick, 3c / PCF MSA J29 j29qrl16q, 1 Nov 2026): the Āyah card's 🔖 offers the same choices for
     // ITS āyah, handed in as `at` ({ ayah, half, page }), from any view; the Read bar's 🔖 reads the āyah on screen.
     function readBookmarkUnitChoices(info, at = null) {
-      if ((!at && stageView !== "read") || !currentSurahData) return [];
-      const base = captureQuranBookmarkSettings();
+      // 12 Nov 2026 (the Owner: "enable all units in the bookmark on this view"): `at` may name an āyah of ANOTHER sūrah than the
+      // loaded one (Read on runs past a sūrah's end): { ayah, half, page, surah, data }, `data` that sūrah's own file.
+      const surahNum = at?.surah ?? currentSurahNum;
+      const sData = at?.data ?? currentSurahData;
+      if ((!at && stageView !== "read") || !sData) return [];
+      const base = { ...captureQuranBookmarkSettings(), surahNum };
       const { ayah, half, page } = at ?? bookmarkAyahOnScreen();
-      const rec = currentSurahData.ayahs.find((a) => a.ayah === ayah);
+      const rec = sData.ayahs.find((a) => a.ayah === ayah);
       const atUnit = (unitType) => ({ ...base, unitType, ayahNum: ayah, rangeFrom: null, rangeTo: null });
       // PCF MSA J42: every unit that holds the āyah on screen, Single Ayah included, in a fixed order. A boundary
       // that is not known is left out, never guessed.
       const all = [{
-        id: "ayah", label: () => t("This āyah"), defaultName: ayahRefLabel(currentSurahNum, ayah, { half }),
-        position: ayahRecordKey(currentSurahNum, ayah, half), settings: atUnit("ayah"),
+        id: "ayah", label: () => t("This āyah"), defaultName: ayahRefLabel(surahNum, ayah, { half }),
+        position: ayahRecordKey(surahNum, ayah, half), settings: atUnit("ayah"),
       }];
       if (page) all.push({ id: "page", label: () => t("This page"), defaultName: t("Page {page}", { page: num(page) }), position: buildUnitKey.page(PAGE_EDITION, page), settings: atUnit("page") });
       if (rec && rec.ruku != null) {
-        const idx = rukuIndexInSurah(currentSurahData.ayahs, rec.ruku);
-        const inRuku = currentSurahData.ayahs.filter((a) => a.ruku === rec.ruku).map((a) => a.ayah);
+        const idx = rukuIndexInSurah(sData.ayahs, rec.ruku);
+        const inRuku = sData.ayahs.filter((a) => a.ruku === rec.ruku).map((a) => a.ayah);
         if (idx && inRuku.length) {
           all.push({
             id: "ruku", label: () => t("This rukūʿ"),
-            defaultName: t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(idx), surah: num(currentSurahNum), from: num(Math.min(...inRuku)), to: num(Math.max(...inRuku)) }),
-            position: buildUnitKey.ruku(currentSurahNum, idx), settings: atUnit("ruku"),
+            defaultName: t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(idx), surah: num(surahNum), from: num(Math.min(...inRuku)), to: num(Math.max(...inRuku)) }),
+            position: buildUnitKey.ruku(surahNum, idx), settings: atUnit("ruku"),
           });
         }
       }
-      const sName = surahName(currentSurahNum, surahIndex.find((s) => s.surahNumber === currentSurahNum)?.nameEnglish);
-      all.push({ id: "surah", label: () => t("Whole sūrah"), defaultName: sName || t("Whole Surah {surah}", { surah: num(currentSurahNum) }), position: buildUnitKey.surah(currentSurahNum), settings: atUnit("surah") });
+      const sName = surahName(surahNum, surahIndex.find((s) => s.surahNumber === surahNum)?.nameEnglish);
+      all.push({ id: "surah", label: () => t("Whole sūrah"), defaultName: sName || t("Whole Surah {surah}", { surah: num(surahNum) }), position: buildUnitKey.surah(surahNum), settings: atUnit("surah") });
       if (rec && rec.juz) all.push({ id: "juz", label: () => t("This juz"), defaultName: t("Juz {juz}", { juz: num(rec.juz) }), position: buildUnitKey.juz(rec.juz), settings: atUnit("juz") });
       // The selected study unit comes first and is preselected, so today's default is unchanged. When it is one of
       // the five it moves to the front; a wider one that is not (Range, Hizb) is added in front.
@@ -25900,14 +25904,14 @@
         : [{ id: "unit", label: () => unitChipText(info), defaultName: info.label, position: info.unitKey, settings: base }, ...all];
       // QR J03 (the Owner): a range of āyāt, through MMSA's popover range kind (v11.14). It starts at the āyah on
       // screen and runs to the end of its ruku' (in a Range unit, the unit's own range); the reader can change both.
-      const ayahs = currentSurahData.ayahs;
+      const ayahs = sData.ayahs;
       const rukuOf = ayahs.find((a) => a.ayah === ayah)?.ruku;
       const rukuEnd = Math.max(ayah, ...ayahs.filter((a) => a.ruku === rukuOf).map((a) => a.ayah));
       const [from, to] = info.unitType === "range" ? currentUnitAyahBounds() : [ayah, rukuEnd];
-      const meta = surahIndex.find((x) => x.surahNumber === currentSurahNum);
+      const meta = surahIndex.find((x) => x.surahNumber === surahNum);
       choices.push({
-        id: "range", label: () => t("Range"), kind: "range", surah: currentSurahNum, ayahCount: currentSurahData.ayahCount,
-        from, to, surahName: surahName(currentSurahNum, meta?.nameEnglish), settings: base,
+        id: "range", label: () => t("Range"), kind: "range", surah: surahNum, ayahCount: sData.ayahCount,
+        from, to, surahName: surahName(surahNum, meta?.nameEnglish), settings: base,
       });
       return choices;
     }
@@ -25921,6 +25925,19 @@
       if (p.surah !== currentSurahNum || !currentSurahData.ayahs.some((a) => a.ayah === p.ayah)) return [];
       const h = half ?? p.half, page = currentSurahData.ayahs.find((a) => a.ayah === p.ayah)?.page ?? null;
       return readBookmarkUnitChoices({ unitType: "ayah", unitKey, label: ayahRefLabel(p.surah, p.ayah, { half: h }) }, { ayah: p.ayah, half: h, page });
+    }
+
+    /** The per-āyah ⋮ menu's 🔖 in the Reading flow (the Owner, 12 Nov 2026: "enable all units in the bookmark on this view", a photo of the
+        plain "Bookmark this" window with no unit choice). The same six units as the Āyah card, for the āyah the ⋮ sits on, whichever sūrah
+        Read on has carried the flow into: another sūrah's own file is read for its boundaries (getSurah, cached), never guessed. */
+    async function quickMenuBookmarkChoices(unitKey) {
+      let p; try { p = parseAyahUnitKey(unitKey); } catch { return []; }
+      if (p.surah === currentSurahNum) return ayahCardBookmarkChoices(unitKey, null, null);
+      let data = null;
+      try { data = await getSurah(p.surah); } catch { data = null; }
+      const rec = data?.ayahs?.find((a) => a.ayah === p.ayah);
+      if (!rec) return [];
+      return readBookmarkUnitChoices({ unitType: "ayah", unitKey, label: ayahRefLabel(p.surah, p.ayah, { half: p.half }) }, { ayah: p.ayah, half: p.half, page: rec.page ?? null, surah: p.surah, data });
     }
 
     async function toggleAyahBookmark(unitKey, defaultNameOverride, settingsOverride, { toggle = true, unitChoices = [] } = {}) {
