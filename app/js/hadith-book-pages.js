@@ -70,6 +70,11 @@ export const BOOK_PAGE_BOOKS = {
     key: "riyad", kind: "shamela", keyBy: "n", shamelaId: "12014",
     title: { en: "Riyad al-Salihin", bn: "রিয়াযুস সালিহীন" },
     edition: { en: "ed. al-Arna'ut, al-Risala", bn: "শু'আইব আল-আরনাউত সম্পাদিত, আর-রিসালা" },
+  },  // Sunan al-Darimi: our text and Shamela's print number their hadith differently after the first few, so the map is keyed by OUR record order `n`.
+  "0255CabdAllahDarimi.Sunan.JK000842-ara1": {
+    key: "darimi", kind: "shamela", keyBy: "n", shamelaId: "21795",
+    title: { en: "Sunan al-Darimi", bn: "সুনানুদ দারিমী" },
+    edition: { en: "ed. Husayn Asad", bn: "হুসাইন আসাদ সম্পাদিত" },
   },
 };
 
