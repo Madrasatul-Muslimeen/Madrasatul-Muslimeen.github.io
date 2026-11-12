@@ -51,8 +51,9 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 768, 1024, 1280,
   // Already Known · Difficult · Learn · Learned Easy · Very Hard (js/word-effort.js). Before this the row was three (J135).
   // Each button's accessible text is its name plus a small caption, so the NAME is read from .we-name.
   const nm = m.names;
-  const EN = ["Already Known", "Difficult", "Learn", "Learned Easy", "Very Hard"];
-  check(`${tag} five buttons: Already Known · Difficult · Learn · Learned Easy · Very Hard`, m.btns.length === 5 && nm.length === 5 && (lang === "en" ? EN.every((x, i) => nm[i] === x) : nm.every((x) => x && !/^[A-Za-z ]+$/.test(x))), nm.join(" | "));
+  // UPDATED IN PLACE (12 Nov 2026, the Owner: "Place another level before Difficult, 'Little Difficult'"): six buttons.
+  const EN = ["Already Known", "Little Difficult", "Difficult", "Learn", "Learned Easy", "Very Hard"];
+  check(`${tag} six buttons: Already Known · Little Difficult · Difficult · Learn · Learned Easy · Very Hard`, m.btns.length === 6 && nm.length === 6 && (lang === "en" ? EN.every((x, i) => nm[i] === x) : nm.every((x) => x && !/^[A-Za-z ]+$/.test(x))), nm.join(" | "));
   const widths = m.btns.map((b) => Math.round(b.rt - b.l));
   const perRow = Object.values(m.btns.reduce((a, b) => (a[b.top] = (a[b.top] || 0) + 1, a), {}));
   check(`${tag} a tidy grid: equal-width buttons${width <= 520 ? ", at most 3 to a row" : ""}`, Math.max(...widths) - Math.min(...widths) <= 2 && (width > 520 || Math.max(...perRow) <= 3), `widths ${widths} per row ${perRow}`);
