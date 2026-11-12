@@ -24467,7 +24467,7 @@
         onStep: (unitKey, dir) => { const n = ayahCardNeighbour(unitKey, dir); if (n) openAyahActionSheet(n.key, n.half); },
         onNoteView: (unitKey) => openAyahNoteViewPopup(unitKey),
         // MSA · QR phone layout part 2: the ⋮ menu's Writing sheet, for this āyah -- the same choice the sheet's own "Show" applies to the Study Unit.
-        onWriting: (unitKey) => { const p = parseAyahUnitKey(unitKey); if (p) applyWritingSheetChoice({ type: "ayah", surah: p.surah, from: p.ayah, to: p.ayah }); },
+        onWriting: (unitKey) => { const p = parseAyahUnitKey(unitKey); if (p) { rememberAyahCardReturn(unitKey); applyWritingSheetChoice({ type: "ayah", surah: p.surah, from: p.ayah, to: p.ayah }); } }, // the way-back law: "Back to Āyah card" (100L/101L review)
         onRelatedJump: (s, a) => { rememberAyahCardReturn(sheetKeyAtRender); navigateToAyah(s, a, "read"); },
         onHadithOpen: (i) => openRelatedHadith(sheetKeyAtRender, i),
         onClose: closeAyahActionSheet,

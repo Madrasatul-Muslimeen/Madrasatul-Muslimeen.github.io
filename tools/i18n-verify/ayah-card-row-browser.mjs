@@ -7,6 +7,7 @@
 //   MUT=playtile ... mutation: Play is a tile again, not in the row        -> the Play-in-the-row and no-Play-tile checks
 //   MUT=nowriting .. mutation: the Writing sheet tile is missing           -> the nine-tile order check
 //   MUT=wrap ...     mutation: the two words are made too wide to share a line with ‹ ▶ › and ⋮  -> the "one line" check
+//   MUT=noback ...   mutation: the Writing sheet tile leaves no way back    -> the "way back to the Āyah card" check (101L review)
 //   MUT=nowritingcb  mutation: the Writing sheet tile does nothing         -> the "opens the Writing sheet for this āyah" check
 // Rendered and measured at 320, 360, 390, 768 and 1280, English and Bangla.
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -41,6 +42,7 @@ else if (MUT === "oldlabel") mutate(SHEET, /\$\{escapeHtml\(t\("Ayah"\)\)\}<\/bu
 else if (MUT === "playtile") mutate(SHEET, /    \{ attr: "data-ayah-sheet-copy"/g, '    { attr: "data-ayah-sheet-play", icon: "▶", short: t("Play"), label: t("Play this āyah") },\n    { attr: "data-ayah-sheet-copy"');
 else if (MUT === "nowriting") mutate(SHEET, /    \{ attr: "data-ayah-sheet-writing"[^\n]*\n/g, "");
 else if (MUT === "wrap") mutate("app/quranrevival.html", /flex: 1 1 auto; min-width: max-content;/g, "flex: 1 1 auto; min-width: 150px;");
+else if (MUT === "noback") mutate("app/quranrevival.html", /if \(p\) \{ rememberAyahCardReturn\(unitKey\); /g, "if (p) { ");
 else if (MUT === "nowritingcb") mutate("app/quranrevival.html", /        onWriting: \(unitKey\) => \{[^\n]*\n/g, "        onWriting: () => {},\n");
 
 const TENANT = "t1";
@@ -134,6 +136,20 @@ try {
     const ws = await page.waitForFunction(() => document.querySelector(".ws-page, .ws-page-canvas"), null, { timeout: 8000 }).then(() => true).catch(() => false);
     const unit = await ev(page, () => ({ type: document.getElementById("unitTypeSelect")?.value, ayah: document.getElementById("ayahSelect")?.value, cardGone: !document.querySelector("[data-ayah-sheet]") }));
     check(`${tag} MUTATION TARGET (nowritingcb): the Writing sheet tile closes the card and opens the Writing sheet for Ayah 1:2`, ws && unit.type === "ayah" && unit.ayah === "2" && unit.cardGone, JSON.stringify({ ws, ...unit }));
+    // the way-back law (decision 86; 101L review): the Writing sheet leaves "Back to Āyah card" waiting; once the sheet's own ✕ closes it
+    // (the sheet covers the whole screen, z-index 9500) the pill is on screen, on top, and brings the card back
+    await ev(page, () => document.querySelector('#writingSheet [data-ws="close"]')?.click());
+    await page.waitForFunction(() => !document.getElementById("writingSheet"), null, { timeout: 5000 }).catch(() => {});
+    await settle(page, 200);
+    const pill = await ev(page, () => { const b = document.querySelector("#ayahCardBackPill:not([hidden]) [data-ayah-card-back]"); if (!b) return { ok: false };
+      const r = b.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { ok: true, onTop: !!hit && b.contains(hit), text: b.textContent.trim() }; });
+    check(`${tag} MUTATION TARGET (noback): closing the Writing sheet leaves a way back to the Āyah card, on top`, pill.ok && pill.onTop, JSON.stringify(pill));
+    if (pill.ok) {
+      await ev(page, () => document.querySelector("#ayahCardBackPill [data-ayah-card-back]").click());
+      const back = await page.waitForFunction(() => document.querySelector("[data-ayah-sheet]")?.dataset.unitKey, null, { timeout: 8000 }).then((h) => h.jsonValue()).catch(() => null);
+      check(`${tag} the way back opens the Āyah card for 1:2 again`, /(^|:)1:2$/.test(back || ""), String(back));
+    }
     await ctx.close();
   }
 } finally {
