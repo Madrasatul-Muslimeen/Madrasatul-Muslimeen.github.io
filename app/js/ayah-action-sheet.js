@@ -256,15 +256,6 @@ export function openApproachList(select) {
   return wrap;
 }
 
-/** MSA · QR J131 (the Owner, 9 Nov 2026): a 📝 Note button in the bar beside 📖 Full text. The same door as the Note tile in the action row
- *  (the same attributes, so the same wiring), shown disabled with its reason on a record that is not the reader's own. */
-function headNoteHtml({ isSelf, noteWhy, hasPosterNote }) {
-  const isNew = hasPosterNote === false;
-  const label = isNew ? t("Take Note") : t("Note & more…");
-  const title = !isSelf ? noteWhy : isNew ? t("You don't have a Note on this āyah yet.") : label;
-  return `<button type="button" class="ayah-sheet-headnote${isSelf ? "" : " is-disabled"}" aria-disabled="${isSelf ? "false" : "true"}" data-ayah-sheet-note${isNew ? " data-ayah-sheet-note-new" : ""} aria-label="${escapeHtml(label)}" title="${escapeHtml(title)}"><span aria-hidden="true">📝</span><span class="ayah-sheet-headnote-label"> ${escapeHtml(t("Note"))}</span></button>`;
-}
-
 /** Owner, 7 Oct 2026 (a photo of the Āyah card, the actions circled): "all these choices/ actions could be placed
     below the Ayah name/ number in a row." So every one-tap action is a small icon button in ONE row straight under
     the header -- the short word under the icon, the full name as its tooltip and its spoken name. ONE array, so a
@@ -272,18 +263,19 @@ function headNoteHtml({ isSelf, noteWhy, hasPosterNote }) {
     is printed under the row (spec item 4: "shown ... with an explanation ... not hidden"). */
 function actionRowDefs({ isBookmarked, isSelf, noteWhy, hasPosterNote = null }) {
   const defs = [
-    { attr: "data-ayah-sheet-bookmark", icon: isBookmarked ? "★" : "🔖", short: isBookmarked ? t("Bookmarked") : t("Bookmark"), label: isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah") },
     // The Owner, 9 Oct 2026 (decision 94; a photo with 📝 Note, ✍ Take Note and 📖 Note view circled: "we got 3
     // notes. It's confusing"): ONE 📝 Note. With no Note on this āyah yet it is the "take a note" door (the Note view
     // ready to write: data-ayah-sheet-note-new -> onTakeNote); with one, it opens the Note view as it is (onNote).
     hasPosterNote === false
       ? { attr: "data-ayah-sheet-note data-ayah-sheet-note-new", icon: "📝", short: t("Note"), label: t("Take Note"), title: t("You don't have a Note on this āyah yet."), disabled: !isSelf, hint: isSelf ? "" : noteWhy }
       : { attr: "data-ayah-sheet-note", icon: "📝", short: t("Note"), label: t("Note & more…"), disabled: !isSelf, hint: isSelf ? "" : noteWhy },
+    // MSA · QR phone layout part 2 (the Owner, 11 Nov 2026): the Writing sheet for this āyah, beside Note.
+    { attr: "data-ayah-sheet-writing", icon: "✍", short: t("Writing sheet"), label: t("Writing sheet") },
+    { attr: "data-ayah-sheet-qcr", icon: "📚", short: t("QCR"), label: t("QCR collection(s)…") },
+    { attr: "data-ayah-sheet-bookmark", icon: isBookmarked ? "★" : "🔖", short: isBookmarked ? t("Bookmarked") : t("Bookmark"), label: isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah") },
     { attr: "data-ayah-sheet-poster", icon: "🖨", short: t("Poster"), label: t("Make a poster") },
     { attr: "data-ayah-sheet-asma", icon: "✦", short: t("Asma"), label: t("Asma ul Husna Name(s)…") },
-    { attr: "data-ayah-sheet-qcr", icon: "📚", short: t("QCR"), label: t("QCR collection(s)…") },
     { attr: "data-ayah-sheet-file-folder", icon: "🗂", short: t("Folder"), label: t("File in folder(s)…"), disabled: !isSelf, hint: isSelf ? "" : noteWhy, title: t("Files your Note on this āyah (creates one if you have none).") },
-    { attr: "data-ayah-sheet-play", icon: "▶", short: t("Play"), label: t("Play this āyah") },
     { attr: "data-ayah-sheet-copy", icon: "📋", short: t("Copy"), label: t("Copy") },
     { attr: "data-ayah-sheet-share", icon: "📤", short: t("Share"), label: t("Share") },
   ];
@@ -296,9 +288,8 @@ function actionRowHtml({ isBookmarked, isSelf, noteWhy, hasPosterNote, onlyBookm
   let defs = actionRowDefs({ isBookmarked, isSelf, noteWhy, hasPosterNote });
   // PCF J26: Aʿūdhu billāh is not an āyah -- no audio, poster, Asma/QCR or folder filing of its own; the Bookmark and the Note stay.
   if (onlyBookmarkAndNote) defs = defs.filter((d) => /data-ayah-sheet-(bookmark|note)\b/.test(d.attr));
-  // MSA · QR J131 (the Owner, 9 Nov 2026): the ONE 📝 Note (decision 94) moved from this row to the bar, beside 📖 Full text. Only the opening
-  // sheet (Aʿūdhu billāh), whose bar has no tools, keeps it here.
-  else defs = defs.filter((d) => !/data-ayah-sheet-note\b/.test(d.attr));
+  // MSA · QR phone layout part 2 (the Owner, 11 Nov 2026): the 📝 Note (J131 put it in the bar) is the first tile of the ONE ⋮ menu again,
+  // and ▶ Play lives in the ‹ ▶ › group of the main row, so it is not a tile.
   const buttons = defs.map((d) => `<button type="button" class="ayah-sheet-act${d.disabled ? " is-disabled" : ""}" aria-disabled="${d.disabled ? "true" : "false"}" ${d.attr} aria-label="${escapeHtml(d.label)}" title="${escapeHtml(d.title ? `${d.label} ${d.title}` : d.label)}"><span class="ayah-sheet-act-icon" aria-hidden="true">${d.icon}</span><span class="ayah-sheet-act-label" aria-hidden="true">${escapeHtml(d.short)}</span></button>`).join("");
   // The reasons a dimmed item gives (each printed once), and the poster's own "no Note yet" offer.
   const hints = [...new Set(defs.filter((d) => d.disabled && d.hint).map((d) => d.hint))].map((h) => `<p class="ayah-sheet-hint">${escapeHtml(h)}</p>`).join("");
@@ -488,6 +479,10 @@ function connectedInfoHtml(connected) {
 // Owner, 2 Oct 2026 (a phone photo of the Āyah card): "Take this to the
 // top". Status of this āyah comes first, straight under the header, then the
 // actions (Play, Copy, Share, ...), then Info.
+/** MSA · QR phone layout part 2: whether the Location card and the ⋮ menu are open. Kept here so the card's later redraws (as its data
+ *  arrives) keep them as the reader left them; a new āyah (‹ ›), a close, or an action puts both away. */
+const uiOpen = { loc: false, menu: false, key: null };
+
 export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
   approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null, approachSummary = null, canConfirm = false,
@@ -502,6 +497,7 @@ export function renderAyahActionSheetHtml({
   // "" when the card has none to show (the Before Al-Fātiḥah item, or the marks not loaded yet).
   marksHtml = ""
 } = {}) {
+  if (uiOpen.key !== unitKey) { uiOpen.loc = false; uiOpen.menu = false; uiOpen.key = unitKey; }
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
   const actionRow = actionRowHtml({ isBookmarked, isSelf, noteWhy, hasPosterNote, onlyBookmarkAndNote: !!intro?.opening });
@@ -524,22 +520,24 @@ export function renderAyahActionSheetHtml({
   return `
     <div class="ayah-sheet" data-ayah-sheet data-unit-key="${escapeHtml(unitKey)}" role="dialog" aria-modal="true" aria-label="${escapeHtml(ref || t("This āyah"))}">
       <div class="ayah-sheet-handle" aria-hidden="true"></div>
-      ${ladderHtml}
       <div class="ayah-sheet-header">
         <span class="ayah-sheet-ref">${escapeHtml(ref)}</span>
         <span class="ayah-sheet-head-tools"${intro?.opening ? " hidden" : ""}>
+          <button type="button" class="ayah-sheet-loc" data-ayah-sheet-location-btn aria-expanded="${uiOpen.loc ? "true" : "false"}" aria-controls="ayahSheetLocation" aria-label="${escapeHtml(t("Location"))}" title="${escapeHtml(t("Location"))}"><span aria-hidden="true">📍</span><span class="ayah-sheet-loc-label"> ${escapeHtml(t("Location"))}</span><span aria-hidden="true"> ▾</span></button>
+          <button type="button" class="ayah-sheet-noteview" data-ayah-sheet-noteview aria-label="${escapeHtml(t("See this āyah's full text"))}" title="${escapeHtml(t("See this āyah's full text"))}"><span aria-hidden="true">📖</span> ${escapeHtml(t("Ayah"))}</button>
           <span class="ayah-sheet-nav-pair">
             <button type="button" class="ayah-sheet-nav" data-ayah-sheet-step="-1" aria-label="${escapeHtml(t("Previous āyah"))}" title="${escapeHtml(t("Previous āyah"))}"${canPrev ? "" : " disabled"}>‹</button>
+            <button type="button" class="ayah-sheet-nav ayah-sheet-nav-play" data-ayah-sheet-play aria-label="${escapeHtml(t("Play this āyah"))}" title="${escapeHtml(t("Play this āyah"))}">▶</button>
             <button type="button" class="ayah-sheet-nav" data-ayah-sheet-step="1" aria-label="${escapeHtml(t("Next āyah"))}" title="${escapeHtml(t("Next āyah"))}"${canNext ? "" : " disabled"}>›</button>
           </span>
-          <button type="button" class="ayah-sheet-noteview" data-ayah-sheet-noteview aria-label="${escapeHtml(t("See this āyah's full text"))}" title="${escapeHtml(t("See this āyah's full text"))}"><span aria-hidden="true">📖</span> ${escapeHtml(t("Full text"))}</button>
-          ${intro?.opening ? "" : headNoteHtml({ isSelf, noteWhy, hasPosterNote })}
+          <button type="button" class="ayah-sheet-more" data-ayah-sheet-more aria-expanded="${uiOpen.menu ? "true" : "false"}" aria-controls="ayahSheetMenu" aria-label="${escapeHtml(t("More"))}" title="${escapeHtml(t("More"))}">⋮</button>
         </span>
         ${intro ? "" : `<button type="button" class="ayah-sheet-homeback" data-ayah-sheet-close data-ayah-sheet-homeback aria-label="${escapeHtml(t("Back"))}" title="${escapeHtml(t("Back"))}">←</button>`}<!-- PCF MSA J72: a way back to where the card was opened -->
         <button type="button" class="ayah-sheet-close" data-ayah-sheet-close aria-label="${escapeHtml(t("Close"))}">×</button>
       </div>
       ${introHtml}
-      <div class="ayah-sheet-tilebar">${actionRow}</div>
+      ${intro?.opening ? "" : `<div class="ayah-sheet-location" id="ayahSheetLocation" data-ayah-sheet-location${uiOpen.loc ? "" : " hidden"}>${ladderHtml}</div>`}
+      <div class="ayah-sheet-tilebar"${intro?.opening ? "" : ` id="ayahSheetMenu" data-ayah-sheet-menu${uiOpen.menu ? "" : " hidden"}`}>${actionRow}</div>
       <div class="ayah-sheet-panes" data-ayah-sheet-panes>
       <section class="ayah-sheet-pane-text" data-ayah-sheet-text${intro?.opening ? " hidden" : ""}>
         <button type="button" class="ayah-sheet-squeezed" data-ayah-sheet-showboth data-squeezed-for="text"><span aria-hidden="true">📖</span> ${escapeHtml(t("Full text"))} <span class="ayah-sheet-squeezed-hint">${escapeHtml(t("Show both halves"))}</span></button>
@@ -648,8 +646,7 @@ function watchAyahActionRow(row) {
 function headerLines(header) {
   const items = [];
   for (const c of header.children) {
-    if (c.classList.contains("ayah-sheet-head-tools") && getComputedStyle(c).display === "contents") items.push(...[...c.children].filter((k) => k.getClientRects().length));
-    else if (c.getClientRects().length) items.push(c);
+    if (c.getClientRects().length) items.push(c);
   }
   const boxes = items.map((el) => el.getBoundingClientRect()).sort((a, b) => a.top - b.top);
   let lines = 0, bottom = -Infinity;
@@ -682,7 +679,8 @@ export function attachAyahActionSheetHandlers(container, callbacks = {}) {
   watchAyahActionRow(sheet.querySelector("[data-ayah-sheet-actions]"));
   watchAyahSheetHeader(sheet.querySelector(".ayah-sheet-header"));
   const unitKey = sheet.dataset.unitKey;
-  const fire = (fn) => { callbacks.onClose?.(); fn?.(unitKey); };
+  const putAway = () => { uiOpen.loc = false; uiOpen.menu = false; };
+  const fire = (fn) => { putAway(); callbacks.onClose?.(); fn?.(unitKey); };
   const fireUnlessDisabled = (btn, fn) => {
     if (!btn) return;
     btn.addEventListener("click", () => {
@@ -690,7 +688,19 @@ export function attachAyahActionSheetHandlers(container, callbacks = {}) {
       fire(fn);
     });
   };
-  sheet.querySelectorAll("[data-ayah-sheet-close]").forEach((b) => b.addEventListener("click", () => callbacks.onClose?.()));
+  sheet.querySelectorAll("[data-ayah-sheet-close]").forEach((b) => b.addEventListener("click", () => { putAway(); callbacks.onClose?.(); }));
+  // The Location card (the six unit buttons) and the ⋮ menu: each opens under the row; opening one puts the other away.
+  const locBtn = sheet.querySelector("[data-ayah-sheet-location-btn]"), locBox = sheet.querySelector("[data-ayah-sheet-location]");
+  const moreBtn = sheet.querySelector("[data-ayah-sheet-more]"), menuBox = sheet.querySelector("[data-ayah-sheet-menu]");
+  const paintOpen = () => {
+    if (locBox) locBox.hidden = !uiOpen.loc;
+    if (menuBox) menuBox.hidden = !uiOpen.menu;
+    locBtn?.setAttribute("aria-expanded", String(uiOpen.loc));
+    moreBtn?.setAttribute("aria-expanded", String(uiOpen.menu));
+    if (uiOpen.menu) fitAyahActionRow(sheet.querySelector("[data-ayah-sheet-actions]"));
+  };
+  locBtn?.addEventListener("click", () => { uiOpen.loc = !uiOpen.loc; if (uiOpen.loc) uiOpen.menu = false; paintOpen(); });
+  moreBtn?.addEventListener("click", () => { uiOpen.menu = !uiOpen.menu; if (uiOpen.menu) uiOpen.loc = false; paintOpen(); });
   // Owner, 7 Oct 2026: ‹ › step the card itself to the previous / next āyah, and 📖 shows this āyah
   // as the Note view does, in a pop-up over the card. Neither closes the card (the caller re-renders
   // it for the new āyah, or lays the pop-up over it, so its Back lands on this same card).
@@ -718,6 +728,7 @@ export function attachAyahActionSheetHandlers(container, callbacks = {}) {
   // Decision 94: one 📝 Note; with no Note yet it opens the Note view ready to write.
   const noteBtn = sheet.querySelector("[data-ayah-sheet-note]");
   fireUnlessDisabled(noteBtn, noteBtn?.getAttribute("data-ayah-sheet-note-new") != null ? (callbacks.onTakeNote ?? callbacks.onNote) : callbacks.onNote);
+  sheet.querySelector("[data-ayah-sheet-writing]")?.addEventListener("click", () => fire(callbacks.onWriting));
   sheet.querySelector("[data-ayah-sheet-asma]")?.addEventListener("click", () => fire(callbacks.onAsma));
   sheet.querySelector("[data-ayah-sheet-qcr]")?.addEventListener("click", () => fire(callbacks.onQcr));
   fireUnlessDisabled(sheet.querySelector("[data-ayah-sheet-file-folder]"), callbacks.onFileInFolder);
