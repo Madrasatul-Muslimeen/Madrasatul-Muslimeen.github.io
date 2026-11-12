@@ -67,6 +67,53 @@
       ]
     }
   },
+  "darimi": {
+    "keyedBy": "n",
+    "note": "Darimi is keyed by OUR record order n (our numbering and Shamela's differ after the first few). n -> [Shamela index, volume, printed page]; read on live shamela.ws 12 Nov 2026: the hadith's opening words are on the page and its title is ج<vol> - ص<page>. n=2 is hadith 1 (the first after the introduction heading).",
+    "minCoverage": 0.97,
+    "maxBackwards": 3,
+    "at": {
+      "2": [
+        3,
+        1,
+        153
+      ],
+      "2100": [
+        2742,
+        2,
+        1327
+      ],
+      "3400": [
+        4706,
+        4,
+        2133
+      ]
+    }
+  },
+  "nawawi40": {
+    "keyedBy": "n",
+    "note": "Forty Nawawi is keyed by OUR record order n (our copy has no numbers). n -> [Shamela index, printed page]; read on live shamela.ws 12 Nov 2026: title is ص<page> and the passage's opening 8 words are on the page. n=19 opens al-Hadith al-Awwal. `unmapped` = the passages the typed pages did not hold.",
+    "minCoverage": 0.98,
+    "maxBackwards": 0,
+    "unmapped": [
+      1,
+      12
+    ],
+    "at": {
+      "19": [
+        12,
+        46
+      ],
+      "70": [
+        40,
+        74
+      ],
+      "130": [
+        76,
+        110
+      ]
+    }
+  },
   "ahmad": {
     "note": "Musnad Ahmad is keyed by the book's own number. number -> [Shamela index, volume, printed page]; read on live shamela.ws 12 Nov 2026: the hadith's opening words are on the page and its title is ج<vol> - ص<page>.",
     "minCoverage": 0.98,
