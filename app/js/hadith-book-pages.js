@@ -68,6 +68,12 @@ export const BOOK_PAGE_BOOKS = {
     title: { en: "al-Adab al-Mufrad", bn: "আল-আদাবুল মুফরাদ" },
     edition: { en: "ed. Abd al-Baqi", bn: "মুহাম্মাদ ফুআদ আবদুল বাকী সম্পাদিত" },
   },
+  // Musnad Ahmad: Shamela's typed text of ed. al-Arna'ut carries the edition's own hadith number, which our text carries too, so the map is keyed by that number.
+  "0241IbnHanbal.Musnad.Shamela0025794-ara1": {
+    key: "ahmad", kind: "shamela", shamelaId: "25794",
+    title: { en: "Musnad Ahmad", bn: "মুসনাদে আহমাদ" },
+    edition: { en: "ed. al-Arna'ut, al-Risala", bn: "শু'আইব আল-আরনাউত সম্পাদিত, আর-রিসালা" },
+  },
   // Forty Nawawi (the Owner ticked hd1111n G, 11 Nov 2026): our copy carries no hadith numbers, so each passage was found in the typed pages by its
   // opening words and the map is keyed by OUR record order `n` (tools/hadith-data-pull/shamela-pages-text.py).
   "0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1": {

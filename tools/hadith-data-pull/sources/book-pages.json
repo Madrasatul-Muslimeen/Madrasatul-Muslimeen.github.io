@@ -147,8 +147,8 @@
         "edition": "ed. al-Arna'ut, al-Risala",
         "lastIndex": 23340
       },
-      "status": "planned",
-      "note": "The archive.org scan is image-only (no text layer). Shamela typed text, read page by page by shamela-pages-build.py (exact). The OpenITI PageV marks of this book are too sparse (hadith 252 sits ~200 lines before its next mark): shamela-pages-from-marks.py's own sample check, with its control, proved that route WRONG here (0 of 534), so it is not used for Ahmad."
+      "status": "mapped",
+      "note": "Owner ticked hd1111n A (11 Nov 2026). The archive.org scan is image-only (no text layer). Shamela typed text, read page by page by shamela-pages-build.py (exact). The OpenITI PageV marks of this book are too sparse (hadith 252 sits ~200 lines before its next mark): shamela-pages-from-marks.py's own sample check, with its control, proved that route WRONG here (0 of 534), so it is not used for Ahmad. Route used: every page read by shamela-pages-build.py, then shamela-pages-verified.py keeps a number's page only when our text's opening words agree with the paragraph found there (26,316 of 26,810 numbered hadith; the rest print no page rather than a guess)."
     },
     {
       "key": "adabmufrad",
