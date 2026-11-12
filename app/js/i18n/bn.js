@@ -3430,6 +3430,14 @@ export const BN = {
   "You can view this, but only the person's own record can record progress.": "আপনি এটি দেখতে পারেন, কিন্তু অগ্রগতি শুধু সেই ব্যক্তির নিজের রেকর্ডে লেখা যায়।", // ?
   "Not saved: {why}": "সংরক্ষিত হয়নি: {why}", // ?
   "Page {n} of {total}": "পৃষ্ঠা {n} / {total}", // ?
+  "Which index": "কোন সূচি",
+  "Original index": "মূল সূচি",
+  "My index": "আমার সূচি",
+  "Show what the app holds": "অ্যাপে কী আছে দেখান",
+  "Proposed Bangla name": "প্রস্তাবিত বাংলা নাম",
+  "{b} books · {h} hadith": "{b}টি কিতাব · {h}টি হাদীস",
+  "Arabic {a} · English {e} · Bangla {b}": "আরবি {a} · ইংরেজি {e} · বাংলা {b}",
+  "Could not load this index. {msg}": "এই সূচি লোড করা যায়নি। {msg}",
   "Show more ({remaining} more)": "আরও দেখুন (আরও {remaining}টি)", // ?
   "Hadith {n}": "হাদীস {n}", // ?
   "Passage {n} (position in this edition, not the book's own number)": "অংশ {n} (এই সংস্করণে অবস্থান, বইয়ের নিজস্ব নম্বর নয়)", // ?
