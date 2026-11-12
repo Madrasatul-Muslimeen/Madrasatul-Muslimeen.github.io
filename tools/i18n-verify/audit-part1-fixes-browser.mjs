@@ -146,6 +146,8 @@ for (const lang of ["en", "bn"]) {
       const ref = await page.evaluate(() => { const e = document.querySelector(".ayah-sheet-ref"); const cs = getComputedStyle(e); const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.3; return { h: e.getBoundingClientRect().height, lh, hy: cs.hyphens, ow: cs.overflowWrap }; });
       check(`${tag} Āyah card heading: no hyphen split, no mid-name break (hyphens ${ref.hy}, overflow-wrap ${ref.ow})`, ref.hy === "none" && ref.ow === "normal");
       if (width >= 390) check(`${tag} Āyah card heading is one line (${ref.h}px)`, ref.h < ref.lh * 1.6);
+      // phone layout part 2 (11 Nov 2026): the unit buttons sit behind the card's Location button; open it first, as a reader does
+      await page.evaluate(() => { const b = document.querySelector("[data-ayah-sheet-location-btn]"); if (b && b.getAttribute("aria-expanded") !== "true") b.click(); }); await page.waitForTimeout(250);
       const lad = await page.evaluate(() => { const l = document.querySelector(".unit-ladder"); const lr = l.getBoundingClientRect(); const rungs = [...l.querySelectorAll(".unit-ladder-rung")].map((b) => b.getBoundingClientRect()); return { sw: l.scrollWidth, cw: l.clientWidth, inside: rungs.every((r) => r.left >= lr.left - 0.5 && r.right <= lr.right + 0.5), n: rungs.length, minH: Math.min(...rungs.map((r) => r.height)) }; });
       check(`${tag} unit ladder fits: ${lad.n} rungs inside it, scrollWidth ${lad.sw} <= clientWidth ${lad.cw}`, lad.n >= 3 && lad.sw <= lad.cw + 1 && lad.inside && lad.minH >= 39.5);
       needBox(`${tag} Āyah card close / step buttons`, await rectsOf(page, [".ayah-sheet-close", ".ayah-sheet-nav"]), 40, 40);
