@@ -57,6 +57,12 @@ export const BOOK_PAGE_BOOKS = {
     title: { en: "al-Adab al-Mufrad", bn: "আল-আদাবুল মুফরাদ" },
     edition: { en: "ed. Abd al-Baqi", bn: "মুহাম্মাদ ফুআদ আবদুল বাকী সম্পাদিত" },
   },
+  // Musnad Ahmad: Shamela's typed text of ed. al-Arna'ut carries the edition's own hadith number, which our text carries too, so the map is keyed by that number.
+  "0241IbnHanbal.Musnad.Shamela0025794-ara1": {
+    key: "ahmad", kind: "shamela", shamelaId: "25794",
+    title: { en: "Musnad Ahmad", bn: "মুসনাদে আহমাদ" },
+    edition: { en: "ed. al-Arna'ut, al-Risala", bn: "শু'আইব আল-আরনাউত সম্পাদিত, আর-রিসালা" },
+  },
   // Riyad al-Salihin: the book's own number prints per chapter (and our header has typos), so its map is keyed by OUR record order `n`
   // (keyBy: "n"); the card passes h.n and the pane names the book without a hadith number.
   "0676Nawawi.RiyadSalihin.Shamela0012014-ara1": {

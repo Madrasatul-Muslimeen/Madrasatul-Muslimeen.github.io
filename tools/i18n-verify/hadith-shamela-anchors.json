@@ -66,5 +66,33 @@
         505
       ]
     }
+  },
+  "ahmad": {
+    "note": "Musnad Ahmad is keyed by the book's own number. number -> [Shamela index, volume, printed page]; read on live shamela.ws 12 Nov 2026: the hadith's opening words are on the page and its title is ج<vol> - ص<page>.",
+    "minCoverage": 0.98,
+    "maxBackwards": 4,
+    "maxDropped": 600,
+    "at": {
+      "1": [
+        153,
+        1,
+        177
+      ],
+      "1000": [
+        825,
+        2,
+        289
+      ],
+      "12000": [
+        9284,
+        19,
+        59
+      ],
+      "26000": [
+        21826,
+        43,
+        138
+      ]
+    }
   }
 }
