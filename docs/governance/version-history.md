@@ -1138,3 +1138,4 @@ total). Allocated by the MMSA Architect.
 14.33: the Owner's 13 Nov Word Card asks and the Notes pane unit picker (#1689), Dua groups step 4 (#1688). Allocated by the MMSA Architect.
 14.34: the Hadith 👥 list readable in the night look (#1693). Allocated by the MMSA Architect.
 14.35: Dua groups: Admin's groups / My groups pop-up, with the published Rules (#1695, #1696, #1698). Allocated by the MMSA Architect.
+14.36: Word Card words and Bangla kinds, Difficulty Level, Hadith Topics tab off, Learning Stories (#1699, #1701, #1702, #1703). Allocated by the MMSA Architect.
