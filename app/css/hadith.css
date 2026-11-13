@@ -397,6 +397,18 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .hadith-menubar .hadith-menu-btn { color: #7d5a00; font-weight: 600; } /* darker gold: 4.5:1 on white (the brand gold measured 3.2) */
 .hadith-menu { position: static; } /* the list opens under the bar, from its left edge, so it never runs off a phone */
 .hadith-menu-caret { margin-left: 0.3rem; font-size: 0.8em; }
+/* PCF MSA J106 (the Owner, 14 Nov 2026): ONE bar -- Menu, Books, Subjects, Explore, Search. Search sits at the right edge of
+   the row; on a phone the five buttons share one row (tighter padding) instead of Search dropping to a second line. */
+.hadith-menubar .hadith-tabs { flex-wrap: nowrap; }
+.hadith-menubar .hadith-tab[data-hadith-tab="search"] { margin-left: auto; }
+@media (max-width: 520px) { .hadith-menubar .hadith-tab { padding-left: 0.42rem; padding-right: 0.42rem; font-size: 0.9rem; } }
+.hadith-menu-cue { margin-left: 0.3rem; font-size: 0.78em; font-weight: 700; }
+.hadith-menu-cue[hidden] { display: none; }
+.hadith-menu-heading { margin: 0.6rem 0.2rem 0.3rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.hadith-menu-panel a.hadith-menu-item { text-decoration: none; color: inherit; }
+.hadith-menu-settings { display: grid; gap: 0.4rem; margin-top: 0.4rem; }
+.hadith-menu-settings:empty, .hadith-menu-preview:empty { display: none; }
+.hadith-menu-panel .hadith-lang-wrap { margin: 0.3rem 0.2rem; }
 .hadith-menubar-sep { width: 1px; align-self: stretch; background: var(--hadith-rule); margin: 0.3rem 0.15rem; }
 .hadith-menu-panel { position: absolute; top: calc(100% + 0.35rem); left: 0.3rem; z-index: 30; width: min(32rem, calc(100vw - 2.5rem)); max-height: 70vh;
   overflow: auto; background: #fff; border: 1px solid var(--hadith-rule); border-radius: 0.6rem; box-shadow: 0 10px 30px rgb(27 42 65 / 0.18);
