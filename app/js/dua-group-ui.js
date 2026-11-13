@@ -4,7 +4,7 @@
 //                                change. Every change goes through dua-group-tree.js (the pure rules) and is handed to opts.onChange(tree).
 //   openGroupWindow(opts)        a group's pop-up: full screen on a tablet or phone, and on a computer (a wide screen with a mouse) a
 //                                window that is dragged by its title and resized from all four sides and four corners.
-// Not wired to any page yet: the writer (duaGroups, the Owner publishes its Rules first) and the screens that use these come next.
+// Not wired to any page yet: the writer (for the groups collection; the Owner publishes its Rules first) and the screens that use these come next.
 import { t } from "./i18n.js";
 import { MAX_DEPTH, addGroup, renameGroup, moveGroup, removeGroup, find, height } from "./dua-group-tree.js";
 
