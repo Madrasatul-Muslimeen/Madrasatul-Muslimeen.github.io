@@ -10,6 +10,7 @@
 //   --mutate=contrast|focus|day|arrow|d1   (each must FAIL; d1 takes out the night rules for the 👥 pill, part 146 D1)
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { tabClick } from "./dua-tab-reveal.mjs";
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
   if (typeof ok?.then === "function") throw new Error(`check "${name}" was given a promise`);
@@ -25,7 +26,8 @@ const BUKHARI = "0256Bukhari.Sahih.JK000110-ara1";
 const NOISE = /ERR_CERT|ERR_TUNNEL|net::|archive\.org|api\.quran|quran\.foundation|fonts\.g|Failed to load resource/i;
 const slice = (file, from) => { const s = fs.readFileSync("tools/i18n-verify/" + file, "utf8"); const a = s.indexOf(from), v = s.indexOf("const VIEWS = [", a), b = s.indexOf("\n];", v); if (a < 0 || v < 0 || b < 0) throw new Error("cannot read VIEWS from " + file); return s.slice(a, b + 3); };
 const HADITH_VIEWS = new Function("BUKHARI", slice("large-text-hadith-study-browser.mjs", "const tab = (P, v)") + "\nreturn VIEWS;")(BUKHARI);
-const DUA_VIEWS = new Function("BUKHARI", slice("large-text-dua-study-browser.mjs", "const wait = (P, sel") + "\nreturn VIEWS;")(BUKHARI);
+// 25 (13 Nov): the borrowed views press Menu chips through tabClick (the Menu has five tabs), so it is handed to them.
+const DUA_VIEWS = new Function("BUKHARI", "tabClick", slice("large-text-dua-study-browser.mjs", "const wait = (P, sel") + "\nreturn VIEWS;")(BUKHARI, tabClick);
 const src = fs.readFileSync("tools/i18n-verify/shared-tools-a11y-browser.mjs", "utf8");
 const ia = src.indexOf("const INSTALL = "), ib = src.indexOf("\n};\n", ia);
 const INSTALL = (0, eval)("(" + src.slice(ia + 16, ib + 3).replace(/;\s*$/, "") + ")");

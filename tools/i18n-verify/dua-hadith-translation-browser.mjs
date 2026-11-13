@@ -4,6 +4,7 @@
 //   --mutate=nonote   the label is dropped -> the label check fails
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { tabClick } from "./dua-tab-reveal.mjs";
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => { if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); } };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
@@ -18,8 +19,8 @@ for (const lang of ["en", "bn"]) {
   const { page: P } = await openPage(ctx, "/app/dua-study.html?g=rasul&open=8");
   await P.waitForSelector("[data-dua-menu-toggle]", { timeout: 25000 });
   await P.click("[data-dua-menu-toggle]");
-  if (process.argv.includes("--slow")) await P.click('[data-dua-menu="poster"]');
-  else { await P.waitForTimeout(2500); await P.click('[data-dua-menu="poster"]'); }
+  if (process.argv.includes("--slow")) await tabClick(P, '[data-dua-menu="poster"]');
+  else { await P.waitForTimeout(2500); await tabClick(P, '[data-dua-menu="poster"]'); }
   await P.waitForSelector(`.dua-a4-${lang}`, { timeout: 8000 }).catch(() => {});
   if (process.argv.includes("--slow")) await P.waitForFunction((l) => (document.querySelector(`.dua-a4-${l}`)?.textContent || "").length > 40, lang, { timeout: 9000 }).catch(() => {});
   const txt = await P.$eval(`.dua-a4-${lang}`, (e) => e.textContent).catch(() => "");

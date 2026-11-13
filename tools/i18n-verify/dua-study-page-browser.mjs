@@ -8,6 +8,7 @@
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/dua-study-page-browser.mjs
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { tabClick, allTabsOn } from "./dua-tab-reveal.mjs";
 
 const SRC = fs.readFileSync("app/js/dua-study.js", "utf8");
 const BN = fs.readFileSync("app/js/i18n/bn.js", "utf8");
@@ -176,7 +177,7 @@ async function run(mutation) {
     await check("the card's controls are finger-sized (40px) and nothing sticks out", async () => {
       // Since R2 (D22) the āyah link sits in the Source pop-up; the card's own controls are its bar and its menu.
       const tg = await page.$("[data-dua-menu-toggle]"); if (tg && (await tg.getAttribute("aria-expanded")) === "false") await tg.click(); // build 2: the menu entries sit under Menu
-      const b = await page.$$eval(".dua-card-bar button, .dua-topbar button, .dua-menu-btn", (x) => x.map((e) => e.getBoundingClientRect().height));
+      await allTabsOn(page); const b = await page.$$eval(".dua-card-bar button, .dua-topbar button, .dua-menu-btn", (x) => x.map((e) => e.getBoundingClientRect().height));
       if (b.some((h) => h < 40) || (await overflow()) > 0) throw new Error(JSON.stringify(b));
     });
     await check("no page errors", () => { if (errors.length) throw new Error(errors.join(" | ")); });
@@ -204,5 +205,5 @@ process.exit(r.failed ? 1 : 0);
 async function clickMenu(page, selector) {
   const toggle = await page.$("[data-dua-menu-toggle]");
   if (toggle && (await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
-  await page.click(selector);
+  await tabClick(page, selector);
 }
