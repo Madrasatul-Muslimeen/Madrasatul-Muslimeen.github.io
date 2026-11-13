@@ -24,11 +24,14 @@ import { doc, getDoc, collection, query, where, getDocs } from "https://www.gsta
 import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
 import { safeWrite } from "./errors.js";
+import { cleanTree, GROUP_ID } from "./dua-group-tree.js";
 
 /** Every field this module can ever put on a duaPlans document (the published Rules must allow all of them). */
 export const DUA_PLAN_WRITES = Object.freeze(["tenantId", "personId", "marks", "important"]);
 /** Every field this module can ever put on a duaEdits document. */
 export const DUA_EDIT_WRITES = Object.freeze(["tenantId", "duaKey", "title", "placements", "hidden", "added"]);
+/** Every field this module can ever put on a duaGroups document (the Rules: tenantId, ownerKey, nodes + the envelope). */
+export const DUA_GROUP_WRITES = Object.freeze(["tenantId", "ownerKey", "nodes"]);
 /** Every field this module can ever put on a duaShares document. */
 export const DUA_SHARE_WRITES = Object.freeze(["tenantId", "duaKey", "where", "whoFor", "occasion", "sharedAt"]);
 
@@ -238,4 +241,62 @@ export async function loadDuaShares(db, ctx) {
   requireCtx(ctx);
   const snap = await getDocs(query(collection(db, TENANT.DUA_SHARES), where("tenantId", "==", ctx.tenantId)));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+// --- Dua groups (PCF MSA J104 line 25, the Owner's tick of 13 Nov 2026; Rules published 13 Nov) ------------------------------------
+
+/** The document key of the madrasah's own groups; a person's groups use their personId. No personId shape can be "admin". */
+export const ADMIN_GROUP_KEY = "admin";
+const groupDocId = (ctx, ownerKey) => `${ctx.tenantId}__${ownerKey}`;
+const validOwnerKey = (k) => k === ADMIN_GROUP_KEY || (validId(k) && k.length <= 64);
+
+/**
+ * One group tree: `{ exists, nodes }` (nodes [] when nothing is saved yet). ONE read by document id (the Rules have no list on this
+ * collection). `ownerKey` is "admin" (the madrasah's groups, readable by every member) or a personId (that person's own groups).
+ * A stored tree that fails dua-group-tree.js's checks comes back as `{ exists: true, nodes: [], invalid: true }` rather than being
+ * half shown: the screen says so, and a later save writes a clean tree.
+ */
+export async function loadDuaGroups(db, ctx, ownerKey = ADMIN_GROUP_KEY) {
+  requireCtx(ctx);
+  if (!validOwnerKey(ownerKey)) throw new Error("dua-saving-data: ownerKey must be \"admin\" or a person's id.");
+  const snap = await getDoc(doc(db, TENANT.DUA_GROUPS, groupDocId(ctx, ownerKey)));
+  if (!snap.exists()) return { exists: false, nodes: [] };
+  const nodes = cleanTree(snap.data().nodes, treeOptions(ownerKey));
+  return nodes ? { exists: true, nodes } : { exists: true, nodes: [], invalid: true };
+}
+// The madrasah's groups keep their membership in duaEdits (placements), so a `duas` list on an admin node is refused; a person's carry one.
+const treeOptions = (ownerKey) => (ownerKey === ADMIN_GROUP_KEY ? { noDuas: true } : { isKey: isDuaKey });
+
+/**
+ * Saves a whole group tree: the groups the person dragged, added, renamed or DELETED. A deleted group is simply absent from `nodes`
+ * (the Owner's real delete): no document is ever deleted (D6), the duas and everyone's marks are not touched. The tree is checked by
+ * dua-group-tree.js's cleanTree BEFORE anything is read or written (3 levels at most, 200 groups, unique permanent ids, names of at
+ * most 60 characters; a person's `duas` lists of valid dua keys), because the Rules can only cap the top level. An empty tree for a
+ * tree that was never saved creates no document. Who may write is the Rules' call (owner/prime for "admin"; for a person's own groups
+ * exactly the people who may record for that person).
+ * Returns `{ ok: true, nodes }`, `{ ok: false, refused }`, or `{ ok: false, entry }` (a failed save, already reported to the user).
+ */
+export async function saveDuaGroups(db, ctx, { ownerKey = ADMIN_GROUP_KEY, nodes } = {}) {
+  requireCtx(ctx);
+  if (!validOwnerKey(ownerKey)) return { ok: false, refused: "bad-owner" };
+  const clean = cleanTree(nodes, treeOptions(ownerKey));
+  if (!clean) return { ok: false, refused: "bad-tree" };
+  const id = groupDocId(ctx, ownerKey);
+  const res = await safeWrite(async () => {
+    const snap = await getDoc(doc(db, TENANT.DUA_GROUPS, id));
+    if (snap.exists()) await updateDocument(db, TENANT.DUA_GROUPS, id, { nodes: clean });
+    else if (clean.length) await createDocument(db, TENANT.DUA_GROUPS, id, { tenantId: ctx.tenantId, ownerKey, nodes: clean }, ctx.uid);
+  }, { collection: TENANT.DUA_GROUPS, docId: id, action: "save dua groups" });
+  return res.ok ? { ok: true, nodes: clean } : res;
+}
+
+/**
+ * Pure: a dua's placements without the ones that point at a group that is no longer in the tree. Only a placement whose `group` LOOKS
+ * like a group id (g- and 8 characters) can be stale; the built-in groups' own ids stay. The saved tree is not rewritten for this: a stale
+ * placement is ignored on read and dropped here the next time that dua's edit is saved.
+ */
+export function dropStalePlacements(placements, nodes) {
+  const live = new Set();
+  (function walk(list) { for (const n of list || []) { live.add(n.id); walk(n.kids); } })(nodes);
+  return (placements || []).filter((p) => !(typeof p?.group === "string" && GROUP_ID.test(p.group) && !live.has(p.group)));
 }
