@@ -264,6 +264,20 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     }));
     wrap.appendChild(gb);
     menu.appendChild(wrap);
+    // PCF MSA J104 item 25 (step 6b): the Admin's groups / My groups pop-up. Loaded only when pressed (I9), so nothing joins the startup path.
+    const gp = el("button", "dua-pd dua-pd-groups");
+    gp.type = "button";
+    gp.dataset.duaPd = "mygroups";
+    gp.append(el("small", null, t("Dua groups")), el("b", null, t("Admin's and my groups")));
+    gp.addEventListener("click", async () => {
+      try {
+        const [{ openDuaGroups }, { db }, check] = await Promise.all([import("./dua-groups-page.js"), import("./firebase-init.js"), import("./dua-check-data.js")]);
+        openDuaGroups({ db, getSession: check.getDuaCheckSession, lang: getAppLang() });
+      } catch (err) { gp.after(el("p", "hadith-note", `${t("Could not load the groups.")} ${err?.message ?? ""}`.trim())); }
+    });
+    const gpw = el("div", "dua-pd-wrap");
+    gpw.appendChild(gp);
+    menu.appendChild(gpw);
     if (g.parts) {
       const cur = g.parts.find((p) => p.id === where.part);
       const pw = el("div", "dua-pd-wrap");
