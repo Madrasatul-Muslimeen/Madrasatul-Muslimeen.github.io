@@ -143,6 +143,7 @@ function writePlace(where) {
 
 export function mountDuaStudy(root, { search = location.search } = {}) {
   const where = readPlace(search);
+  let reopenGroups = new URLSearchParams(search).has("dgp"); // step 6b's way back: reopen the Dua groups pop-up once
   let data = null;
   const detourOf = () => (where.tie != null ? { n: where.tie, from: listOf(data, where)?.[where.open - 1]?.h } : null);
 
@@ -269,12 +270,18 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     gp.type = "button";
     gp.dataset.duaPd = "mygroups";
     gp.append(el("small", null, t("Dua groups")), el("b", null, t("Admin's and my groups")));
-    gp.addEventListener("click", async () => {
+    const openGroups = async (reopen) => {
       try {
-        const [{ openDuaGroups }, { db }, check] = await Promise.all([import("./dua-groups-page.js"), import("./firebase-init.js"), import("./dua-check-data.js")]);
-        openDuaGroups({ db, getSession: check.getDuaCheckSession, lang: getAppLang() });
+        const [{ openDuaGroups, readGroupsPlace }, { db }, check] = await Promise.all([import("./dua-groups-page.js"), import("./firebase-init.js"), import("./dua-check-data.js")]);
+        // The way back (decision 86): coming Back from a dua opened in the pop-up, the address names the switch and the group
+        // (?dgp=...), so the pop-up reopens exactly there. Sign-in finishes after the page paints, so wait for it (up to 8 s).
+        if (reopen) for (let i = 0; i < 40 && !check.getDuaCheckSession(); i++) await new Promise((r) => setTimeout(r, 200));
+        openDuaGroups({ db, getSession: check.getDuaCheckSession, lang: getAppLang(), reopen: reopen ? readGroupsPlace(location.search) : null });
       } catch (err) { gp.after(el("p", "hadith-note", `${t("Could not load the groups.")} ${err?.message ?? ""}`.trim())); }
-    });
+    };
+    gp.addEventListener("click", () => openGroups(false));
+    // Only an address the pop-up itself wrote carries dgp, so an ordinary page load still reads nothing (I9).
+    if (reopenGroups) { reopenGroups = false; openGroups(true); }
     const gpw = el("div", "dua-pd-wrap");
     gpw.appendChild(gp);
     menu.appendChild(gpw);

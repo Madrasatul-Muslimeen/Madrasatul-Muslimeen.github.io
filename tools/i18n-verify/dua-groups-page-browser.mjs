@@ -4,13 +4,17 @@
 //   --mutate=eager    the groups are read when the page opens        --mutate=wrongdoc  My groups saves under the admin document
 //   --mutate=nodelete a delete is not saved                           --mutate=anyone    a non-admin may edit Admin's groups
 //   --mutate=badkey   any text is accepted as a dua number
+//   --mutate=noback   the address does not keep the open group     --mutate=noreopen  Back to the page does not reopen the pop-up
+// (Architect 104L review: the way-back law, decision 86 -- a dua opened from the pop-up is another view, so Back must reopen it.)
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => { if (typeof ok?.then === "function") throw new Error(`check "${name}" was given a promise`); if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name}${detail ? `\n        ${detail}` : ""}`); } };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  eager: ["js/dua-study.js", 'gp.addEventListener("click", async () => {', 'Promise.all([import("./dua-saving-data.js"), import("./firebase-init.js"), import("./dua-check-data.js")]).then(([m, f, c]) => { const q = c.getDuaCheckSession(); if (q) m.loadDuaGroups(f.db, { tenantId: q.tenantId, personId: q.personId ?? "x", uid: q.uid }); }); gp.addEventListener("click", async () => {'],
+  eager: ["js/dua-study.js", 'gp.addEventListener("click", () => openGroups(false));', 'Promise.all([import("./dua-saving-data.js"), import("./firebase-init.js"), import("./dua-check-data.js")]).then(([m, f, c]) => { const q = c.getDuaCheckSession(); if (q) m.loadDuaGroups(f.db, { tenantId: q.tenantId, personId: q.personId ?? "x", uid: q.uid }); }); gp.addEventListener("click", () => openGroups(false));'],
+  noback: ["js/dua-groups-page.js", "writeGroupsPlace(`${which}~${node.id}`);", ""],
+  noreopen: ["js/dua-study.js", "if (reopenGroups) { reopenGroups = false; openGroups(true); }", ""],
   wrongdoc: ["js/dua-groups-page.js", "which === ADMIN_GROUP_KEY ? ADMIN_GROUP_KEY : session.personId", "ADMIN_GROUP_KEY"],
   nodelete: ["js/dua-groups-page.js", "onChange: (next) => save(which, next),", "onChange: () => {},"],
   anyone: ["js/dua-groups-page.js", "which === ADMIN_GROUP_KEY ? !!session.canCheck : !!session.personId", "true"],
@@ -20,11 +24,11 @@ const MUT = {
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const SEED = `DATA.duaGroups = [{ _id: TENANT_ID + "__admin", tenantId: TENANT_ID, ownerKey: "admin", schemaVersion: 1, nodes: [{ id: "g-adminaa1", name: { en: "Madrasah morning", bn: "সকালের দুআ" }, kids: [] }] }];`;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
-async function open(width, lang, role) {
+async function open(width, lang, role, at = "/app/dua-study.html?g=rasul") {
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 }, extraSeedJs: SEED });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) { const [f, a, b] = MUT[MUTATE]; await ctx.route(`**/app/${f}*`, async (r) => { const s = fs.readFileSync(`app/${f}`, "utf8"); if (!s.includes(a)) throw new Error(`mutation anchor missing in ${f}`); await r.fulfill({ status: 200, contentType: "text/javascript", body: s.replace(a, b) }); }); }
-  const { page: P } = await openPage(ctx, "/app/dua-study.html?g=rasul");
+  const { page: P } = await openPage(ctx, at);
   await P.waitForSelector('[data-dua-pd="mygroups"]', { timeout: 20000 });
   if (role) { await P.evaluate((r) => { const c = JSON.parse(localStorage.getItem("qr.sessionContext") || "null"); if (c) { c.viewAsRole = r; localStorage.setItem("qr.sessionContext", JSON.stringify(c)); } }, role); await P.reload(); await P.waitForSelector('[data-dua-pd="mygroups"]', { timeout: 20000 }); }
   return { ctx, P };
@@ -62,6 +66,8 @@ for (const [width, lang] of [[1280, "en"], [390, "bn"]]) {
   await P.waitForSelector(".dua-gp-addform input");
   await P.fill(".dua-gp-addform input", "5"); await P.press(".dua-gp-addform input", "Enter");
   await P.waitForSelector(".dua-gp-list li");
+  const place = await P.evaluate(() => new URL(location.href).searchParams.get("dgp"));
+  check(`${tag} WAY BACK: with a group open, the address keeps it (dgp=mine~<id>) and its dua links carry back=1`, /^mine~g-[a-z0-9]{8}$/.test(place || "") && /back=1/.test(await P.$eval(".dua-gp-list li a", (a) => a.href)), String(place));
   const w2 = await writes(P);
   check(`${tag} a dua added to the group is saved in its list`, w2.some((w) => JSON.stringify(w.data?.nodes?.[0]?.duas) === '["5"]'), JSON.stringify(w2.map((w) => w.data?.nodes?.[0]?.duas)));
   const before = (await writes(P)).length;
@@ -84,6 +90,21 @@ for (const [width, lang] of [[1280, "en"], [390, "bn"]]) {
   await P.waitForTimeout(400);
   const w3 = await P.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "duaGroups" && /__admin$/.test(w.id)));
   check(`${tag} deleting a saved group saves the madrasah's tree WITHOUT it (and deletes no document)`, w3.length === 1 && w3[0].kind !== "delete" && w3[0].data?.nodes?.length === 0, JSON.stringify(w3));
+  await ctx.close();
+}
+
+// WAY BACK (decision 86): coming Back to an address the pop-up wrote reopens it on the same switch and the same group
+{
+  const { ctx, P } = await open(1280, "en", null, "/app/dua-study.html?g=rasul&dgp=admin~g-adminaa1");
+  let ok = true;
+  try { await P.waitForFunction(() => document.querySelectorAll(".dua-gw").length === 2, null, { timeout: 15000 }); } catch { ok = false; }
+  const st = await P.evaluate(() => ({ wins: [...document.querySelectorAll(".dua-gw")].map((w) => w.getAttribute("aria-label")), tab: document.querySelector('[data-gp-tab][aria-selected="true"]')?.dataset.gpTab ?? null }));
+  check("[way back] Back to ?dgp=admin~<group> reopens the pop-up on Admin's groups WITH that group's window open", ok && st.tab === "admin" && st.wins.at(-1) === "Madrasah morning", JSON.stringify(st));
+  await P.evaluate(() => [...document.querySelectorAll(".dua-gw")].at(-1).querySelector(".dua-gw-close").click());
+  const p1 = await P.evaluate(() => new URL(location.href).searchParams.get("dgp"));
+  await P.evaluate(() => document.querySelector(".dua-gw .dua-gw-close").click());
+  const p2 = await P.evaluate(() => new URL(location.href).searchParams.get("dgp"));
+  check("[way back] closing the group leaves dgp=admin; closing the pop-up clears it (a later visit opens nothing)", p1 === "admin" && p2 === null, `${p1} / ${p2}`);
   await ctx.close();
 }
 

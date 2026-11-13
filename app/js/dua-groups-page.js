@@ -11,6 +11,22 @@ import { find, addGroup, MAX_DUAS_PER_GROUP } from "./dua-group-tree.js";
 const nodeName = (n, lang) => (lang === "bn" && n.name.bn) || n.name.en;
 const duaHref = (key) => `./dua-study.html?back=1&view=dua&dua=${encodeURIComponent(key)}`;
 
+// The way-back law (decision 86, Architect 104L review): a dua opened from the pop-up is another view, so this page's address
+// keeps WHICH switch and WHICH group were open (?dgp=admin | mine, plus ~<group id>); Back to it reopens the pop-up there.
+const PLACE_KEY = "dgp";
+function writeGroupsPlace(v) {
+  try {
+    const u = new URL(location.href);
+    if (v) u.searchParams.set(PLACE_KEY, v); else u.searchParams.delete(PLACE_KEY);
+    history.replaceState(history.state, "", u);
+  } catch { /* the pop-up still works; only the way back is less exact */ }
+}
+/** { which: "admin" | "mine", group: id | null } from an address, or null. */
+export function readGroupsPlace(search) {
+  const m = /^(admin|mine)(?:~([A-Za-z0-9_-]{1,40}))?$/.exec(new URLSearchParams(search).get(PLACE_KEY) ?? "");
+  return m ? { which: m[1], group: m[2] ?? null } : null;
+}
+
 /**
  * opts: { db, getSession() -> { uid, tenantId, personId, canCheck } | null, lang }.
  * Returns { close } or null when nobody is signed in (the reader is told so, in words).
@@ -24,7 +40,8 @@ export function openDuaGroups(opts) {
     return openGroupWindow({ title: t("Dua groups"), body });
   }
   const ctx = { tenantId: session.tenantId, personId: session.personId ?? "none", uid: session.uid };
-  const state = { which: ADMIN_GROUP_KEY, trees: {}, edits: null };
+  const state = { which: opts.reopen?.which === "mine" ? "mine" : ADMIN_GROUP_KEY, trees: {}, edits: null };
+  let pendingGroup = opts.reopen?.group ?? null, closed = false;
   const bar = el("div", "dua-gp-switch");
   bar.setAttribute("role", "tablist");
   const status = el("p", "hadith-note dua-gp-status");
@@ -42,7 +59,7 @@ export function openDuaGroups(opts) {
   });
   body.append(bar, status, treeHost, addBtn);
   let tree = null;
-  const win = openGroupWindow({ title: t("Dua groups"), body, onClose: () => tree?.destroy() });
+  const win = openGroupWindow({ title: t("Dua groups"), body, onClose: () => { closed = true; writeGroupsPlace(null); tree?.destroy(); } });
 
   const ownerKeyOf = (which) => (which === ADMIN_GROUP_KEY ? ADMIN_GROUP_KEY : session.personId);
   const canEdit = (which) => (which === ADMIN_GROUP_KEY ? !!session.canCheck : !!session.personId);
@@ -60,6 +77,7 @@ export function openDuaGroups(opts) {
 
   async function show(which) {
     state.which = which;
+    writeGroupsPlace(which);
     drawSwitch();
     tree?.destroy(); tree = null;
     treeHost.textContent = "";
@@ -86,6 +104,9 @@ export function openDuaGroups(opts) {
       onOpen: (node) => openOne(which, node),
     });
     addBtn.hidden = !canEdit(which);
+    const again = pendingGroup && find(loaded.nodes, pendingGroup)?.node;
+    pendingGroup = null;
+    if (again) openOne(which, again);
   }
 
   async function save(which, next) {
@@ -99,7 +120,8 @@ export function openDuaGroups(opts) {
   async function openOne(which, node) {
     const inner = el("div", "dua-gp-one");
     inner.appendChild(el("p", "hadith-note", t("Loading…")));
-    const sub = openGroupWindow({ title: nodeName(node, lang), body: inner });
+    writeGroupsPlace(`${which}~${node.id}`);
+    const sub = openGroupWindow({ title: nodeName(node, lang), body: inner, onClose: () => { if (!closed) writeGroupsPlace(state.which); } });
     const fill = (keys, editable) => {
       inner.textContent = "";
       if (!keys.length) inner.appendChild(el("p", "hadith-note", t("No duas in this group yet.")));

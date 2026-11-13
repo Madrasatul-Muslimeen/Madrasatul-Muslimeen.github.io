@@ -1,6 +1,6 @@
 // PCF MSA J104, round R6 (9 Nov 2026) -- the Dua saving layer, app/js/dua-saving-data.js.
 // Firebase-free: the imports are replaced in memory, nothing contacts a network or a database. Three halves:
-//   1. NOT WIRED the module by any chain (R6 builds the writers; the screens follow), with a positive control.
+//   1. NOT WIRED AT START-UP: no page reaches the module by a STATIC chain; its one door is the lazy import() behind the Dua groups button (step 6b).
 //   2. BEHAVIOUR against an in-memory store that really mutates: the right ids, every envelope field, a clear writes the map
 //      WITHOUT the key and never deletes, hide is hidden:true, a share is append-only with an auto id, refusals read nothing and
 //      write nothing, a failed write reaches the user (I15), a plan costs one read.
