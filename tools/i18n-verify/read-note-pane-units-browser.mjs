@@ -3,6 +3,7 @@
 //   --mutate=nopicker ... the page hands the pane no unit choices -> the picker checks fail by name.
 //   --mutate=sametab ... the Track tab keeps the āyah wording whatever the unit is -> the tab-name checks fail by name.
 //   --mutate=ayahcard ... Record on a Juz opens the Āyah card again (parseAyahUnitKey reads "juz:5" as surah 5, āyah NaN) -> the Record check fails by name.
+//   --mutate=openingunit (Architect 103L) Record sends an opening to the Unit card -> the opening check fails by name.
 //   --mutate=squeeze .... (Architect 103L) the picker's old flex rule (no wrap, 7rem) -> the "every unit name whole, tabs on one line" check fails at 320/390.
 // Run from the repository root with serve.js up:  node tools/i18n-verify/read-note-pane-units-browser.mjs
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -29,9 +30,14 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 1280]) {
     await r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: src.replace(a, '? t("Track this āyah") : t("Track this āyah")') });
   });
   if (MUTATE === "ayahcard") await ctx.route("**/app/quranrevival.html*", async (r) => {
-    const src = fs.readFileSync("app/quranrevival.html", "utf8"), a = '        if (!u.unitKey.startsWith("ayah:")) { openUnitCard(u.unitKey); backToReadNotes(u, "track"); return; }';
+    const src = fs.readFileSync("app/quranrevival.html", "utf8"), a = '        if (!/^(ayah|opening):/.test(u.unitKey)) { openUnitCard(u.unitKey); backToReadNotes(u, "track"); return; }';
     if (!src.includes(a)) throw new Error("mutation anchor missing: ayahcard");
     await r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src.replace(a, "") });
+  });
+  if (MUTATE === "openingunit") await ctx.route("**/app/quranrevival.html*", async (r) => {
+    const src = fs.readFileSync("app/quranrevival.html", "utf8"), a = "if (!/^(ayah|opening):/.test(u.unitKey)) { openUnitCard(";
+    if (!src.includes(a)) throw new Error("mutation anchor missing: openingunit");
+    await r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src.replace(a, 'if (!u.unitKey.startsWith("ayah:")) { openUnitCard(') });
   });
   if (MUTATE === "nopicker") await ctx.route("**/app/quranrevival.html*", async (r) => {
     const src = fs.readFileSync("app/quranrevival.html", "utf8"), a = "      unitChoices: () =>";
@@ -85,6 +91,15 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 1280]) {
     check(`${tag} every unit name fits the picker whole, and the two tabs keep one line each`, fit.w >= fit.need && fit.tabH.every((h) => h <= 46), JSON.stringify(fit));
     await P.selectOption("[data-rnp-unit-select]", "ayah"); await P.waitForTimeout(600);
     check(`${tag} choosing Single Ayah comes back to 2:256`, /256|২৫৬/.test((await sel()).title), JSON.stringify(await sel()));
+  }
+  // Architect 103L review: an opening (Aʿūdhu, PCF J26) keeps its Āyah card -- the Unit card cannot resolve an opening and closes at once.
+  if (width === 390) {
+    await P.evaluate(async () => { document.querySelector("#ayahCardBackPill [data-ayah-card-back]")?.click(); const m = await import("/app/js/read-note-pane.js"); m.openReadNotePane({ unitKey: "opening:taawwudh", label: "Aʿūdhu" }, null, { tab: "track" }); });
+    await P.waitForTimeout(700);
+    await P.evaluate(() => document.querySelector('[data-rnp-track="record"]')?.click());
+    await P.waitForTimeout(900);
+    const op = await P.evaluate(() => ({ ayahCard: !!document.querySelector("[data-ayah-sheet]"), unitCard: !!document.querySelector("[data-unit-card]"), open: document.querySelector(".ayah-action-sheet-overlay.open, #ayahActionSheetOverlay.open") ? true : false }));
+    check(`${tag} MUTATION TARGET (openingunit): Record on the opening (Aʿūdhu) still opens its Āyah card`, op.ayahCard && !op.unitCard && op.open, JSON.stringify(op));
   }
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|archive\.org|net::|api\.quran/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();

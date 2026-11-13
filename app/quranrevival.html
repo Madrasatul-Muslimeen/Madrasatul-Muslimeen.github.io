@@ -27447,7 +27447,9 @@
       // The card first: opening it clears any way back ("the card is open again"), so the way back is set after it.
       record: (u) => {
         // A unit that is not an āyah (the Owner's picker, 13 Nov 2026) has no Āyah card: its own Unit card is the place to record.
-        if (!u.unitKey.startsWith("ayah:")) { openUnitCard(u.unitKey); backToReadNotes(u, "track"); return; }
+        // Architect 103L review: an opening (Aʿūdhu / Bismillāh, PCF J26) keeps its Āyah card -- parseAyahUnitKey() reads it as
+        // 1:0 on purpose, and resolveUnitInfo() has no opening, so the Unit card would close at once.
+        if (!/^(ayah|opening):/.test(u.unitKey)) { openUnitCard(u.unitKey); backToReadNotes(u, "track"); return; }
         const { surah, ayah, half } = parseAyahUnitKey(u.unitKey); openAyahActionSheet(`${surah}:${ayah}`, half); backToReadNotes(u, "track");
       },
       status: (u) => { backToReadNotes(u, "track"); openMyStatus(); },
