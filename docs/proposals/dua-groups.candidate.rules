@@ -7,7 +7,7 @@ service cloud.firestore {
     //
     // Prepared by the MSA Architect 102L, 13 Nov 2026, on the Owner's tick J104 line 25 (13 Nov): groups the person drags
     // to any level, sub groups at most 3 levels (C), a real delete (B), the pop-up (E); shape agreed by the Architect 101L
-    // with the Dua Lead 11L (13 Nov). firestore.rules is UNTOUCHED: Rules are an Owner Control Gate, and nothing here is
+    // with the Dua Lead 11L, and the nested node shape settled by the PCA (13 Nov). firestore.rules is UNTOUCHED: Rules are an Owner Control Gate, and nothing here is
     // live until the Owner publishes it. Nothing in the app writes this collection yet; the Dua Lead's writer comes AFTER.
     //
     // ONE COLLECTION, ONE DOCUMENT PER GROUP TREE
@@ -17,10 +17,12 @@ service cloud.firestore {
     //              a personId  that person's own groups. No personId shape can be "admin" (p1..p4, p + 13 digits,
     //                          person_<uid8>, person_admin1, 7 digits), and a person's document also requires that the
     //                          person belongs to the tenant (personInTenant).
-    //    nodes     a FLAT list (at most 500) of { id, parent, name { en?, bn? }, order } -- the tree is the parent links.
-    //              Node ids are permanent (I5): a rename or a move never changes an id. Depth (at most 3), unique ids,
-    //              parents that exist and name lengths are checked by the client (app/js/dua-group-tree.js), as
-    //              dua-saving-data.js does for placements: Rules cannot inspect each element of a list.
+    //    nodes     the TOP level of the tree, a list of { id "g-xxxxxxxx", name { en, bn? }, kids [ ...same, nested ] }
+    //              (the Dua Lead's model, app/js/dua-group-tree.js, merged in #1680; the PCA settled the shape 13 Nov).
+    //              Node ids are permanent (I5): a rename or a move never changes an id. At most 3 levels, at most 200
+    //              groups in all, unique ids and names of at most 60 characters are checked by the client (cleanTree),
+    //              as dua-saving-data.js does for placements: Rules cannot look inside a list. The Rules cap the top
+    //              level at 200, and Firestore's 1 MiB document limit bounds the rest.
     //    MEMBERSHIP (which duas sit in which group) -- see the note filled in from the Dua Lead's answer below.
     //
     //  WHO
@@ -56,7 +58,7 @@ service cloud.firestore {
             && d().tenantId is string && d().tenantId.size() > 0
             && d().ownerKey is string && d().ownerKey.size() > 0 && d().ownerKey.size() <= 64
             && groupKey == d().tenantId + '__' + d().ownerKey
-            && d().nodes is list && d().nodes.size() <= 500
+            && d().nodes is list && d().nodes.size() <= 200
             && d().schemaVersion is number
             && d().createdAt is timestamp && d().updatedAt is timestamp
             && d().createdBy is string && d().createdBy.size() > 0;

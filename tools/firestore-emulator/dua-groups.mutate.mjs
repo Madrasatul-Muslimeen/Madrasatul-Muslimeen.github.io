@@ -35,7 +35,7 @@ const M = [
   ["key-free", "groupShapeOk", "&& groupKey == d().tenantId + '__' + d().ownerKey", ""],
   ["ownerKey-uncapped", "groupShapeOk", "&& d().ownerKey.size() <= 64", ""],
   ["nodes-not-list-ok", "groupShapeOk", "d().nodes is list && ", ""],
-  ["nodes-uncapped", "groupShapeOk", "&& d().nodes.size() <= 500", ""],
+  ["nodes-uncapped", "groupShapeOk", "&& d().nodes.size() <= 200", ""],
   ["read-admin-any-signed-in", "groupMayRead", "(ownerKey == 'admin' && signedIn() && myRolesIn(tenantId).size() > 0)", "(ownerKey == 'admin' && signedIn())"],
   ["read-person-no-personInTenant", "groupMayRead", "&& personInTenant(tenantId, ownerKey) && canRecordFor", "&& canRecordFor"],
   ["read-person-no-canRecordFor", "groupMayRead", "&& personInTenant(tenantId, ownerKey) && canRecordFor(tenantId, ownerKey))", "&& personInTenant(tenantId, ownerKey))"],

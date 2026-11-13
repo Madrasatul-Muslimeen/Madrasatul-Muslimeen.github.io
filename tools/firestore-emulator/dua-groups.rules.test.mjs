@@ -67,11 +67,13 @@ if (process.env.FULL_RULES_FILE) {
 const T = "t1", T2 = "t2";
 const ts = new Date("2026-11-13T00:00:00.000Z");
 const I17 = (uid) => ({ schemaVersion: 1, createdAt: ts, updatedAt: ts, createdBy: uid });
-const NODES = [
-  { id: "g-aaaaaaaa", parent: null, name: { en: "Morning", bn: "সকাল" }, order: 0 },
-  { id: "g-bbbbbbbb", parent: "g-aaaaaaaa", name: { en: "After Fajr" }, order: 0 },
-  { id: "g-cccccccc", parent: "g-bbbbbbbb", name: { en: "On waking" }, order: 0 },
+const NODES = [   // the Dua Lead's nested shape (app/js/dua-group-tree.js): three levels
+  { id: "g-aaaaaaaa", name: { en: "Morning", bn: "সকাল" }, kids: [
+    { id: "g-bbbbbbbb", name: { en: "After Fajr" }, kids: [
+      { id: "g-cccccccc", name: { en: "On waking" }, kids: [] }] }] },
+  { id: "g-dddddddd", name: { en: "Travel" }, kids: [] },
 ];
+const withoutLevel3 = [{ ...NODES[0], kids: [{ ...NODES[0].kids[0], kids: [] }] }, NODES[1]];   // a real delete of "On waking"
 const grp = (tenantId, ownerKey, uid, over = {}) => ({ tenantId, ownerKey, nodes: NODES, ...I17(uid), ...over });
 const id = (a, b) => `${a}__${b}`;
 const LONG64 = "p" + "x".repeat(63), LONG65 = "p" + "x".repeat(64);
@@ -149,8 +151,8 @@ test("candidate Dua groups Rules: isolated allow/deny cases", async () => {
     await assertFails(getDocs(query(collection(student, "duaGroups"), qWhere("tenantId", "==", T))));            // no list
     await assertFails(getDocs(query(collection(student, "duaGroups"), qWhere("tenantId", "==", T), qWhere("ownerKey", "==", "admin"))));
     // --- update: owner / prime; REAL DELETE of a group = nodes without it (and the group inside it)
-    await assertSucceeds(updateDoc(G(owner, ak), { nodes: NODES.slice(0, 1), updatedAt: ts }));
-    await assertSucceeds(updateDoc(G(prime, ak), { nodes: [{ ...NODES[0], name: { en: "Mornings" } }], updatedAt: ts }));   // rename
+    await assertSucceeds(updateDoc(G(owner, ak), { nodes: [NODES[1]], updatedAt: ts }));
+    await assertSucceeds(updateDoc(G(prime, ak), { nodes: [{ ...NODES[1], name: { en: "Journeys" } }], updatedAt: ts }));   // rename
     for (const c of [teacher, student, guardian, otherprime, stranger]) await assertFails(updateDoc(G(c, ak), { nodes: [], updatedAt: ts }));
     await assertFails(updateDoc(G(owner, ak), { ownerKey: "pS" }));                              // pinned
     await assertFails(updateDoc(G(owner, ak), { tenantId: T2 }));                                // pinned
@@ -192,9 +194,9 @@ test("candidate Dua groups Rules: isolated allow/deny cases", async () => {
     await assertFails(setDoc(G(student, pk), { ...gb(), createdAt: "2026-11-13" }));
     await assertFails(setDoc(G(student, pk), { ...gb(), updatedAt: "2026-11-13" }));
     await assertFails(setDoc(G(student, id(T, "pS2")), gb()));                              // doc id != tenantId__ownerKey
-    const many = (n) => Array.from({ length: n }, (_, i) => ({ id: `g-${String(i).padStart(8, "0")}`, parent: null, name: { en: `G${i}` }, order: i }));
-    await assertFails(setDoc(G(student, pk), { ...gb(), nodes: many(501) }));               // > 500 nodes
-    await assertSucceeds(setDoc(G(student, pk), { ...gb(), nodes: many(500) }));
+    const many = (n) => Array.from({ length: n }, (_, i) => ({ id: `g-${String(i).padStart(8, "0")}`, name: { en: `G${i}` }, kids: [] }));
+    await assertFails(setDoc(G(student, pk), { ...gb(), nodes: many(201) }));               // > 200 top-level groups
+    await assertSucceeds(setDoc(G(student, pk), { ...gb(), nodes: many(200) }));
     await wipe();
     await assertSucceeds(setDoc(G(student, pk), { ...gb(), nodes: [] }));                   // no groups yet is fine
     await wipe();
@@ -221,14 +223,14 @@ test("candidate Dua groups Rules: isolated allow/deny cases", async () => {
     await put(id(T2, "pX"), grp(T2, "pX", "uid-other"));
     await assertSucceeds(getDoc(G(other, id(T2, "pX"))));
     // --- update
-    await assertSucceeds(updateDoc(G(student, pk), { nodes: NODES.slice(0, 2), updatedAt: ts }));   // real delete of the level-3 group
+    await assertSucceeds(updateDoc(G(student, pk), { nodes: withoutLevel3, updatedAt: ts }));   // real delete of the level-3 group
     await assertSucceeds(updateDoc(G(coteacher, pk), { nodes: NODES, updatedAt: ts }));
     for (const c of [student2, teacher, guardian, otherprime, stranger]) await assertFails(updateDoc(G(c, pk), { nodes: [], updatedAt: ts }));
     await assertFails(updateDoc(G(student, pk), { createdBy: "uid-owner" }));                // write-once
     await assertSucceeds(updateDoc(G(student, pk), { createdBy: "uid-student" }));
     await assertFails(updateDoc(G(student, pk), { ownerKey: "pS2" }));                       // pinned
     await assertFails(updateDoc(G(student, pk), { tenantId: T2 }));                          // pinned
-    await assertFails(updateDoc(G(student, pk), { nodes: many(501) }));
+    await assertFails(updateDoc(G(student, pk), { nodes: many(201) }));
     await assertFails(updateDoc(G(student, pk), { extra: 1 }));
     // a hand-seeded doc with an empty createdBy cannot be updated (isolates createdBy.size() > 0 on update)
     await put(pk, { ...gb(), createdBy: "" });

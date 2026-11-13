@@ -11,7 +11,7 @@ After this publish the app can **save Dua groups**:
   move or delete them.
 - **Each person's own groups**. The person can change their own; so can the people who already record progress for them
   (their guardian, their own teacher, owner and prime). Nobody else can see them.
-- Groups can sit inside groups, up to **3 levels**, and can be dragged to any level.
+- Groups can sit inside groups, up to **3 levels**, and can be dragged to any level; up to 200 groups in each list.
 
 **Delete is a real delete, as you chose.** When a group is deleted, it and the groups inside it are **gone for good**;
 there is no undo. The duas themselves, and every mark on them, are **not** touched. (Nothing in the database is ever
