@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dua edit demo v1.11</title>
+<style>
+:root{--bg:#f6f1e4;--card:#fffdf7;--ink:#1d2a22;--mut:#5d6b61;--line:#d9cfb6;--acc:#0b5a3a;--warn:#9a2b1d}
+@media (prefers-color-scheme:dark){:root{--bg:#0c1a13;--card:#12261b;--ink:#f2ead2;--mut:#b9c4b4;--line:#2d4a3a;--acc:#7fd6a0;--warn:#ff9d8d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,sans-serif;padding:0 16px 56px}
+h1{font-size:1.35rem;margin:18px 0 4px}h2{font-size:1.1rem;margin:0 0 6px}h3{font-size:1rem;margin:12px 0 4px}p{margin:.3rem 0}.mut{color:var(--mut);font-size:.92rem}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:14px auto;max-width:760px}
+.tag{display:inline-block;background:var(--acc);color:#fff;border-radius:99px;padding:2px 10px;font-size:.8rem}
+@media (prefers-color-scheme:dark){.tag{color:#06140d}}
+button{font:inherit;min-height:40px;min-width:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:4px 12px;cursor:pointer}
+button.pri{background:var(--acc);color:#fff;border-color:var(--acc)}@media (prefers-color-scheme:dark){button.pri{color:#06140d}}
+button.warn{color:var(--warn);border-color:var(--warn)}
+button[aria-pressed=true]{background:var(--acc);color:#fff}@media (prefers-color-scheme:dark){button[aria-pressed=true]{color:#06140d}}
+input[type=text],textarea{font:inherit;width:100%;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:6px 10px}
+textarea{min-height:70px}
+label{display:block;font-size:.9rem;color:var(--mut);margin:8px 0 2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}.seg button{border:0;border-radius:0}
+.note{background:#fff3c9;color:#4a3b00;border-radius:8px;padding:6px 10px;font-size:.9rem;margin:8px 0}
+@media (prefers-color-scheme:dark){.note{background:#3b3412;color:#f6e7b6}}
+.status{min-height:1.4em;color:var(--acc);font-weight:600}
+.dua{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
+.dua.hid{opacity:.55;border-style:dashed}
+.ar{font-size:1.4rem;direction:rtl;text-align:right;margin:6px 0}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:1px 9px;font-size:.8rem;margin:2px}
+.panel{border:2px solid var(--acc);border-radius:12px;padding:10px;margin:10px 0}
+.panel[hidden]{display:none}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}.tabs button{flex:1 1 auto}
+.tree label{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:1rem;min-height:40px;margin:0}
+.tree .k{margin-left:20px;border-left:2px solid var(--line);padding-left:8px}
+.tree input{width:22px;height:22px}
+</style></head><body>
+<h1>Dua edit screen — demo v1.11 <span class="tag">J104 · D03 + D05</span></h1>
+<p class="mut">For the Owner. Nothing here is saved anywhere; it only shows how it would look and behave. Press <b>Menu</b> on the Dua card and choose the <b>Edit</b> tab.</p>
+<section>
+  <h2>What this adds</h2>
+  <p><b>1. A title</b> in English and Bangla for any Dua (D05). <b>2. Put a Dua in one group or several</b> — the Dua stays one Dua; your marks, notes and bookmark follow it everywhere (D03). <b>3. "Delete" means Hide:</b> a hidden Dua is kept and can be brought back (never destroyed). <b>4. Add a new Dua</b> of your own text.</p>
+  <p class="mut">Only the owner and prime see the <b>Edit</b> tab. A student sees the Menu exactly as today.</p>
+  <div class="row"><span>View as:</span><span class="seg" id="who"><button aria-pressed="true" data-w="owner">Owner</button><button aria-pressed="false" data-w="student">Student</button></span></div>
+  <div class="status" id="status" role="status"></div>
+</section>
+<section>
+  <h2>A Dua in the list</h2>
+  <div id="list"></div>
+  <div class="row"><button id="add" class="pri">＋ Add a new Dua</button><button id="showhid" aria-pressed="false">Hidden Duas (<span id="hn">0</span>)</button></div>
+  <div class="panel" id="addp" hidden>
+    <h3>Add a new Dua</h3>
+    <label for="nt">Title (English)</label><input type="text" id="nt" maxlength="300">
+    <label for="ntb">Title (Bangla, optional)</label><input type="text" id="ntb" maxlength="300">
+    <label for="na">Arabic text</label><textarea id="na" dir="rtl" lang="ar"></textarea>
+    <label for="ne">English meaning (optional)</label><textarea id="ne"></textarea>
+    <label for="nb">Bangla meaning (optional)</label><textarea id="nb"></textarea>
+    <h3>Put it in</h3><div class="tree" id="addtree"></div>
+    <div class="row"><button class="pri" id="addgo">Save new Dua</button><button id="addno">Cancel</button></div>
+  </div>
+</section>
+<section class="mut"><h2>What happens behind the scenes (plain words)</h2>
+<p>Each Dua you change gets one small note that says: its title, which groups it is in, and whether it is hidden. Nothing else is touched, so everyone's progress, notes and bookmarks stay safe. When a group is deleted in the groups pop-up, the Dua simply stops showing in it; it is never lost.</p></section>
+<script>
+const GROUPS=[{id:"rasul",n:"Rasulullah ﷺ's duas",kids:[]},{id:"quran",n:"Duas of the Qur'an",kids:[]},{id:"g-morning",n:"Morning (my madrasah)",kids:[{id:"g-wake",n:"Waking up",kids:[]},{id:"g-prayer",n:"After Fajr",kids:[]}]},{id:"g-travel",n:"Travel",kids:[]}];
+let admin=true;
+const D=[{k:"2",ar:"رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً",en:"Our Lord, give us good in this world and good in the next.",title:{en:"Good in both worlds",bn:""},groups:["rasul","quran"],hidden:false},
+{k:"7",ar:"اللَّهُمَّ بِكَ أَصْبَحْنَا وَبِكَ أَمْسَيْنَا",en:"O Allah, by You we reach the morning and by You the evening.",title:{en:"",bn:""},groups:["rasul"],hidden:false}];
+const $=s=>document.querySelector(s),el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const say=m=>{$("#status").textContent=m};
+const name=id=>{let r=id;(function w(l){l.forEach(g=>{if(g.id===id)r=g.n;w(g.kids)})})(GROUPS);return r};
+function tree(host,sel,onch){host.textContent="";(function w(l,into){l.forEach(g=>{const lab=el("label");const c=el("input");c.type="checkbox";c.checked=sel.has(g.id);c.onchange=()=>{c.checked?sel.add(g.id):sel.delete(g.id);onch&&onch()};lab.append(c,document.createTextNode(g.n));into.appendChild(lab);if(g.kids.length){const k=el("div","k");into.appendChild(k);w(g.kids,k)}})})(GROUPS,host)}
+let open=null,tab="show",showHid=false;
+function draw(){const L=$("#list");L.textContent="";const hn=D.filter(d=>d.hidden).length;$("#hn").textContent=hn;$("#showhid").hidden=!admin;
+ D.forEach(d=>{if(d.hidden&&!(admin&&showHid))return;const c=el("div","dua"+(d.hidden?" hid":""));
+  c.appendChild(el("b","",`Dua ${d.k}${d.title.en?" — "+d.title.en:""}${d.hidden?"  (hidden)":""}`));
+  c.appendChild(el("div","ar",d.ar));c.appendChild(el("p","mut",d.en));
+  const ch=el("div");d.groups.forEach(g=>ch.appendChild(el("span","chip",name(g))));c.appendChild(ch);
+  const r=el("div","row");const m=el("button","","Menu ▾");m.onclick=()=>{open=open===d.k?null:d.k;tab=admin?tab:"show";draw()};r.appendChild(m);
+  if(d.hidden&&admin){const b=el("button","pri","Bring back");b.onclick=()=>{d.hidden=false;say(`Dua ${d.k} is back in its groups.`);draw()};r.appendChild(b)}
+  c.appendChild(r);
+  if(open===d.k){const p=el("div","panel");const tb=el("div","tabs");
+   const T=admin?[["show","Show"],["edit","Edit"]]:[["show","Show"]];
+   T.forEach(([id,l])=>{const b=el("button","",l);b.setAttribute("aria-pressed",String(tab===id));b.onclick=()=>{tab=id;draw()};tb.appendChild(b)});p.appendChild(tb);
+   if(tab==="show"){p.appendChild(el("p","mut","The usual Menu tabs (Show, Share, Keep, Listen, Study) are unchanged; only Show is drawn here."))}
+   else{
+    p.appendChild(el("h3","","Title"));
+    const e=el("input");e.type="text";e.maxLength=300;e.value=d.title.en;e.setAttribute("aria-label","Title (English)");e.placeholder="English title";
+    const b=el("input");b.type="text";b.maxLength=300;b.value=d.title.bn;b.setAttribute("aria-label","Title (Bangla)");b.placeholder="বাংলা শিরোনাম";b.style.marginTop="6px";
+    p.append(e,b);
+    p.appendChild(el("h3","","Groups it is in (tick as many as you like)"));
+    const sel=new Set(d.groups);const th=el("div","tree");p.appendChild(th);tree(th,sel);
+    const r2=el("div","row");const sv=el("button","pri","Save");sv.onclick=()=>{d.title={en:e.value.trim(),bn:b.value.trim()};d.groups=[...sel];say(`Saved Dua ${d.k}: title and ${d.groups.length} group${d.groups.length===1?"":"s"}. Your marks and notes are untouched.`);draw()};
+    const hd=el("button","warn","Hide this Dua");hd.onclick=()=>{if(confirm(`Hide Dua ${d.k}? It is kept, and you can bring it back any time. Nobody's marks or notes are removed.`)){d.hidden=true;open=null;say(`Dua ${d.k} is hidden. (Hidden Duas ▸ Bring back.)`);draw()}};
+    r2.append(sv,hd);p.appendChild(r2)}
+   c.appendChild(p)}
+  L.appendChild(c)})}
+$("#who").onclick=e=>{const w=e.target.dataset.w;if(!w)return;admin=w==="owner";document.querySelectorAll("#who button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.w===w)));$("#add").hidden=!admin;if(!admin){showHid=false;$("#addp").hidden=true}draw()};
+$("#showhid").onclick=()=>{showHid=!showHid;$("#showhid").setAttribute("aria-pressed",String(showHid));draw()};
+const addSel=new Set();
+$("#add").onclick=()=>{$("#addp").hidden=false;tree($("#addtree"),addSel)};
+$("#addno").onclick=()=>{$("#addp").hidden=true};
+$("#addgo").onclick=()=>{const t=$("#nt").value.trim(),a=$("#na").value.trim();if(!a){say("Please write the Arabic text first.");return}
+ const k="new-"+Math.random().toString(36).slice(2,12);D.push({k:k.slice(0,7),ar:a,en:$("#ne").value.trim(),title:{en:t,bn:$("#ntb").value.trim()},groups:[...addSel],hidden:false});
+ ["#nt","#ntb","#na","#ne","#nb"].forEach(s=>$(s).value="");addSel.clear();$("#addp").hidden=true;say("Saved: a new Dua of your own. It keeps its own permanent number.");draw()};
+draw();
+</script></body></html>
