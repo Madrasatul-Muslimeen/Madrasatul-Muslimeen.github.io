@@ -89,8 +89,14 @@ function draw(){const L=$("#list");L.textContent="";const hn=D.filter(d=>d.hidde
     p.appendChild(el("h3","","Groups it is in (tick as many as you like)"));
     const sel=new Set(d.groups);const th=el("div","tree");p.appendChild(th);tree(th,sel);
     const r2=el("div","row");const sv=el("button","pri","Save");sv.onclick=()=>{d.title={en:e.value.trim(),bn:b.value.trim()};d.groups=[...sel];say(`Saved Dua ${d.k}: title and ${d.groups.length} group${d.groups.length===1?"":"s"}. Your marks and notes are untouched.`);draw()};
-    const hd=el("button","warn","Hide this Dua");hd.onclick=()=>{if(confirm(`Hide Dua ${d.k}? It is kept, and you can bring it back any time. Nobody's marks or notes are removed.`)){d.hidden=true;open=null;say(`Dua ${d.k} is hidden. (Hidden Duas ▸ Bring back.)`);draw()}};
-    r2.append(sv,hd);p.appendChild(r2)}
+    const hd=el("button","warn","Hide this Dua");
+    const ask=el("div","note");ask.hidden=true;ask.setAttribute("role","alertdialog");
+    ask.appendChild(el("p","",`Hide Dua ${d.k}? It is kept, and you can bring it back any time. Nobody's marks or notes are removed.`));
+    const yes=el("button","warn","Yes, hide it");yes.onclick=()=>{d.hidden=true;open=null;say(`Dua ${d.k} is hidden. (Hidden Duas ▸ Bring back.)`);draw()};
+    const no=el("button","","No, keep it showing");no.onclick=()=>{ask.hidden=true};
+    const ar2=el("div","row");ar2.append(yes,no);ask.appendChild(ar2);
+    hd.onclick=()=>{ask.hidden=false};
+    r2.append(sv,hd);p.append(r2,ask)}
    c.appendChild(p)}
   L.appendChild(c)})}
 $("#who").onclick=e=>{const w=e.target.dataset.w;if(!w)return;admin=w==="owner";document.querySelectorAll("#who button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.w===w)));$("#add").hidden=!admin;if(!admin){showHid=false;$("#addp").hidden=true}draw()};
