@@ -260,7 +260,8 @@ function controls(state, render) {
   tabs.appendChild(el("span", "hadith-menubar-sep"));
   for (const [view, label] of [
     ["collections", t("Encyclopedia")],
-    ["topic", t("Topics")],
+    // No "Topics" tab (the Owner, 13 Nov 2026: "Subject and Topic are same"): the Subjects menu is the way in. The view itself stays (additive),
+    // reachable only from code and tests through window.__hadithCorpus.
     ["search", t("Search")],
     ["explore", t("Explore")],
     ["commentary", PANEL_TITLE[getAppLang()] ?? PANEL_TITLE.en],
