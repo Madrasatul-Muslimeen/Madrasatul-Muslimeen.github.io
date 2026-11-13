@@ -150,7 +150,7 @@ for (const [lang, width, look] of [["en", 1280, "light"], ["bn", 820, "night"]])
   await P.keyboard.press("Escape");
   await acheck(`${tag} Escape closes the list and gives the focus back to the button`, () =>
     P.evaluate(() => document.querySelector('[data-hadith-menu="books"]').hidden && document.activeElement?.dataset.hadithTab === "books"));
-  await hadithGo(P, "topic");
+  await P.evaluate(() => { window.__hadithCorpus.state.view = "topic"; window.__hadithCorpus.render(); }); // the Topics tab is gone (Owner, 13 Nov 2026); the view stays
   await settle(P);
   await tap(P, '[data-hadith-tab="books"]');
   await settle(P);
@@ -174,7 +174,7 @@ for (const [lang, width, look] of [["en", 1280, "light"], ["bn", 820, "night"]])
   });
   // Back to the shelf by the menu bar, whatever state the step above left.
   await P.keyboard.press("Escape");
-  await hadithGo(P, "topic");
+  await P.evaluate(() => { window.__hadithCorpus.state.view = "topic"; window.__hadithCorpus.render(); }); // the Topics tab is gone (Owner, 13 Nov 2026); the view stays
   await settle(P);
   await tap(P, '[data-hadith-tab="books"]');
   await P.waitForSelector(`[data-openiti-book="${BUKHARI}"]`, { timeout: 8000 }).catch(async () => {

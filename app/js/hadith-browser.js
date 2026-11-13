@@ -46,7 +46,7 @@ function langText(map, lang) {
   return map[lang] ?? map.en ?? map.ar ?? "";
 }
 
-export function mountHadithBrowser(root, { mount = "standalone", initialHadeethEncId = null, initialOpenitiPassage = null, initialDua = null } = {}) {
+export function mountHadithBrowser(root, { mount = "standalone", initialHadeethEncId = null, initialOpenitiPassage = null, initialOpenitiChapter = null, initialDua = null } = {}) {
   const state = {
     // PCF MSA J106 (the Owner, 28 Oct 2026): Hadith Study opens on its Hadith Books.
     view: "books",
@@ -71,6 +71,13 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
   // { versionUri, n } = the OpenITI book and the passage's permanent position (asma-poster.js's POSTER_HADITH).
   if (initialOpenitiPassage?.versionUri && Number.isFinite(Number(initialOpenitiPassage.n))) {
     state.oi = { bookUri: initialOpenitiPassage.versionUri, chapterId: null, books: null, showAllChapters: false, focusPassage: Number(initialOpenitiPassage.n) };
+  }
+
+  // PCF MSA J106 7A: a chapter of a book (the Dua page's Dua chapters), opened as the Hadith page's own chapter click does.
+  if (initialOpenitiChapter?.versionUri && initialOpenitiChapter.chapterId && !state.oi) {
+    state.view = "books";
+    state.editionId = null;
+    state.oi = { bookUri: initialOpenitiChapter.versionUri, chapterId: initialOpenitiChapter.chapterId, books: null, showAllChapters: false, scrollTo: true };
   }
 
   // Decision 90, round 1: coming back from a dua word's Word card (?view=dua&duaPage=<p>&dua=<n>) reopens that page of
@@ -283,7 +290,7 @@ function controls(state, render) {
 export const HADITH_SUBJECTS = [
   { id: "akhlaq", name: "Learning Akhlaq", about: "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself." },
   { id: "ghayb", name: "Knowing Al-Ghayb", about: "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows." },
-  { id: "stories", name: "Stories from Hadith", about: "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them." },
+  { id: "stories", name: "Learning Stories from Hadith", about: "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them." },
 ];
 
 /**
