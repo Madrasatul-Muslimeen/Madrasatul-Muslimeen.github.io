@@ -866,5 +866,39 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   });
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// DUA GROUPS (PCF MSA J104 line 25, the Owner's tick 13 Nov 2026; prepared by the Architect 102L): docs/proposals/
+// dua-groups.candidate.rules -- duaGroups/{tenantId}__{ownerKey}, ownerKey "admin" or a personId. A CANDIDATE with NO
+// WRITER yet: the Dua Lead's writer comes after the Owner publishes. These checks pin that state. The day the Owner
+// publishes (firestore.rules becomes the deployment file) or a writer appears, the PENDING checks fail by name; update them
+// in place and add the forward/backward checks (as for DUA SAVING above) before that round is accepted.
+{
+  const cand = read("docs/proposals/dua-groups.candidate.rules");
+  const dep = read("docs/proposals/dua-groups.DEPLOYMENT-candidate.rules");
+  const live = read("firestore.rules");
+  const blockOf = (src) => src.slice(src.indexOf("    // ====="), src.lastIndexOf("  }\n}")); // the candidate holds one block, opened by its header rule
+  check("DUA GROUPS: the candidate governs exactly duaGroups, with no delete, no list, and tenantId/ownerKey/createdBy pinned on update", () => {
+    const blocks = [...new Set([...cand.matchAll(/match \/(\w+)\//g)].map((m) => m[1]))].filter((n) => n !== "databases");
+    assert.deepEqual(blocks, ["duaGroups"]);
+    const b = matchBlock(cand, "duaGroups/");
+    assert.match(b, /allow delete: if false;/);
+    assert.ok(!b.split("\n").filter((l) => !/^\s*\/\//.test(l)).some((l) => /^\s*allow [^:]*\blist\b/.test(l)), "duaGroups must be read by id only");
+    for (const f of ["tenantId", "ownerKey", "createdBy"]) assert.match(b, new RegExp(`d\\(\\)\\.${f} == resource\\.data\\.${f}`), `${f} not pinned`);
+  });
+  check("DUA GROUPS: the deployment file is firestore.rules unchanged with exactly the candidate's block added before the last two closing braces", () => {
+    const i = live.lastIndexOf("  }\n}");
+    const block = blockOf(cand);
+    assert.ok(block.length > 1000 && block.includes("match /duaGroups/"), "POSITIVE CONTROL: the candidate's block was not found");
+    assert.equal(dep, live.slice(0, i).replace(/\n+$/, "") + "\n\n" + block + live.slice(i));
+  });
+  check("DUA GROUPS PENDING: firestore.rules does not yet carry duaGroups (the Owner has not published), and no app file writes it", () => {
+    assert.ok(!live.includes("match /duaGroups/"), "firestore.rules carries duaGroups: the Owner published -- update these checks in place");
+    const hits = [];
+    const walk = (d) => { for (const e of fs.readdirSync(path.join(root, d), { withFileTypes: true })) { const p = `${d}/${e.name}`; if (e.isDirectory()) walk(p); else if (/\.(js|html)$/.test(e.name) && /duaGroups|DUA_GROUPS/.test(read(p))) hits.push(p); } };
+    walk("app");
+    assert.deepEqual(hits, [], "a writer/reader of duaGroups exists: add the forward/backward checks before accepting it");
+  });
+}
+
 console.log(`\n==== Rules authorisation executable: ${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);
