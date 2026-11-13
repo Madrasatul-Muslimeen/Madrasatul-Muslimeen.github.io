@@ -1,6 +1,7 @@
 // The Owner, 13 Nov 2026 (the empty place after the Notes / Track tabs of the Notes pane circled): "Enable all Study units picker here."
 // The pane's tab row carries the Read bar's own Study Unit picker (all seven units); choosing one moves the pane to that unit.
 //   --mutate=nopicker ... the page hands the pane no unit choices -> the picker checks fail by name.
+//   --mutate=squeeze .... (Architect 103L) the picker's old flex rule (no wrap, 7rem) -> the "every unit name whole, tabs on one line" check fails at 320/390.
 // Run from the repository root with serve.js up:  node tools/i18n-verify/read-note-pane-units-browser.mjs
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -11,10 +12,15 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
-for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
+for (const lang of ["en", "bn"]) for (const width of [320, 390, 1280]) {
   const tag = `[${lang} ${width}]`;
   const ctx = await newContext(browser, { legacyTools: true, appLang: lang, banner: false, viewport: { width, height: width > 600 ? 900 : 844 }, extraSeedJs: "window.__stubApplyBatches = true;" });
   await ctx.route("**/archive.org/**", (r) => r.abort());
+  if (MUTATE === "squeeze") await ctx.route("**/app/js/read-note-pane.js*", async (r) => {
+    const src = fs.readFileSync("app/js/read-note-pane.js", "utf8"), a = "display: flex; flex-wrap: wrap; gap: 0.4rem;", b = ".rnp-unit-select { flex: 1 1 9.5rem;", c = "min-height: 40px; white-space: nowrap; padding: 0 0.9rem;";
+    if (!src.includes(a) || !src.includes(b) || !src.includes(c)) throw new Error("mutation anchor missing");
+    await r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: src.replace(a, "display: flex; gap: 0.4rem;").replace(b, ".rnp-unit-select { flex: 1 1 7rem;").replace(c, "min-height: 40px; padding: 0 0.9rem;") });
+  });
   if (MUTATE === "nopicker") await ctx.route("**/app/quranrevival.html*", async (r) => {
     const src = fs.readFileSync("app/quranrevival.html", "utf8"), a = "      unitChoices: () =>";
     if (!src.includes(a)) throw new Error("mutation anchor missing");
@@ -42,6 +48,13 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
       const b = await sel();
       check(`${tag} choosing ${type} moves the pane to that unit (picker follows, pane named for it)`, b.value === type && want.test(b.title), JSON.stringify(b));
     }
+    // Architect 103L review: measured at 320/360px the picker squeezed both tabs onto two lines and cut "Single Ayah" (83px of 131).
+    const fit = await P.evaluate(() => { const s = document.querySelector("[data-rnp-unit-select]"), cs = getComputedStyle(s), pr = document.createElement("span");
+      pr.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${cs.font};`; document.body.appendChild(pr);
+      const need = Math.max(...[...s.options].map((o) => { pr.textContent = o.textContent; return pr.getBoundingClientRect().width; })) + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 20; pr.remove();
+      const tabH = [...document.querySelectorAll("[data-rnp-tab]")].map((b) => Math.round(b.getBoundingClientRect().height));
+      return { w: Math.round(s.getBoundingClientRect().width), need: Math.round(need), tabH }; });
+    check(`${tag} every unit name fits the picker whole, and the two tabs keep one line each`, fit.w >= fit.need && fit.tabH.every((h) => h <= 46), JSON.stringify(fit));
     await P.selectOption("[data-rnp-unit-select]", "ayah"); await P.waitForTimeout(600);
     check(`${tag} choosing Single Ayah comes back to 2:256`, /256|২৫৬/.test((await sel()).title), JSON.stringify(await sel()));
   }

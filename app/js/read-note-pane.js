@@ -37,9 +37,10 @@ const CSS = `
 .rnp-close { flex: 0 0 auto; min-width: 48px; min-height: 48px; background: none; border: 0; color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .rnp-frame { flex: 1 1 auto; width: 100%; min-height: 0; border: 0; background: #fff; }
 .rnp-frame[hidden], .rnp-track[hidden] { display: none; }
-.rnp-tabs { flex: 0 0 auto; display: flex; gap: 0.4rem; padding: 0.4rem 0.5rem; background: #f4efe2; border-bottom: 1px solid #e3d7b8; }
-.rnp-tab { min-height: 40px; padding: 0 0.9rem; border: 1px solid #1F3A6E; border-radius: 20px; background: #fff; color: #1F3A6E; font: inherit; font-weight: 600; cursor: pointer; }
-.rnp-unit-select { flex: 1 1 7rem; min-width: 0; max-width: 100%; min-height: 40px; padding: 0 0.5rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #fff; color: #1F3A6E; font: inherit; font-weight: 600; }
+.rnp-tabs { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.4rem 0.5rem; background: #f4efe2; border-bottom: 1px solid #e3d7b8; }
+.rnp-tab { min-height: 40px; white-space: nowrap; padding: 0 0.9rem; border: 1px solid #1F3A6E; border-radius: 20px; background: #fff; color: #1F3A6E; font: inherit; font-weight: 600; cursor: pointer; }
+/* Architect 103L review: measured at 320/360px the picker squeezed both tabs onto two lines and cut "Single Ayah" (83px of 131); the tabs keep one line and the picker, when the row cannot hold it whole, takes a full-width line of its own. */
+.rnp-unit-select { flex: 1 1 9.5rem; min-width: 0; max-width: 100%; min-height: 40px; padding: 0 0.5rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #fff; color: #1F3A6E; font: inherit; font-weight: 600; }
 .rnp-tab[aria-selected="true"] { background: #1F3A6E; color: #fff; }
 .rnp-track { flex: 1 1 auto; overflow: auto; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem; }
 .rnp-track p { margin: 0; color: #444; line-height: 1.5; }
