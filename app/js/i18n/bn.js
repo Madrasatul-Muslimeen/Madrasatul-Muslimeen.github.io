@@ -3429,6 +3429,7 @@ export const BN = {
   "Reciter": "ক্বারী",
   "Speed": "গতি",
   "Autoplay next": "পরেরটি নিজে চলবে",
+  "Groups": "গ্রুপ",
   "Sign in to use Dua groups.": "দুআ গ্রুপ ব্যবহার করতে সাইন ইন করুন।",
   "Admin's groups": "মাদরাসার গ্রুপ",
   "My groups": "আমার গ্রুপ",
