@@ -3407,6 +3407,7 @@ export const BN = {
   "Without vowels": "হরকত ছাড়া",
   "Menu": "মেনু",
   "Dua menu": "দুআ মেনু",
+  "Share (tab)": "শেয়ার",
   "Keep": "সংরক্ষণ",
   "For {name}": "{name}-এর জন্য",
   "Open as a pop-up": "পপ-আপে খুলুন",
