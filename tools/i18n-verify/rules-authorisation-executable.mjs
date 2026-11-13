@@ -55,6 +55,18 @@ function stripEffort(text) {
   lines.splice(i - 7, 10);
   return lines.join("\n");
 }
+// UPDATED IN PLACE 14 Nov 2026 (Architect 103L): the Owner PUBLISHED the Dua groups Rules ("Rules published", 21:00Z 13 Nov 2026, to the
+// Dua Lead; PCF MSA J104 line 26), so firestore.rules is now docs/proposals/dua-groups.DEPLOYMENT-candidate.rules: the word-effort file plus
+// exactly the candidate's duaGroups block. The checks that pinned the effort file byte for byte now pin the groups file AND prove that
+// taking that one block out gives the effort file again (stripGroups), so "only the duaGroups block was added" stays checked.
+const GROUPS_DEPLOYMENT = () => read("docs/proposals/dua-groups.DEPLOYMENT-candidate.rules");
+function stripGroups(text) {
+  const cand = read("docs/proposals/dua-groups.candidate.rules");
+  const block = cand.slice(cand.indexOf("    // ====="), cand.lastIndexOf("  }\n}"));
+  assert.ok(block.length > 1000 && block.includes("match /duaGroups/"), "stripGroups: POSITIVE CONTROL, the candidate's block was not found");
+  assert.equal(text.split("\n\n" + block).length - 1, 1, "stripGroups: the duaGroups block is not present exactly once");
+  return text.replace("\n\n" + block, "\n");
+}
 
 let passed = 0, failed = 0;
 function check(name, fn) {
@@ -741,8 +753,9 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   check("DUA SAVING: firestore.rules IS the published deployment file (now the dua-keys file), and carries the candidate's three blocks, the duaKey pattern widened", () => {
     const dep = read("docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
     const live = read("firestore.rules");
-    assert.equal(live, EFFORT_DEPLOYMENT(), "firestore.rules differs from docs/proposals/word-effort.DEPLOYMENT-candidate.rules, which is what production carries since 11 Nov 2026");
-    assert.equal(stripEffort(live), dep, "firestore.rules, with the three effort edits taken out, differs from docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
+    assert.equal(live, GROUPS_DEPLOYMENT(), "firestore.rules differs from docs/proposals/dua-groups.DEPLOYMENT-candidate.rules, which is what production carries since 13 Nov 2026");
+    assert.equal(stripGroups(live), EFFORT_DEPLOYMENT(), "firestore.rules, with the duaGroups block taken out, differs from docs/proposals/word-effort.DEPLOYMENT-candidate.rules");
+    assert.equal(stripEffort(stripGroups(live)), dep, "firestore.rules, with the duaGroups block and the three effort edits taken out, differs from docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
     const OLDP = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40})$')";
     const NEWP = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40}|hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?)$')";
     for (const c of DUA) assert.equal(matchBlock(live, `${c}/`).replaceAll(NEWP, () => OLDP), matchBlock(dua, `${c}/`), `firestore.rules' ${c} block differs from the candidate beyond the widened duaKey pattern`);
@@ -861,7 +874,7 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   });
   check("DUA KEYS PUBLISHED: firestore.rules IS the dua-keys file, byte for byte (the Owner published it, 9 Nov 2026)", () => {
     const fr = read("firestore.rules");
-    assert.equal(stripEffort(fr), cand, "firestore.rules, with the effort edits taken out, differs from the published dua-keys file");
+    assert.equal(stripEffort(stripGroups(fr)), cand, "firestore.rules, with the duaGroups block and the effort edits taken out, differs from the published dua-keys file");
     assert.equal(fr.split(NEW).length - 1, 2, "firestore.rules does not carry the widened pattern twice");
   });
 }
@@ -892,7 +905,8 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     const i = live.lastIndexOf("  }\n}");
     const block = blockOf(cand);
     assert.ok(block.length > 1000 && block.includes("match /duaGroups/"), "POSITIVE CONTROL: the candidate's block was not found");
-    if (live.includes("match /duaGroups/")) assert.equal(live, dep, "firestore.rules carries duaGroups but is not the published deployment file");
+    // Architect 103L, 14 Nov 2026: once synced, the construction is still proved (stripGroups gives the effort file back).
+    if (live.includes("match /duaGroups/")) { assert.equal(live, dep, "firestore.rules carries duaGroups but is not the published deployment file"); assert.equal(stripGroups(dep), EFFORT_DEPLOYMENT(), "the deployment file is not the effort file plus exactly the candidate's block"); }
     else assert.equal(dep, live.slice(0, i).replace(/\n+$/, "") + "\n\n" + block + live.slice(i));
   });
   const published = live.includes("match /duaGroups/") ? live : dep;
