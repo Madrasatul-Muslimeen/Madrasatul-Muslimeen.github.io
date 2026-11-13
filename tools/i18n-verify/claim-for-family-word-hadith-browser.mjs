@@ -88,7 +88,8 @@ const ev = (P, f, a) => P.evaluate(f, a);
 // UPDATED IN PLACE (13 Nov 2026, the Owner, a phone screenshot: "Move the account to the menu"): the Word Card's 👥 picker is the first item of its ☰ menu, not a row under the state buttons,
 // so the menu is opened (as a reader does) before the picker is measured or pressed.
 const openWcMenu = async (P) => { const hidden = await P.evaluate(() => document.querySelector("#quranWordCardMount [data-word-card-menu-panel]")?.hidden ?? false); if (hidden) { await P.click("#quranWordCardMount [data-word-card-menu-toggle]"); await P.waitForTimeout(250); } };
-const clickAccount = async (P) => { await openWcMenu(P); await clickAccount(P); };
+const closeWcMenu = async (P) => { const open = await P.evaluate(() => { const m = document.querySelector("#quranWordCardMount [data-word-card-menu-panel]"); return !!m && !m.hidden; }); if (open) { await P.click("#quranWordCardMount [data-word-card-menu-toggle]"); await P.waitForTimeout(200); } };
+const clickAccount = async (P) => { await openWcMenu(P); await P.click("#quranWordCardMount [data-claim-for] [data-assign-trigger]"); };
 const pickerInfo = async (P) => { await openWcMenu(P); return pickerInfoNow(P); };
 const pickerInfoNow = (P) => ev(P, () => {
   const r = document.querySelector("#quranWordCardMount [data-claim-for]"); if (!r) return null;
@@ -108,7 +109,7 @@ const totalMoves = (P, from = 0) => ev(P, (k) => {
 }, from);
 const writesFrom = (P, from) => ev(P, ([k]) => (window.__stubWriteData || []).slice(k).map((w) => [w.col, w.id]), [from]);
 const nWrites = (P) => ev(P, () => (window.__stubWriteData || []).length);
-const tick = async (P, id) => { await clickAccount(P); await P.waitForTimeout(120); await P.click(`#quranWordCardMount [data-claim-for] [data-assign-list] input[value="${id}"]`); await clickAccount(P); await P.waitForTimeout(80); };
+const tick = async (P, id) => { await clickAccount(P); await P.waitForTimeout(120); await P.click(`#quranWordCardMount [data-claim-for] [data-assign-list] input[value="${id}"]`); await clickAccount(P); await P.waitForTimeout(80); await closeWcMenu(P); };
 
 // --lang=en / --w=390 narrow a debugging run; the default is the full grid.
 const ARG = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -153,7 +154,7 @@ for (const lang of (ARG("lang") ? [ARG("lang")] : ["en", "bn"])) for (const widt
       return { ratio: Math.round(((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)) * 100) / 100, fg: getComputedStyle(name).color, bg: getComputedStyle(pop).backgroundColor };
     });
     check(`${tag}: ...the names in the open list read against its background (contrast >= 4.5)`, (ink?.ratio ?? 0) >= 4.5, JSON.stringify(ink));
-    await clickAccount(P); await P.waitForTimeout(80);
+    await clickAccount(P); await P.waitForTimeout(80); await closeWcMenu(P);
     // Basic and Depth carry it too (when their buttons are live)
     for (const level of ["basic", "depth"]) {
       await P.evaluate((l) => document.querySelector(`#quranWordCardMount [data-word-card-level="${l}"]`)?.click(), level);
