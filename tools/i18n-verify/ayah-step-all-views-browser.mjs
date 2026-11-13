@@ -26,15 +26,28 @@ for (const width of [360, 600, 768, 1280]) {
   const slot = await page.evaluate(() => { const s = document.getElementById("readMeaningLayersSlot"); const mb = s?.querySelector("[data-ml-menu]"); const lab = [...(s?.querySelectorAll("label") ?? [])].map((l) => l.getBoundingClientRect().width); return { btn: !!mb && mb.getBoundingClientRect().width > 0, labelsShown: lab.filter((w) => w > 0).length }; });
   if (width < 900) check(`${tag} the three layer switches are folded under ONE "Show ▾" button`, slot.btn && slot.labelsShown === 0, JSON.stringify(slot));
   else check(`${tag} from 900px the three stand open on the bar, no "Show" button`, !slot.btn && slot.labelsShown === 3, JSON.stringify(slot));
+  // UPDATED IN PLACE (13 Nov 2026, the Owner: "Read on: 2 lines"): below 600px in Read on the bar's four step buttons are in the bar's ⋮ menu (body.read-bar-steps-in-menu), so
+  // there ◂ ▸ are two tiles of that menu; from 600px, and in the Mushaf, they stay on the bar.
+  const inMenu = width < 600;
+  const stepReading = async (act, id) => {
+    if (!inMenu) { await page.click(`#${id}`); return; }
+    await page.click("#readBar .ayah-quick-btn"); await page.waitForTimeout(300);
+    await page.click(`#readBar [data-qm-act="${act}"]`);
+  };
   const nb = await box(page, "nextAyahBtn"), pb = await box(page, "prevAyahBtn");
-  check(`${tag} Reading View: ◂ ▸ are on the bar, ≥ 36px, on screen and really under the finger`, !!nb && !!pb && !nb.hidden && !pb.hidden && nb.w >= 36 && pb.w >= 36 && nb.inView && pb.inView && nb.hit && pb.hit, JSON.stringify({ nb, pb }));
+  if (inMenu) {
+    await page.click("#readBar .ayah-quick-btn"); await page.waitForTimeout(300);
+    const tl = await page.evaluate(() => ["stepprevayah", "stepnextayah"].map((a) => { const e = document.querySelector(`#readBar [data-qm-act="${a}"]`); const r = e?.getBoundingClientRect(); return e && r.width > 0 ? { w: Math.round(r.width), h: Math.round(r.height) } : null; }));
+    check(`${tag} Reading View: ◂ ▸ are not on the bar and are two tiles of the ⋮ menu, ≥ 40px`, !!nb && !!pb && nb.w === 0 && pb.w === 0 && tl.every((x) => x && x.w >= 40 && x.h >= 40), JSON.stringify({ nb, pb, tl }));
+    await page.click("#readBar .ayah-quick-btn"); await page.waitForTimeout(300);
+  } else check(`${tag} Reading View: ◂ ▸ are on the bar, ≥ 36px, on screen and really under the finger`, !!nb && !!pb && !nb.hidden && !pb.hidden && nb.w >= 36 && pb.w >= 36 && nb.inView && pb.inView && nb.hit && pb.hit, JSON.stringify({ nb, pb }));
   const topKey = () => page.evaluate(() => { const items = [...document.querySelectorAll("#pageViewContainer .meaning-ayah")]; const root = document.getElementById("readScroll"); const t = root.getBoundingClientRect().top; return ([...items].reverse().find((e) => e.getBoundingClientRect().top <= t + 120) ?? items[0])?.dataset.meaningKey; });
   const k0 = await topKey();
-  await page.click("#nextAyahBtn"); await page.waitForTimeout(1500);
+  await stepReading("stepnextayah", "nextAyahBtn"); await page.waitForTimeout(1500);
   const k1 = await topKey();
-  await page.click("#nextAyahBtn"); await page.waitForTimeout(1500);
+  await stepReading("stepnextayah", "nextAyahBtn"); await page.waitForTimeout(1500);
   const k2 = await topKey();
-  await page.click("#prevAyahBtn"); await page.waitForTimeout(1500);
+  await stepReading("stepprevayah", "prevAyahBtn"); await page.waitForTimeout(1500);
   const k3 = await topKey();
   const n = (k) => Number(String(k).split(":")[1]);
   check(`${tag} Reading View: ▸ brings the next āyah to the top (twice), ◂ goes back one`, n(k1) === n(k0) + 1 && n(k2) === n(k0) + 2 && n(k3) === n(k0) + 1, JSON.stringify({ k0, k1, k2, k3 }));
