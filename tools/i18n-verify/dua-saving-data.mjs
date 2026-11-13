@@ -8,6 +8,7 @@
 //      requires (hasOnly / hasAll parsed out of firestore.rules), so a create the Rules would refuse fails here.
 // Run from the repository root.   --mutate=clearwrites  a cleared mark is written back as null  -> the clear check fails
 //   --mutate=anykey     every plan key is accepted -> the plan-key vocabulary checks fail
+//   --mutate=notree     saveDuaGroups skips the tree check -> a bad tree is written     --mutate=adminduas  an admin tree may carry per-group dua lists
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -60,9 +61,10 @@ globalThis.__dsEnvelope = {
   updateDocument: async (_db, col, id, data) => { if (failNext) { failNext = false; throw fail(); } writeLog.push({ kind: "update", col, id, data }); apply(`${col}/${id}`, { ...data, updatedAt: TS }); },
 };
 globalThis.__dsErrors = { safeWrite: async (fn, context) => { try { await fn(); return { ok: true }; } catch (error) { const entry = { code: error.code, context }; failures.push(entry); return { ok: false, entry }; } } };
-globalThis.__dsCollections = { TENANT: { DUA_PLANS: "duaPlans", DUA_EDITS: "duaEdits", DUA_SHARES: "duaShares" } };
+globalThis.__dsCollections = { TENANT: { DUA_PLANS: "duaPlans", DUA_EDITS: "duaEdits", DUA_SHARES: "duaShares", DUA_GROUPS: "duaGroups" } };
+globalThis.__dsTree = await import(path.join(appJs, "dua-group-tree.js") + "?" + Date.now());
 const collectionsSrc = fs.readFileSync(path.join(appJs, "collections.js"), "utf8");
-check("collections.js names the three Dua collections", () => { for (const c of ["duaPlans", "duaEdits", "duaShares"]) assert.match(collectionsSrc, new RegExp(`"${c}"`)); });
+check("collections.js names the four Dua collections", () => { for (const c of ["duaPlans", "duaEdits", "duaShares", "duaGroups"]) assert.match(collectionsSrc, new RegExp(`"${c}"`)); });
 
 let source = fs.readFileSync(path.join(appJs, "dua-saving-data.js"), "utf8");
 const before = source;
@@ -70,9 +72,12 @@ source = source
   .replace(/import \{[^}]*\} from "https:\/\/www\.gstatic\.com\/firebasejs\/10\.12\.2\/firebase-firestore\.js";/, "const { doc, getDoc, collection, query, where, getDocs } = globalThis.__dsFirestore;")
   .replace(/import \{ TENANT \} from "\.\/collections\.js";/, "const { TENANT } = globalThis.__dsCollections;")
   .replace(/import \{ createDocument, updateDocument \} from "\.\/envelope\.js";/, "const { createDocument, updateDocument } = globalThis.__dsEnvelope;")
-  .replace(/import \{ safeWrite \} from "\.\/errors\.js";/, "const { safeWrite } = globalThis.__dsErrors;");
+  .replace(/import \{ safeWrite \} from "\.\/errors\.js";/, "const { safeWrite } = globalThis.__dsErrors;")
+  .replace(/import \{ cleanTree, GROUP_ID \} from "\.\/dua-group-tree\.js";/, "const { cleanTree, GROUP_ID } = globalThis.__dsTree;");
 if (MUTATE === "anykey") { const a = "export const isPlanKey = isDuaKey;"; assert.ok(source.includes(a)); source = source.replace(a, "export const isPlanKey = () => true;"); }
 if (MUTATE === "clearwrites") { const a = "if (mark === null) delete marks[duaKey]; else marks[duaKey] = mark;"; assert.ok(source.includes(a)); source = source.replace(a, "marks[duaKey] = mark;"); }
+if (MUTATE === "notree") { const a = 'const clean = cleanTree(nodes, treeOptions(ownerKey));\n  if (!clean) return { ok: false, refused: "bad-tree" };'; assert.ok(source.includes(a)); source = source.replace(a, "const clean = nodes;"); }
+if (MUTATE === "adminduas") { const a = '(ownerKey === ADMIN_GROUP_KEY ? { noDuas: true } : { isKey: isDuaKey })'; assert.ok(source.includes(a)); source = source.replace(a, "({ isKey: isDuaKey })"); }
 check("every import was replaced (the module under test is the real one)", () => { assert.notEqual(source, before); assert.ok(!/^import /m.test(source)); });
 const m = await import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`);
 
@@ -214,20 +219,101 @@ await acheck("a share is recorded APPEND-ONLY with an auto id, the Rules' vocabu
   assert.equal((await m.loadDuaShares(db, ctx)).length, 2);
 });
 
+
+// --- Dua groups (J104 line 25) ---
+const gid = (n) => "g-" + String(n).padStart(8, "a");
+const G = (n, name, kids = [], extra = {}) => ({ id: gid(n), name: { en: name }, kids, ...extra });
+const groupDoc = (k) => store.get(`duaGroups/${T}__${k}`);
+await acheck("GROUPS: the first admin save CREATES duaGroups/t1__admin: tenantId, ownerKey, nodes and every envelope field; ONE read", async () => {
+  reset(); const tree = [G(1, "Morning", [G(2, "Hisn")]), G(3, "Sahaba")];
+  const r = await m.saveDuaGroups(db, ctx, { nodes: tree });
+  assert.equal(r.ok, true); assert.deepEqual(r.nodes, tree);
+  const d = groupDoc("admin"); assert.ok(d, "no document at duaGroups/t1__admin");
+  assert.deepEqual(Object.keys(d).sort(), ["createdAt", "createdBy", "nodes", "ownerKey", "schemaVersion", "tenantId", "updatedAt"]);
+  assert.equal(d.tenantId, T); assert.equal(d.ownerKey, "admin"); assert.equal(d.createdBy, "uid-p1"); assert.deepEqual(d.nodes, tree);
+  assert.equal(writeLog.length, 1); assert.equal(writeLog[0].kind, "create"); assert.equal(reads.length, 1, `reads: ${reads}`);
+});
+await acheck("GROUPS: a second save UPDATES `nodes` only (tenantId, ownerKey, createdBy are never rewritten)", async () => {
+  await m.saveDuaGroups(db, ctx, { nodes: [G(1, "Morning and evening"), G(3, "Sahaba")] });
+  assert.equal(writeLog.at(-1).kind, "update"); assert.deepEqual(Object.keys(writeLog.at(-1).data), ["nodes"]);
+  assert.equal(groupDoc("admin").nodes[0].name.en, "Morning and evening");
+});
+await acheck("GROUPS REAL DELETE: a group (and the groups inside it) is gone because `nodes` is written WITHOUT it; the document stays and nothing is deleted (D6)", async () => {
+  reset(); await m.saveDuaGroups(db, ctx, { nodes: [G(1, "Morning", [G(2, "Hisn")]), G(3, "Sahaba")] });
+  const r = await m.saveDuaGroups(db, ctx, { nodes: [G(3, "Sahaba")] });
+  assert.equal(r.ok, true); assert.deepEqual(groupDoc("admin").nodes.map((n) => n.id), [gid(3)]);
+  assert.ok(!JSON.stringify(groupDoc("admin")).includes(gid(2)), "a group inside the deleted one is still stored");
+  assert.ok(groupDoc("admin"), "the document is gone"); assert.ok(writeLog.every((w) => w.kind === "create" || w.kind === "update"));
+  const none = await m.saveDuaGroups(db, ctx, { nodes: [] });
+  assert.equal(none.ok, true); assert.deepEqual(groupDoc("admin").nodes, []); assert.ok(groupDoc("admin"), "deleting every group must still leave the document");
+});
+await acheck("GROUPS MY GROUPS: a person's tree is ownerKey = their personId, and each group may carry a `duas` list of valid dua keys (kept as saved)", async () => {
+  reset(); const tree = [G(1, "Learning now", [G(2, "This week", [], { duas: ["12", "hisn-27-5"] })], { duas: ["quran-7-23"] })];
+  const r = await m.saveDuaGroups(db, ctx, { ownerKey: "p1", nodes: tree });
+  assert.equal(r.ok, true); assert.deepEqual(groupDoc("p1").nodes, tree); assert.equal(groupDoc("p1").ownerKey, "p1");
+  const t = { tenantId: T, personId: "teacher1", uid: "uid-t" };
+  assert.equal((await m.saveDuaGroups(db, t, { ownerKey: "p9", nodes: [G(5, "For Maryam")] })).ok, true);
+  assert.equal(groupDoc("p9").createdBy, "uid-t");
+});
+await acheck("GROUPS: the madrasah's tree may NOT carry a `duas` list (its membership lives in duaEdits.placements); a person's list must be valid keys, unique, within the caps", async () => {
+  reset();
+  assert.equal((await m.saveDuaGroups(db, ctx, { nodes: [G(1, "A", [], { duas: ["12"] })] })).refused, "bad-tree");
+  for (const duas of [["abc"], ["12", "12"], "12", new Array(501).fill(0).map((_, i) => String(i + 1))]) assert.equal((await m.saveDuaGroups(db, ctx, { ownerKey: "p1", nodes: [G(1, "A", [], { duas })] })).refused, "bad-tree", JSON.stringify(duas).slice(0, 30));
+  assert.equal(writeLog.length + reads.length, 0, "a refused tree must read and write nothing");
+});
+await acheck("GROUPS: a tree the Rules cannot check is refused here, before anything is read or written (4 levels, a repeated id, a bad name, a bad id)", async () => {
+  reset();
+  const deep = [G(1, "1", [G(2, "2", [G(3, "3", [G(4, "4")])])])];
+  for (const bad of [deep, [G(1, "A"), G(1, "B")], [G(1, "")], [{ id: "x", name: { en: "A" }, kids: [] }], "nodes", null, [G(1, "x".repeat(61))]])
+    assert.equal((await m.saveDuaGroups(db, ctx, { nodes: bad })).refused, "bad-tree");
+  for (const ownerKey of ["", "a__b", "p/1", "x".repeat(65)]) assert.equal((await m.saveDuaGroups(db, ctx, { ownerKey, nodes: [] })).refused, "bad-owner", ownerKey);
+  assert.equal(writeLog.length + reads.length, 0);
+});
+await acheck("GROUPS: an empty tree for a tree never saved creates NO document", async () => {
+  reset(); const r = await m.saveDuaGroups(db, ctx, { nodes: [] });
+  assert.equal(r.ok, true); assert.equal(writeLog.length, 0); assert.equal(store.size, 0);
+});
+await acheck("GROUPS LOAD: nothing saved reads as an empty tree; a saved tree comes back; an invalid stored tree is flagged, not half shown; ONE read each", async () => {
+  reset(); reads.length = 0;
+  assert.deepEqual(await m.loadDuaGroups(db, ctx), { exists: false, nodes: [] }); assert.equal(reads.length, 1);
+  await m.saveDuaGroups(db, ctx, { nodes: [G(1, "A", [G(2, "B")])] });
+  assert.equal((await m.loadDuaGroups(db, ctx, "admin")).nodes[0].kids[0].id, gid(2));
+  store.set(`duaGroups/${T}__p1`, { tenantId: T, ownerKey: "p1", nodes: [{ id: "bad", name: {}, kids: [] }] });
+  assert.deepEqual(await m.loadDuaGroups(db, ctx, "p1"), { exists: true, nodes: [], invalid: true });
+  await assert.rejects(m.loadDuaGroups(db, ctx, "a__b"), /ownerKey/);
+  await assert.rejects(m.loadDuaGroups(db, { tenantId: T }), /ctx must carry/);
+});
+await acheck("GROUPS: a failed save is REPORTED (I15) and returns the entry, not a success", async () => {
+  reset(); failNext = true;
+  const r = await m.saveDuaGroups(db, ctx, { nodes: [G(1, "A")] });
+  assert.equal(r.ok, false); assert.ok(r.entry); assert.equal(failures.length, 1); assert.equal(failures[0].context.collection, "duaGroups");
+});
+check("GROUPS: dropStalePlacements drops only placements pointing at a group id that is no longer in the tree; the built-in groups' ids stay", () => {
+  const tree = [G(1, "A", [G(2, "B")])];
+  const placements = [{ group: gid(2), order: 1 }, { group: gid(9), order: 2 }, { group: "occasions", part: "wake", order: 3 }, { group: gid(1), order: 4 }];
+  assert.deepEqual(m.dropStalePlacements(placements, tree).map((p) => p.group), [gid(2), "occasions", gid(1)]);
+  assert.deepEqual(m.dropStalePlacements(placements, []).map((p) => p.group), ["occasions"]);
+  assert.deepEqual(m.dropStalePlacements(undefined, tree), []);
+});
+
 // --- 3. SHAPE vs THE PUBLISHED RULES ---
-const rules = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
+// duaGroups was published on 13 Nov 2026; until firestore.rules in the repository is synced to carry it, its block is read from the deployment file the Owner pasted.
+const live = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
+const rules = live.includes("match /duaGroups/") ? live : fs.readFileSync(path.join(root, "docs/proposals/dua-groups.DEPLOYMENT-candidate.rules"), "utf8");
 const listOf = (block, kind) => { const x = block.match(new RegExp(`\\bd\\(\\)\\.keys\\(\\)\\.${kind}\\(\\[([\\s\\S]*?)\\]\\)`)); assert.ok(x, `no ${kind}`); return [...x[1].matchAll(/'([A-Za-z]+)'/g)].map((y) => y[1]); };
 const blockOf = (name) => { const i = rules.indexOf(`match /${name}/`); assert.ok(i > 0); return rules.slice(i, rules.indexOf("\n    match /", i + 10) > 0 ? rules.indexOf("\n    match /", i + 10) : undefined); };
 const docs = {
   duaPlans: () => plan(),
   duaEdits: () => store.get(`duaEdits/${T}__new-edit000001`),
   duaShares: () => [...store].find(([k]) => k.startsWith("duaShares/"))?.[1],
+  duaGroups: () => groupDoc("admin"),
 };
 reset();
 await m.setDuaMark(db, ctx, { duaKey: "1", mark: "today" });
 await m.saveDuaEdit(db, ctx, { duaKey: "new-edit000001", title: { en: "x" }, added: { ar: "y" } });
 await m.recordDuaShare(db, ctx, { duaKey: "1", where: "email", whoFor: "public" });
-for (const c of ["duaPlans", "duaEdits", "duaShares"]) {
+await m.saveDuaGroups(db, ctx, { nodes: [G(1, "A")] });
+for (const c of ["duaPlans", "duaEdits", "duaShares", "duaGroups"]) {
   check(`SHAPE ${c}: the created document has exactly keys the published Rules allow (hasOnly) and every one they require (hasAll)`, () => {
     const d = docs[c](); assert.ok(d, `no ${c} document was created`);
     const only = listOf(blockOf(c), "hasOnly"), all = listOf(blockOf(c), "hasAll"), keys = Object.keys(d);
@@ -238,6 +324,11 @@ for (const c of ["duaPlans", "duaEdits", "duaShares"]) {
 check("SHAPE: the created plan, edit and share ids match the Rules' own id rules", () => {
   assert.ok(store.has(`duaPlans/${T}__p1`) && store.has(`duaEdits/${T}__new-edit000001`));
   assert.match("new-edit000001", /^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40})$/);
+});
+check("SHAPE duaGroups: the document id is {tenantId}__{ownerKey} exactly as the Rules' own id rule says, and ownerKey is 'admin' or a personId", () => {
+  assert.match(blockOf("duaGroups"), /groupKey == d\(\)\.tenantId \+ '__' \+ d\(\)\.ownerKey/);
+  assert.ok(store.has(`duaGroups/${T}__admin`)); assert.equal(groupDoc("admin").ownerKey, "admin");
+  assert.match(blockOf("duaGroups"), /d\(\)\.nodes is list && d\(\)\.nodes\.size\(\) <= 200/);
 });
 console.log(`\n==== Dua saving data: ${passed} passed, ${failed} failed ====`);
 process.exit(failed ? 1 : 0);
