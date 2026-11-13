@@ -29,22 +29,23 @@ export const EFFORT_STORED = Object.freeze(["known", "easy", "little", "very"]);
 export const EFFORT_DEGREES = Object.freeze([
   { id: "known", names: { en: "Already Known", bn: "আগে থেকেই জানা" }, colour: "known" },
   { id: "easy", names: { en: "Learned Easy", bn: "সহজে শেখা" }, colour: "easy" },
-  { id: "little", names: { en: "Little Difficult", bn: "একটু কঠিন" }, colour: "little" },
+  { id: "little", names: { en: "Little Hard", bn: "একটু কঠিন" }, colour: "little" },
   { id: "hard", names: { en: "Hard", bn: "কঠিন" }, colour: "hard" },
   { id: "very", names: { en: "Very Hard", bn: "খুব কঠিন" }, colour: "very" },
 ]);
 
 /** The five buttons of the Word card, in order. `kind` tells the tap what it means. */
 export const WORD_MARKS = Object.freeze([
-  // The Owner, 13 Nov 2026 (a phone screenshot, "Mark chips order"): Already Known, Learned Easy, Little Difficult, Difficult, Very Hard, Learn. Three to a line on a phone,
-  // so the first line is the three easy-to-hard results and the second is Difficult, Very Hard and Learn.
+  // The Owner, 13 Nov 2026 (a phone screenshot, "Mark chips order", then again in full once the words differed): Already Known, Learned Easy,
+  // Little Hard, Hard, Very Hard, Learn Now -- written exactly so, and now named exactly so. Three to a line on a phone, so the first line
+  // is the three easy-to-hard results and the second is Hard, Very Hard and Learn Now.
   { id: "known", kind: "result", names: { en: "Already Known", bn: "আগে থেকেই জানা" }, sub: { en: "result", bn: "ফলাফল" } },
   { id: "easy", kind: "result", names: { en: "Learned Easy", bn: "সহজে শেখা" }, sub: { en: "result", bn: "ফলাফল" } },
-  // The Owner, 12 Nov 2026 ("Place another level before Difficult, 'Little Difficult'"): a RESULT between Learned Easy and Hard, effort "little".
-  { id: "little", kind: "result", names: { en: "Little Difficult", bn: "একটু কঠিন" }, sub: { en: "result", bn: "ফলাফল" } },
-  { id: "difficult", kind: "assessment", names: { en: "Difficult", bn: "কঠিন" }, sub: { en: "counts as Hard", bn: "কঠিন হিসেবে গণ্য" } },
+  // The Owner, 12 Nov 2026 ("Place another level before Difficult, 'Little Difficult'"; named "Little Hard" on 13 Nov): a RESULT between Learned Easy and Hard, effort "little".
+  { id: "little", kind: "result", names: { en: "Little Hard", bn: "একটু কঠিন" }, sub: { en: "result", bn: "ফলাফল" } },
+  { id: "difficult", kind: "assessment", names: { en: "Hard", bn: "কঠিন" }, sub: { en: "assessment", bn: "মূল্যায়ন" } }, // the id stays "difficult" (saved key `hard`); only the word on the button changed, 13 Nov 2026
   { id: "very", kind: "result", names: { en: "Very Hard", bn: "খুব কঠিন" }, sub: { en: "result", bn: "ফলাফল" } },
-  { id: "learn", kind: "act", names: { en: "Learn", bn: "শিখুন" }, sub: { en: "act on", bn: "শেখার জন্য" } },
+  { id: "learn", kind: "act", names: { en: "Learn Now", bn: "এখনই শিখুন" }, sub: { en: "act on", bn: "শেখার জন্য" } },
 ]);
 
 const SAVED_KEY = Object.freeze({ difficult: "hard", learn: "practice", easy: "done" });

@@ -93,7 +93,7 @@ export function marksWheelHtml(pieces, entries, { lang = "en", centreTop = "", c
     const a0 = (i / n) * 2 * Math.PI + gap, a1 = ((i + 1) / n) * 2 * Math.PI - gap;
     const have = marksIn(entries?.[p.key]);
     const names = have.map((m) => keyName(m, lang)).join(", ");
-    const effName = effort?.[p.key] === "known" ? "Already Known" : effort?.[p.key] === "little" ? "Little Difficult" : effort?.[p.key] === "very" ? "Very Hard" : "";
+    const effName = effort?.[p.key] === "known" ? "Already Known" : effort?.[p.key] === "little" ? "Little Hard" : effort?.[p.key] === "very" ? "Very Hard" : "";
     const label = `${p.label}${names || effName ? ` · ${[names, effName].filter(Boolean).join(", ")}` : ""}`;
     // MSA · QR J136: a word whose stored effort is "known" or "very" lights the INNER band in its own colour (blue / purple);
     // Learned Easy is the `done` key and keeps the green it always had. `effort` is the reader's map of unit key -> word.
@@ -126,7 +126,7 @@ export function wireMarksWheel(root, pieces, onGo) {
 /** The legend under the wheel (colour swatches with the mark names). */
 export function marksLegendHtml(lang = "en") {
   // MSA · QR J136: the word views also show Already Known (blue) and Very Hard (purple) on the inner band.
-  const extra = [["known", lang === "bn" ? "আগে থেকেই জানা" : "Already Known"], ["little", lang === "bn" ? "একটু কঠিন" : "Little Difficult"], ["very", lang === "bn" ? "খুব কঠিন" : "Very Hard"]]
+  const extra = [["known", lang === "bn" ? "আগে থেকেই জানা" : "Already Known"], ["little", lang === "bn" ? "একটু কঠিন" : "Little Hard"], ["very", lang === "bn" ? "খুব কঠিন" : "Very Hard"]]
     .map(([id, name]) => `<span class="mk-legend-item mk-legend-eff"><i class="mk-swatch mk-swatch-eff-${id}"></i>${esc(name)}</span>`).join("");
   return `<p class="mk-legend" data-mk-legend>${MARK_IDS.map((id) => `<span class="mk-legend-item"><i class="mk-swatch mk-swatch-${id}"></i>${esc(keyName(id, lang))}</span>`).join("")}${extra}</p>`;
 }

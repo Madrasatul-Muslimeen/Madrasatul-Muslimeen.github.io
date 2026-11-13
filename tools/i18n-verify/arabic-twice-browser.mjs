@@ -3,6 +3,7 @@
 //
 // Run from the repository root with serve.js up:  node tools/i18n-verify/arabic-twice-browser.mjs   (QR_BASE=... for another port)
 //   MUT=studynext ... mutation: Study Next's Arabic is back at its old size   -> the Study Next size checks
+//   MUT=scholars10 ... mutation: the Scholars tab's names are back at the other tabs' size (the Owner's 13 Nov "10% bigger" removed) -> the Scholars size check
 //   MUT=wordcard ...  mutation: the Word Card's Arabic is back at its old size -> the Word Card size checks
 //   MUT=partname ...  mutation: the grammar name is twice as big again (the Owner's option 3, 13 Nov 2026, removed)  -> the REAL Word Card grammar-name size and one-line checks
 //   MUT=ayahchip ...  mutation: the Āyah card's Word-by-Word chips are back at 2.4rem (before the Owner's 13 Nov "30% smaller")   -> the chip size check
@@ -27,6 +28,7 @@ const restoreAll = () => { while (restores.length) restores.pop()(); };
 process.on("exit", restoreAll);
 for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { restoreAll(); process.exit(1); });
 if (MUT === "studynext") { mutate("app/js/read-next-ui.js", /font-size: 2\.4rem; line-height: 1\.8/g, "font-size: 1.2rem; line-height: 1.8"); mutate("app/js/read-next-ui.js", /\.rn-ar-name \{ font-size: 1\.64rem/g, ".rn-ar-name { font-size: 0.82rem"); mutate("app/js/read-next-ui.js", /\.rn-era-quote \{ margin: 4px 0 0; font-size: 2\.1rem/g, ".rn-era-quote { margin: 4px 0 0; font-size: 1.05rem"); }
+else if (MUT === "scholars10") mutate("app/js/read-next-ui.js", /\.read-next-panel\[data-read-next-panel="scholars"\] \.read-next-item \.rn-ar-name \{ font-size: 1\.804rem; \}\n/g, "");
 else if (MUT === "wordcard") mutate("app/quranrevival.html", /\.word-card-dpop-ar \{ font-family: var\(--quran-font\); font-size: 3\.4rem/g, ".word-card-dpop-ar { font-family: var(--quran-font); font-size: 1.7rem");
 else if (MUT === "partname") mutate("app/quranrevival.html", /  \.word-card-fact b\.word-card-fact-ar, \.word-card-part \.word-card-part-arname \{ font-size: calc\(var\(--wc-head-ar\) \* 0\.9\); \}\n/g, "");
 else if (MUT === "ayahchip") mutate("app/quranrevival.html", /\.ayah-wbw-chip \[lang="ar"\] \{ font-family: var\(--quran-font\); font-size: 1\.68rem/g, '.ayah-wbw-chip [lang="ar"] { font-family: var(--quran-font); font-size: 2.4rem');
@@ -34,7 +36,7 @@ else if (MUT === "ayahchip") mutate("app/quranrevival.html", /\.ayah-wbw-chip \[
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const px = (rem) => rem * 16;
 // the OLD sizes (rem) before this round, the smallest any media rule gave them; the new size must be at least twice
-const WORD_CARD_OLD = { "word-card-dcard-ar": 1.15, "word-card-dpop-ar": 1.7, "word-card-fv-ar": 1.45, "word-card-form-arabic": 1.3, "word-card-occurrence-arabic": 1.2, "word-card-search-res-ar": 1.35, "word-card-learnnext-ar": 1.15 };
+const WORD_CARD_OLD = { "word-card-dcard-ar": 1.15, "word-card-dpop-ar": 1.7, "word-card-fv-ar": 1.45, "word-card-form-arabic": 1.3, "word-card-occurrence-arabic": 1.2, "word-card-search-res-ar": 1.35 }; // "word-card-learnnext-ar" (1.15) left this table 13 Nov 2026: the Owner made the Learn the Next Word bar's Arabic 30% LESS than the other small Arabic; bangla-marks-browser.mjs measures that ratio (0.7)
 try {
   for (const width of process.env.ONE ? [390] : [320, 390, 768, 1280]) {
     const tag = `[${width}]`;
@@ -50,7 +52,7 @@ try {
     await page.locator('#probe [data-read-next-tab="scholars"]').click().catch(() => {});
     await page.waitForTimeout(400);
     const nameSize = await sz("#probe .rn-ar-name");
-    check(`${tag} MUTATION TARGET (studynext): a scholar's Arabic name in the Scholars tab is twice its old size (26px or more; was 13px)`, nameSize >= 26, String(nameSize));
+    check(`${tag} MUTATION TARGET (scholars10): a scholar's Arabic name in the Scholars tab is twice its old size and then 10% bigger (the Owner, 13 Nov 2026: 26.24px x 1.1 = 28.9px; was 13px)`, nameSize > 28.5 && nameSize < 29.3, String(nameSize));
     const dictSize = await page.evaluate(() => { const i = document.createElement("div"); i.className = "read-next-item"; i.innerHTML = '<p class="rn-ar" lang="ar" dir="rtl">شمس</p>'; document.querySelector("#probe").appendChild(i); return parseFloat(getComputedStyle(i.firstChild).fontSize); });
     check(`${tag} MUTATION TARGET (studynext): the Arabic in the Dictionary tab (and Scholars' and Tafsīr's headings) is twice its old size (38px or more; was 19px)`, dictSize >= 38, String(dictSize));
     const quoteSize = await page.evaluate(() => { const p = document.createElement("p"); p.className = "rn-era-quote"; p.textContent = "قال"; document.querySelector("#probe").appendChild(p); return parseFloat(getComputedStyle(p).fontSize); });

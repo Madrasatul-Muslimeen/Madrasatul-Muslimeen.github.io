@@ -94,6 +94,8 @@ const CSS = `
 .read-next-item .rn-ar { font-family: "KFGQPC Uthmanic Script HAFS", "Amiri Quran", "Amiri", "Noto Naskh Arabic", serif; font-size: 2.4rem; line-height: 1.8; text-align: right; }
 .read-next-item .rn-small { font-size: 0.82rem; color: #555; }
 .read-next-item .rn-ar-name { font-size: 1.64rem; line-height: 1.7; text-align: right; font-family: "KFGQPC Uthmanic Script HAFS", "Amiri Quran", "Amiri", "Noto Naskh Arabic", serif; }
+/* The Owner, 13 Nov 2026: "Increase the Arabic text in 'Scholars' 10% bigger." The Scholars tab's Arabic (the scholars' names) is 1.1 times the other tabs' (1.64rem -> 1.804rem). */
+.read-next-panel[data-read-next-panel="scholars"] .read-next-item .rn-ar-name { font-size: 1.804rem; }
 a.read-next-go, a.read-next-item { color: #1F3A6E; text-decoration: none; }
 a.read-next-go { display: inline-flex; align-items: center; justify-self: start; min-height: 40px; padding: 0 0.8rem; border: 1px solid #1F3A6E; border-radius: 10px; font-weight: 600; }
 a.read-next-item { min-height: 40px; }

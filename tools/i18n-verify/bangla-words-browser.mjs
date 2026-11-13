@@ -1,3 +1,6 @@
+// UPDATED IN PLACE 13 Nov 2026 (the Owner: the "Also in Bangla" button and its tag are gone from the ☰ menu; the word is marked by the three kind chips
+// "In Bangla Names / In Rituals / In Daily Use" below Mark the Word -- here the "In Daily Use" chip is the mark the old button was; the chips work whatever the
+// card's list switch says). The menu block keeps the Admin's / Mine choice, the counts, the switches and the list.
 // PCF MSA J119 -- the Word Card's "Also in Bangla" block, in the real page. Route: Read, 2:14:8 (خَلَوْا), its Word Card.
 //   node tools/i18n-verify/bangla-words-browser.mjs [--mutate=nosave|nocount|smallswitch]      (serve.js on :8080, or QR_BASE)
 // Fails unless: the block is in the Word Card; the blue button marks the word (and the tag shows); the mark survives a reload
@@ -47,7 +50,7 @@ async function openCard(ctx) {
   await page.evaluate(() => { const p = document.querySelector("#quranWordCardMount [data-word-card-menu-panel]"); if (p?.hidden) document.querySelector("#quranWordCardMount [data-word-card-menu-toggle]")?.click(); }); await page.waitForTimeout(300);
   return page;
 }
-const tap = (loc) => loc.click({ timeout: 3000 }).catch(() => {}); // a mutated page may leave a control disabled: the CHECK must fail, not the run
+const tap = (loc) => (typeof loc.click === "function" ? Promise.resolve(loc.click({ timeout: 3000 })).catch(() => {}) : Promise.resolve()); // a mutated page may leave a control disabled: the CHECK must fail, not the run
 const state = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("mm_bangla_words.v2") || localStorage.getItem("mm_bangla_words.v1") || "null") ?? { admin: [], on: null, list: null, mine: [] }); // never null: a mutation that stops saving must FAIL a check, not crash the run
 
 for (const [w, h, lang] of [[1280, 900, "en"], [390, 844, "en"], [390, 844, "bn"]]) {
@@ -63,20 +66,26 @@ for (const [w, h, lang] of [[1280, 900, "en"], [390, 844, "en"], [390, 844, "bn"
     });
   }
   const page = await openCard(ctx);
-  const has = await page.evaluate(() => !!document.querySelector("#quranWordCardMount [data-bangla-block] [data-bangla-word]"));
+  const has = await page.evaluate(() => !!document.querySelector("#quranWordCardMount [data-bangla-block] [data-bangla-onoff]") && !!document.querySelector("#quranWordCardMount [data-bangla-marks]"));
   check(`${tag} the Bangla block is in the Word Card`, has);
   if (!has) { await ctx.close(); continue; }
-  const btn = () => page.locator("#quranWordCardMount [data-bangla-block] .bnw-mark");
+  // the mark is the "In Daily Use" chip; a page click on it goes through the page itself (the open ☰ panel may sit over it, which is not what is under test)
+  const CHIP = "#quranWordCardMount [data-bangla-marks] [data-bangla-kind=\"bangla\"]";
+  const btn = () => ({
+    getAttribute: (n) => page.evaluate(([sel, name]) => (name === "data-bangla-word" ? document.querySelector("#quranWordCardMount [data-bangla-marks]")?.dataset.banglaLemma : document.querySelector(sel)?.getAttribute(name)), [CHIP, n]),
+    isDisabled: () => page.evaluate((sel) => !!document.querySelector(sel)?.disabled, CHIP),
+    click: () => page.evaluate((sel) => document.querySelector(sel)?.click(), CHIP),
+  });
   const sw = () => page.locator("#quranWordCardMount [data-bangla-onoff]");
   // UPDATED IN PLACE (J134, 9 Nov 2026): the whole-list switch starts OFF (the mark button is disabled until it is switched ON).
-  check(`${tag} the switch starts OFF and the mark button waits for it`, (await sw().getAttribute("aria-pressed")) === "false" && (await btn().isDisabled()));
+  check(`${tag} the list switch starts OFF, and the chip does NOT wait for it (a mark is the word's own, not the list's)`, (await sw().getAttribute("aria-pressed")) === "false" && !(await btn().isDisabled()));
   await tap(sw()); await page.waitForTimeout(300);
   const dis = await btn().isDisabled();
   check(`${tag} (positive control) with the switch ON the signed-in owner can mark`, !dis);
   const lemma = await btn().getAttribute("data-bangla-word");
-  await tap(btn()); await page.waitForTimeout(400);
-  check(`${tag} the button is pressed after a tap`, (await btn().getAttribute("aria-pressed")) === "true");
-  check(`${tag} the tag shows`, await page.evaluate(() => !!document.querySelector("#quranWordCardMount [data-bangla-tag]")));
+  await btn().click(); await page.waitForTimeout(400);
+  check(`${tag} the chip is pressed after a tap`, (await btn().getAttribute("aria-pressed")) === "true");
+  check(`${tag} there is no "Also in Bangla: word" tag any more`, await page.evaluate(() => !document.querySelector("#quranWordCardMount [data-bangla-tag], #quranWordCardMount .bnw-tag")));
   const st = await state(page);
   check(`${tag} the mark is stored on the device`, !!st && st.admin.includes(lemma), JSON.stringify(st));
   check(`${tag} the count line says how many words`, await page.evaluate(() => /\d/.test(document.querySelector("#quranWordCardMount [data-bangla-count]")?.textContent ?? "")));
@@ -90,13 +99,13 @@ for (const [w, h, lang] of [[1280, 900, "en"], [390, 844, "en"], [390, 844, "bn"
   // the whole-list switch
   check(`${tag} the switch is the CARD's, in memory only: J119's saved whole-list setting is untouched (still on) while the card switch is ON`, (await state(page)).on !== false && (await sw().getAttribute("aria-pressed")) === "true");
   await tap(sw()); await page.waitForTimeout(300);
-  check(`${tag} the heading switch turns the whole list off`, (await btn().getAttribute("aria-pressed")) === "false" && (await btn().isDisabled()));
+  check(`${tag} the heading switch turns the whole list off (the word's list switch reads off and is locked) but the chip keeps the word marked`, (await sw().getAttribute("aria-pressed")) === "false" && (await page.evaluate((l) => { const r = document.querySelector(`#quranWordCardMount .bnw-body [data-bangla-word="${l}"]`); return !r || (r.getAttribute("aria-pressed") === "false" && r.disabled); }, lemma)) && (await btn().getAttribute("aria-pressed")) === "true");
   check(`${tag} turning it off keeps the words`, (await state(page)).admin.includes(lemma) && (await state(page)).on !== false); // J134: the card switch no longer writes the saved setting
   await tap(sw()); await page.waitForTimeout(300);
-  check(`${tag} turning it on brings the word back`, (await btn().getAttribute("aria-pressed")) === "true");
+  check(`${tag} turning it on brings the word back into the list (its switch reads on)`, await page.evaluate((l) => document.querySelector(`#quranWordCardMount .bnw-body [data-bangla-word="${l}"]`)?.getAttribute("aria-pressed") === "true", lemma));
   // Mine is its own list
   await tap(page.locator('#quranWordCardMount [data-bangla-list="mine"]')); await page.waitForTimeout(300);
-  check(`${tag} "Mine" starts empty and separate`, (await btn().getAttribute("aria-pressed")) === "false" && (await state(page)).mine.length === 0);
+  check(`${tag} "Mine" starts empty and separate (the chip shows the viewed list)`, (await btn().getAttribute("aria-pressed")) === "false" && (await state(page)).mine.length === 0);
   await tap(page.locator('#quranWordCardMount [data-bangla-list="admin"]')); await page.waitForTimeout(300);
   // fit
   const fit = await page.evaluate(() => { const c = document.querySelector("#quranWordCardMount .bnw"); const m = document.querySelector("#quranWordCardMount"); return c.scrollWidth <= c.clientWidth + 1 && c.getBoundingClientRect().right <= m.getBoundingClientRect().right + 1 && document.documentElement.scrollWidth <= innerWidth + 1; });
@@ -116,7 +125,7 @@ for (const [w, h, lang] of [[1280, 900, "en"], [390, 844, "en"], [390, 844, "bn"
   await page.reload(); await page.waitForTimeout(800);
   const page2 = await openCard(ctx);
   await tap(page2.locator("#quranWordCardMount [data-bangla-onoff]")); await page2.waitForTimeout(300);
-  check(`${tag} the mark is still there after a reload (once the switch is ON)`, (await page2.locator("#quranWordCardMount [data-bangla-block] .bnw-mark").getAttribute("aria-pressed")) === "true");
+  check(`${tag} the mark is still there after a reload`, (await page2.evaluate((sel) => document.querySelector(sel)?.getAttribute("aria-pressed"), CHIP)) === "true");
   // J134 follow-up (the MSA Architect 93L, A): the SAVED whole-list setting (banglaState.on, no new key) has its own switch in the Bangla list's panel,
   // so a reader who saved it OFF before v14.05 is never stuck. It is independent of the card's own switch above.
   const ss = () => page2.locator("#quranWordCardMount [data-bangla-saved-onoff]");
