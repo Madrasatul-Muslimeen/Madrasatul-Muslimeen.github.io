@@ -8,6 +8,7 @@
 //   --mutate=decide-all    Approve/Return is applied to every ticked person           -> the not-waiting person is decided too
 //   --mutate=student-rule  every person takes the Student's confirmation rule         -> the wrong person is treated as waiting
 //   --mutate=student-only  only the Student is written for                            -> the two-person checks fail
+//   --mutate=hadith-box-gradient  the night look's 👥 list takes the card's gradient again -> no background colour, the floating-box check fails
 //   --mutate=hadith-self   Hadith Studied claims only for the page's person           -> the Hadith two-claims check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -61,6 +62,9 @@ async function mutated(ctx) {
     }[MUTATE];
     const body = swapIn("app/quranrevival.html", pairs);
     await ctx.route("**/app/quranrevival.html*", (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body }));
+  } else if (MUTATE === "hadith-box-gradient") {
+    const body = swapIn("app/css/hadith.css", [['.assign-popover { background: var(--card-bg-inset); color', '.assign-popover { background: var(--card-bg); color']]);
+    await ctx.route("**/css/hadith.css*", (r) => r.fulfill({ status: 200, contentType: "text/css; charset=utf-8", body }));
   } else if (MUTATE === "hadith-self") {
     const body = swapIn("app/js/hadith-study-actions.js", [["const targets = personIds?.length ? personIds : [session.personId];", "const targets = [session.personId];"]]);
     await ctx.route("**/js/hadith-study-actions.js*", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body }));
