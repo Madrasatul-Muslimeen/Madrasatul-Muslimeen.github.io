@@ -1,10 +1,10 @@
 # MSA Master Architect 104L: handover, 14 Nov 2026 (~10:15 am Sydney)
 
 Session `session_01PL2xbNKSqgPsaDCu5JU81N`, took over from 103L at 8:20 am 14 Nov. Handing over on the 30%-context rule.
-`main` = **v14.36** (release `1719b65d`), QR live **14.36** (PCA, 10:05 am). **v14.37 = release PR #1706** (ships #1705, already
-merged) was in qr-verify when this was written: if #1706 is still open, read its CI (only the three by-design release failures
-allowed), finish/redo qr-verify on the 14.37 QR build, mark ready, merge pinned (head `4d853066…`, check it), then What's New +
-monitor + "PCA ▸ released v14.37". The ledger's next number after that is **14.38**.
+`main` = **v14.37** (release `9f154a65`, 10:48 am: Dua chapters on the Dua page, #1705); QR picks it up on its hourly look (the
+PCA confirms). qr-verify on the 14.37 build: all 31 checks rc=0. PCF What's New wn-v1437 + monitor written; "PCA ▸ released v14.37"
+sent. The ledger's next number is **14.38**. Also merged (unattended, docs only): #1708, the Dua edit demo v1.11 (Owner tick J104
+n104edit27 pending).
 
 **Who:** PCA = **40L** `session_01PL2xbLp4Ei1eEqRAVoFcZj` (or newer in meta/global.sessionUrl); keep-alive
 `trig_01RiTunwv6BjuFJNLSjBKPiu` points at 104L: ask the PCA to move it. QR Lead = 47L `session_01PL2xbNAMQAyiv5S52x8NPv`.
@@ -14,7 +14,7 @@ Hadith Lead = **14L** `session_01PL2xbNbDNZXULwY3eGdqPD` (13L is closed). Dua Le
 - **v14.35** (#1700): #1695 + #1696 + #1698 (Dua groups pop-up) with my way-back commit 9057d753 (`?dgp=admin|mine[~id]`).
 - **v14.36** (#1704): #1699, #1701 (47L: chip words, Bangla kind row, Learn the Next Word, Difficulty Level), #1702, #1703 (13L:
   Topics tab off, Learning Stories), and my in-place fix of `word-effort.mjs`'s deployment-file check (red on main since #1696).
-- **#1705** merged (11L, Dua chapters on the Dua page, the Owner's tick 7A); release #1706 pending (above).
+- **v14.37** (#1706): #1705 (11L, Dua chapters on the Dua page, the Owner's tick 7A).
 - **Hadith menu redesign (PCF J106 n106i)**: demo first, the Owner ticked 1B 2B 3A 4A 5B 6A 7A. Agreed with the Leads:
   S1 (14L, branch `claude/hadith-menu-s1`, PR not yet open): bar + Menu + Settings + removals + Dua ↗ link with 11L's redirects;
   the Prime preview banner and Person picker MOUNTED unchanged; while a "View as" preview is on, the Menu button shows a visible
@@ -47,7 +47,7 @@ Hadith Lead = **14L** `session_01PL2xbNbDNZXULwY3eGdqPD` (13L is closed). Dua Le
 "You are the MSA Master Architect (105L), taking over from 104L (session_01PL2xbNKSqgPsaDCu5JU81N). Read CLAUDE.md, then
 docs/reports/2026-11-14-msa-architect-104L-handover.md (merge its PR first if open, pinned with the full head SHA), then the PCF
 https://claude.ai/artifact/PhW1KKX28qrqj9dE7Ha8dZ section p/mmsa. Set p/mmsa sessionUrl to your session and stamp claudeSeenAt (pin
-if_version). main = v14.36 (QR live 14.36); if release PR #1706 (v14.37, Dua chapters #1705) is still open, finish it first. PCA = 40L
+if_version). main = v14.37 (QR 14.37 once its hourly build runs; check qr-version.js). PCA = 40L
 session_01PL2xbLp4Ei1eEqRAVoFcZj (or newer in meta/global.sessionUrl); ask it to move the keep-alive trig_01RiTunwv6BjuFJNLSjBKPiu to
 you. QR Lead = 47L session_01PL2xbNAMQAyiv5S52x8NPv. Hadith Lead = 14L session_01PL2xbNbDNZXULwY3eGdqPD. Dua Lead = 11L
 session_01PL2xbHyfbrXS8hET9sKE7P. NEXT: review Hadith Lead 14L's S1 PR (Hadith menu redesign, J106 n106i) against the agreements in
