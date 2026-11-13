@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.35",
+    "version": "14.36",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7109,8 +7109,20 @@
     {
       "version": "14.35",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Dua Lead 11L's Dua groups writer (#1695) and pop-up (#1698, with an Architect way-back commit) plus the Owner's published Dua groups Rules synced into firestore.rules (#1696).",
+      "integration": {
+        "authorizedOn": "2026-11-13",
+        "integratedOn": "2026-11-13",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "14.36",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QR Lead 47L's #1699 and #1701 and Hadith Lead 13L's #1702 and #1703, plus the Architect's in-place update of the word-effort Rules-file check.",
       "integration": {
         "authorizedOn": "2026-11-13",
         "integratedOn": "2026-11-13",
@@ -7119,8 +7131,9 @@
       }
     }
   ],
-  "nextUnallocated": "14.36",
+  "nextUnallocated": "14.37",
   "nextUnallocatedNote": [
+    "v14.36 was allocated to Word Card words and Bangla kinds, Difficulty Level, Hadith Topics tab off, Learning Stories (#1699, #1701, #1702, #1703), 2026-11-13.",
     "v14.35 was allocated to Dua groups: Admin's groups / My groups pop-up, with the published Rules (#1695, #1696, #1698), 2026-11-13.",
     "v14.34 was allocated to the Hadith 👥 list readable in the night look (#1693), 2026-11-13.",
     "v14.33 was allocated to the Owner's 13 Nov Word Card asks and the Notes pane unit picker (#1689), Dua groups step 4 (#1688), 2026-11-13.",

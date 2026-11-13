@@ -86,8 +86,9 @@ for (const [lang, width, look] of [["bn", 390, "light"], ["en", 1280, "night"], 
   // belongs over the synthetic pilot only. Positive control first: it IS on Topics, so the Dua check
   // below cannot pass on a page that simply never draws it.
   await acheck("the synthetic-data notice is shown on Topics (synthetic pilot)", async () => {
-    await page.click('[data-hadith-tab="topic"]');
-    await page.waitForSelector('[data-hadith-tab="topic"].active');
+    // The Topics tab is gone from the menu bar (Owner, 13 Nov 2026); the view stays and is reached through the page's own state.
+    await page.evaluate(() => { window.__hadithCorpus.state.view = "topic"; window.__hadithCorpus.render(); });
+    await page.waitForSelector(".hadith-synthetic-banner");
     const n = await page.$$eval(".hadith-synthetic-banner", (r) => r.length);
     if (n !== 1) throw new Error(`${n}`);
   });

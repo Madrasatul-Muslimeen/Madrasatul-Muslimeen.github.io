@@ -219,7 +219,7 @@ for (const [lang, width] of [["en", 1280], ["bn", 390]]) {
   const { ctx, page: P } = await open("en", 820, { extraSeedJs: seed });
   await openSubject(P, "stories");
   const rows = await P.$$eval('[data-hadith-subject-list="stories"] [data-hadith-subject-open]', (ns) => ns.map((n) => n.dataset.hadithSubjectOpen));
-  check(`${tag} Stories from Hadith shows the stored hadith, not the retired one`, JSON.stringify(rows) === JSON.stringify([KEY1]), JSON.stringify(rows));
+  check(`${tag} Learning Stories from Hadith shows the stored hadith, not the retired one`, JSON.stringify(rows) === JSON.stringify([KEY1]), JSON.stringify(rows));
   await tap(P, '[data-hadith-tab="books"]');
   await settle(P);
   await P.keyboard.press("Escape");

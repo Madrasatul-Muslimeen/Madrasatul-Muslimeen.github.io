@@ -260,7 +260,8 @@ function controls(state, render) {
   tabs.appendChild(el("span", "hadith-menubar-sep"));
   for (const [view, label] of [
     ["collections", t("Encyclopedia")],
-    ["topic", t("Topics")],
+    // No "Topics" tab (the Owner, 13 Nov 2026: "Subject and Topic are same"): the Subjects menu is the way in. The view itself stays (additive),
+    // reachable only from code and tests through window.__hadithCorpus.
     ["search", t("Search")],
     ["explore", t("Explore")],
     ["commentary", PANEL_TITLE[getAppLang()] ?? PANEL_TITLE.en],
@@ -310,7 +311,7 @@ function controls(state, render) {
 export const HADITH_SUBJECTS = [
   { id: "akhlaq", name: "Learning Akhlaq", about: "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself." },
   { id: "ghayb", name: "Knowing Al-Ghayb", about: "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows." },
-  { id: "stories", name: "Stories from Hadith", about: "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them." },
+  { id: "stories", name: "Learning Stories from Hadith", about: "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them." },
 ];
 
 /**
