@@ -206,10 +206,10 @@
     const initialHadeethEncId = resumeHc ? resumeHc[1] : null;
     // J106 (14 Nov 2026, 7A): Dua is its own module now; an old Dua address is sent to dua-study.html.
     const duaTo = duaRedirectTarget(location.search);
-    if (duaTo) location.replace(duaTo);
     // PCF MSA J106 7A (14 Nov 2026): ?openiti=<versionUri>&chapter=<id> opens one chapter of a book (the Dua page's Dua chapters).
     const chapterId = params.get("chapter") ?? "";
     const initialOpenitiChapter = openitiUri && !initialOpenitiPassage && /^[0-9A-Za-z.\-]+$/.test(openitiUri) && /^[0-9A-Za-z_-]{1,40}$/.test(chapterId) ? { versionUri: openitiUri, chapterId } : null;
+    if (duaTo) location.replace(duaTo);
     else window.__hadithCorpus = mountHadithBrowser(document.getElementById("hadithRoot"), { mount, initialOpenitiPassage, initialOpenitiChapter, initialDua, initialHadeethEncId });
   </script>
   <script type="module">
