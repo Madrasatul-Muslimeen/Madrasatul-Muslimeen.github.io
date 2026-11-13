@@ -15,7 +15,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo, hadithMenuOpen } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -119,7 +119,7 @@ const leftIn = (page, sel) => ev(page, (s) => { const e = document.querySelector
 const bodyOf = (page, sel) => ev(page, (s) => { const e = document.querySelector(s); if (!e) return ""; const c = e.cloneNode(true); c.querySelectorAll(".dua-word-translit").forEach((x) => x.remove()); return c.textContent; }, sel);
 
 async function hadeethencOpen(page, cat, id) {
-  await page.click('[data-hadith-tab="collections"]');
+  await hadithGo(page, "collections");
   await page.waitForSelector(`[data-hadeethenc-category="${cat}"]`, { timeout: 20000 });
   await page.click(`[data-hadeethenc-category="${cat}"]`);
   await page.waitForSelector(`[data-hadeethenc-hadith="${id}"]`, { timeout: 15000 });
@@ -141,7 +141,7 @@ async function openBukhari(page) {
   await page.waitForSelector("[data-openiti-goto-input]", { timeout: 15000 });
 }
 async function duaTab(page) {
-  await page.click('[data-hadith-tab="dua"]');
+  await hadithGo(page, "dua");
   await page.waitForSelector("[data-dua-card]", { timeout: 20000 });
 }
 
@@ -153,7 +153,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   // 1: HadeethEnc.
   await flow("hadeethenc", lang, width, async (t, page, ctx, errors) => {
     await hadeethencOpen(page, "3", "4563");
-    const c = await ev(page, () => { const card = document.querySelector('[data-hadeethenc-card="4563"]'); return { ar: card.querySelector(".hadith-arabic")?.textContent, tr: card.querySelector(".hadith-translation-text")?.textContent, grade: card.querySelector(".hadith-attribution")?.textContent ?? "", fallback: !!card.querySelector("[data-hadeethenc-fallback]"), sel: document.getElementById("hadithContentLang")?.value }; });
+    const c = await ev(page, () => { const card = document.querySelector('[data-hadeethenc-card="4563"]'); return { ar: card.querySelector(".hadith-arabic")?.textContent, tr: card.querySelector(".hadith-translation-text")?.textContent, grade: card.querySelector(".hadith-attribution")?.textContent ?? "", fallback: !!card.querySelector("[data-hadeethenc-fallback]"), sel: window.__hadithCorpus?.state?.contentLang }; });
     if (PROBE) console.log(t, JSON.stringify(c).slice(0, 300));
     check(`${t}: POSITIVE CONTROL a HadeethEnc hadith (4563) opens with its Arabic and its ${bn ? "Bangla" : "English"} text, verbatim from the packaged record`, c.ar === REC.ar.hadeeth && c.tr === REC[lang].hadeeth && !c.fallback, JSON.stringify(c).slice(0, 200));
     check(`${t}: the Text language choice starts on ${bn ? "বাংলা" : "English"}`, c.sel === lang);
@@ -164,12 +164,12 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const ex = await ev(page, () => { const d = document.querySelector('[data-hadeethenc-card="4563"] .hadeethenc-explanation'); return { open: d?.open, text: d?.innerText ?? "", hints: d?.querySelector("[data-hadeethenc-hints]")?.children.length ?? 0 }; });
     check(`${t}: Show explanation opens the explanation (${REC[lang].explanation.slice(0, 20)}…) and its ${REC[lang].hints?.length} hints`, ex.open && ex.text.includes(REC[lang].explanation.slice(0, 40)) && ex.hints === (REC[lang].hints || []).length, JSON.stringify(ex).slice(0, 200));
     // Text language: the other language, then Arabic only.
-    await page.selectOption("#hadithContentLang", other);
+    await hadithMenuOpen(page); await page.selectOption("#hadithContentLang", other);
     await page.waitForSelector('[data-hadeethenc-card="4563"]', { timeout: 10000 });
     await settle(page, 600);
     const o = await ev(page, () => document.querySelector('[data-hadeethenc-card="4563"] .hadith-translation-text')?.textContent ?? null);
     check(`${t}: choosing ${other === "bn" ? "বাংলা" : "English"} as the Text language shows that language's text (the packaged ${other} record)`, o === REC[other].hadeeth, String(o).slice(0, 80));
-    await page.selectOption("#hadithContentLang", "ar");
+    await hadithMenuOpen(page); await page.selectOption("#hadithContentLang", "ar");
     await settle(page, 600);
     const a = await ev(page, () => ({ tr: !!document.querySelector('[data-hadeethenc-card="4563"] .hadith-translation-text'), ar: document.querySelector('[data-hadeethenc-card="4563"] .hadith-arabic')?.textContent }));
     check(`${t}: choosing العربية shows the Arabic only`, !a.tr && a.ar === REC.ar.hadeeth, JSON.stringify(a).slice(0, 100));
@@ -300,9 +300,11 @@ for (const lang of LANGS) for (const width of WIDTHS) {
 
   await flow("studied-openiti", lang, width, async (t, page, ctx, errors) => {
     await toBooks(page); // J106 round 1: the library is Hadith Books now (see toBooks)
-    await page.waitForSelector("#openitiSection .openiti-study-soon", { timeout: 25000 });
-    const soon = await leftIn(page, "#openitiSection .openiti-study-soon");
-    check(`${t}: an OpenITI book says in words that Studied is "not enabled here yet" (${bn ? "Bangla" : "English"})`, soon.trim().length > 20 && (bn ? BN.test(soon) : /not enabled here yet/.test(soon)), soon);
+    // Updated in place 14 Nov 2026 (PCF MSA J106 S1, the Owner's tick 1B): the grey "not enabled here yet" note and the "Hadith Books"
+    // heading are GONE from the shelf. The claim that mattered stays proven just below: no Studied / Bookmark / Note control on an OpenITI narration.
+    await page.waitForSelector("#openitiSection .openiti-body", { timeout: 25000 }); // positive control: the shelf is drawn
+    const gone = await ev(page, () => ({ soon: !!document.querySelector("#openitiSection .openiti-study-soon"), h2: !!document.querySelector("#openitiSection > h2") }));
+    check(`${t}: the shelf no longer carries the "not enabled here yet" note or the "Hadith Books" heading`, !gone.soon && !gone.h2, JSON.stringify(gone));
     await openBukhari(page);
     await page.fill("[data-openiti-goto-input]", "6306");
     await page.click("[data-openiti-goto-btn]");

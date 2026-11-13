@@ -13,7 +13,7 @@
 //   --mutate=nokeep    the card is not kept in view          -> the Back-lands check fails (often, not always)
 //   --mutate=noplace   the card's place is not remembered    -> the Back-lands check fails
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 // D20 (Dua round R4): a failed save now says WHY in plain words (errors.js), never the computer's own error text.
 const PERM_EN = "That save was blocked by a permissions rule. Nothing was lost, but it did not save — please tell the admin.";
 const PERM_BN = (() => { const s = fs.readFileSync("app/js/i18n/bn.js", "utf8"); const k = JSON.stringify(PERM_EN) + ":"; const i = s.indexOf(k); return JSON.parse(/^\s*("(?:[^"\\]|\\.)*")/.exec(s.slice(i + k.length))[1]); })();
@@ -61,7 +61,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   const bn = lang === "bn";
   const ctx = await context(lang, width, look);
   const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html");
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.waitForSelector(`${ROW} [data-dua-bookmark]`, { timeout: 15000 }).catch(() => {});
   const row = await P.evaluate((sel) => {
     const r = document.querySelector(sel);
@@ -131,7 +131,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   // I15: a failed bookmark save says so and keeps the old state.
   const ctx3 = await context(lang, width, look, ["js/hadith-study-actions.js", "  const unitKey = duaUnitKey(number);\n  const existing", "  throw Object.assign(new Error(\"permission-denied\"), { code: \"permission-denied\" });\n  const unitKey = duaUnitKey(number);\n  const existing"]);
   const { page: F } = await openPage(ctx3, "/app/hadith-collections.html");
-  await F.click('[data-hadith-tab="dua"]');
+  await hadithGo(F, "dua");
   await F.waitForSelector(`${ROW} [data-dua-bookmark]`, { timeout: 15000 }).catch(() => {});
   await F.click(`${ROW} [data-dua-bookmark]`);
   await F.waitForTimeout(600);

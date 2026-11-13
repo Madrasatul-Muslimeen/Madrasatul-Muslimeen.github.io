@@ -29,7 +29,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 const EXE = process.env.CHROMIUM_PATH || undefined;
 const LANG = process.argv[2] === "bn" ? "bn" : "en";
@@ -265,7 +265,7 @@ async function runAtWidth(width) {
 
   // --- The existing HadeethEnc section is untouched by all of the above. ---
   // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): it is its own view now, "Encyclopedia".
-  await page.click('[data-hadith-tab="collections"]');
+  await hadithGo(page, "collections");
   await settle();
   const hadeethEncCategoryCount = await page.evaluate(() => document.querySelectorAll("[data-hadeethenc-category]").length);
   check("the pre-existing HadeethEnc section still renders its 7 root categories",

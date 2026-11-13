@@ -10,7 +10,7 @@
 //   --mutate=student-only  only the Student is written for                            -> the two-person checks fail
 //   --mutate=hadith-box-gradient  the night look's 👥 list takes the card's gradient again -> no background colour, the floating-box check fails
 //   --mutate=hadith-self   Hadith Studied claims only for the page's person           -> the Hadith two-claims check fails
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -247,7 +247,7 @@ for (const lang of (ARG("lang") ? [ARG("lang")] : ["en", "bn"])) for (const widt
     const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 900 }, extraSeedJs: PEOPLE });
     await mutated(ctx);
     const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html");
-    await P.click('[data-hadith-tab="collections"]'); await P.waitForTimeout(200);
+    await hadithGo(P, "collections"); await P.waitForTimeout(200);
     await P.click('[data-hadeethenc-category="3"]'); await P.waitForTimeout(200);
     await P.click('[data-hadeethenc-hadith="4563"]'); await P.waitForTimeout(300);
     await P.waitForSelector('[data-hadeethenc-card="4563"] [data-hadeethenc-studied]:not([disabled]) ~ *, [data-hadeethenc-card="4563"] [data-claim-for]', { timeout: 8000 }).catch(() => {});
@@ -293,7 +293,7 @@ for (const lang of (ARG("lang") ? [ARG("lang")] : ["en", "bn"])) for (const widt
   await ctx.close();
   const ctx2 = await newContext(browser, { appLang: "en", viewport: { width: 390, height: 900 }, extraSeedJs: "DATA.tenantPeople = DATA.tenantPeople.filter((p) => p._id === 'p1');" });
   const { page: H } = await openPage(ctx2, "/app/hadith-collections.html");
-  await H.click('[data-hadith-tab="collections"]'); await H.waitForTimeout(200);
+  await hadithGo(H, "collections"); await H.waitForTimeout(200);
   await H.click('[data-hadeethenc-category="3"]'); await H.waitForTimeout(200);
   await H.click('[data-hadeethenc-hadith="4563"]'); await H.waitForTimeout(1200);
   check("lone person: no 👥 beside Hadith Studied (and the select is there)", !(await H.$('[data-hadeethenc-card="4563"] [data-claim-for]')) && !!(await H.$('[data-hadeethenc-studied="4563"]')));

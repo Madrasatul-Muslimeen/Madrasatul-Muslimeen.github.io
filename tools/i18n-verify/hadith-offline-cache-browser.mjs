@@ -7,7 +7,7 @@
 //     data to its cache: the offline opens must FAIL)  --mutate=cleanup  (activate deletes mm-hadith-v1: the
 //     "kept across a release" check must FAIL)
 // The mutation is served from a temporary copy of app/sw.js, restored on exit.
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 import { readFileSync, writeFileSync } from "node:fs";
 
 const MUT = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
@@ -50,10 +50,10 @@ async function walk(page) {
   out.bookClick = await clickFirst(page, '.hadith-row:has-text("الموطأ")');
   await settle(page);
   out.book = await bodyText(page);
-  await page.locator('[data-hadith-tab="dua"]').click({ timeout: 6000 }).catch(() => {});
+  await hadithGo(page, "dua").catch(() => {});
   await settle(page);
   out.dua = await bodyText(page);
-  await page.locator('[data-hadith-tab="collections"]').click({ timeout: 6000 }).catch(() => {});
+  await hadithGo(page, "collections").catch(() => {});
   await settle(page);
   out.encycClick = (await clickFirst(page, ".hadith-row")) && (await settle(page), await clickFirst(page, ".hadith-row"))
     && (await settle(page), await clickFirst(page, ".hadith-row"));

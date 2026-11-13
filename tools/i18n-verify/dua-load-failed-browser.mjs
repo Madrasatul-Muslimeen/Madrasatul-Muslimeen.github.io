@@ -7,7 +7,7 @@
 //
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/dua-load-failed-browser.mjs
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 const EXE = process.env.CHROMIUM_PATH || undefined;
 const KEY = "That information could not be loaded ({code}). Please check your connection and try again.";
@@ -48,7 +48,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1440], ["bn", 1440
   });
   const pageHasRaw = () => page.evaluate(() => /Failed to fetch|ERR_INTERNET|TypeError/.test(document.body.innerText));
 
-  await page.click('[data-hadith-tab="dua"]');
+  await hadithGo(page, "dua");
   await page.waitForSelector("[data-dua-load-failed]", { timeout: 15000 }).catch(() => {});
   const one = await failedBox();
   await acheck("Duas: a failed load shows the plain sentence, in this language", () => { if (one?.text !== digits(want, lang) && one?.text !== want) throw new Error(JSON.stringify(one)); });

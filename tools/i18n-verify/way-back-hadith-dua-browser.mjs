@@ -11,7 +11,7 @@
 // Run from the repository root with serve.js on :8080.   --lang=en|bn  --width=390|1024  --only=<case id>
 //   --mutate=note|ayat|duaword|duapage|duaquran|duaref|bmreturn   (each strips ONE way-back mechanism through ONE ctx.route)
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 import { tabClick } from "./dua-tab-reveal.mjs";
 
 let pass = 0, fail = 0;
@@ -69,7 +69,7 @@ const hcOpen = (path, setup) => async (ctx) => {
   return { P, errors };
 };
 const hcHadeethEnc = async (P) => {
-  await P.click('[data-hadith-tab="collections"]').catch(() => {});
+  await hadithGo(P, "collections").catch(() => {});
   await P.waitForSelector('[data-hadeethenc-category="3"]', { timeout: 20000 });
   await P.click('[data-hadeethenc-category="3"]');
   await P.waitForSelector('[data-hadeethenc-hadith="4563"]', { timeout: 15000 });
@@ -125,10 +125,10 @@ const CASES = [
     open: async (ctx) => { const { page: P, errors } = await openPage(ctx, `/app/hadith-collections.html?openiti=${QUOTED_BOOK}&passage=611&back=1`); await P.waitForSelector('[data-ayat-quoted-link="36:38"]', { timeout: 25000 }).catch(() => {}); return { P, errors }; },
     dest: /quranrevival\.html/, leave: (P) => clickLink(P, '[data-ayat-quoted-link="36:38"]', /quranrevival\.html/), card: '[data-openiti-passage="611"]' },
   { id: "hc-duaword", page: "hadith-collections.html", what: "Dua 1's word → Open in the Word card (to the Word card)", file: "dua-browser.js",
-    open: async (ctx) => { const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html?back=1"); await P.click('[data-hadith-tab="dua"]'); await P.waitForSelector('[data-dua-card="1"] [data-dua-word="1"]', { timeout: 20000 }); await P.click('[data-dua-card="1"] [data-dua-word="1"]'); await P.waitForSelector('[data-dua-word-panel="1"]:not([hidden]) [data-dua-word-open]', { timeout: 6000 }).catch(() => {}); return { P, errors }; },
+    open: async (ctx) => { const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html?back=1"); await hadithGo(P, "dua"); await P.waitForSelector('[data-dua-card="1"] [data-dua-word="1"]', { timeout: 20000 }); await P.click('[data-dua-card="1"] [data-dua-word="1"]'); await P.waitForSelector('[data-dua-word-panel="1"]:not([hidden]) [data-dua-word-open]', { timeout: 6000 }).catch(() => {}); return { P, errors }; },
     dest: /quranrevival\.html/, leave: (P) => clickLink(P, '[data-dua-word-panel="1"] [data-dua-word-open]', /quranrevival\.html\?word=/), card: '[data-dua-card="1"]', picked: ".hadith-card-focused" },
   { id: "hc-duapage", page: "hadith-collections.html", what: "the Dua tab's \"Dua Study ↗\" link (to dua-study.html)", file: "dua-browser.js",
-    open: async (ctx) => { const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html?back=1"); await P.click('[data-hadith-tab="dua"]'); await P.waitForSelector(".dua-study-link", { timeout: 20000 }); await P.waitForSelector('[data-dua-card="1"]', { timeout: 20000 }).catch(() => {}); return { P, errors }; },
+    open: async (ctx) => { const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html?back=1"); await hadithGo(P, "dua"); await P.waitForSelector(".dua-study-link", { timeout: 20000 }); await P.waitForSelector('[data-dua-card="1"]', { timeout: 20000 }).catch(() => {}); return { P, errors }; },
     dest: /dua-study\.html/, leave: (P) => clickLink(P, ".dua-study-link", /dua-study\.html/), card: '[data-dua-card="1"]' },
   { id: "ds-quran", page: "dua-study.html", what: "a prophet's dua card → Open in Quran Study ↗ (to the Read view)", file: "dua-study.js",
     open: duaStudy("prophets"), dest: /quranrevival\.html/, leave: async (P) => { await openMenu(P, "source"); return clickLink(P, ".dua-quran-open", /quranrevival\.html/); }, card: "[data-dua-open]" },

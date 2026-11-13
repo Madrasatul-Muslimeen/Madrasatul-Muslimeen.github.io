@@ -159,6 +159,7 @@
        included, so the corpus drew only after sign-in code had loaded. It needs none of it; async runs it the moment its
        own imports are in. refreshCorpusActions() above already tolerates the corpus not being mounted yet. -->
   <script type="module" async>
+    import { duaRedirectTarget } from "./js/hadith-dua-redirect.js";
     import { mountHadithBrowser } from "./js/hadith-browser.js";
     import { translateStatic, t } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
@@ -203,7 +204,10 @@
     // 9 Oct 2026: ?resume=hadith:hadeethenc:<id> reopens that hadith (the way back from its Notes, decision 86), as on hadith-study.html.
     const resumeHc = /^hadith:hadeethenc:([0-9A-Za-z_-]+)$/.exec(params.get("resume") ?? "");
     const initialHadeethEncId = resumeHc ? resumeHc[1] : null;
-    window.__hadithCorpus = mountHadithBrowser(document.getElementById("hadithRoot"), { mount, initialOpenitiPassage, initialDua, initialHadeethEncId });
+    // J106 (14 Nov 2026, 7A): Dua is its own module now; an old Dua address is sent to dua-study.html.
+    const duaTo = duaRedirectTarget(location.search);
+    if (duaTo) location.replace(duaTo);
+    else window.__hadithCorpus = mountHadithBrowser(document.getElementById("hadithRoot"), { mount, initialOpenitiPassage, initialDua, initialHadeethEncId });
   </script>
   <script type="module">
     import { auth } from "./js/firebase-init.js";

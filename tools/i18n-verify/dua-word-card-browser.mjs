@@ -11,7 +11,7 @@
 //   --mutate=notoken  the Word card records without the token -> the bare-link check fails
 //   --mutate=norecord the Word card does not record on arrival -> the recording checks fail
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -51,7 +51,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   const tag = `[${lang} ${width} ${look}]`;
   const ctx = await context(lang, width, look);
   const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html?back=1");
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.waitForSelector('[data-dua-card="11"] [data-dua-word]');
 
   // Round 2.

@@ -14,7 +14,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage, BASE } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE, hadithGo } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -211,8 +211,7 @@ async function popoverState(t, p, label) {
 async function hadeethenc(t, p) {
   // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the page now opens on Hadith Books; HadeethEnc is its own
   // menu-bar button, "Encyclopedia" (data-hadith-tab="collections"), so it is opened first.
-  await waitFor(p, '[data-hadith-tab="collections"]', 25000);
-  await jsClick(p, '[data-hadith-tab="collections"]');
+  await hadithGo(p, "collections");
   await waitFor(p, '[data-hadeethenc-category="1"]', 25000);
   await state(t, p, "HadeethEnc categories", '[data-hadeethenc-category="1"]');
   await jsClick(p, '[data-hadeethenc-category="1"]'); await waitFor(p, '[data-hadeethenc-category="12"]');
@@ -259,8 +258,7 @@ async function openiti(t, p) {
 }
 
 async function dua(t, p) {
-  await waitFor(p, '[data-hadith-tab="dua"]', 25000);
-  await jsClick(p, '[data-hadith-tab="dua"]'); await waitFor(p, "[data-dua-check-open]", 25000); await settle(p, 500);
+  await hadithGo(p, "dua"); await waitFor(p, "[data-dua-check-open]", 25000); await settle(p, 500);
   await state(t, p, "Dua card", "[data-dua-check-open]");
   await ev(p, () => { window.__stubWriteData = []; });
   await jsClick(p, '[data-dua-status="learning"]'); await settle(p, 800);

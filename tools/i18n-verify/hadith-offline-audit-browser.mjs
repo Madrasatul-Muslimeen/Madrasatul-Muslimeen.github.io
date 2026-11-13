@@ -6,7 +6,7 @@
 //   does not is printed as INFO lines (the findings in docs/reports/2026-10-30-audit-part130-hadith-offline.md).
 //   node tools/i18n-verify/hadith-offline-audit-browser.mjs      (serve.js on :8080, or QR_BASE)
 // Nothing here changes app/. INFO lines never fail the run.
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0, info = 0;
 const check = (name, ok, detail = "") => {
@@ -32,10 +32,10 @@ async function walk(page) {
   out.bookClick = await clickFirst(page, ".hadith-row");
   await settle(page);
   out.book = { text: await bodyText(page), rows: await page.locator(".hadith-row").count() };
-  await page.locator('[data-hadith-tab="dua"]').click({ timeout: 6000 }).catch(() => {});
+  await hadithGo(page, "dua").catch(() => {});
   await settle(page);
   out.dua = { text: await bodyText(page), cards: await page.locator("#hadithBody [class*='dua'], .hadith-body [class*='dua']").count() };
-  await page.locator('[data-hadith-tab="collections"]').click({ timeout: 6000 }).catch(() => {});
+  await hadithGo(page, "collections").catch(() => {});
   await settle(page);
   out.encyc = { text: await bodyText(page), rows: await page.locator(".hadith-row").count() };
   out.encycClick = await clickFirst(page, ".hadith-row");

@@ -7,7 +7,7 @@
 //   --mutate=noincard  the way back is not put inside the card -> on a phone the way back is covered
 //   --mutate=noreturn  the page address is not set before leaving -> Back lands on the Hadith page's first view
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -43,7 +43,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   P.on("request", (r) => { const m = /\/output\/dua\/(words-\d+\.json)/.exec(r.url()); if (m) fetched.push(m[1]); });
   await P.waitForTimeout(500);
   check(`${tag} nothing of the links is read before the Dua tab is opened (I9)`, fetched.length === 0, fetched.join());
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.waitForSelector('[data-dua-card="1"] [data-dua-word]');
   await P.waitForTimeout(300);
   const words = await P.evaluate(() => [...document.querySelectorAll('[data-dua-card="1"] [data-dua-word]')].map((s) => ({ role: s.getAttribute("role"), linked: s.classList.contains("dua-word-linked"), line: getComputedStyle(s).textDecorationLine, h: s.getBoundingClientRect().height })));
@@ -98,7 +98,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
     await Promise.all([P.waitForURL(/hadith-collections\.html/, { timeout: 15000 }), P.click("[data-word-card-app-back]")]).catch(() => {});
     await P.waitForSelector('[data-dua-card="1"]', { timeout: 15000 }).catch(() => {});
     await P.waitForTimeout(600);
-    const back = await P.evaluate(() => { const c = document.querySelector('[data-dua-card="1"]'), r = c?.getBoundingClientRect(); return { url: location.search, focused: !!c?.classList.contains("hadith-card-focused"), inView: !!r && r.top < innerHeight && r.bottom > 0, tab: document.querySelector('[data-hadith-tab="dua"]')?.getAttribute("aria-pressed") ?? document.querySelector('[data-hadith-tab="dua"]')?.className }; });
+    const back = await P.evaluate(() => { const c = document.querySelector('[data-dua-card="1"]'), r = c?.getBoundingClientRect(); return { url: location.search, focused: !!c?.classList.contains("hadith-card-focused"), inView: !!r && r.top < innerHeight && r.bottom > 0, tab: window.__hadithCorpus?.state?.view }; });
     check(`${tag} Back returns to the Duas, on Dua 1, picked out and in view`, back.focused && back.inView && /view=dua/.test(back.url), JSON.stringify(back));
   } else check(`${tag} Back returns to the Duas`, false, "no way back");
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));

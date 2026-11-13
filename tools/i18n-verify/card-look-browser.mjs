@@ -43,7 +43,7 @@
 // CARD LOOK is switched with the real exported setCardLook() (js/prefs.js),
 // never by poking the `data-card-look` attribute directly -- the same
 // function the Settings control itself calls.
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
@@ -225,7 +225,7 @@ async function checkContrast(page, label, selector, { minRatio = 4.5, gradientHo
 {
   const ctx = await newContext(browser, { appLang: "en", viewport: { width: 390, height: 844 } });
   const { page, errors } = await openPage(ctx, "/app/hadith-collections.html");
-  await clickSafely(page, '[data-hadith-tab="collections"]');
+  await hadithGo(page, "collections");
   await page.waitForTimeout(150);
   check("en: the synthetic-data warning banner is present on Collections", await page.evaluate(() => !!document.querySelector(".hadith-synthetic-banner")));
   await clickSafely(page, '[data-hadith-edition="synthetic-alpha-ar-v1"]');
@@ -290,7 +290,7 @@ async function checkContrast(page, label, selector, { minRatio = 4.5, gradientHo
 {
   const ctx = await newContext(browser, { appLang: "bn", viewport: { width: 390, height: 844 } });
   const { page, errors } = await openPage(ctx, "/app/hadith-collections.html");
-  await clickSafely(page, '[data-hadith-tab="collections"]');
+  await hadithGo(page, "collections");
   await page.waitForTimeout(150);
   await clickSafely(page, '[data-hadith-edition="synthetic-alpha-ar-v1"]');
   await page.waitForTimeout(150);
@@ -522,7 +522,7 @@ async function sweepCheck(page, label, rootSel) {
 for (const lang of ["en", "bn"]) {
   const ctx = await newContext(browser, { appLang: lang, viewport: { width: 390, height: 844 } });
   const { page } = await openPage(ctx, "/app/hadith-collections.html");
-  await clickSafely(page, '[data-hadith-tab="collections"]');
+  await hadithGo(page, "collections");
   await page.waitForTimeout(200);
   await sweepCheck(page, `${lang}: Hadith Collections`, "#hadithRoot");
   for (const sel of ['[data-hadith-edition="synthetic-alpha-ar-v1"]', '[data-hadith-book="synthetic-alpha-b1"]', '[data-hadith-chapter="synthetic-alpha-b1-c1"]']) {
@@ -530,7 +530,7 @@ for (const lang of ["en", "bn"]) {
   }
   await sweepCheck(page, `${lang}: Hadith chapter`, "#hadithRoot");
   for (const tab of ["topic", "search", "explore", "commentary"]) {
-    await clickSafely(page, `[data-hadith-tab="${tab}"]`); await page.waitForTimeout(250);
+    await (["topic", "commentary"].includes(tab) ? hadithGo(page, tab) : clickSafely(page, `[data-hadith-tab="${tab}"]`)); await page.waitForTimeout(250);
     await sweepCheck(page, `${lang}: Hadith ${tab}`, "#hadithRoot");
   }
   await ctx.close();

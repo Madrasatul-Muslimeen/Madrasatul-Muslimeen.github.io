@@ -107,10 +107,10 @@ const FLOWS = {
 //   dua-word      Dua tab > the first tappable word: the word card's own progress buttons (My progress on this word)
 //   dua-check     Dua tab > ✓ Check this dua: the check panel's Save
 Object.assign(FLOWS, {
-  "hadith-card": { path: "hadith-study.html", settle: 2500, only: "[data-hadeethenc-bookmark], [data-hadeethenc-studied]", steps: ['[data-hadith-tab="collections"]', '[data-hadeethenc-category="3"]', '[data-hadeethenc-hadith="4563"]'] },
-  "dua-card": { path: "hadith-study.html", settle: 2500, only: "[data-dua-status], [data-dua-bookmark], [data-dua-check-open]", steps: ['[data-hadith-tab="dua"]'] },
-  "dua-word": { path: "hadith-study.html", settle: 2500, only: "[data-dua-word-state]", steps: ['[data-hadith-tab="dua"]', ".dua-word[role=button]"] },
-  "dua-check": { path: "hadith-study.html", settle: 2500, only: "[data-dua-check-save]", base: 2, steps: ['[data-hadith-tab="dua"]', "[data-dua-check-open]", '[data-dua-check-step="3"]'] },
+  "hadith-card": { path: "hadith-study.html", settle: 2500, only: "[data-hadeethenc-bookmark], [data-hadeethenc-studied]", steps: ["view:collections", '[data-hadeethenc-category="3"]', '[data-hadeethenc-hadith="4563"]'] },
+  "dua-card": { path: "hadith-study.html", settle: 2500, only: "[data-dua-status], [data-dua-bookmark], [data-dua-check-open]", steps: ["view:dua"] },
+  "dua-word": { path: "hadith-study.html", settle: 2500, only: "[data-dua-word-state]", steps: ["view:dua", ".dua-word[role=button]"] },
+  "dua-check": { path: "hadith-study.html", settle: 2500, only: "[data-dua-check-save]", base: 2, steps: ["view:dua", "[data-dua-check-open]", '[data-dua-check-step="3"]'] },
 });
 // Part 102: Hadith Study's topic saves (topic-study.js, the shared topic renderer), on a SEEDED topic: synthetic-topic-audit-leaf
 // (name and ids inside the synthetic namespace) with the stub's resource r1, so Track my progress is enabled.
@@ -264,6 +264,12 @@ async function flowSteps(page, mode) { // "all" | "butlast" | "last"
   const steps = mode === "butlast" ? all.slice(0, base) : mode === "last" ? all.slice(base) : all;
   for (const s of steps) {
     if (s.startsWith("wait:")) { await page.waitForFunction((sel) => [...document.querySelectorAll(sel)].some(window.__aud.vis), s.slice(5), { timeout: 15000 }); continue; }
+    if (s.startsWith("view:")) { // J106 S1 (14 Nov 2026): Encyclopedia / Dua left the bar, so "view:<name>" reaches the view through the page's own handle
+      await page.waitForFunction(() => !!window.__hadithCorpus?.render, null, { timeout: 15000 });
+      await page.evaluate((v) => { window.__hadithCorpus.state.view = v; window.__hadithCorpus.render(); }, s.slice(5));
+      await page.waitForTimeout(700);
+      continue;
+    }
     if (s.startsWith("select:")) { // part 102: "select:<css>=<value>" chooses an option of a <select> before the control is pressed
       const [sel, val] = s.slice(7).split("=");
       await page.evaluate(([q, v]) => { const e = [...document.querySelectorAll(q)].find(window.__aud.vis); e.value = v; e.dispatchEvent(new Event("change", { bubbles: true })); }, [sel, val]);

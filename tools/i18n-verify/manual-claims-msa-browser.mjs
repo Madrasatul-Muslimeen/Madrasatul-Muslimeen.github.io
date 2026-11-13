@@ -13,7 +13,7 @@
 //        hadith     breaks one claim per entry: Text language, Go to number, Studied, Next ›, a progress stage, ✓ Check this dua
 import fs from "node:fs";
 import { chromium, newContext, openPage, BASE as BASE_URL } from "./harness.mjs";
-import { clickAyahTile } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
+import { clickAyahTile, hadithGo, hadithMenuOpen } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 
 let pass = 0, fail = 0, skip = 0;
 const check = (name, ok, detail = "") => {
@@ -1221,10 +1221,14 @@ if (want("hadith")) {
     await settle(page);
     await page.locator("#topNav summary", { hasText: /^Modules$/ }).first().click(); await page.waitForTimeout(150);
     await Promise.all([page.waitForURL(/hadith-study\.html/, { timeout: 15000 }), page.click('#navBar a[href^="hadith-study.html"]')]);
-    await page.waitForSelector(`[data-hadith-tab="${tab}"]`, { timeout: 25000 });
+    // Updated in place 14 Nov 2026 (PCF MSA J106 S1): Encyclopedia, Classical Explanations and Dua left the bar (Menu holds the
+    // first two, a panel that starts hidden), so those views are reached through the page's own handle.
+    const inMenu = ["collections", "commentary", "dua", "topic"].includes(tab);
+    await page.waitForSelector(inMenu ? '[data-hadith-tab="books"]' : `[data-hadith-tab="${tab}"]`, { timeout: 25000 });
     await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
     // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the page opens on Hadith Books, whose button opens its quick
     // list when Books is already the view -- so a tab already current is not tapped again.
+    if (inMenu) { await hadithGo(page, tab); return; }
     if (!(await page.$eval(`[data-hadith-tab="${tab}"]`, (b) => b.getAttribute("aria-current") === "page"))) await page.click(`[data-hadith-tab="${tab}"]`);
   };
   const openHE = async (page) => {
@@ -1261,14 +1265,16 @@ if (want("hadith")) {
       // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the Owner had the "Hadith Corpus" heading's tabs moved into
       // one menu bar, where Collections is now "Encyclopedia" (the PCF User Manual's line is the Architect's to update
       // at release).
-      const head = await page.evaluate(() => { const b = document.querySelector('.hadith-menubar [data-hadith-tab="collections"]'); return b ? { text: b.textContent.trim(), cur: b.getAttribute("aria-current") } : null; });
-      check(`[${tag}] Hadith library: HadeethEnc: Modules ▾ → Hadith → the menu bar's "Encyclopedia"`, head?.text === "Encyclopedia" && head.cur === "page", JSON.stringify(head));
+      await hadithMenuOpen(page); // Encyclopedia is now a row of Menu (J106 S1, ticks 1B and 4A)
+      const head = await page.evaluate(() => { const b = document.querySelector('.hadith-menu-panel [data-hadith-tab="collections"]'); return b ? { text: b.textContent.trim(), cur: b.getAttribute("aria-current") } : null; });
+      check(`[${tag}] Hadith library: HadeethEnc: Modules ▾ → Hadith → Menu ▾ → "Encyclopedia"`, head?.text === "Encyclopedia" && head.cur === "page", JSON.stringify(head));
       await openHE(page);
       const c = await page.evaluate(() => { const k = document.querySelector('[data-hadeethenc-card="4563"]'); return { ar: k.querySelector(".hadith-arabic")?.textContent, tr: k.querySelector(".hadith-translation-text")?.textContent, grade: k.querySelector(".hadith-attribution")?.textContent ?? "", sel: document.getElementById("hadithContentLang")?.value, ex: !!k.querySelector("[data-hadeethenc-explanation-toggle]") }; });
       check(`[${tag}] Hadith library: HadeethEnc: a hadith opens with its Arabic and English, its grade and an explanation (verbatim from the packaged record)`, c.ar === R.ar.hadeeth && c.tr === R.en.hadeeth && c.grade.includes(R.en.grade) && c.ex, JSON.stringify(c).slice(0, 200));
       await page.click('[data-hadeethenc-card="4563"] [data-hadeethenc-explanation-toggle]'); await page.waitForTimeout(200);
       const ex = await page.evaluate(() => document.querySelector('[data-hadeethenc-card="4563"] .hadeethenc-explanation')?.innerText ?? "");
       check(`[${tag}] Hadith library: HadeethEnc: the explanation opens`, ex.includes(R.en.explanation.slice(0, 40)), ex.slice(0, 80));
+      await hadithMenuOpen(page);
       await mut(page, "#hadithContentLang");
       await page.selectOption("#hadithContentLang", "bn", { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(700);
       const bn = await page.evaluate(() => document.querySelector('[data-hadeethenc-card="4563"] .hadith-translation-text')?.textContent ?? null);

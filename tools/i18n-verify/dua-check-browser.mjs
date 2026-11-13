@@ -7,7 +7,7 @@
 //   --mutate=wholedoc    write the whole document       -> the one-field-path check fails
 //   --mutate=noback      drop the Back button           -> the Back checks fail
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -35,7 +35,7 @@ async function context(lang, width) {
 const latin = (s) => String(s).replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d));
 const CARD = '[data-dua-card="2"]';
 async function openDua2(P) {
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.waitForSelector(`${CARD} [data-dua-word="0"]`);
   await P.waitForSelector(`${CARD} [data-dua-check-status]`);
 }

@@ -33,7 +33,11 @@ function adopt() {
   const cb = document.getElementById("contextBar");
   if (cb && !personSlot.contains(cb)) personSlot.appendChild(cb);
   const on = !!previewSlot.querySelector(".nav-preview-notice");
-  for (const c of cues) { c.hidden = !on; c.textContent = cueText(); }
+  for (const c of cues) { // write only on a CHANGE: a write is a DOM mutation and the observer below would fire again, forever
+    if (c.hidden === on) c.hidden = !on;
+    const txt = cueText();
+    if (c.textContent !== txt) c.textContent = txt;
+  }
 }
 
 /** The one persistent host for the note and the pickers. The Menu panel appends it every time it opens. */
@@ -51,7 +55,7 @@ export function settingsHost() {
   new MutationObserver(() => {
     if (queued) return;
     queued = true;
-    queueMicrotask(() => { queued = false; adopt(); });
+    queueMicrotask(() => { queued = false; for (const c of [...cues]) if (!c.isConnected) cues.delete(c); /* the bar is rebuilt on every render: forget old buttons (only here, once the new bar is in the page) */ adopt(); });
   }).observe(document.body, { childList: true, subtree: true });
   return host;
 }

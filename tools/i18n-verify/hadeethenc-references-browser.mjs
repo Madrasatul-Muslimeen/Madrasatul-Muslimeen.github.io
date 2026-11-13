@@ -8,7 +8,7 @@
 //   --mutate=noback        no way back                                   -> the Back checks fail
 //   --mutate=unproven      a not-yet-found book is not said              -> the "not yet found" check fails
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -45,7 +45,7 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 
 async function openCard(ctx, pagePath, id) {
   const { page: P, errors } = await openPage(ctx, `${pagePath}?resume=hadith:hadeethenc:${id}`);
-  await P.click('[data-hadith-tab="collections"]').catch(() => {});
+  await hadithGo(P, "collections").catch(() => {});
   await P.waitForSelector(`[data-hadeethenc-card="${id}"] [data-hadeethenc-refs] .hadith-ref, [data-hadeethenc-card="${id}"] [data-hadith-ref-missing]`, { timeout: 20000 });
   return { P, errors };
 }

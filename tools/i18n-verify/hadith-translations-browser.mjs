@@ -6,7 +6,7 @@
 //   --mutate=nofold   library cards get no translation  -> the library checks fail
 //   --mutate=bypos    the passage's position is used, not its standard number -> the wording checks fail
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -49,7 +49,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html");
   const fetched = [];
   P.on("request", (r) => { if (r.url().includes("/output/translations/")) fetched.push(r.url().replace(/^.*\/translations\//, "")); });
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.waitForSelector('[data-dua-card="1"]');
   const order = await P.$$eval('[data-dua-card="1"] [data-standard-translation]', (ds) => ds.map((d) => ({ l: d.dataset.standardTranslation, open: d.open, s: d.querySelector("summary").textContent })));
   const first = lang === "bn" ? "bn" : "en";

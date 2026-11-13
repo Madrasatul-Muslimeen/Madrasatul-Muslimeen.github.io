@@ -45,7 +45,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 const EXE = process.env.CHROMIUM_PATH || undefined;
 const LANG = process.argv[2] === "bn" ? "bn" : "en";
@@ -92,7 +92,7 @@ async function runAtWidth(width) {
   const { page, errors } = await openPage(ctx, "/app/hadith-collections.html");
   const settle = () => page.waitForTimeout(150);
 
-  await page.click('[data-hadith-tab="collections"]');
+  await hadithGo(page, "collections");
   await settle();
 
   // --- I9: nothing about HadeethEnc was fetched before the source was
@@ -363,7 +363,7 @@ async function runViewOnlyCheck(lang) {
   const { page, errors } = await openPage(ctx, "/app/hadith-collections.html");
   const settle = () => page.waitForTimeout(200);
 
-  await page.click('[data-hadith-tab="collections"]');
+  await hadithGo(page, "collections");
   await settle();
   await page.click('[data-hadeethenc-category="3"]');
   await settle();

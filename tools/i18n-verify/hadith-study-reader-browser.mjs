@@ -16,7 +16,7 @@
 //   --prove           run every mutation in turn and report which were caught (exits 1 if any was not)
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 const MUT = {
   booksmenu: ["js/hadith-browser.js", "    if (before && before()) return;\n", ""],
@@ -150,7 +150,7 @@ for (const [lang, width, look] of [["en", 1280, "light"], ["bn", 820, "night"]])
   await P.keyboard.press("Escape");
   await acheck(`${tag} Escape closes the list and gives the focus back to the button`, () =>
     P.evaluate(() => document.querySelector('[data-hadith-menu="books"]').hidden && document.activeElement?.dataset.hadithTab === "books"));
-  await tap(P, '[data-hadith-tab="topic"]');
+  await hadithGo(P, "topic");
   await settle(P);
   await tap(P, '[data-hadith-tab="books"]');
   await settle(P);
@@ -174,7 +174,7 @@ for (const [lang, width, look] of [["en", 1280, "light"], ["bn", 820, "night"]])
   });
   // Back to the shelf by the menu bar, whatever state the step above left.
   await P.keyboard.press("Escape");
-  await tap(P, '[data-hadith-tab="topic"]');
+  await hadithGo(P, "topic");
   await settle(P);
   await tap(P, '[data-hadith-tab="books"]');
   await P.waitForSelector(`[data-openiti-book="${BUKHARI}"]`, { timeout: 8000 }).catch(async () => {
