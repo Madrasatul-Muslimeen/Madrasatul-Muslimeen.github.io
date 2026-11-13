@@ -605,7 +605,7 @@ export function setExploreJuzView(id) {
 // Surah keeps that choice untouched (readStored() only ever changes what
 // someone who has never chosen sees).
 const EXPLORE_QURAN_VIEW_KEY = "mm_explore_quran_view";
-const EXPLORE_QURAN_VIEW_IDS = ["juz", "surah", "hizb"];
+const EXPLORE_QURAN_VIEW_IDS = ["juz", "surah", "hizb", "page"];
 
 // 5 Sep 2026, owner, having used it: "The Surah view, It looks actually good!
 // So, make the Surah view as the default view on Explore, rather than Juzz."

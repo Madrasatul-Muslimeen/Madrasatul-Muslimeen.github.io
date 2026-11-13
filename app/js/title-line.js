@@ -16,7 +16,9 @@ export const TITLE_LINE_CSS = `
 .title-line::before, .title-line::after { content: ""; height: 1px; background: currentColor; opacity: 0.55; }
 .title-line::before { flex: 0 0 clamp(0rem, 2vw, 0.8rem); }
 .title-line::after { flex: 1 1 0; min-width: 0; }
-.title-line .tl-ar { font-family: 'Amiri Quran', 'Scheherazade New', serif; font-size: 1.3em; font-weight: 500; line-height: 1; }
+.title-line .tl-ar { font-family: 'Amiri Quran', 'Scheherazade New', serif; font-size: 1.56em; font-weight: 500; line-height: 1; }
+/* The Owner, 13 Nov 2026: the Arabic 20% bigger. At 320px that pushed the line 18px past its row (the Latin and English stay as they were), so the very narrowest phones keep the old size. */
+@media (max-width: 340px) { .title-line .tl-ar { font-size: 1.3em; } }
 .title-line .tl-en { font-weight: 500; color: var(--card-text, inherit); }
 /* the light card look: the night gold (#d9b25f) is 2.0:1 on white, so the line takes the deep gold the card already uses for its carets (#7a5410, over 6:1) */
 [data-card-look="light"] .title-line { color: #7a5410; }

@@ -5199,7 +5199,7 @@
      white text, which printed these words white on cream (invisible). */
   .ayah-wbw-chip { min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; color: var(--card-button-border); background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 0.35rem; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
   /* Audit 15 Oct: the chip's Arabic set no Qur'an face and fell back to a system font (empty boxes for some marks). */
-  .ayah-wbw-chip [lang="ar"] { font-family: var(--quran-font); font-size: 2.4rem; line-height: 1.6; }
+  .ayah-wbw-chip [lang="ar"] { font-family: var(--quran-font); font-size: 1.68rem; line-height: 1.6; }
   .ayah-wbw-chip.is-known { color: #14532d; background: #e3f3ea; border: 2px solid #3fae74; }
   /* Ayah Card section C -- Related āyāt: one full-width row per āyah, a
      real button (>= 40px), explicit colours on the card's light surface. */
@@ -6974,6 +6974,8 @@
                        pair. Hidden by default; syncExploreViewToggle() shows
                        it only when the current level's spec offers it. -->
                   <button type="button" class="explore-view-btn" id="exploreViewHizbBtn" data-view="hizb" aria-pressed="false" hidden>Hizb</button>
+                  <!-- The Owner, 13 Nov 2026 (the wheel's view row, the empty place after Hizb circled): "Add page view/ status here." -->
+                  <button type="button" class="explore-view-btn" id="exploreViewPageBtn" data-view="page" aria-pressed="false" hidden>Page</button>
                 </div>
               </div>
               <!-- The Approach capsule. 5 Sep 2026 (2nd round), owner: "name
@@ -8648,6 +8650,7 @@
     const exploreViewPrimaryBtn = document.getElementById("exploreViewPrimaryBtn");
     const exploreViewSurahsBtn = document.getElementById("exploreViewSurahsBtn");
     const exploreViewHizbBtn = document.getElementById("exploreViewHizbBtn"); // issue #342
+    const exploreViewPageBtn = document.getElementById("exploreViewPageBtn"); // 13 Nov 2026: the Page view
     const exploreWheelResizeWrapEl = document.getElementById("exploreWheelResizeWrap");
     const exploreWheelResizeHandleEls = Array.from(exploreWheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
@@ -13289,12 +13292,13 @@
       exploreViewPrimaryBtn.dataset.view = spec.primaryId;
       exploreViewPrimaryBtn.textContent = t(spec.primaryLabel);
       exploreViewHizbBtn.hidden = !spec.hizb;
+      exploreViewPageBtn.hidden = !spec.hizb;
       // The row needs its own line below 380px only when the third button is
       // actually showing -- the Juz level's own two-button pair is untouched
       // (see the CSS rule this class drives).
       exploreViewToggle.classList.toggle("explore-view-toggle-triple", !!spec.hizb);
       const current = spec.get();
-      const buttons = spec.hizb ? [exploreViewPrimaryBtn, exploreViewSurahsBtn, exploreViewHizbBtn] : [exploreViewPrimaryBtn, exploreViewSurahsBtn];
+      const buttons = spec.hizb ? [exploreViewPrimaryBtn, exploreViewSurahsBtn, exploreViewHizbBtn, exploreViewPageBtn] : [exploreViewPrimaryBtn, exploreViewSurahsBtn];
       for (const btn of buttons) {
         const on = btn.dataset.view === current;
         btn.classList.toggle("on", on);
@@ -13302,7 +13306,7 @@
       }
     }
 
-    [exploreViewPrimaryBtn, exploreViewSurahsBtn, exploreViewHizbBtn].forEach((btn) => {
+    [exploreViewPrimaryBtn, exploreViewSurahsBtn, exploreViewHizbBtn, exploreViewPageBtn].forEach((btn) => {
       btn.addEventListener("click", () => {
         const spec = EXPLORE_VIEW_LEVELS[exploreLevel];
         if (!spec) return;
@@ -14862,6 +14866,7 @@
       }
       if (exploreQuranView === "surah") return renderExploreQuranSurahsView(trackable);
       if (exploreQuranView === "hizb") return renderExploreQuranHizbView(trackable);
+      if (exploreQuranView === "page") return renderExploreQuranPageView(trackable);
       const items = juzIndexData.map((j) => {
         const coverage = ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah);
         const pooled = poolCoverageStatus(coverage, trackable.id);
@@ -14953,6 +14958,32 @@
      * rather than a second, hand-derived one. Loaded here, on first use
      * (I9): most opens never touch this view, since Juz stays the default.
      */
+    /** The Owner, 13 Nov 2026 ("Add page view/ status here"): the whole Quran as its 604 printed pages, each wedge coloured by the
+     *  Approach's status for that page (an āyah-by-āyah pool, or the page's own claim), like the Hizb view. A page opens the Surah it begins in. */
+    async function renderExploreQuranPageView(trackable) {
+      if (!pageIndexData) pageIndexData = await getPageIndex();
+      const labelsById = statusLabelsById();
+      const items = pageIndexData.map((p) => {
+        const coverage = ayahCoverage(p.startSurah, p.startAyah, p.endSurah, p.endAyah);
+        const statusId = exploreUnitStatus(coverage, buildUnitKey.page(PAGE_EDITION, p.page), exploreSubjectChunk, trackable.id);
+        const label = t("Page {page}", { page: num(p.page) });
+        return { key: p.page, number: p.page, statusId, label, title: segTitle(label, statusId, labelsById) };
+      });
+      const jumpToPage = (key) => {
+        const p = pageIndexData.find((x) => x.page === Number(key));
+        if (!p) return;
+        exploreSurahNum = p.startSurah; exploreRukuIndex = null; exploreHizbNum = null; exploreJuzNum = null;
+        exploreLevel = "surah";
+        renderExplore();
+      };
+      const approachName = langText(trackable.name, getAppLang(), trackable.id);
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName, ring: wheelRingOption() });
+      attachScopedWheelClickHandler(exploreWheelContainer, jumpToPage);
+      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
+      attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToPage);
+    }
+
     async function renderExploreQuranHizbView(trackable) {
       await ensureHizbIndexData();
       const labelsById = statusLabelsById();
@@ -24541,7 +24572,9 @@
         onStageChoice: (unitKey, approachId, statusId) => takeApproachForAyah(unitKey, approachId, statusId),
         onPoster: (unitKey) => openAyahPoster(unitKey, hasPosterNoteAtRenderTime),
         onSeeOnWheel: () => focusWheelOnAyah(ayahNum),
-        onWordTap: (occurrenceId) => { rememberAyahCardReturn(sheetKeyAtRender); openWordCardForOccurrenceId(occurrenceId); },
+        // The Owner, 13 Nov 2026: a word tapped here opened the Word Card with no way back. On a phone the Word Card covers the
+        // page where the "Back to Āyah card" pill docks, so the way back is carried INSIDE the card (inWordCard).
+        onWordTap: (occurrenceId) => { rememberAyahCardReturn(sheetKeyAtRender, { inWordCard: true }); openWordCardForOccurrenceId(occurrenceId); },
       });
     }
 
@@ -24909,11 +24942,11 @@
       ayahCardReturn = { title, label, back, inWordCard: !!opts.inWordCard, onClear: opts.onClear ?? null, page: !!opts.page };
       renderAyahCardBackPill(); if (opts.inWordCard) renderPersistentWordCard();
     }
-    function rememberAyahCardReturn(unitKey) {
+    function rememberAyahCardReturn(unitKey, opts = {}) {
       if (!unitKey) return;
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
       const r = { surah, ayah, half, view: "read", scrollY: readViewScrollTop() };
-      setAppReturn(t("Back to Āyah card"), ayahRefLabel(surah, ayah, { half }).replace(/^.*?(\S+:\S+).*$/, "$1"), () => returnToAyahCard(r));
+      setAppReturn(t("Back to Āyah card"), ayahRefLabel(surah, ayah, { half }).replace(/^.*?(\S+:\S+).*$/, "$1"), () => returnToAyahCard(r), opts);
     }
     function clearAyahCardReturn(how = "dismiss") {
       const r = ayahCardReturn; ayahCardReturn = null; r?.onClear?.(how);

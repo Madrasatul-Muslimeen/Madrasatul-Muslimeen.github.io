@@ -38,6 +38,7 @@ const MUT = {
   tabhead: [PAGE, "  .quran-word-card header > .word-card-head-gloss { display: none; }\n", ""],
   nohere: [CARD, "const here = f.lemma === myLemma && myTense === tense;", "const here = false;"],
   nochip: [PAGE, "padding: 0.3rem 0.6rem; border: 1px solid var(--card-line); border-radius: 0.4rem; background: var(--card-bg-inset); font-size: 1.22rem;", "font-size: 1.22rem;"],
+  noweak: [CARD, "const pastAttested = !ok && sum(\"PERF\") > 0 ? lemmaText(f.lemma) : null;", "const pastAttested = null;"],
   escshut: [PAGE, "        if (formsBack) { formsBack.click(); return; }", "        void formsBack;"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -190,6 +191,21 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   await page.keyboard.press("Escape"); await page.waitForTimeout(400);
   const esc = await page.evaluate(() => ({ pop: !!document.querySelector("#quranWordCardMount [data-word-card-forms-pop]"), card: !!document.querySelector("#quranWordCardMount .quran-word-card") }));
   check(`${tag} Escape returns to the word (the Word Card stays open)`, !esc.pop && esc.card, JSON.stringify(esc));
+  check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|archive\.org|net::|api\.quran/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
+  await ctx.close();
+}
+// The Owner, 13 Nov 2026 (the Forms card of ش ر ي opened from 2:16:3 اشتروا: only two forms, every cell blank): a root with a weak
+// letter is not written out by the engine, but the PAST the Qur'an holds is the verb's own Dictionary word, so it is shown, and the
+// card says why the rest is not. Read independently from verb-forms.json (the root $ry has exactly two verbs in the Qur'an).
+if (!arg("width")) {
+  const tag = "[en 390 2:16:3 weak root]";
+  const { ctx, page, errors } = await start("en", 390, [2, 16, 3]);
+  await page.click("#quranWordCardMount [data-word-card-forms] >> visible=true"); await waitPop(page);
+  const w = await page.evaluate(() => { const p = document.querySelector("#quranWordCardMount [data-word-card-forms-pop]"); return { verbs: [...(p?.querySelectorAll("[data-word-card-forms-verb]") ?? [])].map((v) => ({ lemma: v.dataset.wordCardFormsVerb, past: v.querySelector('[data-word-card-forms-tense="PERF"] b')?.textContent.trim(), pres: v.querySelector('[data-word-card-forms-tense="IMPF"] b')?.textContent.trim() })), weak: !!p?.querySelector("[data-word-card-forms-weak]") }; });
+  const want = Object.entries(VF).filter(([, e]) => e.r === "$ry").map(([k]) => k);
+  check(`${tag} POSITIVE CONTROL: the Forms card lists exactly the verbs verb-forms.json holds for $ry (${want.length})`, want.length === 2 && w.verbs.length === want.length && want.every((k) => w.verbs.some((v) => v.lemma === k)), JSON.stringify(w));
+  check(`${tag} MUTATION TARGET (noweak): each verb's PAST cell shows its Qur'an form, never "—"`, w.verbs.length > 0 && w.verbs.every((v) => v.past && v.past !== "—" && v.past === v.lemma), JSON.stringify(w.verbs));
+  check(`${tag} the present and command are not invented, and the card says why`, w.verbs.every((v) => v.pres === "—") && w.weak, JSON.stringify(w));
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|archive\.org|net::|api\.quran/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
 }

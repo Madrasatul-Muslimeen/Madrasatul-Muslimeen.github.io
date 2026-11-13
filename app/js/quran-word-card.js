@@ -1580,6 +1580,7 @@ const FORMS_TEXT = Object.freeze({
     times: "{n}× in the Qur'an", loading: "Loading the forms…", failed: "The forms could not be loaded.",
     none: "No verb or noun forms of this root are listed.",
     note: "Every person (I, you, they…) is in the Taṣrīf tab; the root's other words are in Family.",
+    weak: "This root has a weak letter, so only the past form that occurs in the Qur'an is written out; the others are not written out yet.",
     groups: { masdar: "Verbal noun", doer: "Doer", done: "Done to", intens: "Intensive", elative: "Comparative" },
   },
   bn: {
@@ -1589,6 +1590,7 @@ const FORMS_TEXT = Object.freeze({
     times: "কুরআনে {n} বার", loading: "রূপগুলো আসছে…", failed: "রূপগুলো আনা গেল না।",
     none: "এই মূলের কোনো ক্রিয়া বা বিশেষ্য রূপ তালিকায় নেই।",
     note: "প্রতিটি পুরুষ (আমি, তুমি, তারা…) তাসরীফ ট্যাবে; মূলের অন্য শব্দ পরিবার ট্যাবে।",
+    weak: "এই মূলে একটি দুর্বল বর্ণ আছে, তাই কুরআনে যে অতীত রূপ আছে কেবল সেটিই লেখা হয়েছে; বাকিগুলো এখনো লেখা হয়নি।",
     groups: { masdar: "ক্রিয়াবাচক বিশেষ্য", doer: "কর্তাবাচক বিশেষ্য", done: "কর্মবাচক বিশেষ্য", intens: "আধিক্যবাচক", elative: "তুলনাবাচক" },
   },
 });
@@ -1634,8 +1636,13 @@ function formsBodyHtml(word, forms, lf, vf, context, ft, lang, formatNumber) {
     const counts = Object.entries(e.n ?? {});
     const sum = (tense) => counts.filter(([k]) => k.startsWith(`${tense}.`) || k === tense).reduce((s, [, v]) => s + v, 0);
     const ok = res.supported;
+    // The Owner, 13 Nov 2026 (a Forms card for a root with a weak letter, ش ر ي, showing three blank cells): the engine
+    // never guesses a weak or hamzated root (supported: false), which left every cell "—" even for the PAST form the Qur'an
+    // itself holds. The verb's Dictionary word IS its past (he did), so a past that occurs in the Qur'an is shown from it.
+    // The present and command stay "—" and the card says why, rather than writing a form the engine cannot prove.
+    const pastAttested = !ok && sum("PERF") > 0 ? lemmaText(f.lemma) : null;
     const parts = [
-      ["PERF", ft.past, ok && res.pastKnown ? res.past?.[0]?.ar : null],
+      ["PERF", ft.past, ok && res.pastKnown ? res.past?.[0]?.ar : pastAttested],
       ["IMPF", ft.present, ok && res.presentKnown ? res.present?.[0]?.ar : null],
       ["IMPV", ft.command, ok && res.presentKnown ? res.command?.[6]?.ar : null],
     ];
@@ -1661,9 +1668,11 @@ function formsBodyHtml(word, forms, lf, vf, context, ft, lang, formatNumber) {
       `<b dir="rtl" lang="ar">${escapeHtml(lemmaText(f.lemma))}</b>` +
       `<span class="word-card-fn-m" lang="${lang}">${escapeHtml(meaningOf(f))}</span><span class="word-card-fc-n">${times(f.count)}</span></li>`;
   }).join("");
+  const weakShown = verbs.some((f) => !conjugate({ root: vf[f.lemma].r, form: vf[f.lemma].f, pastVowel: vf[f.lemma].pv ?? null, presentVowel: vf[f.lemma].sv ?? null }).supported);
   if (!verbItems && !nounItems) return `<p role="status" data-word-card-forms-none>${escapeHtml(ft.none)}</p>`;
   return (verbItems ? `<h4>${escapeHtml(ft.verbs)}</h4><ol class="word-card-fv-list">${verbItems}</ol>` : "") +
     (nounItems ? `<h4>${escapeHtml(ft.nouns)}</h4><ul class="word-card-fn-list">${nounItems}</ul>` : "") +
+    (weakShown ? `<p class="word-card-forms-note" data-word-card-forms-weak>${escapeHtml(ft.weak)}</p>` : "") +
     `<p class="word-card-forms-note">${escapeHtml(ft.note)}</p>`;
 }
 

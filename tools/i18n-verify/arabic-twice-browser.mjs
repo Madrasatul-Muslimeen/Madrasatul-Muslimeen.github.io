@@ -5,7 +5,7 @@
 //   MUT=studynext ... mutation: Study Next's Arabic is back at its old size   -> the Study Next size checks
 //   MUT=wordcard ...  mutation: the Word Card's Arabic is back at its old size -> the Word Card size checks
 //   MUT=partname ...  mutation: the grammar name is twice as big again (the Owner's option 3, 13 Nov 2026, removed)  -> the REAL Word Card grammar-name size and one-line checks
-//   MUT=ayahchip ...  mutation: the Āyah card's Word-by-Word chips are back   -> the chip size check
+//   MUT=ayahchip ...  mutation: the Āyah card's Word-by-Word chips are back at 2.4rem (before the Owner's 13 Nov "30% smaller")   -> the chip size check
 // Measured, rendered, at 320, 390, 768 and 1280: the computed size is at least twice the OLD size (never a guess about px at one width), and nothing runs off the screen.
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -29,7 +29,7 @@ for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { restoreAll(); proce
 if (MUT === "studynext") { mutate("app/js/read-next-ui.js", /font-size: 2\.4rem; line-height: 1\.8/g, "font-size: 1.2rem; line-height: 1.8"); mutate("app/js/read-next-ui.js", /\.rn-ar-name \{ font-size: 1\.64rem/g, ".rn-ar-name { font-size: 0.82rem"); mutate("app/js/read-next-ui.js", /\.rn-era-quote \{ margin: 4px 0 0; font-size: 2\.1rem/g, ".rn-era-quote { margin: 4px 0 0; font-size: 1.05rem"); }
 else if (MUT === "wordcard") mutate("app/quranrevival.html", /\.word-card-dpop-ar \{ font-family: var\(--quran-font\); font-size: 3\.4rem/g, ".word-card-dpop-ar { font-family: var(--quran-font); font-size: 1.7rem");
 else if (MUT === "partname") mutate("app/quranrevival.html", /  \.word-card-fact b\.word-card-fact-ar, \.word-card-part \.word-card-part-arname \{ font-size: calc\(var\(--wc-head-ar\) \* 0\.9\); \}\n/g, "");
-else if (MUT === "ayahchip") mutate("app/quranrevival.html", /\.ayah-wbw-chip \[lang="ar"\] \{ font-family: var\(--quran-font\); font-size: 2\.4rem/g, '.ayah-wbw-chip [lang="ar"] { font-family: var(--quran-font); font-size: 1.2rem');
+else if (MUT === "ayahchip") mutate("app/quranrevival.html", /\.ayah-wbw-chip \[lang="ar"\] \{ font-family: var\(--quran-font\); font-size: 1\.68rem/g, '.ayah-wbw-chip [lang="ar"] { font-family: var(--quran-font); font-size: 2.4rem');
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const px = (rem) => rem * 16;
@@ -72,7 +72,7 @@ try {
       return out;
     }, WORD_CARD_OLD);
     for (const [cls, old] of Object.entries(WORD_CARD_OLD)) check(`${tag} MUTATION TARGET (wordcard): .${cls} is at least twice its old size (${px(old * 2)}px or more)`, sizes[cls] >= px(old * 2) - 0.5, String(sizes[cls]));
-    check(`${tag} MUTATION TARGET (ayahchip): the Āyah card's Word-by-Word Arabic is twice its old size (38.4px or more; was 19.2px)`, sizes.chip >= 38.3, String(sizes.chip));
+    check(`${tag} MUTATION TARGET (ayahchip): the Āyah card's Word-by-Word Arabic is 30% smaller than the doubled size (the Owner, 13 Nov 2026: 38.4px x 0.7 = 26.9px; was 19.2px before the doubling)`, sizes.chip > 26.5 && sizes.chip < 27.3, String(sizes.chip));
     // ---- a REAL Word Card (100L, 12 Nov 2026: the sizes above are on stand-in elements; this opens the real card on 1:5:1 "إِيَّاكَ")
     if (!(await page.evaluate(() => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(200); }
     await page.click("#tabReadBtn");

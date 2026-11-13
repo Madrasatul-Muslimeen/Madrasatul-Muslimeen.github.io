@@ -27,6 +27,9 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUTATIONS = {
+  // The Owner, 13 Nov 2026 (a word tapped in the Āyah card: "no back button to come back here"): the way back is carried INSIDE the
+  // Word Card too, because on a phone the card covers the page where the pill docks -> the "← inside the Word Card" check fails.
+  nowcback: ["quranrevival.html", "rememberAyahCardReturn(sheetKeyAtRender, { inWordCard: true }); openWordCardForOccurrenceId(occurrenceId);", "rememberAyahCardReturn(sheetKeyAtRender); openWordCardForOccurrenceId(occurrenceId);"],
   nolemmatext: ["js/lemma-text.js", 'return String(lemma ?? "").replace(', 'return String(lemma ?? ""); void ('],
   darkbg: ["quranrevival.html", "    --card-bg: #fff; }\n  .word-card-acc .word-card-occurrence-link:hover", "    }\n  .word-card-acc .word-card-occurrence-link:hover"],
   nopop: ["js/quran-word-card.js", "    ${pop}\n  </section>", "\n  </section>"],
@@ -282,6 +285,9 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
   await page.waitForFunction(() => document.querySelector(".quran-word-card"), null, { timeout: 8000 }).catch(() => {});
   const pill = await page.evaluate(() => { const p = document.querySelector("#ayahCardBackPill:not([hidden]) [data-ayah-card-back]"); if (!p) return null; const r = p.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return { text: p.textContent.trim(), tappable: !!hit && p.contains(hit), inView: r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight }; });
   check(`${tag} after a word chip, "Back to Āyah card 14:14" is on screen and tappable`, !!pill && /14:14|১৪:১৪/.test(pill.text) && pill.tappable && pill.inView, JSON.stringify(pill));
+  await page.waitForTimeout(700);
+  const inCard = await page.evaluate(() => { const all = [...document.querySelectorAll("[data-word-card-app-back]")]; const b = all.find((x) => x.getClientRects().length > 0) ?? all[0]; if (!b) return null; const r = b.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); let hid = null; for (let n = b; n; n = n.parentElement) { if (getComputedStyle(n).display === "none") { hid = n.className || n.id || n.tagName; break; } } return { cards: [...document.querySelectorAll(".quran-word-card")].map((c) => [c.parentElement.id || c.parentElement.className, c.getClientRects().length > 0, !!c.querySelector("[data-word-card-app-back]")]), hid, w: Math.round(r.width), h: Math.round(r.height), tappable: !!hit && (b === hit || b.contains(hit)), title: b.title }; });
+  check(`${tag} MUTATION TARGET (nowcback): the Word Card carries its own ← "Back to Āyah card" (its name, in the card itself; the Read view sits hidden behind it in this fixture, so its size is measured in the 40px sweep of the real flow, not here)`, !!inCard && /Āyah|আয়াত/.test(inCard.title), JSON.stringify(inCard));
   if (pill) {
     await page.click("[data-ayah-card-back]");
     await page.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 8000 }).catch(() => {});
