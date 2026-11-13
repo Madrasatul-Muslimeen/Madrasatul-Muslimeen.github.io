@@ -112,8 +112,13 @@ check("the original occurrence's card carries the one-shot focus class",
   await page.evaluate(() =>
     document.querySelector('[data-hadith-occurrence="syn-occ-0005"]')?.classList.contains("hadith-card-focused")));
 
+// The Topics tab was removed from the menu bar (the Owner, 13 Nov 2026); the view stays, so the suite reaches it through the page's own state.
+const showTopics = () => page.evaluate(() => { window.__hadithCorpus.state.view = "topic"; window.__hadithCorpus.render(); });
+check("the menu bar has NO Topics tab (Owner, 13 Nov 2026: Subject and Topic are the same), while Search is still there (positive control)",
+  !(await has('[data-hadith-tab="topic"]')) && (await has('[data-hadith-tab="search"]')));
+
 // One-shot: switching away and back without a new jump must NOT re-apply it.
-await click('[data-hadith-tab="topic"]');
+await showTopics();
 await settle();
 await click('[data-hadith-tab="collections"]');
 await settle();
@@ -122,7 +127,7 @@ check("the focus highlight is ONE-SHOT -- gone on the next unrelated render",
     document.querySelector('[data-hadith-occurrence="syn-occ-0005"]')?.classList.contains("hadith-card-focused"))));
 
 // --- Topics tab: list -> a topic's occurrences carry 'View in source' ------
-await click('[data-hadith-tab="topic"]');
+await showTopics();
 await settle();
 check("the Topics tab opens on a LIST of topics, not one hardcoded topic",
   (await page.evaluate(() => document.querySelectorAll("[data-hadith-topic-row]").length)) >= 2);
@@ -148,7 +153,7 @@ check("the jump lands on the SAME occurrence id the control named",
 // SAME topic detail rather than the list; the view's own back-crumb is the
 // control that returns to the list, and it is a distinct control from the
 // tab button, which this exercises directly rather than assuming.
-await click('[data-hadith-tab="topic"]');
+await showTopics();
 await settle();
 check("switching back to the Topics tab re-opens the topic last viewed (state persists across tabs)",
   await has('[data-hadith-topic-back]'));

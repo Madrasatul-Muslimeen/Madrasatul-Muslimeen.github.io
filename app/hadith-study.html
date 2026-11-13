@@ -226,6 +226,7 @@
         : resumeDua ? { page: 1, dua: Number(resumeDua[1]), findPage: true } : null;
       mountIntentionReminder(document.getElementById("intentionHost"));
       const corpus = mountHadithBrowser(document.getElementById("hadithCorpusRoot"), { mount: "hadith-module", initialHadeethEncId, initialDua });
+      window.__hadithCorpus = corpus; // the same handle hadith-collections.html exposes (tests reach views through it)
       // The corpus's own study actions (Note/bookmark/Studied, issue #311)
       // read the signed-in session fresh on every render, but nothing tells
       // them to RE-render when the page's Tenant/Person pickers change --
