@@ -278,3 +278,14 @@ body.dua-has-popped::before { content: ""; position: fixed; inset: 0; z-index: 5
 .dua-gt-move select, .dua-gt-move button { min-height: 44px; padding: 0.2rem 0.6rem; border: 1px solid #3a4468; border-radius: 0.6rem; background: #18224a; color: #f2e6c4; font: inherit; max-width: 100%; }
 .dua-gt-move-go { background: #e0b95c !important; color: #121a33 !important; border-color: #c9a24b !important; }
 .dua-gt-move-say { flex-basis: 100%; margin: 0; color: #ff9d8d; font-size: 0.85rem; }
+
+/* Step 6b: the Admin's groups / My groups pop-up's own parts. */
+.dua-gp-switch { display: flex; gap: 0.4rem; margin: 0 0 0.5rem; }
+.dua-gp-tab { flex: 1 1 0; min-height: 40px; padding: 0.3rem 0.6rem; border: 1px solid #3a4468; border-radius: 0.65rem; background: #121a33; color: #f2e6c4; font: inherit; cursor: pointer; }
+.dua-gp-tab[aria-selected="true"] { background: #f2e6c4; color: #121a33; font-weight: 700; }
+.dua-gp-tab:focus-visible, .dua-gp-add:focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }
+.dua-gp-add { margin-top: 0.5rem; min-height: 40px; }
+.dua-gp-list { list-style: none; margin: 0.4rem 0; padding: 0; }
+.dua-gp-list li { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 40px; }
+.dua-gp-addform { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
+.dua-gp-addform input { flex: 1 1 auto; min-width: 0; min-height: 40px; }
