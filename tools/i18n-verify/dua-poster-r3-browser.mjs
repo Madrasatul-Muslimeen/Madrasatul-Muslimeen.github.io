@@ -10,6 +10,7 @@
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/dua-poster-r3-browser.mjs
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { tabClick, allTabsOn } from "./dua-tab-reveal.mjs";
 
 const FILES = { study: "app/js/dua-study.js", poster: "app/js/dua-poster.js" };
 const SRC = Object.fromEntries(Object.entries(FILES).map(([k, f]) => [k, fs.readFileSync(f, "utf8")]));
@@ -113,7 +114,7 @@ async function run(mutation) {
       const settle = () => page.waitForFunction(() => document.querySelector("[data-dua-a4]")?.dataset.duaA4Scale, null, { timeout: 5000 }).catch(() => {});
 
       await page.click("[data-dua-menu-toggle]"); // build 2: the menu lives under the card's Menu button
-      const menu = await page.$$eval('[data-dua-menu="poster"], [data-dua-menu="share"]', (b) => b.map((x) => ({ t: x.textContent, h: x.getBoundingClientRect().height })));
+      await allTabsOn(page); const menu = await page.$$eval('[data-dua-menu="poster"], [data-dua-menu="share"]', (b) => b.map((x) => ({ t: x.textContent, h: x.getBoundingClientRect().height })));
       await check("the card's menu offers Poster and Copy / share, in this language, small but pressable (40px; the Owner asked for smaller chips, 7 Nov)", () => {
         if (menu.length !== 2 || !menu[0].t.includes(L("Poster")) || menu[1].t !== L("Copy / share") || menu.some((m) => m.h < 40)) throw new Error(JSON.stringify(menu));
       });
@@ -121,7 +122,7 @@ async function run(mutation) {
       // D23 📖 Full text on a Qur'anic dua: its raw Arabic follows the Vowels selection (the card has no vowel switch of its own).
       const ftMarks = async (on) => {
         const pressed = await page.$eval('[data-dua-switch="vow"]', (b) => b.getAttribute("aria-pressed") === "true");
-        if (pressed !== on) await page.click('[data-dua-switch="vow"]');
+        if (pressed !== on) await tabClick(page, '[data-dua-switch="vow"]');
         await clickMenu(page, '[data-dua-menu="fulltext"]');
         await page.waitForSelector('[data-dua-pop="fulltext"] .dua-ft-ar', { timeout: 8000 });
         const n = await page.$eval('[data-dua-pop="fulltext"] .dua-ft-ar', (a) => (a.textContent.match(/[\u064B-\u0652\u0670]/g) || []).length);
@@ -157,8 +158,8 @@ async function run(mutation) {
       const other = lang === "en" ? "bn" : "en";
       // D26: the choices are made with the chips on the Dua Card; the poster reads them when it opens.
       await page.click("[data-dua-pop-close]");
-      await page.click(`[data-dua-sel] [data-dua-switch="${other}"]`);
-      await page.click('[data-dua-sel] [data-dua-switch="wbw"]');
+      await tabClick(page, `[data-dua-sel] [data-dua-switch="${other}"]`);
+      await tabClick(page, '[data-dua-sel] [data-dua-switch="wbw"]');
       await clickMenu(page, '[data-dua-menu="poster"]');
       await settle();
       await check("D26 the poster's pop-up says what it is showing, from the card's choices", async () => {
@@ -171,7 +172,7 @@ async function run(mutation) {
         if (wbw.length !== p0.words.length || wbw.some((w, i) => w[0] !== p0.words[i][0] || w[1] !== p0.words[i][lang === "bn" ? 2 : 1])) throw new Error(JSON.stringify(wbw[0]));
       });
       await check("D07 the other language switches on too, and all four still fit one page", async () => { const p = (await parts()).sort().join(); const f = await fits(); if (p !== "ar,bn,en,wbw" || f.over > 1) throw new Error(`${p} ${f.over}`); });
-      const sw = await page.$$eval("[data-dua-sel] [data-dua-switch]", (x) => x.map((b) => ({ k: b.dataset.duaSwitch, t: b.textContent, h: b.getBoundingClientRect().height })));
+      await allTabsOn(page); const sw = await page.$$eval("[data-dua-sel] [data-dua-switch]", (x) => x.map((b) => ({ k: b.dataset.duaSwitch, t: b.textContent, h: b.getBoundingClientRect().height })));
       await check("D07 / D26 the card's choices are named in this language and finger-sized", () => {
         const want = { ar: L("Arabic"), en: L("English"), bn: L("Bangla"), wbw: L("Word by word"), vow: L("Vowels"), src: L("Source") };
         if (sw.some((s) => s.t !== want[s.k] || s.h < 44)) throw new Error(JSON.stringify(sw));
@@ -190,8 +191,8 @@ async function run(mutation) {
       await page.click("[data-dua-pop-close]");
 
       // D26: one set of choices for the poster and for sharing.
-      await page.click('[data-dua-sel] [data-dua-switch="ar"]');
-      await page.click('[data-dua-sel] [data-dua-switch="src"]');
+      await tabClick(page, '[data-dua-sel] [data-dua-switch="ar"]');
+      await tabClick(page, '[data-dua-sel] [data-dua-switch="src"]');
       await clickMenu(page, '[data-dua-menu="poster"]');
       await settle();
       const without = await page.$$eval("[data-dua-a4] [data-dua-a4-part]", (x) => x.map((e) => e.dataset.duaA4Part).sort().join());
@@ -202,8 +203,8 @@ async function run(mutation) {
       const pvOff = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
       await check("D26 sharing uses the same choices: no Arabic, no source", () => { if (pvOff.includes(p0.ar) || pvOff.endsWith(ref0)) throw new Error(pvOff.slice(0, 80)); });
       await page.click("[data-dua-pop-close]");
-      await page.click('[data-dua-sel] [data-dua-switch="ar"]');
-      await page.click('[data-dua-sel] [data-dua-switch="vow"]');
+      await tabClick(page, '[data-dua-sel] [data-dua-switch="ar"]');
+      await tabClick(page, '[data-dua-sel] [data-dua-switch="vow"]');
       await clickMenu(page, '[data-dua-menu="poster"]');
       await settle();
       const novow = await page.$eval(".dua-a4-ar", (e) => e.textContent).catch(() => "");
@@ -219,12 +220,12 @@ async function run(mutation) {
       const pv = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => null);
       await check("D14 / D26 the text starts as title, Arabic, the reader's own language and source", () => { if (pv !== [p0.title[lang], p0.ar, p0[lang], ref].join("\n\n")) throw new Error(JSON.stringify(pv?.slice(0, 80))); });
       await page.click("[data-dua-pop-close]");
-      await page.click(`[data-dua-sel] [data-dua-switch="${lang}"]`);
+      await tabClick(page, `[data-dua-sel] [data-dua-switch="${lang}"]`);
       await clickMenu(page, '[data-dua-menu="share"]');
       const pvNo = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
       await check("D14 taking this language off the card takes the dua's meaning off the text", () => { if (pvNo.includes(p0[lang])) throw new Error("still there"); });
       await page.click("[data-dua-pop-close]");
-      await page.click(`[data-dua-sel] [data-dua-switch="${lang}"]`);
+      await tabClick(page, `[data-dua-sel] [data-dua-switch="${lang}"]`);
       await clickMenu(page, '[data-dua-menu="share"]');
       const pv2 = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
       await check("D14 putting it back on the card puts the meaning back", () => { if (!pv2.includes(p0[lang])) throw new Error("missing"); });
@@ -277,7 +278,7 @@ async function run(mutation) {
       const pv3 = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
       await check("D14 a Hadith dua's text holds its own words and its book and number", () => { if (!words || !pv3.includes(words) || !std || !pv3.endsWith(std)) throw new Error(pv3.slice(0, 60)); });
       await page.click("[data-dua-pop-close]");
-      await page.click('[data-dua-sel] [data-dua-switch="wbw"]').catch(() => {});
+      await tabClick(page, '[data-dua-sel] [data-dua-switch="wbw"]').catch(() => {});
       await clickMenu(page, '[data-dua-menu="share"]');
       const pv4 = await page.$eval("[data-dua-share-preview]", (e) => e.textContent).catch(() => "");
       await check("D14 word by word gives the Qur'an's meaning of each matched word", () => { const lines = pv4.split("\n").filter((l) => / = /.test(l)); if (lines.length < 5 || !lines.some((l) => /[A-Za-zঀ-৿]/.test(l.split(" = ")[1]))) throw new Error(`${lines.length}`); });
@@ -308,5 +309,5 @@ process.exit(r.failed ? 1 : 0);
 async function clickMenu(page, selector) {
   const toggle = await page.$("[data-dua-menu-toggle]");
   if (toggle && (await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
-  await page.click(selector);
+  await tabClick(page, selector);
 }

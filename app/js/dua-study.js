@@ -25,6 +25,7 @@ import { placeDialogAtHome } from "./home-window.js";
 import { posterNodes, shareNodes, selectionBar, fullTextNodes } from "./dua-poster.js";
 import { openDuaWindow, canFloatDuaCard } from "./dua-card-window.js";
 import { trapModal } from "./modal-focus.js";
+import { installMenuTabs } from "./dua-menu-tabs.js";
 
 const DRAFTS_URL = "../tools/hadith-data-pull/output/dua/draft-meanings.json";
 const GROUPS_URL = "../tools/hadith-data-pull/output/dua/groups.json";
@@ -669,6 +670,10 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const shareGroup = panel.querySelector("[data-dua-menu-group=share]");
     if (shareGroup) panel.insertBefore(shareGroup, listen);
     panel.insertBefore(keep, listen);
+    // 25 (the Owner, 13 Nov, demo v1.10 layout B): five tabs in one row, only the chosen tab's buttons show.
+    // A tab may have a SHORTER word than its button elsewhere (Bangla "শেয়ার করুন" does not fit a fifth of a phone): "<word> (tab)".
+    const tabWord = (base) => { const s = t(`${base} (tab)`); return s.endsWith("(tab)") ? t(base) : s; };
+    installMenuTabs(panel, (k) => (k === "tabs" ? t("Dua menu") : tabWord(({ show: "Show", share: "Share", keep: "Keep", listen: "Listen", study: "Study" })[k])));
     return keep;
   }
 
