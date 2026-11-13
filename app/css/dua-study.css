@@ -274,3 +274,7 @@ body.dua-has-popped::before { content: ""; position: fixed; inset: 0; z-index: 5
 .dua-gw-full { inset: 0; border-width: 0; border-radius: 0; }
 .dua-gw-full .dua-gw-h { display: none; }
 .dua-gw-full .dua-gw-head { border-radius: 0; cursor: default; }
+.dua-gt-move { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.1rem 0 0.4rem 1.4rem; padding: 0.5rem; border: 1px dashed #c9a24b; border-radius: 0.65rem; background: #0c1329; }
+.dua-gt-move select, .dua-gt-move button { min-height: 44px; padding: 0.2rem 0.6rem; border: 1px solid #3a4468; border-radius: 0.6rem; background: #18224a; color: #f2e6c4; font: inherit; max-width: 100%; }
+.dua-gt-move-go { background: #e0b95c !important; color: #121a33 !important; border-color: #c9a24b !important; }
+.dua-gt-move-say { flex-basis: 100%; margin: 0; color: #ff9d8d; font-size: 0.85rem; }
