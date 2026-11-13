@@ -4731,6 +4731,7 @@ export const BN = {
   "Learning Akhlaq": "আখলাক শেখা", // ?
   "Knowing Al-Ghayb": "আল-গায়ব জানা", // ?
   "Stories from Hadith": "হাদীসের কাহিনি", // ?
+  "Learning Stories from Hadith": "হাদীসের কাহিনি থেকে শিক্ষা", // the Owner renamed the Subject (14 Nov 2026); Bangla proposed, the Owner corrects
   "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself.": "উত্তম চরিত্র: একজন মুসলিম কীভাবে মানুষের সাথে আচরণ করে, কথা বলে, এবং নিজের জন্য যা ভালোবাসে অন্যের জন্যও তা ভালোবাসে।", // ?
   "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows.": "অদৃশ্য জগৎ: আল্লাহ, ফেরেশতা, শেষ দিবসের প্রতি ঈমান, এবং যা কেবল আল্লাহই জানেন।", // ?
   "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them.": "রাসূলুল্লাহ ﷺ ও তাঁর সাহাবীদের জীবনের ঘটনা, যেমন হাদীসে বর্ণিত হয়েছে।", // ?
