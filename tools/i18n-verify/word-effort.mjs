@@ -428,7 +428,12 @@ check("the DEPLOYMENT file (what the Owner pastes in Firebase) is the published 
   const at = (t) => { const start = t.search(/^    match \/ayahKeyMarks\//m); const end = start + block(t, "ayahKeyMarks").length; return [start, end]; };
   const [ls2, le2] = at(live), [ds, de] = at(dep);
   assert.equal(dep.slice(0, ds), live.slice(0, ls2), "the text BEFORE the block differs from firestore.rules");
-  assert.equal(dep.slice(de), live.slice(le2), "the text AFTER the block differs from firestore.rules");
+  // UPDATED IN PLACE 14 Nov 2026 (Architect 104L): the Owner published this file on 11 Nov, and firestore.rules has since GAINED the
+  // Dua groups block (#1696, published 13 Nov) after ayahKeyMarks, so "byte for byte after the block" went stale. What must still hold:
+  // the published file only ever ADDS to what was pasted -- every line after the block here appears in firestore.rules, in order.
+  const depAfter = dep.slice(de).split("\n"), liveAfter = live.slice(le2).split("\n");
+  let j = 0; for (const line of liveAfter) if (j < depAfter.length && line === depAfter[j]) j++;
+  assert.equal(j, depAfter.length, `the text AFTER the block lost a line of the pasted file: ${JSON.stringify(depAfter[j])}`);
   assert.equal(dep.slice(ds, de), block(candText, "ayahKeyMarks"), "the block is not the candidate's");
 });
 check("the candidate is a CANDIDATE: it says in words it is not published, and the app says the same", () => {
