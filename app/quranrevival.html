@@ -27430,6 +27430,15 @@
       await openNotesPaneForKey(currentUnitInfo().unitKey, { tab: "track", backLabel }, () => { paintReadNotesBtn(); back(); });
     }
     const readNotePaneTrackHost = {
+      // The Owner, 13 Nov 2026: the pane carries the Read bar's own Study Unit picker (all seven units).
+      unitChoices: () => [...unitTypeSelect.options].map((o) => ({ value: o.value, label: t(o.textContent) })),
+      pickUnitType: async (type) => {
+        unitTypeSelect.value = type;
+        unitTypeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        if (type === "ayah") return readNotesUnit();
+        const info = currentUnitInfo();
+        return { unitKey: info.unitKey, label: info.label };
+      },
       trackCard: (u, el) => paintPaneApproachCard(u, el),
       take: (u) => { backToReadNotes(u, "track"); openApproachWheel(); },
       // The card first: opening it clears any way back ("the card is open again"), so the way back is set after it.
