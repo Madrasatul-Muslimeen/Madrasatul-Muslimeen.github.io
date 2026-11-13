@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.30",
+    "version": "14.31",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7049,7 +7049,7 @@
     {
       "version": "14.30",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v14.30: Quran Study's Āyah card phone layout part 2 (#1674, QR Lead 47L; reviewed by 101L): one row [Location][Ayah][‹ ▶ ›][⋮] and one ⋮ menu of nine tiles.",
       "integration": {
         "authorizedOn": "2026-11-12",
@@ -7057,10 +7057,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "14.31",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "v14.31: the Owner's two picture ticks of 13 Nov (Word Card grammar name option 3, Read on two lines option B) and the Dua Lead's pure group-tree model.",
+      "integration": {
+        "authorizedOn": "2026-11-13",
+        "integratedOn": "2026-11-13",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "14.31",
+  "nextUnallocated": "14.32",
   "nextUnallocatedNote": [
+    "v14.31 was allocated to the grammar name on one line and Read on two lines (#1678, #1682), the Dua group tree (#1680), 2026-11-13.",
     "v14.30 was allocated to the Āyah card's one row and one ⋮ menu (#1674), 2026-11-12.",
     "v14.29 was allocated to Little Difficult, Read on word tap and bookmarks, printed pages as a PDF, Arabic twice its size, 2026-11-12.",
     "v14.28 was allocated to gold title lines, four Hadith printed-page books and Bukhari My index, 2026-11-12.",
