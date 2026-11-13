@@ -10,7 +10,7 @@ Written by 13L for its successor. Read CLAUDE.md first, then PCF MSA J106 (needs
 ## The Owner's decisions (PCF J106 `n106i`, answered 14 Nov, ticks 1B 2B 3A 4A 5B 6A 7A)
 Demo (v4): https://claude.ai/artifact/MR5Fd4b3EEPbudYaTG7sM1. One bar: **Menu, Books, Subjects, Explore, Search** (Search at the right edge of the top row, all five on ONE row on a phone). Menu = Encyclopedia, Classical Explanations, a **Dua ↗** link, **Settings** (Text language, Card colours, Person, and the "Previewing as: Prime" note). The "Hadith Books" heading and the grey "not enabled here yet" note are gone. Subjects = Learning Akhlaq, Loving Rasulullah, Knowing Al-Ghayb, Learning Stories from Hadith (Hadith Reading card REMOVED, 5B), with the Continue chips at the top of Subjects (6A). Editable by the Owner in the app: names plus add, remove and reorder subjects (2B), saved in one shared online list (3A, needs a Rules candidate the Owner publishes). Dua chapters move to the Dua page (7A, Dua Lead builds). My index: keep as built (n106h = B). The Owner also wants the Bukhari book 46 / 65 and group Bangla names editable in the app (same storage question as S3).
 
-## 104L's rules (24 Nov message, binding)
+## 104L's rules (14 Nov message, binding)
 - Shared parts are MOUNTED, never changed: the "Previewing as" note, the Continue strip, the Person/Tenant picker. If one needs a code change, ask 104L (name file and line).
 - While a "View as" preview is ON, the **Menu button shows a visible cue** ("Menu · Preview"), gone when off; a rendered check proves both.
 - Menu panel starts hidden: check COMPUTED display; keep an explicit `[hidden]` rule. Update moved-control suites in place, never delete.
