@@ -13,8 +13,8 @@ After this publish the app can **save Dua groups**:
   (their guardian, their own teacher, owner and prime). Nobody else can see them.
 - Groups can sit inside groups, up to **3 levels**, and can be dragged to any level; up to 200 groups in each list.
 
-**Delete is a real delete, as you chose.** When a group is deleted, it and the groups inside it are **gone for good**;
-there is no undo. The duas themselves, and every mark on them, are **not** touched. (Nothing in the database is ever
+**Delete is a real delete, as you chose.** Deleting a group removes it for good, with no bring-back; the duas themselves
+and everyone's marks are never removed. A dua that was in a deleted group still shows in its other groups, or without a group. (Nothing in the database is ever
 erased as a whole: the list of groups is simply saved again without that group.)
 
 It changes nothing else:

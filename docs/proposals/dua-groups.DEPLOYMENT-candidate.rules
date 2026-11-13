@@ -3271,13 +3271,20 @@ service cloud.firestore {
     //              a personId  that person's own groups. No personId shape can be "admin" (p1..p4, p + 13 digits,
     //                          person_<uid8>, person_admin1, 7 digits), and a person's document also requires that the
     //                          person belongs to the tenant (personInTenant).
-    //    nodes     the TOP level of the tree, a list of { id "g-xxxxxxxx", name { en, bn? }, kids [ ...same, nested ] }
+    //    nodes     the TOP level of the tree, a list of { id "g-xxxxxxxx", name { en, bn? }, kids [ ...same, nested ],
+    //              duas [ dua keys ] on a person's groups only }
     //              (the Dua Lead's model, app/js/dua-group-tree.js, merged in #1680; the PCA settled the shape 13 Nov).
     //              Node ids are permanent (I5): a rename or a move never changes an id. At most 3 levels, at most 200
     //              groups in all, unique ids and names of at most 60 characters are checked by the client (cleanTree),
     //              as dua-saving-data.js does for placements: Rules cannot look inside a list. The Rules cap the top
     //              level at 200, and Firestore's 1 MiB document limit bounds the rest.
-    //    MEMBERSHIP (which duas sit in which group) -- see the note filled in from the Dua Lead's answer below.
+    //    MEMBERSHIP, one home per kind (the Dua Lead 11L, 13 Nov):
+    //      the madrasah's groups: duaEdits.placements[].group = the node id (the published duaEdits block, unchanged);
+    //      a person's groups ("My groups"): a `duas` list ON EACH NODE of that person's document, of dua keys (the
+    //      published duaKey forms, checked by the client), at most 500 per node and 5000 per document (client caps).
+    //      So the madrasah's membership is never in a person's document, and a person's is never in duaEdits.
+    //    A DELETED GROUP's placements are not rewritten: a placement whose group id is no longer in the tree is ignored
+    //    on read (the dua shows in its other groups, else ungrouped) and dropped the next time that dua's edit is saved.
     //
     //  WHO
     //    "admin" document:   every member of the madrasah READS; owner and prime WRITE (canAdminIdentity, as duaEdits).
