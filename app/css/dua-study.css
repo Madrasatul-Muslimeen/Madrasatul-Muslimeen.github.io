@@ -223,3 +223,39 @@ body.dua-has-popped::before { content: ""; position: fixed; inset: 0; z-index: 5
 .dua-ft-w { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; min-width: 3rem; }
 .dua-ft-w b { font-size: 1.35rem; font-weight: 400; }
 .dua-ft-w small { font-size: 0.78rem; color: #c7cbe0; text-align: center; }
+
+/* 25 (the Owner, 13 Nov, demo v1.10): the Dua groups tree (drag to any level, one ⋯ menu per group) and a group's pop-up. */
+.dua-gt-item { margin: 0; }
+.dua-gt-row { position: relative; display: flex; align-items: center; gap: 0.4rem; margin: 0.3rem 0; padding: 0.2rem 0.4rem; border: 1px solid #3a4468; border-radius: 0.65rem; background: #121a33; color: #f2e6c4; }
+.dua-gt-grip { flex: none; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; color: #c7cbe0; font-size: 1.2rem; cursor: grab; touch-action: none; user-select: none; }
+.dua-gt-ro .dua-gt-grip { opacity: 0.3; cursor: not-allowed; }
+.dua-gt-name { flex: 1; min-width: 0; min-height: 40px; padding: 0 0.2rem; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; text-align: start; overflow-wrap: anywhere; cursor: pointer; }
+.dua-gt-level { font-size: 0.72rem; font-weight: 400; color: #c7cbe0; }
+.dua-gt-more { flex: none; min-width: 40px; min-height: 40px; border: 1px solid #3a4468; border-radius: 0.6rem; background: #18224a; color: #f2e6c4; font: inherit; cursor: pointer; }
+.dua-gt-kids { margin-inline-start: 1.1rem; padding-inline-start: 0.5rem; border-inline-start: 2px solid #2a3358; }
+.dua-gt-row.before { box-shadow: 0 -4px 0 #e0b95c; }
+.dua-gt-row.after { box-shadow: 0 4px 0 #e0b95c; }
+.dua-gt-row.inside { outline: 3px solid #e0b95c; }
+.dua-gt-row.dragging { opacity: 0.4; }
+.dua-gt-ghost { position: fixed; z-index: 90; pointer-events: none; padding: 0.4rem 0.8rem; border-radius: 0.6rem; background: #e0b95c; color: #121a33; font-weight: 600; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); transform: translate(-50%, -120%); }
+.dua-gt-menu { position: absolute; inset-inline-end: 0.3rem; top: 100%; z-index: 30; display: flex; flex-direction: column; min-width: 190px; padding: 0.25rem; border: 1px solid #c9a24b; border-radius: 0.65rem; background: #0c1329; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
+.dua-gt-menu[hidden] { display: none; }
+.dua-gt-menu button { min-height: 44px; padding: 0.2rem 0.7rem; border: 0; border-radius: 0.5rem; background: none; color: #f2e6c4; font: inherit; text-align: start; cursor: pointer; }
+.dua-gt-menu .dua-gt-danger { color: #ff9d8d; }
+.dua-gw { box-sizing: border-box; position: fixed; z-index: 80; display: flex; flex-direction: column; min-width: 280px; min-height: 200px; border: 2px solid #c9a24b; border-radius: 0.8rem; background: #0c1329; color: #f2e6c4; box-shadow: 0 10px 36px rgba(0, 0, 0, 0.6); }
+.dua-gw-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.65rem; border-radius: 0.6rem 0.6rem 0 0; background: #e0b95c; color: #121a33; cursor: move; touch-action: none; }
+.dua-gw-head b { flex: 1; min-width: 0; }
+.dua-gw-close { min-width: 40px; min-height: 40px; border: 1px solid #121a33; border-radius: 0.6rem; background: #fffdf7; color: #121a33; font: inherit; cursor: pointer; }
+.dua-gw-body { flex: 1; padding: 0.65rem; overflow: auto; }
+.dua-gw-h { position: absolute; z-index: 2; touch-action: none; }
+.dua-gw-h-n { top: -6px; left: 12px; right: 12px; height: 12px; cursor: ns-resize; }
+.dua-gw-h-s { bottom: -6px; left: 12px; right: 12px; height: 12px; cursor: ns-resize; }
+.dua-gw-h-e { right: -6px; top: 12px; bottom: 12px; width: 12px; cursor: ew-resize; }
+.dua-gw-h-w { left: -6px; top: 12px; bottom: 12px; width: 12px; cursor: ew-resize; }
+.dua-gw-h-ne { right: -7px; top: -7px; width: 20px; height: 20px; cursor: nesw-resize; }
+.dua-gw-h-sw { left: -7px; bottom: -7px; width: 20px; height: 20px; cursor: nesw-resize; }
+.dua-gw-h-nw { left: -7px; top: -7px; width: 20px; height: 20px; cursor: nwse-resize; }
+.dua-gw-h-se { right: -7px; bottom: -7px; width: 20px; height: 20px; cursor: nwse-resize; }
+.dua-gw-full { inset: 0; border-width: 0; border-radius: 0; }
+.dua-gw-full .dua-gw-h { display: none; }
+.dua-gw-full .dua-gw-head { border-radius: 0; cursor: default; }
