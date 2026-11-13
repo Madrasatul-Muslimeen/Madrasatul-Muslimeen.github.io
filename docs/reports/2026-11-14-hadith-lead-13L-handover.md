@@ -42,3 +42,7 @@ Demo (v4): https://claude.ai/artifact/MR5Fd4b3EEPbudYaTG7sM1. One bar: **Menu, B
 - Suites over ~10 min: run in the background with a Monitor; `night-hadith-dua-browser.mjs` timed out at 15 min with no result (unproven, not failing).
 - Playwright for ESM suites: symlink the global one into the gitignored `node_modules` (`ln -s /opt/node22/lib/node_modules/playwright node_modules/playwright`). Start `node serve.js` first (port 8080).
 - A shared element can be mounted elsewhere by re-parenting it from the page's own script; never edit `nav.js` or `topic-study.js` from a Lead branch.
+
+## Ordering rule from 104L (14 Nov, after the handover was drafted)
+- The Hadith Dua tab's removal (and its chapters mode) may merge only AFTER the Dua Lead's Dua chapters PR **#1705** (J106 7A) is on main, so nothing the Owner uses disappears. 104L merges #1705 after v14.36 (about 10:50 am), for v14.37. If #1705 is not merged when S1 is ready, either 104L holds S1, or keep the old Dua tab behind the new Dua ↗ link until then; say which in the PR.
+- #1705's declared Hadith-side touch (13L read the diff, OK): `hadith-collections.html` reads `?openiti=<versionUri>&chapter=<id>` (both validated) and `mountHadithBrowser` takes a new optional `initialOpenitiChapter`. Keep that parameter if S1 edits `mountHadithBrowser`'s options. The Dua page's chapter rows link to `hadith-collections.html?openiti=...&chapter=...&back=1`; S1's one-bar page must still open that chapter and show ← Back.
