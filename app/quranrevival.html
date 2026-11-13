@@ -3110,6 +3110,10 @@
      setStageView when the stage leaves Read), and the bare full-screen state
      (the same three classes the rule above keys on). Pressing the full-screen
      button leaves the bare state and the row goes with it. */
+  /* The Owner, 13 Nov 2026 (picture demo): on a phone in Read on, ⏮ ◂ ▸ ⏭ live in the bar's ⋮ menu (the tiles show), not on the bar (two lines, not three). */
+  .qm-sheet .qm-tile.qm-step-tile { display: none; }
+  body.read-bar-steps-in-menu .qm-sheet .qm-tile.qm-step-tile { display: flex; }
+  body.read-bar-steps-in-menu #readBar :is(#prevUnitBtn, #prevAyahBtn, #nextAyahBtn, #nextUnitBtn) { display: none !important; }
   #readQuickRow { display: none; gap: 0.4rem; flex: 0 0 auto; }
   #readQuickRow[hidden] { display: none !important; }
   body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow { display: flex; }
@@ -22998,11 +23002,12 @@
           fitQuickSheet(wrap);
           const done = wrap.querySelector('[data-qm-act="complete"]'); // the bar's ✓ may be unavailable (no saving here): its tile follows it
           if (done) { done.disabled = readCompleteBtn.disabled; done.title = readCompleteBtn.title || ""; }
+          for (const [act, id] of [["stepprevunit", "prevUnitBtn"], ["stepprevayah", "prevAyahBtn"], ["stepnextayah", "nextAyahBtn"], ["stepnextunit", "nextUnitBtn"]]) { const tl = wrap.querySelector(`[data-qm-act="${act}"]`), bt = document.getElementById(id); if (tl && bt) tl.disabled = bt.disabled; } // the step tiles follow the bar buttons they stand for
           const rec = wrap.querySelector('[data-qm-act="record"]'); // MSA · QR J132: the Record tile says what the bar's Record button says (Mushaf: the chosen Approach's text)
           if (rec && readBarRecordBtn) rec.title = readBarRecordBtn.title; // title only: the tile's spoken name stays "Record Your Progress"
         },
         // The tiles the page adds to the bar's ⋮ (barUnitTilesHtml): each presses the bar button it stands for.
-        onExtra: (key) => { document.getElementById({ complete: "readCompleteBtn", approach: "readBarTakeBtn", record: "readBarRecordBtn", status: "readBarStatusBtn" }[key])?.click(); },
+        onExtra: (key) => { document.getElementById({ complete: "readCompleteBtn", approach: "readBarTakeBtn", record: "readBarRecordBtn", status: "readBarStatusBtn", stepprevunit: "prevUnitBtn", stepprevayah: "prevAyahBtn", stepnextayah: "nextAyahBtn", stepnextunit: "nextUnitBtn" }[key])?.click(); },
         onTakeNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { fromQuickMenu: true }); }, // the Owner, 3 Nov 2026: no Note yet, so a new Note
         onToggleBookmark: async (unitKey) => { await toggleAyahBookmark(unitKey, undefined, undefined, { unitChoices: await quickMenuBookmarkChoices(unitKey) }); },
         // The Owner, 9 Oct 2026 (Read view): "there's no button for attaching this Ayah to QCR." The same route as the
@@ -23175,11 +23180,22 @@
         Null for an āyah unit (the tile already is that bookmark). Its press runs the bar's retired 🔖 handler (the open unit). */
     /** The ⋮ sheet's own tiles for the BAR menu (not the per-āyah ones): Text size (its sliders open inside the sheet), Mark this
         reading complete, and, on a phone only, the three study buttons. Each runs the bar button it stands for, so nothing else changed. */
+    /** The Owner, 13 Nov 2026 (picture demo, "Read on: 2 lines as shown in the image"): below 600px the Read on bar was THREE lines (151px) at every
+        phone width; with ⏮ ◂ ▸ ⏭ in the ⋮ menu it is two (104px) from 360px. The class shows the four tiles and hides the four bar buttons. */
+    const readBarStepsPhone = window.matchMedia("(max-width: 599.98px)");
+    let readBarStepsWanted = false;
+    function applyReadBarSteps() { document.body.classList.toggle("read-bar-steps-in-menu", readBarStepsWanted && readBarStepsPhone.matches); }
+    function setReadBarStepsWanted(on) { readBarStepsWanted = !!on; applyReadBarSteps(); }
+    readBarStepsPhone.addEventListener?.("change", applyReadBarSteps);
     function barUnitTilesHtml() {
       const tileHtml = (act, glyph, label, full, cls = "") => `<button type="button" class="qm-item qm-tile${cls}" data-qm-act="${act}" title="${escapeHtml(full)}" aria-label="${escapeHtml(full)}"><span class="qm-glyph" aria-hidden="true">${glyph}</span><span class="qm-label">${escapeHtml(label)}</span></button>`;
       const textSize = renderTextSizeButtonHtml("readsheet", { btnClass: "qm-item qm-tile" })
         .replace(/>A±<\/button>/, ` aria-label="${escapeHtml(t("Text size"))}"><span class="qm-glyph" aria-hidden="true">A±</span><span class="qm-label">${escapeHtml(t("Text size"))}</span></button>`);
-      return textSize + tileHtml("complete", "✓", t("Mark complete"), t("Mark this reading complete"));
+      // The Owner, 13 Nov 2026 (picture demo, "Read on: 2 lines"): on a phone in Read on the four step buttons leave the bar for this menu
+      // (body.read-bar-steps-in-menu shows these tiles and hides the bar's four); each presses the bar button it stands for (onExtra).
+      const steps = [["stepprevunit", "⏮", t("Previous"), t("Previous")], ["stepprevayah", "◂", t("Previous āyah"), t("Previous āyah")], ["stepnextayah", "▸", t("Next āyah"), t("Next āyah")], ["stepnextunit", "⏭", t("Next"), t("Next")]]
+        .map(([act, glyph, label, full]) => tileHtml(act, glyph, label, full, " qm-step-tile")).join("");
+      return steps + textSize + tileHtml("complete", "✓", t("Mark complete"), t("Mark this reading complete"));
     }
     /** PCF MSA J132 (the Owner, 10 Nov 2026: "Study moves to dot. Place it elegantly."): the Study ▾ pill, the three pickers and the
         Take an Approach | Record Your Progress | Know Your Status pill leave the Read bar and become ONE labelled group at the top of the
@@ -26969,6 +26985,7 @@
       // 📖 Meaning (10 Oct 2026) draws its own flow of whole pages, over any unit, Mushaf or not.
       const meaningOn = readMeaningOn;
       const usesFlow = meaningOn || isMushaf || isPageUnit;
+      setReadBarStepsWanted(meaningOn && !isMushaf); // the Owner, 13 Nov 2026: Read on is two lines on a phone, its four step buttons in the ⋮ menu
 
       // Shell round 21 -- the owner's answer to "keep both, or bar only?" was
       // keep both: the read bar moves the UNIT, this row moves the AYAH inside
