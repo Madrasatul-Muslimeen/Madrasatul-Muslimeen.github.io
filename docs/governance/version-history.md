@@ -1137,3 +1137,4 @@ total). Allocated by the MMSA Architect.
 14.32: the Dua card Menu's five tabs (#1684) and the Dua groups screen pieces (#1686). Allocated by the MMSA Architect.
 14.33: the Owner's 13 Nov Word Card asks and the Notes pane unit picker (#1689), Dua groups step 4 (#1688). Allocated by the MMSA Architect.
 14.34: the Hadith 👥 list readable in the night look (#1693). Allocated by the MMSA Architect.
+14.35: Dua groups: Admin's groups / My groups pop-up, with the published Rules (#1695, #1696, #1698). Allocated by the MMSA Architect.

@@ -14,8 +14,9 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 let passed = 0, failed = 0;
 const check = (name, fn) => { try { const r = fn(); if (r && typeof r.then === "function") throw new TypeError("sync check given a promise"); passed++; console.log(`  PASS  ${name}`); } catch (e) { failed++; console.log(`  FAIL  ${name}\n        ${e.message}`); } };
 
-// --- 1. NOT WIRED ---
-const localImportsOf = (file) => [...fs.readFileSync(file, "utf8").matchAll(/(?:from\s*|import\s*\(?\s*)["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
+// --- 1. NOT WIRED AT START-UP (I9) --- (step 6b, 13 Nov 2026: the module is now reached ONLY through one lazy import() in dua-study.js, opened by a button;
+// the walker below follows STATIC imports only, so the claim that matters stays checked: no page loads it before the button is pressed.)
+const localImportsOf = (file) => [...fs.readFileSync(file, "utf8").matchAll(/(?:from\s*|import\s+)["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
 const entryModulesOf = (html) => [...fs.readFileSync(html, "utf8").matchAll(/["'`](?:\.\/)?js\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
 function chainsToTarget(target) {
   const found = [];
@@ -32,7 +33,8 @@ function chainsToTarget(target) {
   return found;
 }
 check("POSITIVE CONTROL: the reachability walker finds a wired module (records.js)", () => assert.ok(chainsToTarget("records.js").length > 0));
-check("NOT WIRED: no page reaches dua-group-tree.js yet (the screens follow, one PR each)", () => assert.deepEqual(chainsToTarget("dua-group-tree.js"), []));
+check("the ONE lazy door: dua-study.js opens the groups pop-up with a dynamic import() of dua-groups-page.js, and no page imports that statically", () => { assert.match(fs.readFileSync(path.join(appJs, "dua-study.js"), "utf8"), /import\("\.\/dua-groups-page\.js"\)/); assert.deepEqual(chainsToTarget("dua-groups-page.js"), []); });
+check("dua-group-tree.js is reachable from NO page by a STATIC import chain (it loads only when the Dua groups button is pressed: I9)", () => assert.deepEqual(chainsToTarget("dua-group-tree.js"), []));
 
 // --- the module, with a throw-away mutated copy when --mutate is given ---
 let file = path.join(appJs, "dua-group-tree.js"), tmp = null;

@@ -1,6 +1,6 @@
 // PCF MSA J104, round R6 (9 Nov 2026) -- the Dua saving layer, app/js/dua-saving-data.js.
 // Firebase-free: the imports are replaced in memory, nothing contacts a network or a database. Three halves:
-//   1. NOT WIRED: no page reaches the module by any chain (R6 builds the writers; the screens follow), with a positive control.
+//   1. NOT WIRED AT START-UP: no page reaches the module by a STATIC chain; its one door is the lazy import() behind the Dua groups button (step 6b).
 //   2. BEHAVIOUR against an in-memory store that really mutates: the right ids, every envelope field, a clear writes the map
 //      WITHOUT the key and never deletes, hide is hidden:true, a share is append-only with an auto id, refusals read nothing and
 //      write nothing, a failed write reaches the user (I15), a plan costs one read.
@@ -21,8 +21,9 @@ let passed = 0, failed = 0;
 const check = (name, fn) => { try { const r = fn(); if (r && typeof r.then === "function") throw new TypeError("sync check given a promise"); passed++; console.log(`  PASS  ${name}`); } catch (e) { failed++; console.log(`  FAIL  ${name}\n        ${e.message}`); } };
 const acheck = async (name, fn) => { try { await fn(); passed++; console.log(`  PASS  ${name}`); } catch (e) { failed++; console.log(`  FAIL  ${name}\n        ${e.message}`); } };
 
-// --- 1. NOT WIRED ---
-const localImportsOf = (file) => [...fs.readFileSync(file, "utf8").matchAll(/(?:from\s*|import\s*\(?\s*)["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
+// --- 1. NOT WIRED AT START-UP (I9) --- (step 6b, 13 Nov 2026: the module is now reached ONLY through one lazy import() in dua-study.js, opened by a button;
+// the walker below follows STATIC imports only, so the claim that matters stays checked: no page loads it before the button is pressed.)
+const localImportsOf = (file) => [...fs.readFileSync(file, "utf8").matchAll(/(?:from\s*|import\s+)["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
 const entryModulesOf = (html) => [...fs.readFileSync(html, "utf8").matchAll(/["'`](?:\.\/)?js\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
 function chainsToTarget(target) {
   const found = [];
@@ -39,8 +40,9 @@ function chainsToTarget(target) {
   return found;
 }
 check("POSITIVE CONTROL: the reachability walker finds a wired module (records.js)", () => assert.ok(chainsToTarget("records.js").length > 0));
-check("dua-saving-data.js is reachable from NO page yet (R6 builds the writers; the screens follow, one PR each)", () => assert.deepEqual(chainsToTarget("dua-saving-data.js"), []));
-check("no other app module imports it", () => assert.deepEqual(fs.readdirSync(appJs).filter((f) => f.endsWith(".js") && localImportsOf(path.join(appJs, f)).includes("dua-saving-data.js")), []));
+check("the ONE lazy door: dua-study.js opens the groups pop-up with a dynamic import() of dua-groups-page.js, and no page imports that statically", () => { assert.match(fs.readFileSync(path.join(appJs, "dua-study.js"), "utf8"), /import\("\.\/dua-groups-page\.js"\)/); assert.deepEqual(chainsToTarget("dua-groups-page.js"), []); });
+check("dua-saving-data.js is reachable from NO page by a STATIC import chain (it loads only when the Dua groups button is pressed: I9)", () => assert.deepEqual(chainsToTarget("dua-saving-data.js"), []));
+check("its ONE importer is dua-groups-page.js (pinned: a new importer must be audited on purpose)", () => assert.deepEqual(fs.readdirSync(appJs).filter((f) => f.endsWith(".js") && localImportsOf(path.join(appJs, f)).includes("dua-saving-data.js")), ["dua-groups-page.js"]));
 
 // --- 2. BEHAVIOUR ---
 const store = new Map(), failures = [], reads = [], writeLog = [];
