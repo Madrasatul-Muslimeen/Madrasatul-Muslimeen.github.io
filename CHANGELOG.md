@@ -23875,3 +23875,11 @@ One QR Lead 47L round, reviewed by measurement and merged pinned by the Architec
 - **#1688 Dua groups step 4** (11L, merged 13 Nov, no release until now): keyboard Move…, a focus-trapped pop-up, a whole-sentence Delete confirm, `destroy()`. **Still not wired to any page**; nothing saves groups until the Owner publishes the Rules (J104 line 26).
 
 Checks (103L): read-note-pane-units 80/0 (`--mutate` nopicker/squeeze/sametab/ayahcard/openingunit each fail by name); read-note-pane 228/0; explore-page-view 12/0 (`MUT=nopage` fails); word-card-ayah-card-ways-back 83/0; word-effort 47/0, word-effort-browser 51/0; word-card-marks-row 48/0; marks-k2 76/0; arabic-twice 64/0; title-lines 100/0; explore-hizb-view 80/0; claim-for-family-word-hadith 152/6, the same 6 Hadith 👥-list contrast failures as clean `main` run side by side; apps-build-check 58/0; offline list check green; QR build + qr-verify 30 checks rc=0; screenshots of the Notes pane at 320/360px in English and Bangla looked at. Known red on clean `main`, unchanged: ayah-step-all-views [360] Mushaf, quran-flow-step-nav precondition.
+
+## v14.34 — 14 Nov 2026 (Sydney) — the Hadith 👥 list readable in the night look
+
+One Hadith Lead 13L round, reviewed by measurement and merged pinned by the Architect 103L.
+
+- **#1693 Hadith: the night look's 👥 list gets a solid box colour.** `claim-for-family-word-hadith-browser` had failed 6 checks on clean `main` ("the open 👥 list is a floating box whose names read against it", en/bn × 390/820/1440): the measured box colour was `rgba(0,0,0,0)`, because `hadith.css` gave the night look's `.assign-popover` `background: var(--card-bg)`, and `--card-bg` is a radial gradient there. It now takes the solid `--card-bg-inset` (defined in every palette: card-look.css and both Hadith colour sets). One line of Hadith-owned CSS; the shared claim-for picker is untouched.
+
+Checks (103L): claim-for-family-word-hadith 158/0 (was 152/6); `--mutate=hadith-box-gradient` (the old rule) brings back exactly the 6 failures; hadith-colours 118/0 (the Lead); offline list check green; apps-build-check 58/0; QR build + qr-verify 30 checks rc=0 (title-fit run on its own after the full run hit my 40-minute limit: 62/0).

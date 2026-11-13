@@ -3337,3 +3337,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.31** (2026-11-13): the grammar name on one line and Read on two lines (#1678, #1682), the Dua group tree (#1680).
 - **v14.32** (2026-11-13): the Dua card Menu's five tabs (#1684) and the Dua groups screen pieces (#1686).
 - **v14.33** (2026-11-13): the Owner's 13 Nov Word Card asks and the Notes pane unit picker (#1689), Dua groups step 4 (#1688).
+- **v14.34** (2026-11-13): the Hadith 👥 list readable in the night look (#1693).
