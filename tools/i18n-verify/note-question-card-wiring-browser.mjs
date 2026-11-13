@@ -13,6 +13,7 @@
 //   nowrite      the Map leaves approachId off createStudyNote            -> "the noteSources write carries approachId"
 //   eager        the Map loads the guides whatever the address            -> "a plain Map open does not fetch"
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { clickAyahTile } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 import { SUBJECT_TEMPLATES, MODULE_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES } from "../../app/js/catalogue-data.js";
 import { QUESTIONS } from "../../app/js/critical-reasoning-guides.js";
 import fs from "node:fs";
@@ -70,7 +71,7 @@ async function newNoteFrom(ctx, approach, pct) {
   await P.evaluate(() => document.querySelector('[data-ayah-num-badge="2:255"]')?.click());
   await P.waitForFunction(() => document.querySelector("[data-ayah-sheet] .ayah-sheet-ref"), null, { timeout: 8000 });
   await P.waitForTimeout(300);
-  await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  await clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-note]");
   let F = null;
   for (let i = 0; i < 100 && !F; i++) { F = P.frames().find((x) => /journey-map\.html\?embed=1&new=1&unit=ayah%3A2%3A255/.test(x.url())) ?? null; if (!F) await P.waitForTimeout(100); }
   await F?.waitForSelector("#notePane [data-edit-body]", { state: "visible", timeout: 20000 }).catch(() => {});

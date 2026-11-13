@@ -13,6 +13,7 @@
 //   --mutate=noplace2                      the poster forgets the place         -> its "lands on" check fails
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { clickAyahTile } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -96,10 +97,10 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
     const { page: P } = await openPage(ctx, "/app/quranrevival.html");
     await toAyah255(P);
     await P.evaluate(() => document.querySelector('[data-ayah-num-badge="2:255"]')?.click());
-    await P.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-poster]", { timeout: 8000 });
+    await P.waitForSelector("[data-ayah-sheet] [data-ayah-sheet-poster]", { timeout: 8000, state: "attached" });
     await P.waitForTimeout(500);
     let went = true;
-    await Promise.all([P.waitForURL(/ayah-poster\.html\?/, { timeout: 15000 }), P.click("[data-ayah-sheet] [data-ayah-sheet-poster]")]).catch(() => { went = false; });
+    await Promise.all([P.waitForURL(/ayah-poster\.html\?/, { timeout: 15000 }), clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-poster]")]).catch(() => { went = false; });
     const pu = new URL(P.url());
     check(`${tag} (2) Make a poster opens the Āyah posters page for 2:255 with back=1`, went && pu.searchParams.get("surah") === "2" && pu.searchParams.get("ayah") === "255" && /[?&]back=1\b/.test(P.url()), P.url());
     if (went) {

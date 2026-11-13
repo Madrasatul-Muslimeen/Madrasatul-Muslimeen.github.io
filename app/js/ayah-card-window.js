@@ -72,10 +72,12 @@ body.ayah-win-dragging { user-select: none; }
   .ayah-sheet[data-ayah-win] { display: flex; flex-direction: column; overflow: hidden; }
   .ayah-sheet[data-ayah-win] > * { flex: 0 0 auto; }
   /* bar 2, tidied: the reference, then ‹ › and 📖 Full text, then ✕ -- one line */
-  .ayah-sheet[data-ayah-win] .ayah-sheet-header { flex-wrap: nowrap; gap: 0.6rem; padding-bottom: 0.45rem; }
+  /* phone layout part 2 (11 Nov 2026): the window's bar 2 is the same two lines as the phone card -- the reference and ✕, then the ONE row
+     [Location][Ayah][‹ ▶ ›][⋮] across the card (it used to hold the reference, ‹ ›, 📖 and ✕ on one line) */
+  .ayah-sheet[data-ayah-win] .ayah-sheet-header { flex-wrap: wrap; gap: 0.35rem 0.6rem; padding-bottom: 0.45rem; }
   .ayah-sheet[data-ayah-win] .ayah-sheet-header .ayah-sheet-ref { order: 1; flex: 1 1 auto; font-size: 1rem; }
-  .ayah-sheet[data-ayah-win] .ayah-sheet-header .ayah-sheet-head-tools { order: 2; flex: 0 0 auto; }
-  .ayah-sheet[data-ayah-win] .ayah-sheet-header .ayah-sheet-close { order: 3; }
+  .ayah-sheet[data-ayah-win] .ayah-sheet-header .ayah-sheet-head-tools:not([hidden]) { order: 3; flex: 1 0 100%; }
+  .ayah-sheet[data-ayah-win] .ayah-sheet-header .ayah-sheet-close { order: 2; }
   .ayah-sheet[data-ayah-win] .ayah-sheet-tilebar .ayah-sheet-actrow { padding: 0.4rem 0; }
   .ayah-sheet[data-ayah-win] > .ayah-sheet-panes { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, var(--ap-l, 1fr)) 12px minmax(0, var(--ap-r, 1fr)); grid-template-rows: minmax(0, 1fr); }
   .ayah-sheet[data-ayah-win] .ayah-sheet-pane-text, .ayah-sheet[data-ayah-win] .ayah-sheet-pane-info { overflow-y: auto; min-height: 0; padding: 0.4rem 0.5rem 0.8rem; }
@@ -88,6 +90,7 @@ body.ayah-win-dragging { user-select: none; }
   .ayah-sheet[data-ayah-win] .ayah-sheet-splitter::after { content: ""; position: absolute; left: 4px; top: 50%; width: 4px; height: 44px; margin-top: -22px; border-radius: 3px; background: var(--card-line); }
   .ayah-sheet[data-ayah-win] .ayah-sheet-splitter:hover::after, .ayah-sheet[data-ayah-win] .ayah-sheet-splitter:focus-visible::after { background: #c9a24a; }
   .ayah-sheet[data-ayah-win] .ayah-sheet-tilebar .ayah-sheet-actrow { grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); }
+  .ayah-sheet[data-ayah-win] .ayah-sheet-tilebar[data-ayah-sheet-menu] .ayah-sheet-actrow { grid-template-columns: repeat(3, minmax(0, 1fr)); } /* the ⋮ menu: nine tiles, three to a line, as on a phone */
   /* one pane across the whole card: the other is a slim bar above it */
   .ayah-sheet[data-ayah-win] .ayah-sheet-panes[data-pane-mode="text"], .ayah-sheet[data-ayah-win] .ayah-sheet-panes[data-pane-mode="info"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .ayah-sheet[data-ayah-win] .ayah-sheet-panes[data-pane-mode="text"] .ayah-sheet-splitter, .ayah-sheet[data-ayah-win] .ayah-sheet-panes[data-pane-mode="info"] .ayah-sheet-splitter { display: none; }

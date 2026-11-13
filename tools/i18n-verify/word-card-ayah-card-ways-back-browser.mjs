@@ -180,29 +180,30 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
     // on the reference's row, before the reference.
     const hb = document.querySelector("[data-ayah-sheet] [data-ayah-sheet-homeback]")?.getBoundingClientRect();
     if (!hb || hb.width < 39.5 || hb.height < 39.5 || hb.left < ref.right - 1 || Math.abs((hb.top + hb.bottom) / 2 - (ref.top + ref.bottom) / 2) > 12) return { all: false, homeback: hb ? [hb.left, hb.top, hb.width, hb.height] : null };
-    const same = (a, b) => Math.abs(a.top - b.top) < 2;
-    // UPDATED IN PLACE 22 Oct 2026 (PCF MSA J70, the Owner: "Tidy the 2nd topbar"): on a computer the card is a wide
-    // window and its bar 2 is ONE line -- the reference, then ‹ › 📖, then ✕. Phones keep the two rows.
+    // UPDATED IN PLACE (phone layout part 2, 11 Nov 2026, the Owner, demo v3): at EVERY width the header is two lines -- the reference then ✕
+    // (the ← before it), and under them ONE row [📍 Location ▾][📖 Ayah][‹ ▶ ›][⋮] (it wraps to a second line only at large text).
     const mid = (r) => (r.top + r.bottom) / 2;
-    if (document.querySelector("[data-ayah-sheet][data-ayah-win]")) return { all: true, windowed: true,
-      row1: [prev, next, nv, close].every((r) => Math.abs(mid(r) - mid(ref)) < 12) && prev.left >= ref.right - 1 && close.left >= nv.right - 1, row2: true,
-      order: next.left >= prev.right - 1 && nv.left >= next.right - 1,
-      inside: rs.every((r) => r.left >= sheet.left - 1 && r.right <= sheet.right + 1), tap: rs.slice(1).every((r) => r.height >= 40 && r.width >= 40) };
-    return { all: true,
-      row1: Math.abs((ref.top + ref.bottom) / 2 - (close.top + close.bottom) / 2) < 12 && close.left >= ref.right - 1,
-      row2: same(prev, next) && same(next, nv) && prev.top >= Math.min(ref.bottom, close.bottom) - 1,
-      order: next.left >= prev.right - 1 && nv.left >= next.right - 1,
-      inside: rs.every((r) => r.left >= sheet.left - 1 && r.right <= sheet.right + 1), tap: rs.slice(1).every((r) => r.height >= 40 && r.width >= 40) };
+    const q = (sel) => document.querySelector("[data-ayah-sheet] " + sel)?.getBoundingClientRect();
+    const loc = q("[data-ayah-sheet-location-btn]"), play = q("[data-ayah-sheet-play]"), more = q("[data-ayah-sheet-more]");
+    if (!loc || !play || !more) return { all: false, parts: { loc: !!loc, play: !!play, more: !!more } };
+    const rowParts = [loc, nv, prev, play, next, more];
+    return { all: true, windowed: !!document.querySelector("[data-ayah-sheet][data-ayah-win]"),
+      row1: Math.abs(mid(ref) - mid(close)) < 12 && close.left >= ref.right - 1,
+      row2: rowParts.every((r) => Math.abs(mid(r) - mid(loc)) < 4) && loc.top >= Math.min(ref.bottom, close.bottom) - 1,
+      order: nv.left >= loc.right - 1 && prev.left >= nv.right - 1 && play.left >= prev.right - 1 && next.left >= play.right - 1 && more.left >= next.right - 1,
+      inside: [...rs, loc, play, more].every((r) => r.left >= sheet.left - 1 && r.right <= sheet.right + 1), tap: [...rs.slice(1), loc, play, more].every((r) => r.height >= 40 && r.width >= 40) };
   });
-  check(`${tag} the header reads: ${head.windowed ? "reference, ‹ › 📖, ✕ on one line (the card as a window)" : "reference … ✕ on row 1, then ‹, ›, 📖 Note view on row 2"} -- inside the card, 40px targets`, head.all && head.row1 && head.row2 && head.order && head.inside && head.tap, JSON.stringify(head));
+  check(`${tag} the header reads: reference … ✕ on row 1, then Location, 📖 Ayah, ‹ ▶ ›, ⋮ on row 2 -- inside the card, 40px targets`, head.all && head.row1 && head.row2 && head.order && head.inside && head.tap, JSON.stringify(head));
   // The Owner: "all these choices/ actions could be placed below the Ayah name/ number in a row".
   const acts = await page.evaluate(() => {
+    // UPDATED IN PLACE (phone layout part 2): the nine tiles are the ⋮ menu; open it as a reader does, then measure.
+    const more = document.querySelector("[data-ayah-sheet] [data-ayah-sheet-more]"); if (more && more.getAttribute("aria-expanded") !== "true") more.click();
     const row = document.querySelector("[data-ayah-sheet] [data-ayah-sheet-actions]"); if (!row) return null;
     const head = document.querySelector("[data-ayah-sheet] .ayah-sheet-header").getBoundingClientRect();
     const status = document.querySelector("[data-ayah-sheet] [data-ayah-sheet-status]").getBoundingClientRect();
     const btns = [...row.querySelectorAll("button")]; const rs = btns.map((b) => b.getBoundingClientRect());
     const sheet = document.querySelector("[data-ayah-sheet]").getBoundingClientRect();
-    return { n: btns.length, oneNote: document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-note]").length === 1 && row.querySelectorAll("[data-ayah-sheet-note]").length === 0 && !row.querySelector("[data-ayah-sheet-takenote]") && !btns.some((b) => b.textContent.includes("✍")),
+    return { n: btns.length, oneNote: document.querySelectorAll("[data-ayah-sheet] [data-ayah-sheet-note]").length === 1 && row.querySelectorAll("[data-ayah-sheet-note]").length === 1 && !row.querySelector("[data-ayah-sheet-takenote]") && !btns.some((b) => b.textContent.includes("✍") && !b.hasAttribute("data-ayah-sheet-writing")),
       noteview: document.querySelector("[data-ayah-sheet] [data-ayah-sheet-noteview]")?.textContent.trim(), rows: new Set(rs.map((r) => Math.round(r.top))).size, underHead: rs.every((r) => r.top >= head.bottom - 1 && r.bottom <= status.top + 1),
       inside: rs.every((r) => r.left >= sheet.left - 1 && r.right <= sheet.right + 1), tap: rs.every((r) => r.height >= 44 && r.width >= 40),
       named: btns.every((b) => (b.getAttribute("aria-label") || "").length > 2), labelsFit: btns.every((b) => { const l = b.querySelector(".ayah-sheet-act-label"); return l && l.scrollWidth <= l.clientWidth + 1; }) };
@@ -210,7 +211,7 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
   // Updated in place 8 Oct 2026 (the Owner: "Take note button can be place on the above space (free current space)"):
   // this āyah has no Note in the fixture, so Take Note was a tenth button. Updated again 9 Oct 2026 (decision 94, "we
   // got 3 notes. It's confusing"): ONE 📝 Note, so nine buttons, and the header's 📖 reads "Full text".
-  check(`${tag} the nine actions (one 📝 Note, no ✍ Take Note) sit in a row under the header (at most two rows on a phone), each named, each label whole; 📖 reads Full text`, !!acts && acts.n === 8 && acts.oneNote /* UPDATED IN PLACE (J131, 9 Nov 2026): the ONE Note is in the bar now, so eight tiles and no Note in the row */ && acts.noteview === (lang === "bn" ? "📖 পূর্ণ পাঠ" : "📖 Full text") && acts.rows <= 2 && acts.underHead && acts.inside && acts.tap && acts.named && acts.labelsFit, JSON.stringify(acts));
+  check(`${tag} the nine actions (one 📝 Note, no ✍ Take Note) sit in the ⋮ menu under the header (three rows of three), each named, each label whole; 📖 reads Ayah`, !!acts && acts.n === 9 && acts.oneNote /* UPDATED IN PLACE (phone layout part 2, 11 Nov 2026): the ⋮ menu holds nine tiles, the ONE Note first, and 📖 reads "Ayah" */ && acts.noteview === (lang === "bn" ? "📖 আয়াত" : "📖 Ayah") && acts.rows <= 3 && acts.underHead && acts.inside && acts.tap && acts.named && acts.labelsFit, JSON.stringify(acts));
   const ref = () => page.evaluate(() => document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? "");
   const ref0 = await ref();
   await page.click('[data-ayah-sheet-step="1"]'); await page.waitForTimeout(500);

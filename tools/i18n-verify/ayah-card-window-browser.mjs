@@ -177,6 +177,8 @@ for (const look of ["night", "light"]) for (const lang of ["en", "bn"]) {
     await drag(P, east, 640 - cs.w + 10, 0);
     cs = await cols();
     check(`${tag} wide (${Math.round(cs.w)}px): two columns -- the rest beside the full text`, cs.w >= 560 && cs.wide && cs.bx > cs.ax + cs.aw * 0.9 && near(cs.by, cs.ay, 12), JSON.stringify(cs));
+    // UPDATED IN PLACE (phone layout part 2, 11 Nov 2026): the nine tiles are the ⋮ menu now, shown only while ⋮ is open, so open it as a reader does.
+    await P.evaluate(() => { const b = document.querySelector("[data-ayah-sheet-more]"); if (b && b.getAttribute("aria-expanded") !== "true") b.click(); }); await P.waitForTimeout(300);
     const fit = await P.evaluate(() => {
       const s = document.querySelector("[data-ayah-sheet]"), tiles = [...s.querySelectorAll(".ayah-sheet-act")], bad = [];
       for (const t of tiles) { const l = t.querySelector(".ayah-sheet-act-label"), b = t.getBoundingClientRect();
@@ -191,6 +193,7 @@ for (const look of ["night", "light"]) for (const lang of ["en", "bn"]) {
     check(`${tag} wide: the tiles are one tidy size and the card has no sideways scroll`, fit.widths.length === 1 && fit.sideways <= 1, JSON.stringify(fit));
     const rowsTidy = await P.evaluate(() => { const t = [...document.querySelectorAll("[data-ayah-sheet] .ayah-sheet-act")].map((e) => e.getBoundingClientRect()), row = document.querySelector("[data-ayah-sheet] .ayah-sheet-actrow").getBoundingClientRect(); const tops = [...new Set(t.map((b) => Math.round(b.top)))]; return tops.map((tp) => { const r = t.filter((b) => Math.round(b.top) === tp); return { n: r.length, fill: Math.abs(Math.max(...r.map((b) => b.right)) - row.right) < 2 }; }); });
     check(`${tag} wide: every row of tiles fills the row's width (no ragged wrap)`, rowsTidy.every((r) => r.fill), JSON.stringify(rowsTidy));
+    await P.evaluate(() => { const b = document.querySelector("[data-ayah-sheet-more]"); if (b && b.getAttribute("aria-expanded") === "true") b.click(); }); await P.waitForTimeout(200);
 
     // minimum size
     const wh = await centre(P, '.ayah-win-frame .ayah-win-h[data-h="w"]');

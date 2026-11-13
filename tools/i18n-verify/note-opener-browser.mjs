@@ -19,6 +19,7 @@
 //   allsw    the all-blocks switch does nothing                      -> "C the one switch hides both"
 //   sanitize the sanitiser keeps a block's inside as it came         -> "D a hostile block is rebuilt clean"
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { clickAyahTile } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -155,7 +156,7 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
     await ev(() => document.querySelector('[data-ayah-num-badge="15:32"]')?.click());
     await P.waitForFunction(() => document.querySelector("[data-ayah-sheet] .ayah-sheet-ref"), null, { timeout: 8000 }).catch(() => {});
     await P.waitForTimeout(300);
-    await P.click("[data-ayah-sheet] [data-ayah-sheet-note]").catch(() => {});
+    await clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-note]").catch(() => {});
     const f = await frameOf(P).catch(() => null);
     await f?.waitForSelector("[data-edit-body] .mm-ref .mm-ref-sw", { timeout: 20000 }).catch(() => {});
     await P.waitForTimeout(500);
@@ -203,7 +204,7 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
     check(`${tag} B ← Back reopens the Āyah card on 15:32`, back.hidden && back.card && /15:32|১৫:৩২/.test(back.ref || ""), JSON.stringify(back));
     // ------------------------------------------------------------ C. 📎 Attach 2:255, then the one switch (two widths)
     if (width === 390 || width === 1180) {
-      await P.click("[data-ayah-sheet] [data-ayah-sheet-note]").catch(() => {});
+      await clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-note]").catch(() => {});
       const g = await frameOf(P).catch(() => null);
       await g?.waitForSelector("[data-edit-body] .mm-ref .mm-ref-sw", { timeout: 20000 }).catch(() => {});
       await g?.click('[data-nn-tool="attach"]').catch(() => {});

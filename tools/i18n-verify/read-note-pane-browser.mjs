@@ -10,6 +10,7 @@
 //   --mutate=notrackback a Track action leaves no way back to the pane          -> the Track way-back checks fail
 //   --mutate=nosource   ✚ New note makes a Note with no link to the āyah                 -> the noteSources check fails
 import { chromium, newContext, openPage, clickReadTool } from "./harness.mjs";
+import { clickAyahTile } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -230,7 +231,7 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   };
   await openCard(256);
   await P.waitForFunction(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note]") && !document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), null, { timeout: 8000 }).catch(() => {});
-  await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  await clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-note]");
   // UPDATED IN PLACE (J108, v13.01, the Owner: "Q2:A. Q3. Build it."): the card's 📝 Note opens the shared Note opener -- a
   // NEW Note -- and its line "You have N Notes on this āyah — open" opens THIS pane on the āyah, "← Back to Āyah card" as before.
   await P.waitForSelector("#noteOpener:not([hidden]) [data-no-count-open]", { timeout: 20000 }).catch(() => {});
@@ -253,7 +254,7 @@ for (const lang of ["en", "bn"]) for (const [width, height, mode] of [[390, 844,
   // once, the Āyah inside it, with no "You have N Notes" line (there are none). (It opened the pane with ✚ New note in focus.)
   await openCard(258);
   await P.waitForFunction(() => document.querySelector("[data-ayah-sheet] [data-ayah-sheet-note-new]"), null, { timeout: 8000 }).catch(() => {});
-  await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  await clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-note]");
   const F2 = await (async () => { for (let i = 0; i < 80; i++) { const f = P.frames().find((x) => /journey-map\.html\?embed=1&new=1&unit=ayah%3A2%3A258/.test(x.url())); if (f) return f; await P.waitForTimeout(100); } return null; })();
   await F2?.waitForSelector("[data-edit-body] .mm-ref", { timeout: 20000 }).catch(() => {});
   await P.waitForTimeout(800);

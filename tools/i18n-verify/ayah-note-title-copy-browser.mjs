@@ -18,6 +18,7 @@
 //   esc       Esc does not close the chooser                           -> "(3) Esc closes the chooser"
 //   bnleak    the chooser's Bangla title is missing                    -> "(3) Bangla: the chooser in Bangla"
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { clickAyahTile } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -84,7 +85,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1280, 800], [39
   await openCard(P, 255);
   // UPDATED IN PLACE (J108, v13.01): the card's 📝 Note opens the shared Note opener -- a NEW Note at once -- so (1) reads the
   // title off that Note's first write (createStudyNote, as before) and off its title box.
-  await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  await clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-note]");
   let F = null;
   for (let i = 0; i < 80 && !F; i++) { F = P.frames().find((x) => /journey-map\.html\?embed=1&new=1&unit=ayah%3A2%3A255/.test(x.url())) ?? null; if (!F) await P.waitForTimeout(100); }
   await F?.waitForSelector("[data-edit-title]:not([hidden])", { timeout: 20000 }).catch(() => {});
@@ -102,7 +103,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1280, 800], [39
   await P.click('[data-ayah-sheet] [data-ayah-sheet-step="1"]');
   await P.waitForFunction(() => /2:256|২:২৫৬/.test(document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent ?? ""), null, { timeout: 8000 }).catch(() => {});
   await P.waitForTimeout(500);
-  await P.click("[data-ayah-sheet] [data-ayah-sheet-note]");
+  await clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-note]");
   // J108: the new Note's "You have 1 other Note on this āyah — open" is the way to the Notes pane listing "On 2:256".
   await P.waitForSelector("#noteOpener:not([hidden]) [data-no-count-open]", { timeout: 20000 }).catch(() => {});
   await P.click("#noteOpener [data-no-count-open]").catch(() => {});
@@ -141,7 +142,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1280, 800], [39
   await P.waitForTimeout(400);
   // (3) Copy
   if (!(await ev(() => !!document.querySelector("[data-ayah-sheet] [data-ayah-sheet-copy]")))) await openCard(P, 255);
-  await P.click("[data-ayah-sheet] [data-ayah-sheet-copy]");
+  await clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-copy]");
   await P.waitForTimeout(300);
   const dlg = await ev(() => { const d = document.getElementById("ayahCopyDlg"); if (!d) return null; const b = d.querySelector(".ayah-copy-box").getBoundingClientRect(); return { title: d.querySelector("h3")?.textContent, langs: [...d.querySelectorAll("[data-copy-lang]")].map((x) => `${x.dataset.copyLang}:${x.getAttribute("aria-pressed")}`).join(), inside: b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight, small: [...d.querySelectorAll("button, select")].filter((x) => x.getBoundingClientRect().height > 0 && x.getBoundingClientRect().height < 44).length, cut: [...d.querySelectorAll("button")].filter((x) => x.scrollWidth > x.clientWidth + 1).map((x) => x.textContent), side: document.documentElement.scrollWidth - innerWidth }; });
   const defLangs = lang === "bn" ? "ar:true,en:false,bn:true" : "ar:true,en:true,bn:false";
@@ -175,7 +176,7 @@ for (const look of ["night", "light"]) {
   await openCard(P, 255);
   // the card closes when a tile is pressed, so its colours are read first, then the chooser's
   const sheet = await ev(() => { const s = getComputedStyle(document.querySelector("[data-ayah-sheet]")); return [s.backgroundImage, s.backgroundColor, s.color].join(" | "); });
-  await P.click("[data-ayah-sheet] [data-ayah-sheet-copy]"); await P.waitForTimeout(250);
+  await clickAyahTile(P, "[data-ayah-sheet] [data-ayah-sheet-copy]"); await P.waitForTimeout(250);
   const col = { sheet, box: await ev(() => { const b = document.querySelector("#ayahCopyDlg .ayah-copy-box"); if (!b) return "no chooser"; const c = getComputedStyle(b); return [c.backgroundImage, c.backgroundColor, c.color].join(" | "); }) };
   check(`${look}: the chooser wears the Āyah card's own background and text colour`, col.sheet === col.box, JSON.stringify(col));
   await ctx.close();
