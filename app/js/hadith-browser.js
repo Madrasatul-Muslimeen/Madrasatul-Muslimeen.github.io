@@ -310,7 +310,7 @@ function controls(state, render) {
 export const HADITH_SUBJECTS = [
   { id: "akhlaq", name: "Learning Akhlaq", about: "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself." },
   { id: "ghayb", name: "Knowing Al-Ghayb", about: "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows." },
-  { id: "stories", name: "Stories from Hadith", about: "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them." },
+  { id: "stories", name: "Learning Stories from Hadith", about: "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them." },
 ];
 
 /**
