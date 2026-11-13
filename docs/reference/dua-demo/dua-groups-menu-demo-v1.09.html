@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dua groups and Menu demo v1.09</title>
+<style>
+:root{--bg:#f6f1e4;--card:#fffdf7;--ink:#1d2a22;--mut:#5d6b61;--line:#d9cfb6;--acc:#0b5a3a;--warn:#9a2b1d}
+@media (prefers-color-scheme:dark){:root{--bg:#0c1a13;--card:#12261b;--ink:#f2ead2;--mut:#b9c4b4;--line:#2d4a3a;--acc:#7fd6a0;--warn:#ff9d8d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,sans-serif;padding:0 16px 56px}
+h1{font-size:1.35rem;margin:18px 0 4px}h2{font-size:1.1rem;margin:0 0 6px}p{margin:.3rem 0}.mut{color:var(--mut);font-size:.92rem}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:14px auto;max-width:980px}
+.tag{display:inline-block;background:var(--acc);color:#fff;border-radius:99px;padding:2px 10px;font-size:.8rem}
+@media (prefers-color-scheme:dark){.tag{color:#06140d}}
+button{font:inherit;min-height:40px;min-width:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:4px 12px;cursor:pointer}
+button.pri{background:var(--acc);color:#fff;border-color:var(--acc)}@media (prefers-color-scheme:dark){button.pri{color:#06140d}}
+button.del{color:var(--warn);border-color:var(--warn)}
+button[aria-pressed=true]{background:var(--acc);color:#fff}@media (prefers-color-scheme:dark){button[aria-pressed=true]{color:#06140d}}
+input{font:inherit;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:4px 10px;min-width:0}
+.note{background:#fff3c9;color:#4a3b00;border-radius:8px;padding:6px 10px;font-size:.9rem;margin:8px 0}
+@media (prefers-color-scheme:dark){.note{background:#3b3412;color:#f6e7b6}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+/* tree */
+.node{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:6px 8px;margin:6px 0}
+.node b{flex:1 1 140px;min-width:0;overflow-wrap:anywhere}.node .acts{display:flex;flex-wrap:wrap;gap:4px}
+.kids{margin-left:18px;border-left:2px solid var(--line);padding-left:8px}
+.lvl{font-size:.75rem;color:var(--mut)}
+/* group pop-up */
+.gp{position:fixed;z-index:20;background:var(--card);border:2px solid var(--acc);border-radius:12px;box-shadow:0 10px 36px #0006;display:flex;flex-direction:column;overflow:hidden;min-width:260px;min-height:180px}
+.gp[hidden]{display:none}
+.gp header{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--acc);color:#fff;cursor:move;touch-action:none}
+@media (prefers-color-scheme:dark){.gp header{color:#06140d}}
+.gp header b{flex:1;min-width:0}.gp .body{padding:10px;overflow:auto;flex:1}
+.gp .grip{position:absolute;right:0;bottom:0;width:34px;height:34px;cursor:nwse-resize;touch-action:none;
+ background:linear-gradient(135deg,transparent 50%,var(--acc) 50%);border-bottom-right-radius:10px}
+@media (max-width:699px){.gp{inset:0!important;width:auto!important;height:auto!important;border-radius:0;border-width:0}.gp .grip{display:none}.gp header{cursor:default}}
+/* menu mock */
+.mock{background:#0f1c33;color:#f1e7c6;border:2px solid #c9a24a;border-radius:14px;padding:12px;max-width:620px}
+.mock .sel{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.mock .sel span{background:#e0b04a;color:#1a1a1a;border-radius:8px;padding:6px 12px;font-weight:600}
+.mock button{background:#14233f;color:#f1e7c6;border-color:#4b5b7a;min-height:44px}
+.mock .grp{border-top:1px solid #34456a;padding:8px 0}.mock .grp h4{margin:0 0 6px;font-size:.78rem;letter-spacing:.1em;color:#d8b25a}
+.mock .btns{display:flex;flex-wrap:wrap;gap:6px}
+/* layout B: tabs */
+.mock .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:4px 0 8px}.mock .tabs button[aria-selected=true]{background:#e0b04a;color:#1a1a1a}
+/* layout A: grid, 2 cols on tablet/PC */
+.mockA .grid{display:grid;grid-template-columns:1fr;gap:0 14px}
+@media (min-width:700px){.mockA .grid{grid-template-columns:1fr 1fr}.mock{max-width:760px}}
+.mockA .btns button{flex:1 1 calc(50% - 6px)}@media (min-width:700px){.mockA .btns button{flex:0 1 auto}}
+.mockB .wide{display:none}@media (min-width:900px){.mockB .tabs{display:none}.mockB .wide{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.mockB .one{display:none}}
+</style></head><body>
+<h1>Dua groups and Menu: DEMO v1.09 <span class="tag">sample data</span></h1>
+<p class="mut">For the Owner's tick (PCF MSA J104 item 25). Nothing here is saved; the groups are invented. Three parts: <b>1</b> add, rename, move and delete groups, with sub groups up to 3 levels; <b>2</b> a group opening in a pop-up you can drag and resize (full screen on a phone); <b>3</b> two Menu layouts to choose from. Try it on your phone, tablet and computer.</p>
+
+<section><h2>1 · Groups and sub groups</h2>
+<p class="mut">Up to 3 levels. ↑ ↓ move within the group; ⇥ puts a group inside the one above; ⇤ brings it out one level. Delete asks first.</p>
+<div class="chips"><input id="newName" placeholder="New group name" aria-label="New group name"><button class="pri" id="add">+ Add group</button><button id="reset">Reset sample</button></div>
+<div class="note" id="lastDel" hidden></div>
+<div id="tree"></div></section>
+
+<section><h2>2 · A group as a pop-up</h2>
+<p class="mut">Press <b>Open</b> on any group above. On a computer or tablet: drag the title bar to move it, drag the corner (bottom right) to resize. On a phone it fills the screen.</p>
+<div id="winInfo" class="mut">Window size: (open a group)</div></section>
+
+<section><h2>3 · Menu layouts (the same buttons, two arrangements)</h2>
+<p class="mut">Both keep the same four heads: Share, Keep, Listen, Study. Narrow the window to see the phone shape, widen it to see tablet and computer.</p>
+<h3 style="font-size:1rem">Layout A: all four rows, tidied</h3>
+<p class="mut">Phone: four rows, two buttons across. Tablet and computer: two columns (Share and Keep on the left, Listen and Study on the right), so the Menu is about half as tall.</p>
+<div class="mock mockA" id="mA"></div>
+<h3 style="font-size:1rem">Layout B: one head at a time</h3>
+<p class="mut">Phone and tablet: four tabs, only the chosen head's buttons show (the shortest Menu). Computer (wide): all four side by side in one row, no tabs.</p>
+<div class="mock mockB" id="mB"></div>
+</section>
+
+<div class="gp" id="gp" hidden role="dialog" aria-label="Group"><header id="gpH"><b id="gpT"></b><button id="gpX" aria-label="Close">✕</button></header><div class="body" id="gpB"></div><div class="grip" id="grip" aria-label="Resize"></div></div>
+
+<script>
+const SAMPLE=()=>[{n:"Morning and evening",k:[{n:"Hisn al-Muslim",k:[{n:"Waking up",k:[]},{n:"Before sleep",k:[]}]},{n:"Short duas",k:[]}]},
+ {n:"Sahaba duas",k:[{n:"Abu Bakr",k:[]}]},{n:"My own",k:[]}];
+let T=SAMPLE();const $=s=>document.querySelector(s);
+const depth=(a,d=1)=>a.reduce((m,x)=>Math.max(m,d,depth(x.k,d+1)),0);
+function find(list,node,par=null){for(let i=0;i<list.length;i++){if(list[i]===node)return{list,i,par};const r=find(list[i].k,node,list[i]);if(r)return r}return null}
+const lvlOf=(node)=>{let d=1,p=find(T,node).par;while(p){d++;p=find(T,p).par}return d};
+function subDepth(n){return 1+n.k.reduce((m,x)=>Math.max(m,subDepth(x)),0)}
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function render(){const el=$("#tree");el.innerHTML="";(function walk(list,host,lv){list.forEach((n,i)=>{
+ const d=document.createElement("div");const r=document.createElement("div");r.className="node";
+ r.innerHTML=`<b>${esc(n.n)} <span class="lvl">level ${lv}</span></b>`;const a=document.createElement("div");a.className="acts";
+ const btn=(t,l,f,c)=>{const b=document.createElement("button");b.textContent=t;b.setAttribute("aria-label",l);if(c)b.className=c;b.onclick=f;a.appendChild(b);return b};
+ btn("Open","Open "+n.n,()=>openG(n),"pri");
+ btn("✎","Rename "+n.n,()=>{const v=prompt("Rename group",n.n);if(v&&v.trim()){n.n=v.trim().slice(0,60);render()}});
+ btn("↑","Move up",()=>{if(i>0){[list[i-1],list[i]]=[list[i],list[i-1]];render()}}).disabled=i===0;
+ btn("↓","Move down",()=>{if(i<list.length-1){[list[i+1],list[i]]=[list[i],list[i+1]];render()}}).disabled=i===list.length-1;
+ const inB=btn("⇥","Put inside the group above",()=>{const prev=list[i-1];list.splice(i,1);prev.k.push(n);render()});
+ inB.disabled=i===0||(lv-1)+1+subDepth(n)>3&&true||lv+subDepth(n)>3;
+ const outB=btn("⇤","Bring out one level",()=>{const f=find(T,n);const g=find(T,f.par);f.list.splice(f.i,1);g.list.splice(g.i+1,0,n);render()});outB.disabled=lv===1;
+ btn("Add inside","Add a sub group",()=>{const v=prompt("Sub group name");if(v&&v.trim()){n.k.push({n:v.trim().slice(0,60),k:[]});render()}}).disabled=lv>=3;
+ btn("Delete","Delete "+n.n,()=>{const c=subDepth(n)>1?" and its sub groups":"";if(confirm("Delete “"+n.n+"”"+c+"? The duas themselves stay in the app.")){const f=find(T,n);f.list.splice(f.i,1);const m=$("#lastDel");m.hidden=false;m.textContent="Deleted “"+n.n+"”"+c+". In the real app this cannot be undone; the duas in it are not deleted.";render()}},"del");
+ r.appendChild(a);d.appendChild(r);if(n.k.length){const kd=document.createElement("div");kd.className="kids";d.appendChild(kd);walk(n.k,kd,lv+1)}host.appendChild(d)})})(T,el,1)}
+$("#add").onclick=()=>{const v=$("#newName").value.trim();if(v){T.push({n:v.slice(0,60),k:[]});$("#newName").value="";render()}};
+$("#reset").onclick=()=>{T=SAMPLE();$("#lastDel").hidden=true;render()};
+/* pop-up */
+const gp=$("#gp");let box={x:40,y:90,w:420,h:320};
+function place(){gp.style.left=box.x+"px";gp.style.top=box.y+"px";gp.style.width=box.w+"px";gp.style.height=box.h+"px";
+ $("#winInfo").textContent=innerWidth<700?"Phone: full screen.":"Window size: "+Math.round(box.w)+" × "+Math.round(box.h)+" px"}
+function openG(n){$("#gpT").textContent=n.n;$("#gpB").innerHTML="<p class='mut'>Sample duas in this group:</p><ol><li>Dua 4: ربنا آتنا في الدنيا حسنة</li><li>Dua 12</li><li>Dua 27</li></ol>"+(n.k.length?"<p class='mut'>Sub groups: "+n.k.map(x=>esc(x.n)).join(", ")+"</p>":"");gp.hidden=false;place()}
+$("#gpX").onclick=()=>{gp.hidden=true};
+function drag(h,fn){h.addEventListener("pointerdown",e=>{if(e.target.closest("button"))return;e.preventDefault();h.setPointerCapture(e.pointerId);const sx=e.clientX,sy=e.clientY,b={...box};
+ const mv=ev=>{fn(b,ev.clientX-sx,ev.clientY-sy);place()};const up=()=>{h.removeEventListener("pointermove",mv);h.removeEventListener("pointerup",up)};h.addEventListener("pointermove",mv);h.addEventListener("pointerup",up)})}
+drag($("#gpH"),(b,dx,dy)=>{box.x=Math.max(0,Math.min(innerWidth-120,b.x+dx));box.y=Math.max(0,Math.min(innerHeight-60,b.y+dy))});
+drag($("#grip"),(b,dx,dy)=>{box.w=Math.max(260,Math.min(innerWidth-box.x,b.w+dx));box.h=Math.max(180,Math.min(innerHeight-box.y,b.h+dy))});
+addEventListener("resize",()=>{if(!gp.hidden)place()});
+/* menus */
+const H={Share:["🖼️ Poster","Copy / share"],Keep:["📝 My Notes","🔖 Bookmark this"],Listen:["Reciter","Speed 1×","Repeat","Autoplay next"],Study:["Meaning","Source","✓ Check","📖 Full text"]};
+const grp=(k)=>`<div class="grp"><h4>${k.toUpperCase()}</h4><div class="btns">${H[k].map(t=>`<button>${t}</button>`).join("")}</div></div>`;
+const sel=`<div class="sel"><span>Arabic</span><span>Word by word</span><span>Vowels</span><span>Source</span></div>`;
+$("#mA").innerHTML=sel+`<div class="grid"><div>${grp("Share")}${grp("Keep")}</div><div>${grp("Listen")}${grp("Study")}</div></div>`;
+$("#mB").innerHTML=sel+`<div class="tabs" role="tablist">${Object.keys(H).map((k,i)=>`<button role="tab" aria-selected="${i==0}" data-k="${k}">${k}</button>`).join("")}</div><div class="one" id="one">${grp("Share")}</div><div class="wide">${Object.keys(H).map(grp).join("")}</div>`;
+document.querySelectorAll("#mB .tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#mB .tabs button").forEach(x=>x.setAttribute("aria-selected",x===b));$("#one").innerHTML=grp(b.dataset.k)});
+render();
+</script></body></html>
