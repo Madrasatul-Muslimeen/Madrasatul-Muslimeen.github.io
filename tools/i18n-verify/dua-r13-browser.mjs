@@ -13,6 +13,7 @@
 //   --mutate=noword    the word is not reopened                          -> check 5 fails
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { tabClick, allTabsOn } from "./dua-tab-reveal.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -52,6 +53,9 @@ for (const width of [1280, 390]) {
   const oneRow = await P.evaluate(() => { const b = document.querySelector("[data-dua-topbar]"); const mids = [...b.querySelectorAll("button, .dua-card-pos")].map((x) => { const r = x.getBoundingClientRect(); return Math.round(r.top + r.height / 2); }); return { n: mids.length, spread: Math.max(...mids) - Math.min(...mids) }; });
   check(`${tag} Play, ‹ n of N ›, Menu and the pop-up share ONE bar`, oneRow.n >= 6 && oneRow.spread < 12, JSON.stringify(oneRow));
   await P.click("[data-dua-menu-toggle]");
+  // 25 (13 Nov): the Menu has five tabs now and a hidden chip measures top 0, height 0, so "one row" and "under 44px" would pass for
+  // the wrong reason; switch every tab on first so the chips are measured where a reader sees them.
+  await allTabsOn(P);
   const chips = await P.evaluate(() => {
     const out = {};
     for (const g of document.querySelectorAll(".dua-menu-panel .dua-menu-group")) {
@@ -67,7 +71,7 @@ for (const width of [1280, 390]) {
   check(`${tag} chips are small (under 44px, not the old 48px)`, chips.study?.h < 44, JSON.stringify(chips));
   check(`${tag} there is no "The whole narration" Menu button`, (await P.locator('[data-dua-menu="narration"]').count()) === 0);
   check(`${tag} the card carries no narration fold of its own`, (await P.locator("details.dua-narration").count()) === 0);
-  await P.click('[data-dua-menu="fulltext"]');
+  await tabClick(P, '[data-dua-menu="fulltext"]');
   await P.waitForSelector("[data-dua-fulltext]");
   const ft = await P.evaluate(() => { const n = document.querySelector('[data-dua-ft-sec="narration"]'); return { has: !!n, open: n?.open, mark: n?.querySelector("mark")?.textContent?.length || 0, len: n?.querySelector("p")?.textContent?.length || 0, dua: document.querySelector(".dua-ft-ar")?.textContent?.length || 0 }; });
   check(`${tag} Full text holds the whole narration, open, with the dua's words marked`, ft.has && ft.open && ft.mark > 0, JSON.stringify(ft));

@@ -10,6 +10,7 @@
 // Run from the repo root with node serve.js on 8080:
 //   node tools/i18n-verify/hadith-dua-keyboard-browser.mjs [--page=dua|hcol|hstudy] [--only=id] [--width=390] [--lang=bn] [--scale=200] [--mutate=name]
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { tabClick, reveal } from "./dua-tab-reveal.mjs";
 let pass = 0, fail = 0;
 const tally = {}; // "page|n" -> [pass, fail]
 const check = (page, n, name, ok, detail = "") => {
@@ -40,7 +41,7 @@ const add = (page, c) => CONTROLS.push({ page, ...c });
 add("dua", { id: "groups-pull", kind: "menu", toggle: '[data-dua-pd="groups"]', panel: ".dua-pull", expanded: true });
 for (const k of ["meaning", "source", "fulltext", "check", "poster", "share"]) add("dua", { id: "card-" + k, kind: "dialog", prep: openCard, toggle: `[data-dua-menu="${k}"]`, panel: ".dua-pop" });
 add("dua", { id: "bookmark", kind: "action", prep: openCard, toggle: "[data-dua-bookmark]" });
-add("dua", { id: "expander", kind: "expander", prep: async (P) => { await openCard(P); await P.click('[data-dua-menu="fulltext"]'); await P.waitForTimeout(400); }, toggle: ".dua-pop summary" });
+add("dua", { id: "expander", kind: "expander", prep: async (P) => { await openCard(P); await tabClick(P, '[data-dua-menu="fulltext"]'); await P.waitForTimeout(400); }, toggle: ".dua-pop summary" });
 add("dua", { id: "zab", kind: "dialog", toggle: "#zabCorner", toggleWide: "#zabBar > [data-zab-open]", panel: "#zabPanel", slow: true });
 for (const pg of ["hcol", "hstudy"]) {
   add(pg, { id: "books-menu", kind: "menu", toggle: '[data-hadith-tab="books"]', panel: '[data-hadith-menu="books"]', expanded: true });
@@ -112,6 +113,8 @@ async function load(P, page, c, scale) {
   await P.evaluate(HELP);
   if (MUTATE && c) await P.evaluate(MUT_INIT, [MUTATE, { toggle: c.toggle, panel: c.panel }]).catch(() => {});
   if (c?.prep) await c.prep(P);
+  // 25 (13 Nov): the Dua Menu has five tabs; a keyboard reader selects the control's tab first, then Tabs to the control.
+  if (c?.prep && c.toggle) await reveal(P, c.toggle);
   await P.evaluate(HELP);
 }
 const state = (P, c) => P.evaluate(({ c }) => {

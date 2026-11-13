@@ -176,6 +176,17 @@
 .dua-menu-panel { margin: 0 0 0.7rem; padding: 0.8rem; border: 1px solid #c9a24b; border-radius: 0.9rem; background: #0c1329; display: grid; gap: 0.8rem; }
 .dua-menu-panel[hidden] { display: none; }
 .dua-menu-group[hidden] { display: none; }
+/* 25 (the Owner, 13 Nov): Menu layout B, five tabs in one row; a tab turns the other groups' display off, never `hidden`. */
+.dua-menu-panel .dua-menu-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.25rem; }
+.dua-menu-tab { box-sizing: border-box; min-height: 44px; padding: 0.2rem 0.15rem; border: 1px solid #3a4468; border-radius: 0.6rem; background: #18224a; color: #f2e6c4; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dua-menu-tab[aria-selected="true"] { background: #e0b95c; border-color: #c9a24b; color: #121a33; }
+@media (max-width: 420px) { .dua-menu-panel .dua-menu-tabs { gap: 0.15rem; } .dua-menu-tab { padding: 0.2rem 0; font-size: 0.72rem; } }
+@media (max-width: 360px) { .dua-menu-panel { padding: 0.5rem; } .dua-menu-tab { font-size: 0.66rem; } }
+/* A focus ring INSIDE the tab (the gap between tabs is smaller than an outside ring), light on the dark tab, dark on the gold one. */
+.dua-menu-panel .dua-menu-tab:focus-visible { outline: 2px solid #f2e6c4; outline-offset: -4px; }
+.dua-menu-panel .dua-menu-tab[aria-selected="true"]:focus-visible { outline-color: #121a33; }
+.dua-menu-panel > [data-tab-off], .dua-menu-panel > .dua-menu-group[data-tab-off] { display: none; }
+.dua-menu-panel > .dua-menu-tabs + .dua-sel, .dua-menu-panel > .dua-menu-tabs + .dua-menu-group { margin-top: 0; border-top: 0; padding-top: 0; }
 .dua-menu-group { padding-top: 0.7rem; border-top: 1px solid #2a3358; }
 .dua-menu-panel > .dua-sel + .dua-menu-group { margin-top: 0; }
 .dua-menu-label { margin: 0 0 0.45rem; color: #e0b95c; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -223,3 +234,7 @@ body.dua-has-popped::before { content: ""; position: fixed; inset: 0; z-index: 5
 .dua-ft-w { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; min-width: 3rem; }
 .dua-ft-w b { font-size: 1.35rem; font-weight: 400; }
 .dua-ft-w small { font-size: 0.78rem; color: #c7cbe0; text-align: center; }
+/* 13 Nov: found by the five-tab Menu (fewer Tab stops in the card, so the night walk now reaches the progress row). On the night look the
+   status button that is also aria-current wears hadith.css's gold "current" outline, which replaces the orange focus ring and left it at
+   1.06:1. A focused status button gets the night ring back (the "current" mark is still its green fill). */
+[data-card-look="night"] button.dua-status:focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }

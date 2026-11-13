@@ -12,6 +12,7 @@
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/dua-card-r2-browser.mjs
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { tabClick, allTabsOn } from "./dua-tab-reveal.mjs";
 
 const SRC = fs.readFileSync("app/js/dua-study.js", "utf8");
 const BN = fs.readFileSync("app/js/i18n/bn.js", "utf8");
@@ -149,7 +150,7 @@ async function run(mutation) {
         const got = await page.$eval(".dua-menu-panel", (m) => ({ sel: !!m.querySelector("[data-dua-sel]"), groups: [...m.querySelectorAll("[data-dua-menu-group]")].map((g) => g.dataset.duaMenuGroup), keep: !!m.querySelector('[data-dua-menu-group="keep"] [data-dua-note-bookmark]'), listenOff: [...m.querySelectorAll("[data-dua-listen]")].length === 4 && [...m.querySelectorAll("[data-dua-listen]")].every((b) => b.disabled), exp: document.querySelector("[data-dua-menu-toggle]").getAttribute("aria-expanded") }));
         if (!(got.sel && got.groups.join() === "share,keep,listen,study" && got.listenOff && got.keep && got.exp === "true")) throw new Error(JSON.stringify(got));
       });
-      const menu = await page.$$eval("[data-dua-menu]", (b) => b.map((x) => { const r = x.getBoundingClientRect(); return { k: x.dataset.duaMenu, label: x.textContent, h: r.height, l: r.left, r: r.right }; }));
+      await allTabsOn(page); const menu = await page.$$eval("[data-dua-menu]", (b) => b.map((x) => { const r = x.getBoundingClientRect(); return { k: x.dataset.duaMenu, label: x.textContent, h: r.height, l: r.left, r: r.right }; }));
       await check("D22 the card's menu offers Meaning and Source, in this language; The whole narration now lives inside Full text (the Owner, 7 Nov)", () => {
         const got = Object.fromEntries(menu.map((m) => [m.k, m.label]));
         if (got.meaning !== L("Meaning") || got.source !== L("Source") || "narration" in got || !got.fulltext) throw new Error(JSON.stringify(got));
@@ -170,13 +171,13 @@ async function run(mutation) {
         await page.waitForSelector("[data-dua-pop]", { state: "detached", timeout: 5000 });
       });
       await check("D23 Full text follows the Vowels switch (off: no vowel marks in its Arabic)", async () => {
-        await page.click('[data-dua-switch="vow"]');
+        await tabClick(page, '[data-dua-switch="vow"]');
         await clickMenu(page, '[data-dua-menu="fulltext"]');
         await page.waitForSelector('[data-dua-pop="fulltext"] .dua-ft-ar', { timeout: 8000 });
         const marks = await page.$eval('[data-dua-pop="fulltext"] .dua-ft-ar', (a) => (a.textContent.match(/[\u064B-\u0652\u0670]/g) || []).length);
         await page.click("[data-dua-pop-close]");
         await page.waitForSelector("[data-dua-pop]", { state: "detached", timeout: 5000 });
-        await page.click('[data-dua-switch="vow"]'); // back on, for what follows
+        await tabClick(page, '[data-dua-switch="vow"]'); // back on, for what follows
         if (marks !== 0) throw new Error(`${marks} marks`);
       });
 
@@ -272,5 +273,5 @@ process.exit(r.failed ? 1 : 0);
 async function clickMenu(page, selector) {
   const toggle = await page.$("[data-dua-menu-toggle]");
   if (toggle && (await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
-  await page.click(selector);
+  await tabClick(page, selector);
 }
