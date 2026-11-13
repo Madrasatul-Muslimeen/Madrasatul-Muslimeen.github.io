@@ -4652,6 +4652,7 @@ export const BN = {
   "Fill by all words up to it": "এ পর্যন্ত সব শব্দ দিয়ে ভরুন",
   "Green: the words of a step you know. ✓: every word of the step known.": "সবুজ: ধাপের যে শব্দগুলো আপনি জানেন। ✓: ধাপের সব শব্দ জানা।",
   "Marks": "চিহ্ন",
+  "Difficulty Level": "কঠিনতার স্তর",
   "Level of Difficulty": "কঠিনতার স্তর",
   "Status of Approach:": "পদ্ধতির অবস্থা:",
   "Status of Hifz:": "হিফজের অবস্থা:",
