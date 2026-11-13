@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.32",
+    "version": "14.33",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7073,8 +7073,20 @@
     {
       "version": "14.32",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v14.32: the Dua card Menu with five tabs in one row (Owner demo v1.10 layout B) and the unwired Dua groups tree and pop-up.",
+      "integration": {
+        "authorizedOn": "2026-11-13",
+        "integratedOn": "2026-11-13",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "14.33",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Owner's 13 Nov Quran Study asks (#1689, QR Lead 47L, two Architect review commits) and Dua groups step 4 (#1688, unwired).",
       "integration": {
         "authorizedOn": "2026-11-13",
         "integratedOn": "2026-11-13",
@@ -7083,8 +7095,9 @@
       }
     }
   ],
-  "nextUnallocated": "14.33",
+  "nextUnallocated": "14.34",
   "nextUnallocatedNote": [
+    "v14.33 was allocated to the Owner's 13 Nov Word Card asks and the Notes pane unit picker (#1689), Dua groups step 4 (#1688), 2026-11-13.",
     "v14.32 was allocated to the Dua card Menu's five tabs (#1684) and the Dua groups screen pieces (#1686), 2026-11-13.",
     "v14.31 was allocated to the grammar name on one line and Read on two lines (#1678, #1682), the Dua group tree (#1680), 2026-11-13.",
     "v14.30 was allocated to the Āyah card's one row and one ⋮ menu (#1674), 2026-11-12.",

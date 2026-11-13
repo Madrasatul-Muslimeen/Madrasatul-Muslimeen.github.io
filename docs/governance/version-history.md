@@ -1135,3 +1135,4 @@ total). Allocated by the MMSA Architect.
 14.30: the Āyah card's one row and one ⋮ menu (#1674). Allocated by the MMSA Architect.
 14.31: the grammar name on one line and Read on two lines (#1678, #1682), the Dua group tree (#1680). Allocated by the MMSA Architect.
 14.32: the Dua card Menu's five tabs (#1684) and the Dua groups screen pieces (#1686). Allocated by the MMSA Architect.
+14.33: the Owner's 13 Nov Word Card asks and the Notes pane unit picker (#1689), Dua groups step 4 (#1688). Allocated by the MMSA Architect.
