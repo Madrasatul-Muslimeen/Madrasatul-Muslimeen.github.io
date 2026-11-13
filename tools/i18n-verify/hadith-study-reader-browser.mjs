@@ -404,7 +404,8 @@ for (const [lang, width] of [["en", 1280], ["bn", 390]]) {
     await acheck(`${tag} ...and ← Back to the hadith card returns to card 4560 in the Encyclopedia`, async () => {
       await tap(P, "[data-openiti-trail-back]");
       await P.waitForSelector('[data-hadeethenc-card="4560"]', { timeout: 15000 });
-      return (await P.$eval('[data-hadith-tab="collections"]', (b) => b.getAttribute("aria-current"))) === "page";
+      // updated in place 14 Nov 2026 (J106 S1): Encyclopedia is a row of Menu, so the view is "collections" and Menu is the current button
+      return await P.evaluate(() => window.__hadithCorpus.state.view === "collections" && document.querySelector('button[data-hadith-tab="menu"]')?.getAttribute("aria-current") === "page");
     });
     check(`${tag} no page errors (reference jump)`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
     await ctx.close();

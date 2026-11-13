@@ -399,7 +399,7 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .hadith-menu-caret { margin-left: 0.3rem; font-size: 0.8em; }
 /* PCF MSA J106 (the Owner, 14 Nov 2026): ONE bar -- Menu, Books, Subjects, Explore, Search. Search sits at the right edge of
    the row; on a phone the five buttons share one row (tighter padding) instead of Search dropping to a second line. */
-.hadith-menubar .hadith-tabs { flex-wrap: nowrap; }
+.hadith-menubar .hadith-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; } /* at 200% text on a phone the five cannot share the row: the BAR scrolls, never the page; the open Menu panel is positioned against the bar, so it is not clipped */
 .hadith-menubar .hadith-tab[data-hadith-tab="search"] { margin-left: auto; }
 @media (max-width: 520px) { .hadith-menubar .hadith-tabs { gap: 0.1rem; } .hadith-menubar .hadith-tab { padding-left: 0.3rem; padding-right: 0.3rem; font-size: 0.86rem; } .hadith-menubar .hadith-menu-caret { margin-left: 0.1rem; font-size: 0.7em; } }
 @media (max-width: 360px) { .hadith-menubar .hadith-tabs { gap: 0; } .hadith-menubar .hadith-tab { padding-left: 0.18rem; padding-right: 0.18rem; font-size: 0.8rem; } .hadith-menubar .hadith-menu-caret { margin-left: 0.05rem; } }
@@ -651,3 +651,4 @@ body.book-page-open { overflow: hidden; }
 .myindex-book-ar { font-size: 0.9em; opacity: 0.85; align-self: flex-start; text-align: start; }
 .myindex-book .myindex-held { color: var(--card-text, var(--hadith-muted)); }
 .myindex-held { flex-basis: 100%; }
+.hadith-menu-holder[hidden] { display: none; }

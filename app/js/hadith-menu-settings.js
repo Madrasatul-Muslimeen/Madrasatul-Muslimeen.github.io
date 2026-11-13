@@ -14,6 +14,7 @@ import { t } from "./i18n.js";
 let host = null;
 let previewSlot = null;
 let personSlot = null;
+let holder = null; // a hidden place IN the page where the host rests while the Menu is closed (so #personSelect, #tenantSelect and the note stay in the DOM)
 const cues = new Set();
 
 function cueText() { return t("· Preview"); }
@@ -32,6 +33,10 @@ function adopt() {
   // The pickers: the page's own #contextBar (Tenant, Person). Moved once; its ids and handlers are untouched.
   const cb = document.getElementById("contextBar");
   if (cb && !personSlot.contains(cb)) personSlot.appendChild(cb);
+  // While the Menu panel is closed (or gone, after the bar re-rendered) the host rests in the holder: the page's own scripts
+  // (topic-study.js, hadith-study.html) still find #personSelect and #tenantSelect by id, exactly as before the move.
+  const openPanel = host.closest(".hadith-menu-panel");
+  if (!host.isConnected || (openPanel && openPanel.hidden)) holder.appendChild(host);
   const on = !!previewSlot.querySelector(".nav-preview-notice");
   for (const c of cues) { // write only on a CHANGE: a write is a DOM mutation and the observer below would fire again, forever
     if (c.hidden === on) c.hidden = !on;
@@ -50,13 +55,18 @@ export function settingsHost() {
   personSlot = el("div", "hadith-menu-person");
   personSlot.dataset.hadithPersonSlot = "true";
   host.append(previewSlot, personSlot);
+  holder = el("div", "hadith-menu-holder");
+  holder.id = "hadithSettingsHold";
+  holder.hidden = true;
+  document.body.appendChild(holder);
+  holder.appendChild(host);
   adopt();
   let queued = false;
   new MutationObserver(() => {
     if (queued) return;
     queued = true;
     queueMicrotask(() => { queued = false; for (const c of [...cues]) if (!c.isConnected) cues.delete(c); /* the bar is rebuilt on every render: forget old buttons (only here, once the new bar is in the page) */ adopt(); });
-  }).observe(document.body, { childList: true, subtree: true });
+  }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] });
   return host;
 }
 

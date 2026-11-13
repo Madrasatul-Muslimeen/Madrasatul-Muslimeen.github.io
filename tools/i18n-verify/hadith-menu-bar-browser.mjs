@@ -20,6 +20,7 @@ const MUT = {
   cuestay: ["js/hadith-menu-settings.js", "if (c.hidden === on) c.hidden = !on;", "c.hidden = false;"],
   notehome: ["js/hadith-menu-settings.js", "previewSlot.appendChild(fresh[fresh.length - 1]);", "/* left at the top */"],
   tabback: ["js/hadith-browser.js", "    [\"explore\", t(\"Explore\")],\n    [\"search\", t(\"Search\")],", "    [\"collections\", t(\"Encyclopedia\")],\n    [\"explore\", t(\"Explore\")],\n    [\"search\", t(\"Search\")],"],
+  nohold: ["js/hadith-menu-settings.js", "holder.appendChild(host);", "void 0;"],
   nodualredirect: ["js/hadith-dua-redirect.js", "  if (q.get(\"view\") === \"dua\") {", "  if (false) {"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -66,6 +67,7 @@ const barState = (P) => P.evaluate(() => {
     onBar: ["collections", "commentary", "dua", "topic"].filter((v) => document.querySelector(`.hadith-menubar [data-hadith-tab="${v}"]`)),
     panel: getComputedStyle(document.getElementById("hadithMenu-menu")).display, cue: (() => { const c = document.querySelector("[data-hadith-menu-cue]"); const r = c.getBoundingClientRect(); return { disp: getComputedStyle(c).display, w: Math.round(r.width) }; })(),
     noticeOutside: [...document.querySelectorAll(".nav-preview-notice")].filter((n) => !n.closest("#hadithSettingsHost")).length,
+    pickersInDom: ["personSelect", "tenantSelect"].every((id) => !!document.getElementById(id)),
     noticeIn: document.querySelectorAll("#hadithSettingsHost .nav-preview-notice").length };
 });
 
@@ -90,6 +92,7 @@ for (const lang of ["en", "bn"]) for (const width of [320, 360, 390, 820, 1280])
   check(`${tag} the Menu panel starts hidden (COMPUTED display)`, s.panel === "none", s.panel);
   check(`${tag} the "Preview" cue is not on the bar with no preview on`, s.cue.disp === "none" && s.cue.w === 0, JSON.stringify(s.cue));
   check(`${tag} no "Previewing as" note sits at the page top`, s.noticeOutside === 0);
+  check(`${tag} #personSelect and #tenantSelect are still IN the page while Menu is closed (the page's own scripts find them by id)`, s.pickersInDom);
   if (width === 390 || width === 1280) {
     await hadithMenuOpen(P);
     const m = await P.evaluate(() => { const p = document.getElementById("hadithMenu-menu"), r = p.getBoundingClientRect(); const dua = p.querySelector("a[data-hadith-dua-link]");
@@ -119,18 +122,20 @@ for (const [lang, width] of [["en", 320], ["en", 1280], ["bn", 320], ["bn", 390]
   check(`${tag} the Menu button SHOWS the cue while the preview is on (computed display, real width)`, s.cue.disp !== "none" && s.cue.w > 8, JSON.stringify(s.cue));
   check(`${tag} the cue is in the button and says "${cueWord}"`, await P.evaluate((w) => document.querySelector('button[data-hadith-tab="menu"] [data-hadith-menu-cue]')?.textContent.includes(w), cueWord));
   check(`${tag} with the cue on, the five are still on ONE row and inside the screen`, Math.max(...s.tops) - Math.min(...s.tops) <= 2 && s.over <= 0 && s.right <= s.vw, JSON.stringify([s.tops, s.over, s.right, s.vw]));
-  check(`${tag} the "Previewing as" note is inside Menu > Settings and NOT at the page top`, s.noticeOutside === 0, JSON.stringify([s.noticeIn, s.noticeOutside])); // (inside: proven just below, once Menu is open: the closed panel is not in the page)
+  check(`${tag} the "Previewing as" note is inside Menu > Settings and NOT at the page top`, s.noticeOutside === 0 && s.noticeIn === 1, JSON.stringify([s.noticeIn, s.noticeOutside]));
   await hadithMenuOpen(P);
   const inMenu = await P.evaluate(() => { const n = document.querySelector("#hadithMenu-menu .nav-preview-notice"), c = document.querySelector("#hadithMenu-menu #contextBar"); const vis = (e) => { const r = e?.getBoundingClientRect(); return !!r && r.width > 0 && r.height > 0; };
     return { note: vis(n), text: n?.textContent.trim().slice(0, 40), pickers: vis(c), tenant: !!c?.querySelector("#tenantSelect"), person: !!c?.querySelector("#personSelect"), topCtx: !!document.querySelector("#hadithCorpusSection ~ #contextBar, body > #contextBar") }; });
-  check(`${tag} opening Menu shows the note and the Tenant and Person pickers`, inMenu.note && inMenu.pickers && inMenu.tenant && inMenu.person, JSON.stringify(inMenu));
+  // Person is in Menu > Settings (the Owner, 4A). The Tenant picker is moved into the My account card by the shared account-card
+  // script (as on main since the account card landed), so it is asserted to exist in the page, not to sit in Menu.
+  check(`${tag} opening Menu shows the note and the Person picker (Tenant lives in the account card, as before)`, inMenu.note && inMenu.pickers && inMenu.person && (await P.evaluate(() => !!document.getElementById("tenantSelect"))), JSON.stringify(inMenu));
   // an old copy of the pickers must not still sit at the top
   check(`${tag} there is ONE set of Tenant/Person pickers on the page`, (await P.evaluate(() => document.querySelectorAll("#contextBar").length)) === 1);
   // preview OFF: the cue is gone
   await setPreview(P, null);
   await P.reload({ waitUntil: "networkidle" }); await P.waitForSelector('button[data-hadith-tab="menu"]', { timeout: 25000 }); await P.waitForTimeout(500);
   s = await barState(P);
-  check(`${tag} with the preview OFF the cue is gone (computed display none, no width) and no note remains`, s.cue.disp === "none" && s.cue.w === 0 && s.noticeOutside === 0, JSON.stringify([s.cue, s.noticeIn, s.noticeOutside]));
+  check(`${tag} with the preview OFF the cue is gone (computed display none, no width) and no note remains`, s.cue.disp === "none" && s.cue.w === 0 && s.noticeOutside === 0 && s.noticeIn === 0, JSON.stringify([s.cue, s.noticeIn, s.noticeOutside]));
   await P.screenshot({ path: `/tmp/hadith-preview-${lang}-${width}.png` });
   await ctx.close();
 }

@@ -267,7 +267,10 @@ function controls(state, render) {
   // the right edge). Encyclopedia, Classical Explanations, a Dua link and Settings (Text language, Card colours, Person,
   // and the "Previewing as" note) live in Menu. Every control keeps its data-hadith-tab / id; the Menu panel starts hidden.
   const menuWrap = menuButton(state, render, "menu", t("Menu"), (list, close) => fillMenuMenu(list, close, state, render));
-  addPreviewCue(menuWrap.querySelector(".hadith-menu-btn"));
+  const menuBtn = menuWrap.querySelector(".hadith-menu-btn");
+  // Encyclopedia and Classical Explanations are rows of Menu: while one is the view, Menu is the "current" button (and the one that keeps focus).
+  if (["collections", "commentary"].includes(state.view)) { menuBtn.classList.add("active"); menuBtn.setAttribute("aria-current", "page"); }
+  addPreviewCue(menuBtn);
   tabs.appendChild(menuWrap);
   tabs.appendChild(menuButton(state, render, "books", t("Books|Hadith Study menu"), (list, close) => fillBooksMenu(list, close, state, render), toShelf));
   tabs.appendChild(menuButton(state, render, "subjects", t("Subjects|Hadith Study menu"), (list, close) => fillSubjectsMenu(list, close, state, render)));
@@ -341,7 +344,7 @@ function menuButton(state, render, view, label, fill, before = null) {
 
 /** The Menu panel: the former corpus tabs that no longer sit on the bar, a link to the Dua module, and Settings. */
 function fillMenuMenu(panel, close, state, render) {
-  const go = (view) => { close(); state.view = view; render(); };
+  const go = (view) => { close(); state.view = view; render(); focusActiveTab(); };
   for (const [view, label] of [["collections", t("Encyclopedia")], ["commentary", PANEL_TITLE[getAppLang()] ?? PANEL_TITLE.en]]) {
     const row = el("button", `hadith-row hadith-menu-item${state.view === view ? " active" : ""}`);
     row.type = "button";

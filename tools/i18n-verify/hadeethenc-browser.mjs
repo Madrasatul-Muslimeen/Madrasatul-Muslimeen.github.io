@@ -45,7 +45,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo, hadithMenuOpen } from "./harness.mjs";
 
 const EXE = process.env.CHROMIUM_PATH || undefined;
 const LANG = process.argv[2] === "bn" ? "bn" : "en";
@@ -372,7 +372,8 @@ async function runViewOnlyCheck(lang) {
   await page.waitForSelector('[data-hadeethenc-card="4563"] [data-hadeethenc-bookmark]', { timeout: 5000 }).catch(() => {});
 
   // Switch to p2 -- a bare teacher, co-enrolled with nobody in this fixture.
-  await page.waitForSelector("#personSelect option[value=\"p2\"]", { timeout: 5000 }).catch(() => {});
+  await hadithMenuOpen(page); // the Person picker is in Menu > Settings now (PCF MSA J106 S1, tick 4A)
+  await page.waitForSelector("#personSelect option[value=\"p2\"]", { state: "attached", timeout: 5000 }).catch(() => {});
   await page.selectOption("#personSelect", "p2");
   await settle();
   await page.waitForFunction(

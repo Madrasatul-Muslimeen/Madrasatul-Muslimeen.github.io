@@ -13,7 +13,7 @@
 // Exits 0 only if every check passed (the "meaningful exit code" lesson --
 // several suites in this directory silently exited 0 on a real regression
 // for months before that was fixed).
-import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo, hadithMenuRow } from "./harness.mjs";
 
 const EXE = process.env.CHROMIUM_PATH || undefined;
 const LANG = process.argv[2] === "bn" ? "bn" : "en";
@@ -334,10 +334,10 @@ check("returning to Search after a 'View in source' jump lands focus on the Sear
 check("returning to Search after the jump keeps the SAME query and results (nothing was lost, only focus needed restoring)",
   (await page.inputValue("#hadithSearchInput")) === "Prayer" &&
   (await page.evaluate(() => document.querySelectorAll(".hadith-search-hit").length)) > 0);
-await hadithGo(page, "collections");
+await hadithMenuRow(page, "collections"); // updated in place 14 Nov 2026 (J106 S1): Encyclopedia is a row of Menu, so a reader chooses it there
 await settle();
-check("switching to the Collections tab lands keyboard focus on the Collections tab button, not <body>",
-  await page.evaluate(() => document.activeElement?.dataset?.hadithTab === "collections"));
+check("choosing Encyclopedia in Menu lands keyboard focus on the Menu button (the current one), not <body>",
+  await page.evaluate(() => document.activeElement?.dataset?.hadithTab === "menu"));
 await click('[data-hadith-tab="explore"]');
 await settle();
 check("switching to the Explore tab lands keyboard focus on the Explore tab button, not <body>",

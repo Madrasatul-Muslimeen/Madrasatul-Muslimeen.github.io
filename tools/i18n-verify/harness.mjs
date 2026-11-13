@@ -175,3 +175,8 @@ export async function hadithMenuOpen(page) {
   if (!open) await page.click('button[data-hadith-tab="menu"]');
   await page.waitForSelector('#hadithMenu-menu:not([hidden])', { timeout: 5000 });
 }
+/** Chooses one row of the Hadith Menu panel (Encyclopedia = "collections", Classical Explanations = "commentary") the way a reader does. */
+export async function hadithMenuRow(page, view) {
+  await hadithMenuOpen(page);
+  await page.click(`#hadithMenu-menu [data-hadith-tab="${view}"]`);
+}
