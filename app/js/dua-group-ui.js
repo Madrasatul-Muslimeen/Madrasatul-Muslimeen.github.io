@@ -6,7 +6,8 @@
 //                                window that is dragged by its title and resized from all four sides and four corners.
 // Not wired to any page yet: the writer (for the groups collection; the Owner publishes its Rules first) and the screens that use these come next.
 import { t } from "./i18n.js";
-import { MAX_DEPTH, addGroup, renameGroup, moveGroup, removeGroup, find, height } from "./dua-group-tree.js";
+import { trapModal } from "./modal-focus.js";
+import { MAX_DEPTH, addGroup, renameGroup, moveGroup, moveToTop, removeGroup, find, height } from "./dua-group-tree.js";
 
 const nameOf = (n, lang) => (lang === "bn" && n.name.bn) || n.name.en;
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -42,8 +43,12 @@ export function mountGroupTree(host, opts) {
       if (opts.canEdit) {
         item(t("Rename"), async () => { const v = await ask("name", t("Rename group"), n.name.en); if (v && String(v).trim()) change(renameGroup(tree, n.id, { en: String(v).trim(), bn: n.name.bn })); });
         if (level < MAX_DEPTH) item(t("Add a group inside"), async () => { const v = await ask("name", t("Group name"), ""); if (v && String(v).trim()) change(addGroup(tree, n.id, { en: String(v).trim() })); });
-        const kids = n.kids.length ? ` ${t("and the groups inside it")}` : "";
-        item(t("Delete"), async () => { const ok = await ask("confirm", `${t("Delete")} “${nameOf(n, lang)}”${kids}? ${t("Deleting a group removes it for good, with no bring-back; the duas themselves and everyone's marks are never removed.")}`); if (ok) change(removeGroup(tree, n.id)); }, true);
+        // ONE whole sentence per case, with {name} inside it, so a language may put the words where it wants them (Bangla order is not English's).
+        const sentence = n.kids.length
+          ? t("Delete “{name}” and the groups inside it? Deleting a group removes it for good, with no bring-back; the duas themselves and everyone's marks are never removed.", { name: nameOf(n, lang) })
+          : t("Delete “{name}”? Deleting a group removes it for good, with no bring-back; the duas themselves and everyone's marks are never removed.", { name: nameOf(n, lang) });
+        item(t("Move…"), () => openMove(row, n));
+        item(t("Delete"), async () => { const ok = await ask("confirm", sentence); if (ok) change(removeGroup(tree, n.id)); }, true);
       } else if (opts.onCopy) item(t("Copy to My groups"), () => opts.onCopy(n));
       more.addEventListener("click", (e) => { e.stopPropagation(); const was = menu.hidden; closeMenus(); menu.hidden = !was; });
       row.append(grip, label, more, menu);
@@ -52,6 +57,32 @@ export function mountGroupTree(host, opts) {
       into.appendChild(wrap);
     });
     walk(tree, host, 1);
+  }
+  // The keyboard / screen-reader way to move a group (dragging needs a pointer): "Move…" opens a small panel under the row with a place
+  // (a group, or the top level) and a position (before / inside / after). Only places the same rules would accept are offered.
+  function openMove(row, n) {
+    host.querySelectorAll(".dua-gt-move").forEach((m) => m.remove());
+    const panel = el("div", "dua-gt-move"); panel.setAttribute("role", "group"); panel.setAttribute("aria-label", `${t("Move")} ${nameOf(n, lang)}`);
+    const where = el("select"); where.setAttribute("aria-label", t("Move next to"));
+    const how = el("select"); how.setAttribute("aria-label", t("Position"));
+    const flat = []; (function w(list) { list.forEach((g) => { flat.push(g); w(g.kids); }); })(tree);
+    const positions = [["before", t("Before it")], ["inside", t("Inside it")], ["after", t("After it")]];
+    for (const g of flat) { if (g.id === n.id) continue; if (positions.some(([z]) => moveGroup(tree, n.id, g.id, z).ok)) where.appendChild(new Option(nameOf(g, lang), g.id)); }
+    const top = new Option(t("The top level (last)"), "__top"); if (find(tree, n.id).level !== 1 || find(tree, n.id).index !== tree.length - 1) where.appendChild(top);
+    const fill = () => { how.textContent = ""; if (where.value === "__top") { how.disabled = true; return; } how.disabled = false; for (const [z, label] of positions) if (moveGroup(tree, n.id, where.value, z).ok) how.appendChild(new Option(label, z)); };
+    where.addEventListener("change", fill); fill();
+    const go = el("button", "dua-gt-move-go", t("Move")); go.type = "button";
+    const cancel = el("button", "", t("Cancel")); cancel.type = "button";
+    const say = el("p", "dua-gt-move-say"); say.setAttribute("role", "status");
+    go.addEventListener("click", () => {
+      const r = where.value === "__top" ? moveToTop(tree, n.id) : moveGroup(tree, n.id, where.value, how.value);
+      if (r.ok) change(r); else say.textContent = t("That move is not possible here.");
+    });
+    cancel.addEventListener("click", () => { panel.remove(); row.querySelector(".dua-gt-more")?.focus(); });
+    panel.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancel.click(); } });
+    panel.append(where, how, go, cancel, say);
+    row.after(panel);
+    where.focus();
   }
   const clearMarks = () => host.querySelectorAll(".dua-gt-row").forEach((r) => r.classList.remove("before", "after", "inside", "dragging"));
   function zone(e) {
@@ -85,7 +116,8 @@ export function mountGroupTree(host, opts) {
   host.addEventListener("pointercancel", () => end(true));
   document.addEventListener("click", closeMenus);
   draw();
-  return { render(next) { tree = next; draw(); }, tree: () => tree };
+  // The click listener is on the document, so it is taken off again with destroy() (a page that mounts the tree twice leaks none).
+  return { render(next) { tree = next; draw(); }, tree: () => tree, destroy() { document.removeEventListener("click", closeMenus); end(true); host.textContent = ""; } };
 }
 
 const MIN_W = 280, MIN_H = 200;
@@ -93,7 +125,8 @@ const MIN_W = 280, MIN_H = 200;
 export function openGroupWindow(opts) {
   const mq = matchMedia("(min-width:1000px) and (pointer:fine)");
   const box = { x: 60, y: 110, w: 460, h: 340 };
-  const win = el("div", "dua-gw"); win.setAttribute("role", "dialog"); win.setAttribute("aria-label", opts.title);
+  const win = el("div", "dua-gw"); win.setAttribute("role", "dialog"); win.setAttribute("aria-modal", "true"); win.setAttribute("aria-label", opts.title);
+  const release = (() => { let r = null; return { set(f) { r = f; }, run() { r?.(); r = null; } }; })();
   const head = el("header", "dua-gw-head"); const title = el("b", "", opts.title);
   const x = el("button", "dua-gw-close", "✕"); x.type = "button"; x.setAttribute("aria-label", t("Close"));
   head.append(title, x);
@@ -123,11 +156,12 @@ export function openGroupWindow(opts) {
     box.x = nx; box.y = ny; box.w = w; box.h = hh;
   });
   const onResize = () => place();
-  const close = () => { removeEventListener("resize", onResize); mq.removeEventListener?.("change", onResize); document.removeEventListener("keydown", onKey); win.remove(); opts.onClose?.(); };
+  const close = () => { release.run(); removeEventListener("resize", onResize); mq.removeEventListener?.("change", onResize); document.removeEventListener("keydown", onKey); win.remove(); opts.onClose?.(); };
   const onKey = (e) => { if (e.key === "Escape" && !e.defaultPrevented) { e.preventDefault(); close(); } };
   x.addEventListener("click", close);
   addEventListener("resize", onResize); mq.addEventListener?.("change", onResize); document.addEventListener("keydown", onKey);
   document.body.appendChild(win); place();
+  release.set(trapModal(win)); // Tab stays inside; focus goes back to what opened the window when it closes
   x.focus({ preventScroll: true });
   return { close, isWindow: () => mq.matches, box: () => ({ ...box }), el: win };
 }
