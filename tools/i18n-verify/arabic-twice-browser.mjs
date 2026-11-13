@@ -4,6 +4,7 @@
 // Run from the repository root with serve.js up:  node tools/i18n-verify/arabic-twice-browser.mjs   (QR_BASE=... for another port)
 //   MUT=studynext ... mutation: Study Next's Arabic is back at its old size   -> the Study Next size checks
 //   MUT=wordcard ...  mutation: the Word Card's Arabic is back at its old size -> the Word Card size checks
+//   MUT=partname ...  mutation: the shared small-Arabic size is back at 0.9 of the head word  -> the REAL Word Card grammar-name size check
 //   MUT=ayahchip ...  mutation: the Āyah card's Word-by-Word chips are back   -> the chip size check
 // Measured, rendered, at 320, 390, 768 and 1280: the computed size is at least twice the OLD size (never a guess about px at one width), and nothing runs off the screen.
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -27,6 +28,7 @@ process.on("exit", restoreAll);
 for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { restoreAll(); process.exit(1); });
 if (MUT === "studynext") { mutate("app/js/read-next-ui.js", /font-size: 2\.4rem; line-height: 1\.8/g, "font-size: 1.2rem; line-height: 1.8"); mutate("app/js/read-next-ui.js", /\.rn-ar-name \{ font-size: 1\.64rem/g, ".rn-ar-name { font-size: 0.82rem"); mutate("app/js/read-next-ui.js", /\.rn-era-quote \{ margin: 4px 0 0; font-size: 2\.1rem/g, ".rn-era-quote { margin: 4px 0 0; font-size: 1.05rem"); }
 else if (MUT === "wordcard") mutate("app/quranrevival.html", /\.word-card-dpop-ar \{ font-family: var\(--quran-font\); font-size: 3\.4rem/g, ".word-card-dpop-ar { font-family: var(--quran-font); font-size: 1.7rem");
+else if (MUT === "partname") mutate("app/quranrevival.html", /--wc-small-ar: calc\(var\(--wc-head-ar\) \* 1\.8\)/g, "--wc-small-ar: calc(var(--wc-head-ar) * 0.9)");
 else if (MUT === "ayahchip") mutate("app/quranrevival.html", /\.ayah-wbw-chip \[lang="ar"\] \{ font-family: var\(--quran-font\); font-size: 2\.4rem/g, '.ayah-wbw-chip [lang="ar"] { font-family: var(--quran-font); font-size: 1.2rem');
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -71,6 +73,26 @@ try {
     }, WORD_CARD_OLD);
     for (const [cls, old] of Object.entries(WORD_CARD_OLD)) check(`${tag} MUTATION TARGET (wordcard): .${cls} is at least twice its old size (${px(old * 2)}px or more)`, sizes[cls] >= px(old * 2) - 0.5, String(sizes[cls]));
     check(`${tag} MUTATION TARGET (ayahchip): the Āyah card's Word-by-Word Arabic is twice its old size (38.4px or more; was 19.2px)`, sizes.chip >= 38.3, String(sizes.chip));
+    // ---- a REAL Word Card (100L, 12 Nov 2026: the sizes above are on stand-in elements; this opens the real card on 1:5:1 "إِيَّاكَ")
+    if (!(await page.evaluate(() => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(200); }
+    await page.click("#tabReadBtn");
+    await page.waitForFunction(() => !document.getElementById("readView").hidden && document.getElementById("ayahPanels").textContent.trim().length > 20, null, { timeout: 8000 }).catch(() => {});
+    await page.evaluate(() => { const t = document.getElementById("wbwShowToggle"); if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); } });
+    await page.evaluate(() => { const s = document.getElementById("ayahSelect"); s.value = "5"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+    await page.waitForTimeout(1200);
+    const occ = "quran-word-occurrence:v1:1:5:1";
+    const opened = await page.waitForFunction((i) => document.querySelector(`#readView [data-word-occurrence="${i}"]`), occ, { timeout: 8000 }).then(() => true).catch(() => false);
+    if (opened) await page.evaluate((i) => document.querySelector(`#readView [data-word-occurrence="${i}"]`).click(), occ);
+    const real = opened ? await page.waitForSelector(".quran-word-card .word-card-part-arname", { timeout: 8000 }).then(() => true).catch(() => false) : false;
+    const rc = real ? await page.evaluate(() => { const c = document.querySelector(".quran-word-card"), cr = c.getBoundingClientRect(); const n = document.querySelector(".quran-word-card .word-card-part-arname"); const rg = document.createRange(); rg.selectNodeContents(n); const lines = new Set([...rg.getClientRects()].map((r) => Math.round(r.top))).size; const out = [...c.querySelectorAll('[lang="ar"]')].filter((e) => e.getClientRects().length && (e.getBoundingClientRect().right > cr.right + 1 || e.getBoundingClientRect().left < cr.left - 1)).length; return { size: parseFloat(getComputedStyle(n).fontSize), head: parseFloat(getComputedStyle(c.querySelector(".word-card-arabic")).fontSize), lines, out, sw: c.scrollWidth - c.clientWidth }; }) : null;
+    check(`${tag} POSITIVE CONTROL: a real Word Card opened on 1:5:1`, !!rc);
+    if (rc) {
+      check(`${tag} MUTATION TARGET (partname): in the real card the grammar name is twice its old size, i.e. 1.8 x the head word (${rc.size}px beside a ${rc.head}px head word; it was 0.9 x)`, rc.size >= 1.7 * rc.head, JSON.stringify(rc));
+      // The grammar name wraps one word per line in a half-width box on a phone (measured: ${rc.lines} line(s) here). Whether to leave it, make the
+      // head word twice too, or make the grammar line smaller is the OWNER's tick (PCF monitor, 100L 12 Nov 2026), so this is recorded, not asserted.
+      console.log(`  INFO  ${tag} real card: the grammar name "ضَمِيرٌ مُنْفَصِل" takes ${rc.lines} line(s) at ${rc.size}px`);
+      check(`${tag} in the real card no Arabic runs outside the card and the card does not scroll sideways`, rc.out === 0 && rc.sw <= 1, JSON.stringify(rc));
+    }
     await ctx.close();
   }
 } finally { await browser.close(); restoreAll(); }
