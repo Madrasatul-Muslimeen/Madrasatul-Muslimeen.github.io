@@ -60,11 +60,20 @@ export function find(tree, id, parent = null, level = 1) {
 
 const containsId = (node, id) => node.id === id || (node.kids || []).some((k) => containsId(k, id));
 
-/** Pure: a validated deep copy of a tree, or null when it is not one (bad node, duplicate id, too deep, too many). */
-export function cleanTree(tree) {
+export const MAX_DUAS_PER_GROUP = 500;
+export const MAX_DUAS_IN_TREE = 5000;
+
+/**
+ * Pure: a validated deep copy of a tree, or null when it is not one (bad node, duplicate id, too deep, too many).
+ * A PERSON'S groups ("My groups") also carry `duas`, a list of dua keys on each node (the Owner's membership home for them): it is kept
+ * only when the caller hands in `opts.isKey` (this module imports nothing, so it cannot know the key forms), each key must pass it and
+ * be unique inside its group, and the limits are MAX_DUAS_PER_GROUP a group and MAX_DUAS_IN_TREE in all. Without `isKey` a `duas` list
+ * is dropped, as before. `opts.noDuas` refuses a tree that carries any (the madrasah's groups keep their membership in duaEdits).
+ */
+export function cleanTree(tree, opts = {}) {
   if (!Array.isArray(tree)) return null;
   const seen = new Set();
-  let n = 0;
+  let n = 0, duasTotal = 0;
   const walk = (list, level) => {
     if (!Array.isArray(list) || (list.length && level > MAX_DEPTH)) return null;
     const out = [];
@@ -73,9 +82,19 @@ export function cleanTree(tree) {
       const name = cleanName(x.name);
       if (!name || ++n > MAX_NODES) return null;
       seen.add(x.id);
+      let duas;
+      if (x.duas !== undefined) {
+        if (opts.noDuas) return null;
+        if (opts.isKey) {
+          if (!Array.isArray(x.duas) || x.duas.length > MAX_DUAS_PER_GROUP || new Set(x.duas).size !== x.duas.length || !x.duas.every((k) => typeof k === "string" && opts.isKey(k))) return null;
+          duasTotal += x.duas.length;
+          if (duasTotal > MAX_DUAS_IN_TREE) return null;
+          duas = [...x.duas];
+        }
+      }
       const kids = walk(x.kids ?? [], level + 1);
       if (!kids) return null;
-      out.push({ id: x.id, name, kids });
+      out.push(duas === undefined ? { id: x.id, name, kids } : { id: x.id, name, kids, duas });
     }
     return out;
   };
