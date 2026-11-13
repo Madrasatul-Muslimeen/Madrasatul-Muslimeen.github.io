@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dua groups and Menu demo v1.10</title>
+<style>
+:root{--bg:#f6f1e4;--card:#fffdf7;--ink:#1d2a22;--mut:#5d6b61;--line:#d9cfb6;--acc:#0b5a3a;--warn:#9a2b1d;--drop:#e8b84a}
+@media (prefers-color-scheme:dark){:root{--bg:#0c1a13;--card:#12261b;--ink:#f2ead2;--mut:#b9c4b4;--line:#2d4a3a;--acc:#7fd6a0;--warn:#ff9d8d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,sans-serif;padding:0 16px 56px}
+h1{font-size:1.35rem;margin:18px 0 4px}h2{font-size:1.1rem;margin:0 0 6px}h3{font-size:1rem;margin:10px 0 4px}p{margin:.3rem 0}.mut{color:var(--mut);font-size:.92rem}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:14px auto;max-width:980px}
+.tag{display:inline-block;background:var(--acc);color:#fff;border-radius:99px;padding:2px 10px;font-size:.8rem}
+@media (prefers-color-scheme:dark){.tag{color:#06140d}}
+button{font:inherit;min-height:40px;min-width:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:4px 12px;cursor:pointer}
+button.pri{background:var(--acc);color:#fff;border-color:var(--acc)}@media (prefers-color-scheme:dark){button.pri{color:#06140d}}
+button[aria-pressed=true]{background:var(--acc);color:#fff}@media (prefers-color-scheme:dark){button[aria-pressed=true]{color:#06140d}}
+input[type=text]{font:inherit;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:4px 10px;min-width:0}
+.note{background:#fff3c9;color:#4a3b00;border-radius:8px;padding:6px 10px;font-size:.9rem;margin:8px 0}
+@media (prefers-color-scheme:dark){.note{background:#3b3412;color:#f6e7b6}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}.seg button{border:0;border-radius:0}
+/* tree */
+.node{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:4px 6px;margin:5px 0;background:var(--card);position:relative}
+.node .grip{cursor:grab;touch-action:none;user-select:none;font-size:1.2rem;padding:0 6px;color:var(--mut);min-width:36px;min-height:40px;display:flex;align-items:center;justify-content:center}
+.node b{flex:1;min-width:0;overflow-wrap:anywhere;cursor:pointer}.node .lvl{font-size:.72rem;color:var(--mut)}
+.node.ro .grip{opacity:.3;cursor:not-allowed}
+.node.before{box-shadow:0 -4px 0 var(--drop)}.node.after{box-shadow:0 4px 0 var(--drop)}.node.inside{outline:3px solid var(--drop)}
+.node.dragging{opacity:.4}
+.kids{margin-left:18px;border-left:2px solid var(--line);padding-left:8px}
+.ghost{position:fixed;pointer-events:none;z-index:50;background:var(--acc);color:#fff;border-radius:10px;padding:6px 12px;box-shadow:0 6px 20px #0006;transform:translate(-50%,-120%)}
+@media (prefers-color-scheme:dark){.ghost{color:#06140d}}
+.menu{position:absolute;right:6px;top:100%;z-index:30;background:var(--card);border:1px solid var(--acc);border-radius:10px;box-shadow:0 8px 24px #0005;display:flex;flex-direction:column;min-width:190px;padding:4px}
+.menu[hidden]{display:none}.menu button{border:0;text-align:left;border-radius:8px}.menu .d{color:var(--warn)}
+/* pop-up */
+.gp{position:fixed;z-index:40;background:var(--card);border:2px solid var(--acc);border-radius:12px;box-shadow:0 10px 36px #0006;display:flex;flex-direction:column;min-width:280px;min-height:200px}
+.gp[hidden]{display:none}
+.gp header{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--acc);color:#fff;cursor:move;touch-action:none;border-radius:9px 9px 0 0}
+@media (prefers-color-scheme:dark){.gp header{color:#06140d}}
+.gp header b{flex:1;min-width:0}.gp .body{padding:10px;overflow:auto;flex:1}
+.gp .h{position:absolute;touch-action:none;z-index:2}
+.h.n{top:-6px;left:12px;right:12px;height:12px;cursor:ns-resize}.h.s{bottom:-6px;left:12px;right:12px;height:12px;cursor:ns-resize}
+.h.e{right:-6px;top:12px;bottom:12px;width:12px;cursor:ew-resize}.h.w{left:-6px;top:12px;bottom:12px;width:12px;cursor:ew-resize}
+.h.ne{right:-7px;top:-7px;width:20px;height:20px;cursor:nesw-resize}.h.sw{left:-7px;bottom:-7px;width:20px;height:20px;cursor:nesw-resize}
+.h.nw{left:-7px;top:-7px;width:20px;height:20px;cursor:nwse-resize}.h.se{right:-7px;bottom:-7px;width:20px;height:20px;cursor:nwse-resize}
+.gp.full{inset:0!important;width:auto!important;height:auto!important;border-radius:0;border-width:0}.gp.full .h{display:none}.gp.full header{cursor:default;border-radius:0}
+/* menu mock */
+.mock{background:#0f1c33;color:#f1e7c6;border:2px solid #c9a24a;border-radius:14px;padding:10px;max-width:640px}
+.mock button{background:#14233f;color:#f1e7c6;border-color:#4b5b7a;min-height:44px}
+.mock .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:8px}
+.mock .tabs button{padding:4px 2px;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mock .tabs button[aria-selected=true]{background:#e0b04a;color:#1a1a1a;font-weight:600}
+.mock .btns{display:flex;flex-wrap:wrap;gap:6px}.mock .btns button{flex:1 1 calc(50% - 6px)}@media (min-width:700px){.mock .btns button{flex:0 1 auto}}
+.mock .sel{display:flex;flex-wrap:wrap;gap:6px}.mock .sel button[aria-pressed=true]{background:#e0b04a;color:#1a1a1a;font-weight:600}
+.mock .sel button{flex:0 1 auto}
+.mock .tab-ico{display:block;font-size:1.05rem;line-height:1}
+@media (min-width:700px){.mock .tab-ico{display:inline;margin-right:4px}}
+</style></head><body>
+<h1>Dua groups and Menu: DEMO v1.10 <span class="tag">sample data</span></h1>
+<p class="mut">For the Owner's tick (PCF MSA J104 item 25, your words of 13 Nov). Nothing here is saved; the groups are invented. <b>1</b> groups you drag to any level, one menu per group, Admin's groups or My groups; <b>2</b> a group pop-up (full screen on tablet and phone; on a computer drag it and resize it from any side or corner); <b>3</b> Menu layout B with five tabs in one row.</p>
+
+<section><h2>1 · Groups: drag to any level</h2>
+<p class="mut">Press and hold the ⠿ handle, then drag. Drop on the <b>top edge</b> of a group to go before it, the <b>bottom edge</b> to go after it, the <b>middle</b> to go inside it. Up to 3 levels. Tap a group's name to open it; tap ⋯ for its menu (Open, Rename, Add inside, Delete). Works with a mouse or a finger.</p>
+<div class="chips"><span class="seg" role="group" aria-label="Which groups"><button id="tAdmin" aria-pressed="true">Admin's groups</button><button id="tMine" aria-pressed="false">My groups</button></span>
+<label class="mut"><input type="checkbox" id="isAdmin" checked> I am the admin (demo switch)</label></div>
+<div class="note" id="who"></div>
+<div class="chips"><input type="text" id="newName" placeholder="New group name" aria-label="New group name"><button class="pri" id="add">+ Add group</button><button id="reset">Reset sample</button></div>
+<div class="note" id="lastDel" hidden></div>
+<div id="tree"></div></section>
+
+<section><h2>2 · A group as a pop-up</h2>
+<p class="mut">Tablet and phone: full screen. Computer (a wide screen with a mouse): drag the title bar to move; drag any of the four sides or four corners to resize.</p>
+<div id="winInfo" class="mut">Open a group above.</div></section>
+
+<section><h2>3 · Menu: layout B with five tabs</h2>
+<p class="mut">The same Menu, one tab at a time: <b>Show</b> (your selections: Arabic, English, Bangla, Word by word, Vowels, Source; Share moved up into this row's tabs), <b>Share</b>, <b>Keep</b>, <b>Listen</b>, <b>Study</b>. Five tabs fit in one row on a phone, tablet and computer.</p>
+<div class="mock" id="mB"></div>
+<div class="note">I read "move Share with the above row" as: the top row ("Your selections") becomes the first tab (named Show, so it fits on a phone) and Share becomes its own tab beside it, so the five tabs are Show, Share, Keep, Listen, Study. Say if you meant something else.</div>
+</section>
+
+<div class="gp" id="gp" hidden role="dialog" aria-label="Group"><header id="gpH"><b id="gpT"></b><button id="gpX" aria-label="Close">✕</button></header><div class="body" id="gpB"></div>
+<i class="h n" data-d="n"></i><i class="h s" data-d="s"></i><i class="h e" data-d="e"></i><i class="h w" data-d="w"></i><i class="h ne" data-d="ne"></i><i class="h nw" data-d="nw"></i><i class="h se" data-d="se"></i><i class="h sw" data-d="sw"></i></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const ADMIN0=()=>[{n:"Morning and evening",k:[{n:"Hisn al-Muslim",k:[{n:"Waking up",k:[]},{n:"Before sleep",k:[]}]},{n:"Short duas",k:[]}]},{n:"Sahaba duas",k:[{n:"Abu Bakr",k:[]}]},{n:"Duas of the Prophets",k:[]}];
+const MINE0=()=>[{n:"Learning now",k:[{n:"This week",k:[]}]},{n:"Revising",k:[]}];
+let TREES={admin:ADMIN0(),mine:MINE0()},which="admin";
+const isAdmin=()=>$("#isAdmin").checked;
+const canEdit=()=>which==="mine"||isAdmin();
+const T=()=>TREES[which];
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const sub=n=>1+n.k.reduce((m,x)=>Math.max(m,sub(x)),0);
+function find(list,node,par=null){for(let i=0;i<list.length;i++){if(list[i]===node)return{list,i,par};const r=find(list[i].k,node,list[i]);if(r)return r}return null}
+function lvlOf(node){let d=1,p=find(T(),node).par;while(p){d++;p=find(T(),p).par}return d}
+const within=(anc,n)=>anc===n||anc.k.some(x=>within(x,n));
+let openMenu=null;
+function render(){
+ $("#who").textContent=which==="admin"?(isAdmin()?"Admin's groups: everyone sees these; only the admin edits them. You are the admin, so you can change them.":"Admin's groups: set by the madrasah admin. You can open them, and copy one into My groups, but not change them."):"My groups: only you see and change these.";
+ $("#tAdmin").setAttribute("aria-pressed",which==="admin");$("#tMine").setAttribute("aria-pressed",which==="mine");
+ $("#add").disabled=!canEdit();
+ const el=$("#tree");el.innerHTML="";
+ (function walk(list,host,lv){list.forEach(n=>{
+  const d=document.createElement("div"),r=document.createElement("div");r.className="node"+(canEdit()?"":" ro");r._n=n;
+  r.innerHTML=`<span class="grip" aria-label="Drag ${esc(n.n)}" title="${canEdit()?"Drag":"Read only"}">⠿</span><b>${esc(n.n)} <span class="lvl">level ${lv}</span></b>`;
+  r.querySelector("b").onclick=()=>openG(n);
+  const m=document.createElement("button");m.textContent="⋯";m.setAttribute("aria-label","Menu for "+n.n);r.appendChild(m);
+  const mn=document.createElement("div");mn.className="menu";mn.hidden=true;
+  const item=(t,f,c)=>{const b=document.createElement("button");b.textContent=t;if(c)b.className=c;b.onclick=()=>{mn.hidden=true;f()};mn.appendChild(b)};
+  item("Open",()=>openG(n));
+  if(canEdit()){item("Rename",()=>{const v=prompt("Rename group",n.n);if(v&&v.trim()){n.n=v.trim().slice(0,60);render()}});
+   if(lv<3)item("Add a group inside",()=>{const v=prompt("Group name");if(v&&v.trim()){n.k.push({n:v.trim().slice(0,60),k:[]});render()}});
+   item("Delete",()=>{const c=n.k.length?" and the groups inside it":"";if(confirm("Delete “"+n.n+"”"+c+"? The duas stay in the app.")){const f=find(T(),n);f.list.splice(f.i,1);const x=$("#lastDel");x.hidden=false;x.textContent="Deleted “"+n.n+"”"+c+". (Real delete: cannot be undone. The duas themselves are not deleted.)";render()}},"d")}
+  else item("Copy to My groups",()=>{TREES.mine.push(JSON.parse(JSON.stringify(n)));alert("Copied to My groups.")});
+  r.appendChild(mn);
+  m.onclick=e=>{e.stopPropagation();const was=mn.hidden;closeMenus();mn.hidden=!was;openMenu=mn};
+  d.appendChild(r);if(n.k.length){const kd=document.createElement("div");kd.className="kids";d.appendChild(kd);walk(n.k,kd,lv+1)}host.appendChild(d)})})(T(),el,1);
+}
+function closeMenus(){document.querySelectorAll(".menu").forEach(x=>x.hidden=true)}
+document.addEventListener("click",closeMenus);
+$("#tAdmin").onclick=()=>{which="admin";render()};$("#tMine").onclick=()=>{which="mine";render()};$("#isAdmin").onchange=render;
+$("#add").onclick=()=>{const v=$("#newName").value.trim();if(v&&canEdit()){T().push({n:v.slice(0,60),k:[]});$("#newName").value="";render()}};
+$("#reset").onclick=()=>{TREES={admin:ADMIN0(),mine:MINE0()};$("#lastDel").hidden=true;render()};
+/* drag and drop (pointer events: mouse and finger) */
+let dr=null;
+$("#tree").addEventListener("pointerdown",e=>{
+ const g=e.target.closest(".grip");if(!g||!canEdit())return;e.preventDefault();
+ const row=g.closest(".node");dr={n:row._n,row,ghost:null,t:null,z:null};
+ g.setPointerCapture(e.pointerId);row.classList.add("dragging");
+ const gh=document.createElement("div");gh.className="ghost";gh.textContent=dr.n.n;document.body.appendChild(gh);dr.ghost=gh;move(e)});
+function zoneFor(e){
+ document.querySelectorAll(".node").forEach(x=>x.classList.remove("before","after","inside"));
+ dr.t=null;dr.z=null;
+ dr.ghost.hidden=true;const el=document.elementFromPoint(e.clientX,e.clientY);dr.ghost.hidden=false;
+ const row=el&&el.closest&&el.closest(".node");if(!row||!$("#tree").contains(row))return;
+ const tn=row._n;if(within(dr.n,tn))return;
+ const b=row.getBoundingClientRect(),f=(e.clientY-b.top)/b.height;
+ let z=f<.28?"before":f>.72?"after":"inside";
+ const tl=lvlOf(tn);
+ const newLevel=z==="inside"?tl+1:tl;
+ if(newLevel+sub(dr.n)-1>3){ if(z==="inside")z=f<.5?"before":"after"; if(tl+sub(dr.n)-1>3)return}
+ dr.t=tn;dr.z=z;row.classList.add(z)}
+function move(e){if(!dr)return;dr.ghost.style.left=e.clientX+"px";dr.ghost.style.top=e.clientY+"px";zoneFor(e)}
+$("#tree").addEventListener("pointermove",move);
+function endDrag(){if(!dr)return;const d=dr;dr=null;d.ghost.remove();
+ document.querySelectorAll(".node").forEach(x=>x.classList.remove("before","after","inside","dragging"));
+ if(!d.t)return;const src=find(T(),d.n);src.list.splice(src.i,1);
+ if(d.z==="inside")d.t.k.push(d.n);else{const t=find(T(),d.t);t.list.splice(t.i+(d.z==="after"?1:0),0,d.n)}
+ render()}
+$("#tree").addEventListener("pointerup",endDrag);$("#tree").addEventListener("pointercancel",()=>{if(dr){dr.t=null;endDrag()}});
+/* pop-up: full screen on tablet/phone, window on a wide mouse screen */
+const gp=$("#gp"),mqWin=matchMedia("(min-width:1000px) and (pointer:fine)");let box={x:60,y:110,w:460,h:340};
+function place(){const win=mqWin.matches;gp.classList.toggle("full",!win);
+ if(win){gp.style.left=box.x+"px";gp.style.top=box.y+"px";gp.style.width=box.w+"px";gp.style.height=box.h+"px"}
+ $("#winInfo").textContent=win?"Computer: window "+Math.round(box.w)+" × "+Math.round(box.h)+" px":"Tablet or phone: full screen."}
+function openG(n){$("#gpT").textContent=n.n;$("#gpB").innerHTML="<p class='mut'>Sample duas in this group:</p><ol><li>Dua 4: ربنا آتنا في الدنيا حسنة</li><li>Dua 12</li><li>Dua 27</li></ol>"+(n.k.length?"<p class='mut'>Groups inside: "+n.k.map(x=>esc(x.n)).join(", ")+"</p>":"");gp.hidden=false;place()}
+$("#gpX").onclick=()=>{gp.hidden=true};
+function drag(h,fn){h.addEventListener("pointerdown",e=>{if(e.target.closest("button")||gp.classList.contains("full"))return;e.preventDefault();e.stopPropagation();h.setPointerCapture(e.pointerId);const sx=e.clientX,sy=e.clientY,b={...box};
+ const mv=ev=>{fn(b,ev.clientX-sx,ev.clientY-sy);place()};const up=()=>{h.removeEventListener("pointermove",mv);h.removeEventListener("pointerup",up)};h.addEventListener("pointermove",mv);h.addEventListener("pointerup",up)})}
+drag($("#gpH"),(b,dx,dy)=>{box.x=Math.max(0,Math.min(innerWidth-120,b.x+dx));box.y=Math.max(0,Math.min(innerHeight-60,b.y+dy))});
+const MINW=280,MINH=200;
+gp.querySelectorAll(".h").forEach(h=>drag(h,(b,dx,dy)=>{const d=h.dataset.d;let x=b.x,y=b.y,w=b.w,hh=b.h;
+ if(d.includes("e"))w=Math.max(MINW,Math.min(innerWidth-b.x,b.w+dx));
+ if(d.includes("s"))hh=Math.max(MINH,Math.min(innerHeight-b.y,b.h+dy));
+ if(d.includes("w")){const nw=Math.max(MINW,b.w-dx);x=Math.max(0,b.x+(b.w-nw));w=b.x+b.w-x;}
+ if(d.includes("n")){const nh=Math.max(MINH,b.h-dy);y=Math.max(0,b.y+(b.h-nh));hh=b.y+b.h-y;}
+ box={x,y,w,h:hh}}));
+addEventListener("resize",()=>{if(!gp.hidden)place()});mqWin.addEventListener("change",()=>{if(!gp.hidden)place()});
+/* Menu layout B */
+const TABS=[["Show","🎛️"],["Share","🖼️"],["Keep","📝"],["Listen","🔊"],["Study","📖"]];
+const BODY={Show:["Arabic","English","Bangla","Word by word","Vowels","Source"],Share:["🖼️ Poster","Copy / share"],Keep:["📝 My Notes","🔖 Bookmark this"],Listen:["Reciter","Speed 1×","Repeat","Autoplay next"],Study:["Meaning","Source","✓ Check","📖 Full text"]};
+const ON=new Set(["Arabic","Word by word","Vowels","Source"]);let cur="Show";
+function mB(){const el=$("#mB");el.innerHTML=`<div class="tabs" role="tablist">${TABS.map(([t,i])=>`<button role="tab" aria-selected="${t===cur}" data-t="${t}"><span class="tab-ico">${i}</span>${t}</button>`).join("")}</div><div class="${cur==="Show"?"sel":"btns"}">${BODY[cur].map(t=>cur==="Show"?`<button aria-pressed="${ON.has(t)}" data-s="${t}">${t}</button>`:`<button>${t}</button>`).join("")}</div>`;
+ el.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{cur=b.dataset.t;mB()});
+ el.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const t=b.dataset.s;ON.has(t)?ON.delete(t):ON.add(t);mB()})}
+mB();render();
+</script></body></html>
