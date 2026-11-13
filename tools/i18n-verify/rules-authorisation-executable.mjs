@@ -55,6 +55,18 @@ function stripEffort(text) {
   lines.splice(i - 7, 10);
   return lines.join("\n");
 }
+// UPDATED IN PLACE 14 Nov 2026 (Architect 103L): the Owner PUBLISHED the Dua groups Rules ("Rules published", 21:00Z 13 Nov 2026, to the
+// Dua Lead; PCF MSA J104 line 26), so firestore.rules is now docs/proposals/dua-groups.DEPLOYMENT-candidate.rules: the word-effort file plus
+// exactly the candidate's duaGroups block. The checks that pinned the effort file byte for byte now pin the groups file AND prove that
+// taking that one block out gives the effort file again (stripGroups), so "only the duaGroups block was added" stays checked.
+const GROUPS_DEPLOYMENT = () => read("docs/proposals/dua-groups.DEPLOYMENT-candidate.rules");
+function stripGroups(text) {
+  const cand = read("docs/proposals/dua-groups.candidate.rules");
+  const block = cand.slice(cand.indexOf("    // ====="), cand.lastIndexOf("  }\n}"));
+  assert.ok(block.length > 1000 && block.includes("match /duaGroups/"), "stripGroups: POSITIVE CONTROL, the candidate's block was not found");
+  assert.equal(text.split("\n\n" + block).length - 1, 1, "stripGroups: the duaGroups block is not present exactly once");
+  return text.replace("\n\n" + block, "\n");
+}
 
 let passed = 0, failed = 0;
 function check(name, fn) {
@@ -741,8 +753,9 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   check("DUA SAVING: firestore.rules IS the published deployment file (now the dua-keys file), and carries the candidate's three blocks, the duaKey pattern widened", () => {
     const dep = read("docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
     const live = read("firestore.rules");
-    assert.equal(live, EFFORT_DEPLOYMENT(), "firestore.rules differs from docs/proposals/word-effort.DEPLOYMENT-candidate.rules, which is what production carries since 11 Nov 2026");
-    assert.equal(stripEffort(live), dep, "firestore.rules, with the three effort edits taken out, differs from docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
+    assert.equal(live, GROUPS_DEPLOYMENT(), "firestore.rules differs from docs/proposals/dua-groups.DEPLOYMENT-candidate.rules, which is what production carries since 13 Nov 2026");
+    assert.equal(stripGroups(live), EFFORT_DEPLOYMENT(), "firestore.rules, with the duaGroups block taken out, differs from docs/proposals/word-effort.DEPLOYMENT-candidate.rules");
+    assert.equal(stripEffort(stripGroups(live)), dep, "firestore.rules, with the duaGroups block and the three effort edits taken out, differs from docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
     const OLDP = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40})$')";
     const NEWP = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40}|hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?)$')";
     for (const c of DUA) assert.equal(matchBlock(live, `${c}/`).replaceAll(NEWP, () => OLDP), matchBlock(dua, `${c}/`), `firestore.rules' ${c} block differs from the candidate beyond the widened duaKey pattern`);
@@ -861,7 +874,7 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   });
   check("DUA KEYS PUBLISHED: firestore.rules IS the dua-keys file, byte for byte (the Owner published it, 9 Nov 2026)", () => {
     const fr = read("firestore.rules");
-    assert.equal(stripEffort(fr), cand, "firestore.rules, with the effort edits taken out, differs from the published dua-keys file");
+    assert.equal(stripEffort(stripGroups(fr)), cand, "firestore.rules, with the duaGroups block and the effort edits taken out, differs from the published dua-keys file");
     assert.equal(fr.split(NEW).length - 1, 2, "firestore.rules does not carry the widened pattern twice");
   });
 }
@@ -869,9 +882,8 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
 // ---------------------------------------------------------------------------------------------------------------------
 // DUA GROUPS (PCF MSA J104 line 25, the Owner's tick 13 Nov 2026; prepared by the Architect 102L): docs/proposals/
 // dua-groups.candidate.rules -- duaGroups/{tenantId}__{ownerKey}, ownerKey "admin" or a personId. A CANDIDATE with NO
-// WRITER yet: the Dua Lead's writer comes after the Owner publishes. These checks pin that state. The day the Owner
-// publishes (firestore.rules becomes the deployment file) or a writer appears, the PENDING checks fail by name; update them
-// in place and add the forward/backward checks (as for DUA SAVING above) before that round is accepted.
+// WRITER yet at first; since 13 Nov 2026 the Owner has published it and the Dua Lead's writer exists, so the checks below are the
+// forward/backward ones (see the UPDATED IN PLACE note).
 {
   const cand = read("docs/proposals/dua-groups.candidate.rules");
   const dep = read("docs/proposals/dua-groups.DEPLOYMENT-candidate.rules");
@@ -885,18 +897,65 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     assert.ok(!b.split("\n").filter((l) => !/^\s*\/\//.test(l)).some((l) => /^\s*allow [^:]*\blist\b/.test(l)), "duaGroups must be read by id only");
     for (const f of ["tenantId", "ownerKey", "createdBy"]) assert.match(b, new RegExp(`d\\(\\)\\.${f} == resource\\.data\\.${f}`), `${f} not pinned`);
   });
-  check("DUA GROUPS: the deployment file is firestore.rules unchanged with exactly the candidate's block added before the last two closing braces", () => {
+  // UPDATED IN PLACE 13 Nov 2026 (Dua Lead; the Owner published the duaGroups Rules the same day, "Rules published"): the writer exists
+  // now (app/js/dua-saving-data.js, saveDuaGroups), so "PENDING" is replaced by the forward/backward comparison, as for DUA SAVING
+  // above. Until the repository's firestore.rules is synced to the text the Owner pasted, the block is read from the deployment file
+  // (docs/proposals/dua-groups.DEPLOYMENT-candidate.rules); the day firestore.rules carries it, the same checks read firestore.rules.
+  check("DUA GROUPS: the deployment file is the published text: firestore.rules unchanged + exactly the candidate's block, OR (once synced) firestore.rules itself", () => {
     const i = live.lastIndexOf("  }\n}");
     const block = blockOf(cand);
     assert.ok(block.length > 1000 && block.includes("match /duaGroups/"), "POSITIVE CONTROL: the candidate's block was not found");
-    assert.equal(dep, live.slice(0, i).replace(/\n+$/, "") + "\n\n" + block + live.slice(i));
+    // Architect 103L, 14 Nov 2026: once synced, the construction is still proved (stripGroups gives the effort file back).
+    if (live.includes("match /duaGroups/")) { assert.equal(live, dep, "firestore.rules carries duaGroups but is not the published deployment file"); assert.equal(stripGroups(dep), EFFORT_DEPLOYMENT(), "the deployment file is not the effort file plus exactly the candidate's block"); }
+    else assert.equal(dep, live.slice(0, i).replace(/\n+$/, "") + "\n\n" + block + live.slice(i));
   });
-  check("DUA GROUPS PENDING: firestore.rules does not yet carry duaGroups (the Owner has not published), and no app file writes it", () => {
-    assert.ok(!live.includes("match /duaGroups/"), "firestore.rules carries duaGroups: the Owner published -- update these checks in place");
+  const published = live.includes("match /duaGroups/") ? live : dep;
+  const gSrc = read("app/js/dua-saving-data.js");
+  const gDeclared = (() => {
+    const m = gSrc.match(/export const DUA_GROUP_WRITES = Object\.freeze\(\[([\s\S]*?)\]\)/);
+    assert.ok(m, "DUA_GROUP_WRITES not found in dua-saving-data.js");
+    return new Set(idsIn(m[1].replace(/"/g, "'")));
+  })();
+  const gOwn = (set) => [...set].filter((f) => !ENVELOPE.has(f));
+  const gAuth = authorisedCreate(published, "duaGroups/");
+  check("DUA GROUPS POSITIVE CONTROL: the parsers read the published block and the declared writes", () => {
+    assert.ok(gDeclared.size >= 3 && gAuth.permitted.has("tenantId") && gAuth.required.has("tenantId") && gDeclared.has("tenantId"), `writes=${[...gDeclared]} permitted=${[...gAuth.permitted]} required=${[...gAuth.required]}`);
+  });
+  check("DUA GROUPS BACKWARD: every field the data layer can write is one the published Rules allow", () => {
+    assert.deepEqual([...gDeclared].filter((f) => !gAuth.permitted.has(f)), [], "denied in production");
+  });
+  check("DUA GROUPS FORWARD: every field the published Rules allow is written by the data layer", () => {
+    assert.deepEqual(gOwn(gAuth.permitted).filter((f) => !gDeclared.has(f)), [], "an authorised field no code can perform");
+  });
+  check("DUA GROUPS REQUIRED: every required field is one the data layer writes (or the envelope stamps)", () => {
+    assert.deepEqual(gOwn(gAuth.required).filter((f) => !gDeclared.has(f)), []);
+  });
+  check("DUA GROUPS REQUIRED BOTH WAYS: every field the data layer creates with is REQUIRED", () => {
+    assert.deepEqual([...gDeclared].filter((f) => !gAuth.required.has(f)), [], "a create could omit an identity field");
+  });
+  check("DUA GROUPS UPDATE/DELETE: the data layer never deletes; the only field it updates is `nodes`, which the Rules do NOT pin; tenantId, ownerKey and createdBy are pinned and never written on update", () => {
+    assert.ok(!/\bdeleteDoc\b|\.delete\(|deleteField/.test(gSrc), "dua-saving-data.js must never delete");
+    const b = matchBlock(published, "duaGroups/");
+    assert.match(b, /allow delete: if false;/, "duaGroups may be deleted");
+    const upd = [...gSrc.matchAll(/updateDocument\(db, TENANT\.DUA_GROUPS, id, (\{[^}]*\})\)/g)].map((m) => m[1]);
+    assert.deepEqual(upd, ["{ nodes: clean }"], `the data layer's updates of duaGroups: ${upd.join(" | ")}`);
+    for (const f of ["tenantId", "ownerKey", "createdBy"]) assert.match(b, new RegExp(`d\\(\\)\\.${f} == resource\\.data\\.${f}`), `${f} not pinned on update`);
+    assert.ok(!/d\(\)\.nodes == resource\.data\.nodes/.test(b), "nodes must be free to change (a real delete writes it without the group)");
+  });
+  check("DUA GROUPS ID + CAPS: the document id the writer builds is the Rules' {tenantId}__{ownerKey}; the Rules' top-level cap equals the model's 200 groups; ownerKey 'admin' is the madrasah's", () => {
+    const b = matchBlock(published, "duaGroups/");
+    assert.match(b, /groupKey == d\(\)\.tenantId \+ '__' \+ d\(\)\.ownerKey/);
+    assert.match(gSrc, /const groupDocId = \(ctx, ownerKey\) => `\$\{ctx\.tenantId\}__\$\{ownerKey\}`;/);
+    const cap = Number((b.match(/d\(\)\.nodes\.size\(\) <= (\d+)/) || [])[1]);
+    const treeSrc = read("app/js/dua-group-tree.js");
+    assert.equal(cap, Number((treeSrc.match(/export const MAX_NODES = (\d+);/) || [])[1]), "the Rules' cap and dua-group-tree.js MAX_NODES differ");
+    assert.match(b, /ownerKey == 'admin'/); assert.match(gSrc, /export const ADMIN_GROUP_KEY = "admin";/);
+  });
+  check("DUA GROUPS: the only app code naming the collection is collections.js and the data layer (nothing else writes or reads it)", () => {
     const hits = [];
     const walk = (d) => { for (const e of fs.readdirSync(path.join(root, d), { withFileTypes: true })) { const p = `${d}/${e.name}`; if (e.isDirectory()) walk(p); else if (/\.(js|html)$/.test(e.name) && /duaGroups|DUA_GROUPS/.test(read(p))) hits.push(p); } };
     walk("app");
-    assert.deepEqual(hits, [], "a writer/reader of duaGroups exists: add the forward/backward checks before accepting it");
+    assert.deepEqual(hits.sort(), ["app/js/collections.js", "app/js/dua-saving-data.js"], `unexpected files name the collection: ${hits.join(", ")}`);
   });
 }
 

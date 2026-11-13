@@ -4,6 +4,7 @@
 // tree untouched, and the module deletes nothing (D6). Run from the repository root.
 //   --mutate=nodepth    moves/adds ignore MAX_DEPTH      --mutate=nocycle   a group may move into its own kids
 //   --mutate=keepkids   removeGroup leaves the kids behind in the tree
+//   --mutate=nokeycheck a person's `duas` keys are not checked (isKey ignored)
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -13,8 +14,9 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 let passed = 0, failed = 0;
 const check = (name, fn) => { try { const r = fn(); if (r && typeof r.then === "function") throw new TypeError("sync check given a promise"); passed++; console.log(`  PASS  ${name}`); } catch (e) { failed++; console.log(`  FAIL  ${name}\n        ${e.message}`); } };
 
-// --- 1. NOT WIRED ---
-const localImportsOf = (file) => [...fs.readFileSync(file, "utf8").matchAll(/(?:from\s*|import\s*\(?\s*)["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
+// --- 1. NOT WIRED AT START-UP (I9) --- (step 6b, 13 Nov 2026: the module is now reached ONLY through one lazy import() in dua-study.js, opened by a button;
+// the walker below follows STATIC imports only, so the claim that matters stays checked: no page loads it before the button is pressed.)
+const localImportsOf = (file) => [...fs.readFileSync(file, "utf8").matchAll(/(?:from\s*|import\s+)["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
 const entryModulesOf = (html) => [...fs.readFileSync(html, "utf8").matchAll(/["'`](?:\.\/)?js\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
 function chainsToTarget(target) {
   const found = [];
@@ -31,7 +33,8 @@ function chainsToTarget(target) {
   return found;
 }
 check("POSITIVE CONTROL: the reachability walker finds a wired module (records.js)", () => assert.ok(chainsToTarget("records.js").length > 0));
-check("NOT WIRED: no page reaches dua-group-tree.js yet (the screens follow, one PR each)", () => assert.deepEqual(chainsToTarget("dua-group-tree.js"), []));
+check("the ONE lazy door: dua-study.js opens the groups pop-up with a dynamic import() of dua-groups-page.js, and no page imports that statically", () => { assert.match(fs.readFileSync(path.join(appJs, "dua-study.js"), "utf8"), /import\("\.\/dua-groups-page\.js"\)/); assert.deepEqual(chainsToTarget("dua-groups-page.js"), []); });
+check("dua-group-tree.js is reachable from NO page by a STATIC import chain (it loads only when the Dua groups button is pressed: I9)", () => assert.deepEqual(chainsToTarget("dua-group-tree.js"), []));
 
 // --- the module, with a throw-away mutated copy when --mutate is given ---
 let file = path.join(appJs, "dua-group-tree.js"), tmp = null;
@@ -41,6 +44,7 @@ if (MUTATE) {
   if (MUTATE === "nodepth") { swap("if (p.level + 1 > MAX_DEPTH) return", "if (false) return"); swap("if (newLevel + height(src.node) - 1 > MAX_DEPTH) return", "if (false) return"); }
   else if (MUTATE === "nocycle") swap("if (containsId(src.node, targetId)) return", "if (false) return");
   else if (MUTATE === "keepkids") swap("f.list.splice(f.index, 1);\n  return { ok: true, tree: t, removed };", "f.list.splice(f.index, 1, ...f.node.kids);\n  return { ok: true, tree: t, removed };");
+  else if (MUTATE === "nokeycheck") swap("!x.duas.every((k) => typeof k === \"string\" && opts.isKey(k))", "false");
   else throw new Error("unknown --mutate " + MUTATE);
   console.log(`  (mutation ${MUTATE}: ${n} occurrence(s) replaced)`); assert.ok(n > 0, "mutation matched nothing");
   tmp = path.join(appJs, "_mut-dua-group-tree.js"); fs.writeFileSync(tmp, src); file = tmp;
@@ -103,6 +107,27 @@ check("cleanTree: refuses a duplicate id, a bad id, a bad name, a 4-level tree a
   assert.ok(m.cleanTree([...deep.slice(0, 1).map((n) => ({ ...n, kids: [{ ...n.kids[0], kids: [{ ...n.kids[0].kids[0], kids: [] }] }] }))]));
 });
 check("cleanTree: a missing kids list is read as empty; stray fields are dropped", () => { const c = m.cleanTree([{ id: "g-cccccccc", name: { en: "c" }, evil: 1 }]); assert.deepEqual(c, [{ id: "g-cccccccc", name: { en: "c" }, kids: [] }]); });
+const isKey = (k) => /^([0-9]{1,6}|hisn-[0-9]{1,3}-[0-9]{1,3})$/.test(k);
+const withDuas = (duas) => [{ id: "g-dddddd01", name: { en: "Mine" }, kids: [{ id: "g-dddddd02", name: { en: "Kid" }, kids: [], duas: ["7"] }], duas }];
+check("MY GROUPS: without opts.isKey a `duas` list is dropped (as before); with it the lists are kept exactly", () => {
+  assert.equal(m.cleanTree(withDuas(["12"]))[0].duas, undefined);
+  const c = m.cleanTree(withDuas(["12", "hisn-27-5"]), { isKey });
+  assert.deepEqual(c[0].duas, ["12", "hisn-27-5"]); assert.deepEqual(c[0].kids[0].duas, ["7"]);
+});
+check("MY GROUPS: a `duas` list with a bad key, a repeated key or a non-list is REFUSED (null); an empty list is fine", () => {
+  for (const bad of [["abc"], ["12", "12"], "12", [12], [null]]) assert.equal(m.cleanTree(withDuas(bad), { isKey }), null, JSON.stringify(bad));
+  assert.deepEqual(m.cleanTree(withDuas([]), { isKey })[0].duas, []);
+});
+check("MY GROUPS: 500 duas in a group pass and 501 are refused; 5000 in all pass and 5001 are refused", () => {
+  const keys = (n, from = 1) => Array.from({ length: n }, (_, i) => String(from + i));
+  assert.ok(m.cleanTree(withDuas(keys(500)), { isKey }), "500 refused"); assert.equal(m.cleanTree(withDuas(keys(501)), { isKey }), null);
+  const many = (k) => Array.from({ length: 11 }, (_, i) => ({ id: "g-dddd" + String(i).padStart(4, "0"), name: { en: "g" + i }, kids: [], duas: keys(i < 10 ? 500 : k, i * 500 + 1) }));
+  assert.ok(m.cleanTree(many(0), { isKey }), "exactly 5000 refused"); assert.equal(m.cleanTree(many(1), { isKey }), null);
+});
+check("THE MADRASAH'S GROUPS: opts.noDuas refuses any tree that carries a `duas` list (their membership lives in duaEdits.placements)", () => {
+  assert.equal(m.cleanTree(withDuas(["12"]), { noDuas: true, isKey }), null);
+  assert.ok(m.cleanTree([{ id: "g-dddddd01", name: { en: "A" }, kids: [] }], { noDuas: true }));
+});
 check("D6: the module source never names a delete of a document", () => { const s = fs.readFileSync(path.join(appJs, "dua-group-tree.js"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, ""); assert.ok(!/deleteDoc|deleteField|\bimport\b/.test(s), "must import nothing and delete nothing"); });
 console.log(`\n==== Dua group tree: ${passed} passed, ${failed} failed ====`);
 process.exit(failed ? 1 : 0);

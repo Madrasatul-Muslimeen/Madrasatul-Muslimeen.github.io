@@ -24,11 +24,11 @@ const MUT = {
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 // NOT WIRED
 const appDir = path.join(process.cwd(), "app"), appJs = path.join(appDir, "js");
-const importsOf = (f) => [...fs.readFileSync(f, "utf8").matchAll(/(?:from\s*|import\s*\(?\s*)["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
+const importsOf = (f) => [...fs.readFileSync(f, "utf8").matchAll(/(?:from\s*|import\s+)["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
 const entriesOf = (h) => [...fs.readFileSync(h, "utf8").matchAll(/["'`](?:\.\/)?js\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
 function reaches(target) { const out = []; for (const e of fs.readdirSync(appDir).filter((x) => x.endsWith(".html"))) { const seen = new Set(), q = entriesOf(path.join(appDir, e)).map((m) => [m]); while (q.length) { const c = q.shift(), h = c[c.length - 1]; if (seen.has(h)) continue; seen.add(h); if (h === target) { out.push(e); break; } const f = path.join(appJs, h); if (fs.existsSync(f)) for (const n of importsOf(f)) q.push([...c, n]); } } return out; }
 check("POSITIVE CONTROL: the walker finds a wired module (records.js)", reaches("records.js").length > 0);
-check("NOT WIRED: no page reaches dua-group-ui.js yet", reaches("dua-group-ui.js").length === 0, reaches("dua-group-ui.js").join());
+check("NOT WIRED AT START-UP (I9): no STATIC chain from a page reaches dua-group-ui.js; only the lazy door in dua-study.js does", reaches("dua-group-ui.js").length === 0, reaches("dua-group-ui.js").join());
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 async function open(width, lang, pointer = "fine") {
