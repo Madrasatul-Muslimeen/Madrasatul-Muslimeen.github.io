@@ -5199,7 +5199,7 @@
      white text, which printed these words white on cream (invisible). */
   .ayah-wbw-chip { min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; color: var(--card-button-border); background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 0.35rem; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
   /* Audit 15 Oct: the chip's Arabic set no Qur'an face and fell back to a system font (empty boxes for some marks). */
-  .ayah-wbw-chip [lang="ar"] { font-family: var(--quran-font); font-size: 2.4rem; line-height: 1.6; }
+  .ayah-wbw-chip [lang="ar"] { font-family: var(--quran-font); font-size: 1.68rem; line-height: 1.6; }
   .ayah-wbw-chip.is-known { color: #14532d; background: #e3f3ea; border: 2px solid #3fae74; }
   /* Ayah Card section C -- Related āyāt: one full-width row per āyah, a
      real button (>= 40px), explicit colours on the card's light surface. */
@@ -5480,6 +5480,7 @@
   }
   .word-card-menu-row { position: relative; height: 0; z-index: 6; }
   #wordCardMenuPanel[hidden] { display: none; }
+  .word-card-menu-panel .claim-for-row { margin: 0 0 0.5rem; } .word-card-menu-panel .claim-for-row .assign-popover { position: static; margin-top: 0.3rem; max-width: 100%; } /* the account list opens inline inside the menu, which scrolls */
   .word-card-menu-panel { position: absolute; inset-inline-end: 0; top: 0.3rem; width: min(100%, 24rem); max-height: 60vh; overflow-y: auto; box-sizing: border-box; padding: 0.6rem; border: 1px solid #c9a24a; border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-text); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); text-align: start; }
   /* PCF MSA J101: one meaning beside the Arabic, in the ROOT box's old place (WbW); on a narrow card it shares the word's
      second row, the word taking only its own width. */
@@ -6973,6 +6974,8 @@
                        pair. Hidden by default; syncExploreViewToggle() shows
                        it only when the current level's spec offers it. -->
                   <button type="button" class="explore-view-btn" id="exploreViewHizbBtn" data-view="hizb" aria-pressed="false" hidden>Hizb</button>
+                  <!-- The Owner, 13 Nov 2026 (the wheel's view row, the empty place after Hizb circled): "Add page view/ status here." -->
+                  <button type="button" class="explore-view-btn" id="exploreViewPageBtn" data-view="page" aria-pressed="false" hidden>Page</button>
                 </div>
               </div>
               <!-- The Approach capsule. 5 Sep 2026 (2nd round), owner: "name
@@ -8647,6 +8650,7 @@
     const exploreViewPrimaryBtn = document.getElementById("exploreViewPrimaryBtn");
     const exploreViewSurahsBtn = document.getElementById("exploreViewSurahsBtn");
     const exploreViewHizbBtn = document.getElementById("exploreViewHizbBtn"); // issue #342
+    const exploreViewPageBtn = document.getElementById("exploreViewPageBtn"); // 13 Nov 2026: the Page view
     const exploreWheelResizeWrapEl = document.getElementById("exploreWheelResizeWrap");
     const exploreWheelResizeHandleEls = Array.from(exploreWheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
@@ -13288,12 +13292,13 @@
       exploreViewPrimaryBtn.dataset.view = spec.primaryId;
       exploreViewPrimaryBtn.textContent = t(spec.primaryLabel);
       exploreViewHizbBtn.hidden = !spec.hizb;
+      exploreViewPageBtn.hidden = !spec.hizb;
       // The row needs its own line below 380px only when the third button is
       // actually showing -- the Juz level's own two-button pair is untouched
       // (see the CSS rule this class drives).
       exploreViewToggle.classList.toggle("explore-view-toggle-triple", !!spec.hizb);
       const current = spec.get();
-      const buttons = spec.hizb ? [exploreViewPrimaryBtn, exploreViewSurahsBtn, exploreViewHizbBtn] : [exploreViewPrimaryBtn, exploreViewSurahsBtn];
+      const buttons = spec.hizb ? [exploreViewPrimaryBtn, exploreViewSurahsBtn, exploreViewHizbBtn, exploreViewPageBtn] : [exploreViewPrimaryBtn, exploreViewSurahsBtn];
       for (const btn of buttons) {
         const on = btn.dataset.view === current;
         btn.classList.toggle("on", on);
@@ -13301,7 +13306,7 @@
       }
     }
 
-    [exploreViewPrimaryBtn, exploreViewSurahsBtn, exploreViewHizbBtn].forEach((btn) => {
+    [exploreViewPrimaryBtn, exploreViewSurahsBtn, exploreViewHizbBtn, exploreViewPageBtn].forEach((btn) => {
       btn.addEventListener("click", () => {
         const spec = EXPLORE_VIEW_LEVELS[exploreLevel];
         if (!spec) return;
@@ -14861,6 +14866,7 @@
       }
       if (exploreQuranView === "surah") return renderExploreQuranSurahsView(trackable);
       if (exploreQuranView === "hizb") return renderExploreQuranHizbView(trackable);
+      if (exploreQuranView === "page") return renderExploreQuranPageView(trackable);
       const items = juzIndexData.map((j) => {
         const coverage = ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah);
         const pooled = poolCoverageStatus(coverage, trackable.id);
@@ -14952,6 +14958,32 @@
      * rather than a second, hand-derived one. Loaded here, on first use
      * (I9): most opens never touch this view, since Juz stays the default.
      */
+    /** The Owner, 13 Nov 2026 ("Add page view/ status here"): the whole Quran as its 604 printed pages, each wedge coloured by the
+     *  Approach's status for that page (an āyah-by-āyah pool, or the page's own claim), like the Hizb view. A page opens the Surah it begins in. */
+    async function renderExploreQuranPageView(trackable) {
+      if (!pageIndexData) pageIndexData = await getPageIndex();
+      const labelsById = statusLabelsById();
+      const items = pageIndexData.map((p) => {
+        const coverage = ayahCoverage(p.startSurah, p.startAyah, p.endSurah, p.endAyah);
+        const statusId = exploreUnitStatus(coverage, buildUnitKey.page(PAGE_EDITION, p.page), exploreSubjectChunk, trackable.id);
+        const label = t("Page {page}", { page: num(p.page) });
+        return { key: p.page, number: p.page, statusId, label, title: segTitle(label, statusId, labelsById) };
+      });
+      const jumpToPage = (key) => {
+        const p = pageIndexData.find((x) => x.page === Number(key));
+        if (!p) return;
+        exploreSurahNum = p.startSurah; exploreRukuIndex = null; exploreHizbNum = null; exploreJuzNum = null;
+        exploreLevel = "surah";
+        renderExplore();
+      };
+      const approachName = langText(trackable.name, getAppLang(), trackable.id);
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName, ring: wheelRingOption() });
+      attachScopedWheelClickHandler(exploreWheelContainer, jumpToPage);
+      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
+      attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToPage);
+    }
+
     async function renderExploreQuranHizbView(trackable) {
       await ensureHizbIndexData();
       const labelsById = statusLabelsById();
@@ -20357,7 +20389,8 @@
         content._familyFitRO.observe(content);
       }
       // 👥 the same picker as the other Record cards (shared claimForIds); nothing for a lone person.
-      mountClaimForPicker(content, "[data-word-progress-rec] .word-progress-states, [data-word-progress-rec] [data-word-progress-na]");
+      // The Owner, 13 Nov 2026 (a phone screenshot: "Move the account to the menu"): the 👥 account picker is the first thing in the ☰ menu, not a row under Word Progress.
+      mountClaimForPicker(content, "[data-word-card-menu-account]");
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
@@ -24539,7 +24572,9 @@
         onStageChoice: (unitKey, approachId, statusId) => takeApproachForAyah(unitKey, approachId, statusId),
         onPoster: (unitKey) => openAyahPoster(unitKey, hasPosterNoteAtRenderTime),
         onSeeOnWheel: () => focusWheelOnAyah(ayahNum),
-        onWordTap: (occurrenceId) => { rememberAyahCardReturn(sheetKeyAtRender); openWordCardForOccurrenceId(occurrenceId); },
+        // The Owner, 13 Nov 2026: a word tapped here opened the Word Card with no way back. On a phone the Word Card covers the
+        // page where the "Back to Āyah card" pill docks, so the way back is carried INSIDE the card (inWordCard).
+        onWordTap: (occurrenceId) => { rememberAyahCardReturn(sheetKeyAtRender, { inWordCard: true }); openWordCardForOccurrenceId(occurrenceId); },
       });
     }
 
@@ -24907,11 +24942,11 @@
       ayahCardReturn = { title, label, back, inWordCard: !!opts.inWordCard, onClear: opts.onClear ?? null, page: !!opts.page };
       renderAyahCardBackPill(); if (opts.inWordCard) renderPersistentWordCard();
     }
-    function rememberAyahCardReturn(unitKey) {
+    function rememberAyahCardReturn(unitKey, opts = {}) {
       if (!unitKey) return;
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
       const r = { surah, ayah, half, view: "read", scrollY: readViewScrollTop() };
-      setAppReturn(t("Back to Āyah card"), ayahRefLabel(surah, ayah, { half }).replace(/^.*?(\S+:\S+).*$/, "$1"), () => returnToAyahCard(r));
+      setAppReturn(t("Back to Āyah card"), ayahRefLabel(surah, ayah, { half }).replace(/^.*?(\S+:\S+).*$/, "$1"), () => returnToAyahCard(r), opts);
     }
     function clearAyahCardReturn(how = "dismiss") {
       const r = ayahCardReturn; ayahCardReturn = null; r?.onClear?.(how);
@@ -27353,9 +27388,12 @@
     // Decision 95: "Track this āyah becomes a tab of the pane." Its three actions are the Read bar's own (the same cards,
     // the same records, 👥 included), each for the pane's āyah; each leaves "Back to Notes on S:A" (decision 86).
     function backToReadNotes(u, tab) {
-      if (u.unitKey.startsWith("opening:")) { // PCF J26: no āyah to navigate to; the pane is simply reopened
+      // PCF J26: no āyah to navigate to; the pane is simply reopened. The Owner's unit picker (13 Nov 2026) puts the pane on a
+      // Juz, Hizb, Page, Ruku', Range or whole Surah too, and parseAyahUnitKey() would read "juz:5" as surah 5, āyah NaN -- so
+      // anything that is not an āyah takes this same route: the way back reopens the pane, and nothing navigates.
+      if (!u.unitKey.startsWith("ayah:")) {
         setAppReturn(t("Back to Notes on {unit}", { unit: u.label }), "", () => openReadNotesPane(u, { tab }));
-        return { surah: 1, ayah: 0, half: null };
+        return { surah: currentSurahNum, ayah: currentAyahNum, half: null };
       }
       const { surah, ayah, half } = parseAyahUnitKey(u.unitKey);
       setAppReturn(t("Back to Notes on {unit}", { unit: u.label }), "", async () => {
@@ -27395,10 +27433,25 @@
       await openNotesPaneForKey(currentUnitInfo().unitKey, { tab: "track", backLabel }, () => { paintReadNotesBtn(); back(); });
     }
     const readNotePaneTrackHost = {
+      // The Owner, 13 Nov 2026: the pane carries the Read bar's own Study Unit picker (all seven units).
+      unitChoices: () => [...unitTypeSelect.options].map((o) => ({ value: o.value, label: t(o.textContent) })),
+      pickUnitType: async (type) => {
+        unitTypeSelect.value = type;
+        unitTypeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        if (type === "ayah") return readNotesUnit();
+        const info = currentUnitInfo();
+        return { unitKey: info.unitKey, label: info.label };
+      },
       trackCard: (u, el) => paintPaneApproachCard(u, el),
       take: (u) => { backToReadNotes(u, "track"); openApproachWheel(); },
       // The card first: opening it clears any way back ("the card is open again"), so the way back is set after it.
-      record: (u) => { const { surah, ayah, half } = parseAyahUnitKey(u.unitKey); openAyahActionSheet(`${surah}:${ayah}`, half); backToReadNotes(u, "track"); },
+      record: (u) => {
+        // A unit that is not an āyah (the Owner's picker, 13 Nov 2026) has no Āyah card: its own Unit card is the place to record.
+        // Architect 103L review: an opening (Aʿūdhu / Bismillāh, PCF J26) keeps its Āyah card -- parseAyahUnitKey() reads it as
+        // 1:0 on purpose, and resolveUnitInfo() has no opening, so the Unit card would close at once.
+        if (!/^(ayah|opening):/.test(u.unitKey)) { openUnitCard(u.unitKey); backToReadNotes(u, "track"); return; }
+        const { surah, ayah, half } = parseAyahUnitKey(u.unitKey); openAyahActionSheet(`${surah}:${ayah}`, half); backToReadNotes(u, "track");
+      },
       status: (u) => { backToReadNotes(u, "track"); openMyStatus(); },
     };
     // -----------------------------------------------------------------------

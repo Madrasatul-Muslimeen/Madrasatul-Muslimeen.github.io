@@ -166,7 +166,7 @@ async function runSwitchScenario(lang) {
       views: btns.map((b) => b.dataset.view ?? b.id),
     };
   });
-  check(`[${lang}] the switch is shown at the Quran level, with THREE options`, !toggleState.hidden && toggleState.count === 3, JSON.stringify(toggleState));
+  check(`[${lang}] the switch is shown at the Quran level, with FOUR options (Juz, Surahs, Hizb, Page: the Owner added Page, 13 Nov 2026)`, !toggleState.hidden && toggleState.count === 4, JSON.stringify(toggleState));
 
   // The Juz level keeps exactly its own two-button pair -- unchanged.
   // ARCHITECT REVIEW, 28 Sep 2026: the Quran level opens in Surahs view, so
@@ -363,7 +363,7 @@ async function runLayoutCheck(lang, width) {
       rects: rects.map((r) => ({ left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width) })),
     };
   });
-  check(`[${lang} ${width}px] all three buttons present and on the SAME line as each other`, layout.count === 3 && layout.sameLine, JSON.stringify(layout));
+  check(`[${lang} ${width}px] all four buttons present and on the SAME line as each other`, layout.count === 4 && layout.sameLine, JSON.stringify(layout));
   check(`[${lang} ${width}px] every button is at least 36px tall`, layout.minHeight >= 36, `minHeight=${layout.minHeight}`);
   check(`[${lang} ${width}px] no sideways page scroll`, layout.scrollWidth <= layout.innerWidth + 2, `scrollWidth=${layout.scrollWidth} innerWidth=${layout.innerWidth}`);
   // Not cut: each button's own right edge is within the viewport.

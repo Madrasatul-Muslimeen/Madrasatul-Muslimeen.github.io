@@ -36,13 +36,15 @@ export const EFFORT_DEGREES = Object.freeze([
 
 /** The five buttons of the Word card, in order. `kind` tells the tap what it means. */
 export const WORD_MARKS = Object.freeze([
+  // The Owner, 13 Nov 2026 (a phone screenshot, "Mark chips order"): Already Known, Learned Easy, Little Difficult, Difficult, Very Hard, Learn. Three to a line on a phone,
+  // so the first line is the three easy-to-hard results and the second is Difficult, Very Hard and Learn.
   { id: "known", kind: "result", names: { en: "Already Known", bn: "আগে থেকেই জানা" }, sub: { en: "result", bn: "ফলাফল" } },
+  { id: "easy", kind: "result", names: { en: "Learned Easy", bn: "সহজে শেখা" }, sub: { en: "result", bn: "ফলাফল" } },
   // The Owner, 12 Nov 2026 ("Place another level before Difficult, 'Little Difficult'"): a RESULT between Learned Easy and Hard, effort "little".
   { id: "little", kind: "result", names: { en: "Little Difficult", bn: "একটু কঠিন" }, sub: { en: "result", bn: "ফলাফল" } },
   { id: "difficult", kind: "assessment", names: { en: "Difficult", bn: "কঠিন" }, sub: { en: "counts as Hard", bn: "কঠিন হিসেবে গণ্য" } },
-  { id: "learn", kind: "act", names: { en: "Learn", bn: "শিখুন" }, sub: { en: "act on", bn: "শেখার জন্য" } },
-  { id: "easy", kind: "result", names: { en: "Learned Easy", bn: "সহজে শেখা" }, sub: { en: "result", bn: "ফলাফল" } },
   { id: "very", kind: "result", names: { en: "Very Hard", bn: "খুব কঠিন" }, sub: { en: "result", bn: "ফলাফল" } },
+  { id: "learn", kind: "act", names: { en: "Learn", bn: "শিখুন" }, sub: { en: "act on", bn: "শেখার জন্য" } },
 ]);
 
 const SAVED_KEY = Object.freeze({ difficult: "hard", learn: "practice", easy: "done" });

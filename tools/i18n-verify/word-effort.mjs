@@ -80,9 +80,10 @@ check("the flag in the repository is TRUE, because the Owner published the Rules
 });
 // UPDATED IN PLACE (12 Nov 2026, the Owner: "Place another level before Difficult, 'Little Difficult'"): the five marks became six.
 check("the six marks, in the Owner's order, with their kinds", () => {
-  assert.deepEqual(W.WORD_MARKS.map((m) => m.id), ["known", "little", "difficult", "learn", "easy", "very"]);
-  assert.deepEqual(W.WORD_MARKS.map((m) => m.names.en), ["Already Known", "Little Difficult", "Difficult", "Learn", "Learned Easy", "Very Hard"]);
-  assert.deepEqual(W.WORD_MARKS.map((m) => m.kind), ["result", "result", "assessment", "act", "result", "result"]);
+  // UPDATED IN PLACE (13 Nov 2026, the Owner: "Mark chips order: Already known, Learned Easy, Little Hard, Difficult, Very Hard, Learn"): the six buttons are in that order (the labels are unchanged).
+  assert.deepEqual(W.WORD_MARKS.map((m) => m.id), ["known", "easy", "little", "difficult", "very", "learn"]);
+  assert.deepEqual(W.WORD_MARKS.map((m) => m.names.en), ["Already Known", "Learned Easy", "Little Difficult", "Difficult", "Very Hard", "Learn"]);
+  assert.deepEqual(W.WORD_MARKS.map((m) => m.kind), ["result", "result", "result", "assessment", "result", "act"]);
 });
 check("five counted degrees (Little Difficult between Learned Easy and Hard), both languages filled (I11)", () => {
   assert.deepEqual(W.EFFORT_DEGREES.map((d) => d.id), ["known", "easy", "little", "hard", "very"]);

@@ -37,8 +37,10 @@ const CSS = `
 .rnp-close { flex: 0 0 auto; min-width: 48px; min-height: 48px; background: none; border: 0; color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .rnp-frame { flex: 1 1 auto; width: 100%; min-height: 0; border: 0; background: #fff; }
 .rnp-frame[hidden], .rnp-track[hidden] { display: none; }
-.rnp-tabs { flex: 0 0 auto; display: flex; gap: 0.4rem; padding: 0.4rem 0.5rem; background: #f4efe2; border-bottom: 1px solid #e3d7b8; }
-.rnp-tab { min-height: 40px; padding: 0 0.9rem; border: 1px solid #1F3A6E; border-radius: 20px; background: #fff; color: #1F3A6E; font: inherit; font-weight: 600; cursor: pointer; }
+.rnp-tabs { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.4rem 0.5rem; background: #f4efe2; border-bottom: 1px solid #e3d7b8; }
+.rnp-tab { min-height: 40px; white-space: nowrap; padding: 0 0.9rem; border: 1px solid #1F3A6E; border-radius: 20px; background: #fff; color: #1F3A6E; font: inherit; font-weight: 600; cursor: pointer; }
+/* Architect 103L review: measured at 320/360px the picker squeezed both tabs onto two lines and cut "Single Ayah" (83px of 131); the tabs keep one line and the picker, when the row cannot hold it whole, takes a full-width line of its own. */
+.rnp-unit-select { flex: 1 1 9.5rem; min-width: 0; max-width: 100%; min-height: 40px; padding: 0 0.5rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #fff; color: #1F3A6E; font: inherit; font-weight: 600; }
 .rnp-tab[aria-selected="true"] { background: #1F3A6E; color: #fff; }
 .rnp-track { flex: 1 1 auto; overflow: auto; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem; }
 .rnp-track p { margin: 0; color: #444; line-height: 1.5; }
@@ -151,15 +153,23 @@ function apply() {
   syncHostedTabs();
 }
 
+/** Architect 103L's follow-up on the Owner's unit picker (13 Nov 2026): the Track tab said "Track this āyah" whatever the
+    picker had chosen, so a pane on a Juz or a Page named the wrong thing. The tab is named for the unit it really tracks. */
+function trackLabel() {
+  const type = String(unit?.unitKey ?? "").split(":")[0];
+  return type && type !== "ayah" && type !== "opening" ? t("Track this unit") : t("Track this āyah");
+}
 /** J71: the tabs move onto the page's tools row while the pane is wide and on its Notes tab. */
 let hostedSent = null;
 function syncHostedTabs() {
   if (!pane || pane.hidden) return;
   const on = layout() === "win" && pane.getBoundingClientRect().width >= HOST_TABS_FROM && !frame.hidden; // a computer's window only: phones and tablets keep today's rows
   pane.classList.toggle("rnp-tabs-in-frame", on);
-  if (on === hostedSent) return;
-  hostedSent = on;
-  toFrame({ type: "mmsa-pane-tabs", on, notes: t("Notes"), track: t("Track this āyah") });
+  const track = trackLabel();
+  const sent = `${on}|${track}`; // the words change with the unit too, so the page inside is told again when they do
+  if (sent === hostedSent) return;
+  hostedSent = sent;
+  toFrame({ type: "mmsa-pane-tabs", on, notes: t("Notes"), track });
 }
 /** J71: a wide bar carries the search box itself; a narrow one a 🔍 that opens it in the title's place. */
 function paintFindPlace() {
@@ -269,7 +279,7 @@ function build() {
   tabs = document.createElement("div");
   tabs.className = "rnp-tabs";
   tabs.setAttribute("role", "tablist");
-  for (const [key, label] of [["notes", `📝 ${t("Notes")}`], ["track", `✅ ${t("Track this āyah")}`]]) {
+  for (const [key, label] of [["notes", `📝 ${t("Notes")}`], ["track", `✅ ${trackLabel()}`]]) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "rnp-tab";
@@ -278,6 +288,19 @@ function build() {
     b.textContent = label;
     b.addEventListener("click", () => showTab(key));
     tabs.appendChild(b);
+  }
+  // The Owner, 13 Nov 2026 (the empty place after the two tabs circled): "Enable all Study units picker here." The Read bar's own
+  // Study Unit choice (Āyah, Range, Surah, Ruku', Juz, Hizb, Page), shown here so the pane's unit can be changed without leaving it.
+  if (host.unitChoices) {
+    const sel = document.createElement("select");
+    sel.className = "rnp-unit-select";
+    sel.dataset.rnpUnitSelect = "";
+    sel.addEventListener("change", async () => {
+      const u = await host.pickUnitType?.(sel.value);
+      if (u) setReadNotePaneUnit(u);
+      paintUnitSelect();
+    });
+    tabs.appendChild(sel);
   }
   track = document.createElement("div");
   track.className = "rnp-track";
@@ -411,7 +434,7 @@ async function relabel() {
   findInput.setAttribute("aria-label", t("Find a note in Mapping My Journey to attach"));
   frame.title = t("Notes");
   tabs.querySelector('[data-rnp-tab="notes"]').textContent = `📝 ${t("Notes")}`;
-  tabs.querySelector('[data-rnp-tab="track"]').textContent = `✅ ${t("Track this āyah")}`;
+  tabs.querySelector('[data-rnp-tab="track"]').textContent = `✅ ${trackLabel()}`;
   results.hidden = true;
   if (unit) paint();
   // The page inside reads the language when it loads: load it again, on the unit the pane is on now (what is being typed is saved first).
@@ -422,7 +445,19 @@ async function relabel() {
   }
 }
 
+/** The Study Unit picker in the tab row: the Read bar's own options and words, the pane's unit type selected. */
+function paintUnitSelect() {
+  const sel = tabs?.querySelector("[data-rnp-unit-select]");
+  if (!sel || !host.unitChoices) return;
+  const choices = host.unitChoices();
+  sel.replaceChildren(...choices.map((c) => { const o = document.createElement("option"); o.value = c.value; o.textContent = c.label; return o; }));
+  const type = String(unit?.unitKey ?? "").split(":")[0];
+  sel.value = choices.some((c) => c.value === type) ? type : "ayah";
+  sel.setAttribute("aria-label", t("Study Unit"));
+}
 function paint() {
+  paintUnitSelect();
+  if (tabs) { tabs.querySelector('[data-rnp-tab="track"]').textContent = `✅ ${trackLabel()}`; syncHostedTabs(); }
   const label = unit?.label ?? "";
   titleEl.textContent = t("Notes on {unit}", { unit: label });
   findInput.placeholder = t("Find a note to attach to {unit}", { unit: label });

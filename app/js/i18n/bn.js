@@ -4632,6 +4632,8 @@ export const BN = {
   "Green: the words of a step you know. ✓: every word of the step known.": "সবুজ: ধাপের যে শব্দগুলো আপনি জানেন। ✓: ধাপের সব শব্দ জানা।",
   "Marks": "চিহ্ন",
   "Level of Difficulty": "কঠিনতার স্তর",
+  "Status of Approach:": "পদ্ধতির অবস্থা:",
+  "Status of Hifz:": "হিফজের অবস্থা:",
   "Step-by-Step Learning": "ধাপে ধাপে শেখা",
   "Marks for this āyah": "এই আয়াতের চিহ্ন",
   "Marks wheel": "চিহ্নের চাকা",

@@ -513,7 +513,7 @@ export function renderAyahActionSheetHtml({
           ${wordByWordStatusHtml(wordStatus)}
         </div>
         <div class="ayah-status-block">
-          <h4 class="ayah-status-heading">${escapeHtml(t("Hifz"))}</h4>
+          <h4 class="ayah-status-heading">${escapeHtml(t("Status of Hifz:"))}</h4>
           ${hifzStatusHtml(hifzStatus)}
         </div>`;
   const pickerHtml = renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId, approachSummary, canConfirm });
@@ -555,7 +555,7 @@ export function renderAyahActionSheetHtml({
           ${marksHtml}
         </div>` : ""}
         <div class="ayah-status-block">
-          <h4 class="ayah-status-heading">${escapeHtml(t("Approach"))}</h4>
+          <h4 class="ayah-status-heading">${escapeHtml(t("Status of Approach:"))}</h4>
           ${approachStatusRowHtml(approachStatuses)}
           ${intro?.opening ? "" : `<button type="button" class="qm-item ayah-sheet-wheel-btn" data-ayah-sheet-see-wheel>${escapeHtml(t("See on the wheel"))}</button>`}
         </div>${statusBlocksHtml}

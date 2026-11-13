@@ -85,7 +85,13 @@ async function openWordCard(P) {
   await P.waitForTimeout(500);
 }
 const ev = (P, f, a) => P.evaluate(f, a);
-const pickerInfo = (P) => ev(P, () => {
+// UPDATED IN PLACE (13 Nov 2026, the Owner, a phone screenshot: "Move the account to the menu"): the Word Card's 👥 picker is the first item of its ☰ menu, not a row under the state buttons,
+// so the menu is opened (as a reader does) before the picker is measured or pressed.
+const openWcMenu = async (P) => { const hidden = await P.evaluate(() => document.querySelector("#quranWordCardMount [data-word-card-menu-panel]")?.hidden ?? false); if (hidden) { await P.click("#quranWordCardMount [data-word-card-menu-toggle]"); await P.waitForTimeout(250); } };
+const closeWcMenu = async (P) => { const open = await P.evaluate(() => { const m = document.querySelector("#quranWordCardMount [data-word-card-menu-panel]"); return !!m && !m.hidden; }); if (open) { await P.click("#quranWordCardMount [data-word-card-menu-toggle]"); await P.waitForTimeout(200); } };
+const clickAccount = async (P) => { await openWcMenu(P); await P.click("#quranWordCardMount [data-claim-for] [data-assign-trigger]"); };
+const pickerInfo = async (P) => { await openWcMenu(P); return pickerInfoNow(P); };
+const pickerInfoNow = (P) => ev(P, () => {
   const r = document.querySelector("#quranWordCardMount [data-claim-for]"); if (!r) return null;
   const b = r.querySelector("[data-assign-trigger]").getBoundingClientRect();
   return { label: r.querySelector("[data-assign-trigger-label]")?.textContent, h: b.height, inside: b.left >= 0 && b.right <= innerWidth, rows: [...r.querySelectorAll("[data-assign-list] input")].map((i) => [i.value, i.checked]) };
@@ -103,7 +109,7 @@ const totalMoves = (P, from = 0) => ev(P, (k) => {
 }, from);
 const writesFrom = (P, from) => ev(P, ([k]) => (window.__stubWriteData || []).slice(k).map((w) => [w.col, w.id]), [from]);
 const nWrites = (P) => ev(P, () => (window.__stubWriteData || []).length);
-const tick = async (P, id) => { await P.click("#quranWordCardMount [data-claim-for] [data-assign-trigger]"); await P.waitForTimeout(120); await P.click(`#quranWordCardMount [data-claim-for] [data-assign-list] input[value="${id}"]`); await P.click("#quranWordCardMount [data-claim-for] [data-assign-trigger]"); await P.waitForTimeout(80); };
+const tick = async (P, id) => { await clickAccount(P); await P.waitForTimeout(120); await P.click(`#quranWordCardMount [data-claim-for] [data-assign-list] input[value="${id}"]`); await clickAccount(P); await P.waitForTimeout(80); await closeWcMenu(P); };
 
 // --lang=en / --w=390 narrow a debugging run; the default is the full grid.
 const ARG = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -136,10 +142,10 @@ for (const lang of (ARG("lang") ? [ARG("lang")] : ["en", "bn"])) for (const widt
     const pk = await pickerInfo(P);
     check(`${tag}: WbW: the 👥 picker is on the Word Card, naming the Student, only them ticked`, pk?.label === N[0] && JSON.stringify(pk?.rows) === JSON.stringify([["p1", true], ["p2", false], ["p3", false]]), JSON.stringify(pk));
     check(`${tag}: ...a 40px target inside the screen`, (pk?.h ?? 0) >= 40 && !!pk?.inside, JSON.stringify(pk));
-    const rowShape = await ev(P, () => { const r = document.querySelector("#quranWordCardMount [data-claim-for]"); const g = document.querySelector("#quranWordCardMount .word-progress-states"); return { after: g?.nextElementSibling === r || r?.previousElementSibling === g }; });
-    check(`${tag}: ...sitting right under the state buttons`, !!rowShape.after, JSON.stringify(rowShape));
+    const rowShape = await ev(P, () => { const r = document.querySelector("#quranWordCardMount [data-claim-for]"); const panel = document.querySelector("#quranWordCardMount [data-word-card-menu-panel]"); return { first: !!r && !!panel && panel.querySelector(".claim-for-row") === r && r.parentElement === panel, underStates: !!r && !!document.querySelector("#quranWordCardMount .word-progress-states + .claim-for-row") }; });
+    check(`${tag}: ...it is the first item of the ☰ menu and no longer a row under the state buttons`, !!rowShape.first && !rowShape.underStates, JSON.stringify(rowShape));
     // Architect review (#597): the popover is a white box on the dark Word Card; its names must carry their own dark ink.
-    await P.click("#quranWordCardMount [data-claim-for] [data-assign-trigger]"); await P.waitForTimeout(120);
+    await clickAccount(P); await P.waitForTimeout(120);
     const ink = await ev(P, () => {
       const lum = (c) => { const m = c.match(/[\d.]+/g).map(Number); const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); };
       const pop = document.querySelector("#quranWordCardMount [data-claim-for] [data-assign-popover]");
@@ -148,7 +154,7 @@ for (const lang of (ARG("lang") ? [ARG("lang")] : ["en", "bn"])) for (const widt
       return { ratio: Math.round(((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)) * 100) / 100, fg: getComputedStyle(name).color, bg: getComputedStyle(pop).backgroundColor };
     });
     check(`${tag}: ...the names in the open list read against its background (contrast >= 4.5)`, (ink?.ratio ?? 0) >= 4.5, JSON.stringify(ink));
-    await P.click("#quranWordCardMount [data-claim-for] [data-assign-trigger]"); await P.waitForTimeout(80);
+    await clickAccount(P); await P.waitForTimeout(80); await closeWcMenu(P);
     // Basic and Depth carry it too (when their buttons are live)
     for (const level of ["basic", "depth"]) {
       await P.evaluate((l) => document.querySelector(`#quranWordCardMount [data-word-card-level="${l}"]`)?.click(), level);
