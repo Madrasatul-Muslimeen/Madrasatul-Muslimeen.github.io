@@ -98,8 +98,10 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
     await Promise.all([P.waitForURL(/hadith-collections\.html/, { timeout: 15000 }), P.click("[data-word-card-app-back]")]).catch(() => {});
     await P.waitForSelector('[data-dua-card="1"]', { timeout: 15000 }).catch(() => {});
     await P.waitForTimeout(600);
-    const back = await P.evaluate(() => { const c = document.querySelector('[data-dua-card="1"]'), r = c?.getBoundingClientRect(); return { url: location.search, focused: !!c?.classList.contains("hadith-card-focused"), inView: !!r && r.top < innerHeight && r.bottom > 0, tab: window.__hadithCorpus?.state?.view }; });
-    check(`${tag} Back returns to the Duas, on Dua 1, picked out and in view`, back.focused && back.inView && /view=dua/.test(back.url), JSON.stringify(back));
+    const back = await P.evaluate(() => { const c = document.querySelector('[data-dua-card="1"]'), r = c?.getBoundingClientRect(); return { path: location.pathname, url: location.search, focused: !!c?.classList.contains("hadith-card-focused"), inView: !!r && r.top < innerHeight && r.bottom > 0, tab: window.__hadithCorpus?.state?.view }; });
+    // Updated in place 14 Nov 2026 (PCF MSA J106 S1, tick 7A): Dua is its own module, so the address this Dua card left on the Hadith page
+  // (?view=dua&duaPage&dua) is now sent on to Dua Study, which reopens the SAME dua's card (open=1) in view. The way back still works.
+  check(`${tag} Back returns to the Duas (Dua Study), on Dua 1's card, in view`, back.inView && back.path.endsWith("/dua-study.html") && /[?&]open=1\b/.test(back.url), JSON.stringify(back));
   } else check(`${tag} Back returns to the Duas`, false, "no way back");
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
