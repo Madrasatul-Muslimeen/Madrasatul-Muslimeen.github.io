@@ -27388,9 +27388,12 @@
     // Decision 95: "Track this āyah becomes a tab of the pane." Its three actions are the Read bar's own (the same cards,
     // the same records, 👥 included), each for the pane's āyah; each leaves "Back to Notes on S:A" (decision 86).
     function backToReadNotes(u, tab) {
-      if (u.unitKey.startsWith("opening:")) { // PCF J26: no āyah to navigate to; the pane is simply reopened
+      // PCF J26: no āyah to navigate to; the pane is simply reopened. The Owner's unit picker (13 Nov 2026) puts the pane on a
+      // Juz, Hizb, Page, Ruku', Range or whole Surah too, and parseAyahUnitKey() would read "juz:5" as surah 5, āyah NaN -- so
+      // anything that is not an āyah takes this same route: the way back reopens the pane, and nothing navigates.
+      if (!u.unitKey.startsWith("ayah:")) {
         setAppReturn(t("Back to Notes on {unit}", { unit: u.label }), "", () => openReadNotesPane(u, { tab }));
-        return { surah: 1, ayah: 0, half: null };
+        return { surah: currentSurahNum, ayah: currentAyahNum, half: null };
       }
       const { surah, ayah, half } = parseAyahUnitKey(u.unitKey);
       setAppReturn(t("Back to Notes on {unit}", { unit: u.label }), "", async () => {
@@ -27442,7 +27445,11 @@
       trackCard: (u, el) => paintPaneApproachCard(u, el),
       take: (u) => { backToReadNotes(u, "track"); openApproachWheel(); },
       // The card first: opening it clears any way back ("the card is open again"), so the way back is set after it.
-      record: (u) => { const { surah, ayah, half } = parseAyahUnitKey(u.unitKey); openAyahActionSheet(`${surah}:${ayah}`, half); backToReadNotes(u, "track"); },
+      record: (u) => {
+        // A unit that is not an āyah (the Owner's picker, 13 Nov 2026) has no Āyah card: its own Unit card is the place to record.
+        if (!u.unitKey.startsWith("ayah:")) { openUnitCard(u.unitKey); backToReadNotes(u, "track"); return; }
+        const { surah, ayah, half } = parseAyahUnitKey(u.unitKey); openAyahActionSheet(`${surah}:${ayah}`, half); backToReadNotes(u, "track");
+      },
       status: (u) => { backToReadNotes(u, "track"); openMyStatus(); },
     };
     // -----------------------------------------------------------------------

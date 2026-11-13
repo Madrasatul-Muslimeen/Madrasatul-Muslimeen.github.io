@@ -153,15 +153,23 @@ function apply() {
   syncHostedTabs();
 }
 
+/** Architect 103L's follow-up on the Owner's unit picker (13 Nov 2026): the Track tab said "Track this āyah" whatever the
+    picker had chosen, so a pane on a Juz or a Page named the wrong thing. The tab is named for the unit it really tracks. */
+function trackLabel() {
+  const type = String(unit?.unitKey ?? "").split(":")[0];
+  return type && type !== "ayah" && type !== "opening" ? t("Track this unit") : t("Track this āyah");
+}
 /** J71: the tabs move onto the page's tools row while the pane is wide and on its Notes tab. */
 let hostedSent = null;
 function syncHostedTabs() {
   if (!pane || pane.hidden) return;
   const on = layout() === "win" && pane.getBoundingClientRect().width >= HOST_TABS_FROM && !frame.hidden; // a computer's window only: phones and tablets keep today's rows
   pane.classList.toggle("rnp-tabs-in-frame", on);
-  if (on === hostedSent) return;
-  hostedSent = on;
-  toFrame({ type: "mmsa-pane-tabs", on, notes: t("Notes"), track: t("Track this āyah") });
+  const track = trackLabel();
+  const sent = `${on}|${track}`; // the words change with the unit too, so the page inside is told again when they do
+  if (sent === hostedSent) return;
+  hostedSent = sent;
+  toFrame({ type: "mmsa-pane-tabs", on, notes: t("Notes"), track });
 }
 /** J71: a wide bar carries the search box itself; a narrow one a 🔍 that opens it in the title's place. */
 function paintFindPlace() {
@@ -271,7 +279,7 @@ function build() {
   tabs = document.createElement("div");
   tabs.className = "rnp-tabs";
   tabs.setAttribute("role", "tablist");
-  for (const [key, label] of [["notes", `📝 ${t("Notes")}`], ["track", `✅ ${t("Track this āyah")}`]]) {
+  for (const [key, label] of [["notes", `📝 ${t("Notes")}`], ["track", `✅ ${trackLabel()}`]]) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "rnp-tab";
@@ -426,7 +434,7 @@ async function relabel() {
   findInput.setAttribute("aria-label", t("Find a note in Mapping My Journey to attach"));
   frame.title = t("Notes");
   tabs.querySelector('[data-rnp-tab="notes"]').textContent = `📝 ${t("Notes")}`;
-  tabs.querySelector('[data-rnp-tab="track"]').textContent = `✅ ${t("Track this āyah")}`;
+  tabs.querySelector('[data-rnp-tab="track"]').textContent = `✅ ${trackLabel()}`;
   results.hidden = true;
   if (unit) paint();
   // The page inside reads the language when it loads: load it again, on the unit the pane is on now (what is being typed is saved first).
@@ -449,6 +457,7 @@ function paintUnitSelect() {
 }
 function paint() {
   paintUnitSelect();
+  if (tabs) { tabs.querySelector('[data-rnp-tab="track"]').textContent = `✅ ${trackLabel()}`; syncHostedTabs(); }
   const label = unit?.label ?? "";
   titleEl.textContent = t("Notes on {unit}", { unit: label });
   findInput.placeholder = t("Find a note to attach to {unit}", { unit: label });

@@ -1,6 +1,8 @@
 // The Owner, 13 Nov 2026 (the empty place after the Notes / Track tabs of the Notes pane circled): "Enable all Study units picker here."
 // The pane's tab row carries the Read bar's own Study Unit picker (all seven units); choosing one moves the pane to that unit.
 //   --mutate=nopicker ... the page hands the pane no unit choices -> the picker checks fail by name.
+//   --mutate=sametab ... the Track tab keeps the āyah wording whatever the unit is -> the tab-name checks fail by name.
+//   --mutate=ayahcard ... Record on a Juz opens the Āyah card again (parseAyahUnitKey reads "juz:5" as surah 5, āyah NaN) -> the Record check fails by name.
 //   --mutate=squeeze .... (Architect 103L) the picker's old flex rule (no wrap, 7rem) -> the "every unit name whole, tabs on one line" check fails at 320/390.
 // Run from the repository root with serve.js up:  node tools/i18n-verify/read-note-pane-units-browser.mjs
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -20,6 +22,16 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 1280]) {
     const src = fs.readFileSync("app/js/read-note-pane.js", "utf8"), a = "display: flex; flex-wrap: wrap; gap: 0.4rem;", b = ".rnp-unit-select { flex: 1 1 9.5rem;", c = "min-height: 40px; white-space: nowrap; padding: 0 0.9rem;";
     if (!src.includes(a) || !src.includes(b) || !src.includes(c)) throw new Error("mutation anchor missing");
     await r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: src.replace(a, "display: flex; gap: 0.4rem;").replace(b, ".rnp-unit-select { flex: 1 1 7rem;").replace(c, "min-height: 40px; padding: 0 0.9rem;") });
+  });
+  if (MUTATE === "sametab") await ctx.route("**/app/js/read-note-pane.js*", async (r) => {
+    const src = fs.readFileSync("app/js/read-note-pane.js", "utf8"), a = '? t("Track this unit") : t("Track this āyah")';
+    if (!src.includes(a)) throw new Error("mutation anchor missing: sametab");
+    await r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: src.replace(a, '? t("Track this āyah") : t("Track this āyah")') });
+  });
+  if (MUTATE === "ayahcard") await ctx.route("**/app/quranrevival.html*", async (r) => {
+    const src = fs.readFileSync("app/quranrevival.html", "utf8"), a = '        if (!u.unitKey.startsWith("ayah:")) { openUnitCard(u.unitKey); backToReadNotes(u, "track"); return; }';
+    if (!src.includes(a)) throw new Error("mutation anchor missing: ayahcard");
+    await r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src.replace(a, "") });
   });
   if (MUTATE === "nopicker") await ctx.route("**/app/quranrevival.html*", async (r) => {
     const src = fs.readFileSync("app/quranrevival.html", "utf8"), a = "      unitChoices: () =>";
@@ -48,6 +60,22 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 1280]) {
       const b = await sel();
       check(`${tag} choosing ${type} moves the pane to that unit (picker follows, pane named for it)`, b.value === type && want.test(b.title), JSON.stringify(b));
     }
+    // Architect 103L's follow-up: the Track tab must name the unit the picker put the pane on, and its three actions must work there.
+    await P.selectOption("[data-rnp-unit-select]", "juz"); await P.waitForTimeout(700);
+    const onJuz = await P.evaluate(() => document.querySelector('[data-rnp-tab="track"]').textContent.trim());
+    check(`${tag} MUTATION TARGET (sametab): on a Juz the Track tab does not say "this āyah"`, !/āyah|আয়াত/.test(onJuz), onJuz);
+    check(`${tag} ...it names the unit instead ("Track this unit")`, /unit|একক/i.test(onJuz), onJuz);
+    await P.evaluate(() => document.querySelector('[data-rnp-track="record"]')?.click());
+    await P.waitForTimeout(900);
+    const rec = await P.evaluate(() => ({ unitCard: !!document.querySelector("[data-unit-card]"), ayahCard: !!document.querySelector("[data-ayah-sheet]"), back: document.querySelector("#ayahCardBackPill:not([hidden])")?.textContent?.trim() ?? "" }));
+    check(`${tag} MUTATION TARGET (ayahcard): Record on a Juz opens that unit's own card, never an Āyah card`, rec.unitCard && !rec.ayahCard, JSON.stringify(rec));
+    check(`${tag} ...and leaves a way back to the Notes pane (the way-back law)`, /Notes|নোট/.test(rec.back), JSON.stringify(rec));
+    await P.evaluate(() => document.querySelector("#ayahCardBackPill [data-ayah-card-back]")?.click());
+    await P.waitForTimeout(800);
+    await P.evaluate(() => document.querySelector('[data-rnp-tab="track"]')?.click());
+    await P.waitForTimeout(400);
+    await P.selectOption("[data-rnp-unit-select]", "ayah"); await P.waitForTimeout(700);
+    check(`${tag} back on a single āyah the tab says "this āyah" again`, /āyah|আয়াত/.test(await P.evaluate(() => document.querySelector('[data-rnp-tab="track"]').textContent)), "");
     // Architect 103L review: measured at 320/360px the picker squeezed both tabs onto two lines and cut "Single Ayah" (83px of 131).
     const fit = await P.evaluate(() => { const s = document.querySelector("[data-rnp-unit-select]"), cs = getComputedStyle(s), pr = document.createElement("span");
       pr.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${cs.font};`; document.body.appendChild(pr);
