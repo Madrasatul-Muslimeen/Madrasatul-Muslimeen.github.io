@@ -458,6 +458,9 @@ const PUBLISHED_DEPLOYMENTS = [
   // Added 11 Nov 2026 (QR Lead 46L): the Owner published the J136 effort Rules (PCF MSA J136 n136d, "Rules Published", in the
   // QR Lead's chat), and firestore.rules was made this file byte for byte; the dawahPages-block half is unchanged.
   "docs/proposals/word-effort.DEPLOYMENT-candidate.rules",
+  // Added 14 Nov 2026 (Architect 103L): the Owner published the Dua groups Rules (PCF MSA J104 line 26, "Rules published" to the Dua
+  // Lead at 21:00Z 13 Nov), and firestore.rules was made this file byte for byte; the dawahPages-block half is unchanged.
+  "docs/proposals/dua-groups.DEPLOYMENT-candidate.rules",
 ];
 function dawahBlock(text) {
   const start = text.indexOf("match /dawahPages/");
