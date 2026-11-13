@@ -17,9 +17,9 @@
 // Dua) is kept in this page's address, so every way back (decision 86) lands exactly here.
 import { t, num } from "./i18n.js";
 import { getAppLang, quranFontStack } from "./prefs.js";
-import { loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar } from "./openiti-corpus.js";
+import { loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar, loadDuaIndex, loadOpenitiBookIndex } from "./openiti-corpus.js";
 import { duaCard, duaLoadFailed, fillDuaProgress, loadDuaCheckEnv } from "./dua-browser.js";
-import { el } from "./hadith-shared-ui.js";
+import { el, openitiDisplayTitle, openitiArabicRowName } from "./hadith-shared-ui.js";
 import { duaWords, duaNarration, duaWordsFingerprint } from "./dua-words.js";
 import { placeDialogAtHome } from "./home-window.js";
 import { posterNodes, shareNodes, selectionBar, fullTextNodes } from "./dua-poster.js";
@@ -126,17 +126,22 @@ export function readPlace(search) {
   const dua = q.get("view") === "dua" && /^\d{1,5}$/.test(q.get("dua") ?? "") ? Number(q.get("dua")) : resume ? Number(resume[1]) : null;
   // A Hisn dhikr's tied Dua card, opened from that dhikr (open names the dhikr).
   const tie = /^\d{1,5}$/.test(q.get("tie") ?? "") ? Number(q.get("tie")) : null;
-  return { g, part, lp, open, dua, tie };
+  // PCF MSA J106 7A (the Owner, 14 Nov 2026): the Hadith books' Dua chapters live here. ?books=1 lists the Dua books, &book=<versionUri> one book's chapters.
+  const books = q.get("books") === "1";
+  const bookRaw = q.get("book") ?? "";
+  const book = books && /^[0-9A-Za-z.\-]{1,80}$/.test(bookRaw) ? bookRaw : null;
+  return { g, part, lp, open, dua, tie, books, book };
 }
 function writePlace(where) {
   try {
     const u = new URL(location.href);
-    for (const k of ["g", "part", "lp", "open", "tie", "view", "duaPage", "dua", "resume"]) u.searchParams.delete(k);
+    for (const k of ["g", "part", "lp", "open", "tie", "view", "duaPage", "dua", "resume", "books", "book"]) u.searchParams.delete(k);
     u.searchParams.set("g", where.g);
     if (where.part) u.searchParams.set("part", where.part);
     if (where.lp > 1) u.searchParams.set("lp", String(where.lp));
     if (where.open != null) u.searchParams.set("open", String(where.open));
     if (where.tie != null) u.searchParams.set("tie", String(where.tie));
+    if (where.books) { u.searchParams.set("books", "1"); if (where.book) u.searchParams.set("book", where.book); }
     history.replaceState(history.state, "", u);
   } catch { /* the page still works; only the way back from another page is less exact */ }
 }
@@ -177,6 +182,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     }
     renderMenu(menu);
     writePlace(where);
+    if (where.books) return renderBooks(body);
     if (where.tie != null) return renderDetour(body);
     const list = listOf(data, where);
     if (where.open != null && list?.[where.open - 1]) return renderCard(body, list, where.open);
@@ -242,7 +248,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     b.addEventListener("click", () => { closePull(); go(); });
     return b;
   }
-  function go(next) { Object.assign(where, { part: null, lp: 1, open: null, tie: null }, next); render(); root.scrollIntoView({ block: "start" }); }
+  function go(next) { Object.assign(where, { part: null, lp: 1, open: null, tie: null, books: false, book: null }, next); render(); root.scrollIntoView({ block: "start" }); }
   function pdButton(small, big, kind) {
     const b = el("button", "dua-pd");
     b.type = "button";
@@ -269,7 +275,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const gp = el("button", "dua-pd dua-pd-groups");
     gp.type = "button";
     gp.dataset.duaPd = "mygroups";
-    gp.append(el("small", null, t("Dua groups")), el("b", null, t("Admin's and my groups")));
+    gp.append(el("small", null, t("Groups")), el("b", null, t("Admin's and my groups")));
     const openGroups = async (reopen) => {
       try {
         const [{ openDuaGroups, readGroupsPlace }, { db }, check] = await Promise.all([import("./dua-groups-page.js"), import("./firebase-init.js"), import("./dua-check-data.js")]);
@@ -282,6 +288,15 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     gp.addEventListener("click", () => openGroups(false));
     // Only an address the pop-up itself wrote carries dgp, so an ordinary page load still reads nothing (I9).
     if (reopenGroups) { reopenGroups = false; openGroups(true); }
+    const bk = el("button", "dua-pd");
+    bk.type = "button";
+    bk.dataset.duaPd = "books";
+    bk.append(el("small", null, t("Hadith Books")), el("b", null, t("Dua chapters")));
+    if (where.books) bk.setAttribute("aria-current", "true");
+    bk.addEventListener("click", () => { closePull(); Object.assign(where, { part: null, lp: 1, open: null, tie: null, books: true, book: null }); render(); root.scrollIntoView({ block: "start" }); });
+    const bkw = el("div", "dua-pd-wrap");
+    bkw.appendChild(bk);
+    menu.appendChild(bkw);
     const gpw = el("div", "dua-pd-wrap");
     gpw.appendChild(gp);
     menu.appendChild(gpw);
@@ -299,6 +314,57 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       pw.appendChild(pb);
       menu.appendChild(pw);
     }
+  }
+
+  // ---- PCF MSA J106 7A: the Hadith books' Dua chapters (moved here from the Hadith page's Dua tab) ----
+  function renderBooks(body) {
+    const section = el("section", "dua-section");
+    section.id = "duaSection";
+    section.appendChild(el("h2", "dua-study-h", t("Dua — the Dua chapters of the Hadith books")));
+    section.appendChild(el("p", "hadith-note", t("Each narration shows its standard number, a Bangla or English translation where HadeethEnc has one, and the other books that narrate the same dua.")));
+    const list = el("div", "hadith-list");
+    section.appendChild(list);
+    body.appendChild(section);
+    list.appendChild(el("p", "hadith-note", t("Loading…")));
+    const toAll = () => { where.book = null; render(); };
+    const crumb = () => { const b = el("button", "hadeethenc-crumb", t("← All Dua books")); b.type = "button"; b.dataset.duaBack = "true"; b.addEventListener("click", toAll); return b; };
+    loadDuaIndex().then(async (dua) => {
+      list.textContent = "";
+      if (!where.book) {
+        for (const b of dua.books) {
+          const row = el("button", "hadith-row");
+          row.type = "button";
+          row.dataset.duaBook = b.versionUri;
+          const name = el("span", "hadith-row-name");
+          const ar = el("span", "openiti-title-ar", b.titleAr); ar.lang = "ar"; ar.dir = "rtl";
+          name.append(ar, document.createTextNode(` — ${b.titleEn}`));
+          row.append(name, el("span", "hadith-row-meta", t("{n} narrations", { n: num(b.narrations) })));
+          row.addEventListener("click", () => { where.book = b.versionUri; render(); root.scrollIntoView({ block: "start" }); });
+          list.appendChild(row);
+        }
+        return;
+      }
+      const book = dua.books.find((b) => b.versionUri === where.book);
+      if (!book) { where.book = null; render(); return; }
+      list.appendChild(crumb());
+      list.appendChild(el("h3", "dua-book-heading", book.titleEn));
+      const index = await loadOpenitiBookIndex(book.versionUri);
+      for (const id of book.chapterIds) {
+        const c = index.chapters.find((x) => x.id === id);
+        if (!c) continue;
+        const row = el("button", "hadith-row");
+        row.type = "button";
+        row.dataset.duaChapter = id;
+        row.appendChild(openitiArabicRowName(openitiDisplayTitle(c.title)));
+        row.appendChild(el("span", "hadith-row-meta", t("{n} narrations", { n: num(c.hadithCount || c.passageCount) })));
+        // The chapter opens in Hadith Books with ← Back, which (history.back) returns to THIS address: the book's chapter list.
+        row.addEventListener("click", () => { location.href = `./hadith-collections.html?openiti=${encodeURIComponent(book.versionUri)}&chapter=${encodeURIComponent(id)}&back=1`; });
+        list.appendChild(row);
+      }
+    }).catch((err) => {
+      duaLoadFailed(list, render, err);
+      if (where.book) list.prepend(crumb());
+    });
   }
 
   // ---- D02: the numbered list ----
