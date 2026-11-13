@@ -1134,3 +1134,4 @@ total). Allocated by the MMSA Architect.
 14.29: Little Difficult, Read on word tap and bookmarks, printed pages as a PDF, Arabic twice its size. Allocated by the MMSA Architect.
 14.30: the Āyah card's one row and one ⋮ menu (#1674). Allocated by the MMSA Architect.
 14.31: the grammar name on one line and Read on two lines (#1678, #1682), the Dua group tree (#1680). Allocated by the MMSA Architect.
+14.32: the Dua card Menu's five tabs (#1684) and the Dua groups screen pieces (#1686). Allocated by the MMSA Architect.

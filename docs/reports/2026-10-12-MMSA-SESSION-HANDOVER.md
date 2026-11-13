@@ -3335,3 +3335,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.29** (2026-11-12): Little Difficult, Read on word tap and bookmarks, printed pages as a PDF, Arabic twice its size.
 - **v14.30** (2026-11-12): the Āyah card's one row and one ⋮ menu (#1674).
 - **v14.31** (2026-11-13): the grammar name on one line and Read on two lines (#1678, #1682), the Dua group tree (#1680).
+- **v14.32** (2026-11-13): the Dua card Menu's five tabs (#1684) and the Dua groups screen pieces (#1686).
