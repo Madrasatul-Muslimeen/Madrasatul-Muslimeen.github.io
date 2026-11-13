@@ -43,7 +43,8 @@ const settle = (page, ms = 500) => page.waitForTimeout(ms);
 const writesOf = (page) => ev(page, () => (window.__stubWriteData || []).filter((x) => x.col === "ayahKeyMarks").map((x) => JSON.stringify(x)));
 const rowState = (page) => ev(page, () => [...document.querySelectorAll(".quran-word-card [data-word-mark]")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => ({ id: b.dataset.wordMark, on: b.getAttribute("aria-pressed") === "true", name: b.querySelector(".we-name")?.textContent.trim(), h: Math.round(b.getBoundingClientRect().height) })));
 // UPDATED IN PLACE (12 Nov 2026, the Owner: "Place another level before Difficult, 'Little Difficult'"): six buttons now.
-const NAMES = { en: ["Already Known", "Little Difficult", "Difficult", "Learn", "Learned Easy", "Very Hard"], bn: ["আগে থেকেই জানা", "একটু কঠিন", "কঠিন", "শিখুন", "সহজে শেখা", "খুব কঠিন"] };
+// UPDATED IN PLACE (13 Nov 2026, the Owner: "Mark chips order: Already known, Learned Easy, Little Hard, Difficult, Very Hard, Learn"): the six buttons are in that order (the labels are unchanged).
+const NAMES = { en: ["Already Known", "Learned Easy", "Little Difficult", "Difficult", "Very Hard", "Learn"], bn: ["আগে থেকেই জানা", "সহজে শেখা", "একটু কঠিন", "কঠিন", "খুব কঠিন", "শিখুন"] };
 
 async function routeMutation(ctx) {
   const [file, a, b] = MUT[MUTATE];
@@ -82,7 +83,7 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 1440, 900], ["bn",
 
   // (1)
   let m = await rowState(page);
-  check(`${tag} (1) six buttons in order, named in ${lang}`, m.length === 6 && m.map((x) => x.id).join() === "known,little,difficult,learn,easy,very" && m.every((x, i) => x.name === NAMES[lang][i]), JSON.stringify(m));
+  check(`${tag} (1) six buttons in order, named in ${lang}`, m.length === 6 && m.map((x) => x.id).join() === "known,easy,little,difficult,very,learn" && m.every((x, i) => x.name === NAMES[lang][i]), JSON.stringify(m));
   check(`${tag} (1) only Learned Easy (the seeded Done) is pressed`, m.filter((x) => x.on).map((x) => x.id).join() === "easy", JSON.stringify(m));
   check(`${tag} (1) every button is at least 40px tall`, m.length === 6 && m.every((x) => x.h >= 40), JSON.stringify(m.map((x) => x.h)));
   // (2)

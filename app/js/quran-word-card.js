@@ -1121,7 +1121,7 @@ function menuButtonHtml(context, text) {
   return `<button type="button" class="word-card-menu-btn" data-word-card-menu-toggle aria-haspopup="true" aria-expanded="${context.menuOpen ? "true" : "false"}" aria-controls="wordCardMenuPanel" aria-label="${escapeHtml(String(text.menuLabel ?? WORD_CARD_TEXT.menuLabel))}">☰</button>`;
 }
 function menuPanelHtml(context, text) {
-  return `<div class="word-card-menu-row" data-word-card-menu-row><div class="word-card-menu-panel" id="wordCardMenuPanel" role="group" aria-label="${escapeHtml(String(text.menuLabel ?? WORD_CARD_TEXT.menuLabel))}" data-word-card-menu-panel data-word-card-bangla${context.menuOpen ? "" : " hidden"}>${context.banglaHtml}</div></div>`;
+  return `<div class="word-card-menu-row" data-word-card-menu-row><div class="word-card-menu-panel" id="wordCardMenuPanel" role="group" aria-label="${escapeHtml(String(text.menuLabel ?? WORD_CARD_TEXT.menuLabel))}" data-word-card-menu-panel data-word-card-bangla${context.menuOpen ? "" : " hidden"}><span data-word-card-menu-account hidden></span>${context.banglaHtml}</div></div>`;
 }
 
 /** J43 -- the ⓘ Legend balloon holds this level's can-do sentence and, where the level has one, its order note.

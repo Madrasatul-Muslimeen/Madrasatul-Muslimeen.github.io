@@ -5480,6 +5480,7 @@
   }
   .word-card-menu-row { position: relative; height: 0; z-index: 6; }
   #wordCardMenuPanel[hidden] { display: none; }
+  .word-card-menu-panel .claim-for-row { margin: 0 0 0.5rem; } .word-card-menu-panel .claim-for-row .assign-popover { position: static; margin-top: 0.3rem; max-width: 100%; } /* the account list opens inline inside the menu, which scrolls */
   .word-card-menu-panel { position: absolute; inset-inline-end: 0; top: 0.3rem; width: min(100%, 24rem); max-height: 60vh; overflow-y: auto; box-sizing: border-box; padding: 0.6rem; border: 1px solid #c9a24a; border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-text); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); text-align: start; }
   /* PCF MSA J101: one meaning beside the Arabic, in the ROOT box's old place (WbW); on a narrow card it shares the word's
      second row, the word taking only its own width. */
@@ -20357,7 +20358,8 @@
         content._familyFitRO.observe(content);
       }
       // 👥 the same picker as the other Record cards (shared claimForIds); nothing for a lone person.
-      mountClaimForPicker(content, "[data-word-progress-rec] .word-progress-states, [data-word-progress-rec] [data-word-progress-na]");
+      // The Owner, 13 Nov 2026 (a phone screenshot: "Move the account to the menu"): the 👥 account picker is the first thing in the ☰ menu, not a row under Word Progress.
+      mountClaimForPicker(content, "[data-word-card-menu-account]");
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
