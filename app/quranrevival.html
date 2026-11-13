@@ -3925,11 +3925,11 @@
   .word-card-fact { direction: ltr; background: #f3f5f4; color: #13241f; border-radius: 0.6rem; padding: 0.45rem 0.6rem; min-width: 0; overflow-wrap: anywhere; }
   .word-card-fact small { display: block; font-size: 0.74rem; font-weight: 600; color: #4f6159; }
   .word-card-fact b { display: block; font-size: 1rem; font-weight: 800; }
-  .word-card-fact b.word-card-fact-ar { font-family: var(--quran-font); font-size: 2.6rem; text-align: left; }
+  .word-card-fact b.word-card-fact-ar { font-family: var(--quran-font); font-size: 1.3rem; text-align: left; }
   .word-card-fact-sub { font-family: var(--quran-font); font-size: 0.95rem; font-weight: 500; color: #2f4a41; }
   .word-card-fact b:has(+ .word-card-fact-sub) { display: inline; }
   .word-card-fact b + .word-card-fact-sub { display: inline-block; margin-left: 0.4rem; }
-  @media (max-width: 520px) { .word-card-fact { padding: 0.4rem 0.4rem; } .word-card-fact b { font-size: 0.88rem; } .word-card-fact b.word-card-fact-ar { font-size: 2.1rem; } }
+  @media (max-width: 520px) { .word-card-fact { padding: 0.4rem 0.4rem; } .word-card-fact b { font-size: 0.88rem; } .word-card-fact b.word-card-fact-ar { font-size: 1.05rem; } }
   /* Round 4 (#511) -- Arabic in Depth: a legend and five LIGHT accordions (the demo's .acc), as the facts and part boxes are light on the dark card.
      The old dictionary box and derived-forms list now sit INSIDE the first one, so the card palette is re-pointed to light ink there. */
   [data-word-card-panel="depth"] { display: grid; gap: 0.6rem; margin-top: 0.4rem; min-width: 0; }
@@ -4436,6 +4436,8 @@
   .word-card-fact b.word-card-fact-ar, .word-card-fact .word-card-fact-sub, .word-card-part .word-card-part-arname, .word-card-learnnext .word-card-learnnext-ar,
   .word-card-family-who [lang="ar"], .word-card-irab bdi[lang="ar"], .word-card-irab-head bdi[lang="ar"], .word-card-book .word-card-book-t,
   .quran-word-card .word-card-ar, .word-card-ar-chip b { font-size: var(--wc-small-ar); }
+  /* the Owner, 13 Nov 2026 (picture demo, option 3 "keep the grammar line smaller"): the grammar name (ضَمِيرٌ مُنْفَصِل) and the Dictionary-word fact keep their OLD size (0.9 of the head word), so the grammar name stays on one line on a phone; the rest of the Word Card's Arabic stays twice as big */
+  .word-card-fact b.word-card-fact-ar, .word-card-part .word-card-part-arname { font-size: calc(var(--wc-head-ar) * 0.9); }
   .word-card-irab bdi[lang="ar"], .word-card-irab-head bdi[lang="ar"] { font-family: var(--quran-font); line-height: 1.5; }
   .word-card-learnnext .word-card-learnnext-ar { line-height: 1.5; }
   /* J60 (the Owner: "For each meaning with its occurances, give it a distinctive look/ plate"): each meaning is a plate of
