@@ -185,12 +185,14 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     const r = b.getBoundingClientRect();
     return { tag: b.tagName, h: r.height, text: b.textContent.replace(/\s+/g, " ").trim(), title: b.querySelector(".word-card-learnnext-title")?.textContent, over: document.documentElement.scrollWidth - innerWidth, clipped: b.scrollWidth - b.clientWidth, inBox: !!b.closest(".word-progress-whole-quran-box") };
   });
-  check(`${tag} the purple line is a real <button> inside the totals box, at least 44px tall`, !!line && line.tag === "BUTTON" && line.inBox && line.h >= 44, JSON.stringify(line));
+  // UPDATED IN PLACE 13 Nov 2026 (the Owner): the bar left the totals box and sits right after the Bangla marking, in the Word Progress column (it is no longer `inBox`);
+  // it stays a real <button>, at least 44px tall. Its position is proved by bangla-marks-browser.mjs.
+  check(`${tag} the purple bar is a real <button> in the Word Card (after the Bangla marking, no longer inside the totals box), at least 44px tall`, !!line && line.tag === "BUTTON" && !line.inBox && line.h >= 44, JSON.stringify(line));
   check(`${tag} the line fits: no sideways scroll, nothing clipped`, !!line && line.over <= 0 && line.clipped <= 0, JSON.stringify(line));
   check(`${tag} fetched once, on first use (not at startup)`, fetched === 1, String(fetched));
   const first = rows[0];
   check(`${tag} the purple line names the first not-known word (rank 1: ${first.l}, ${first.n} places)`, nfc((await nextWord(page)) ?? "") === nfc(first.l) && ((line?.text ?? "").includes(lang === "bn" ? "" : String(first.n)) || /৩,২২৯|3,229/.test(line?.text ?? "")), line?.text);
-  if (lang === "en") check(`${tag} English reads "Learn next / Next up: … · … · 3,229 places"`, /^Learn next\s*Next up: .+ · .+ · 3,229 places$/.test(line?.text ?? ""), line?.text);
+  if (lang === "en") check(`${tag} English reads "Learn the Next Word / You already know N words / Next up: … · … · 3,229 places" (the Owner, 13 Nov 2026)`, /^Learn the Next Word\s*You already know [\d,]+ words\s*Next up: .+ · .+ · 3,229 places$/.test(line?.text ?? ""), line?.text);
 
   // purple ink on all three looks
   const looks = [["light", "light"], ["night", "night"]]; // the card has two looks; the sheet (a light surface in every look) is the third

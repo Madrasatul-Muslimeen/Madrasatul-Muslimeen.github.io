@@ -27,7 +27,7 @@ const MUT = {
   nonote: [HTML, "wordEffortNote = { unitKey, text: t(", "wordEffortNote = { unitKey: '', text: t("],
   flagfalse: [EFF, "export const WORD_EFFORT_RULES_PUBLISHED = true;", "export const WORD_EFFORT_RULES_PUBLISHED = false;"],
   nolittle: [EFF, 'EFFORT_STORED = Object.freeze(["known", "easy", "little", "very"])', 'EFFORT_STORED = Object.freeze(["known", "easy", "very"])'], // 12 Nov 2026: Little Difficult can no longer be stored
-  nolegend: [UI, '["little", lang === "bn" ? "একটু কঠিন" : "Little Difficult"], ', ""],
+  nolegend: [UI, '["little", lang === "bn" ? "একটু কঠিন" : "Little Hard"], ', ""],
   notally: [HTML, 'const detailsHtml = `<details class="we-details"', 'const detailsHtml = "" && `<details class="we-details"'],
   noband: [UI, "const eff = effort?.[p.key] === \"known\"", "const eff = null && effort?.[p.key] === \"known\""],
   bnleak: [BN, '  "This mark cannot be saved yet: the new saving rule has not been published in Firebase. Difficult, Learn and Learned Easy save as before.": ', '  "x-unused": '],
@@ -44,7 +44,7 @@ const writesOf = (page) => ev(page, () => (window.__stubWriteData || []).filter(
 const rowState = (page) => ev(page, () => [...document.querySelectorAll(".quran-word-card [data-word-mark]")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => ({ id: b.dataset.wordMark, on: b.getAttribute("aria-pressed") === "true", name: b.querySelector(".we-name")?.textContent.trim(), h: Math.round(b.getBoundingClientRect().height) })));
 // UPDATED IN PLACE (12 Nov 2026, the Owner: "Place another level before Difficult, 'Little Difficult'"): six buttons now.
 // UPDATED IN PLACE (13 Nov 2026, the Owner: "Mark chips order: Already known, Learned Easy, Little Hard, Difficult, Very Hard, Learn"): the six buttons are in that order (the labels are unchanged).
-const NAMES = { en: ["Already Known", "Learned Easy", "Little Difficult", "Difficult", "Very Hard", "Learn"], bn: ["আগে থেকেই জানা", "সহজে শেখা", "একটু কঠিন", "কঠিন", "খুব কঠিন", "শিখুন"] };
+const NAMES = { en: ["Already Known", "Learned Easy", "Little Hard", "Hard", "Very Hard", "Learn Now"], bn: ["আগে থেকেই জানা", "সহজে শেখা", "একটু কঠিন", "কঠিন", "খুব কঠিন", "এখনই শিখুন"] };
 
 async function routeMutation(ctx) {
   const [file, a, b] = MUT[MUTATE];
@@ -125,7 +125,7 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 1440, 900], ["bn",
   await settle(page, 500);
   const bands = await ev(page, () => { const g = (k) => document.querySelector(`#wheelContainer .mk-piece[data-mk-key="${k}"]`); const eff = (k) => [...(g(k)?.querySelectorAll(".mk-eff-known.on, .mk-eff-very.on") ?? [])].map((p) => p.getAttribute("class")); return { very: eff("qword:1:1:2"), known: eff("qword:1:1:4"), plain: eff("qword:1:1:3"), legend: document.querySelector("[data-mk-legend]")?.innerText ?? "" }; });
   check(`${tag} (4) the wheel lights Very Hard's inner band purple, Already Known's blue, a plain Difficult word neither`, bands.very.length >= 1 && bands.very.every((c) => /mk-eff-very/.test(c)) && bands.known.length >= 1 && bands.known.every((c) => /mk-eff-known/.test(c)) && bands.plain.length === 0, JSON.stringify(bands));
-  check(`${tag} (4) MUTATION TARGET (nolegend): the legend also names Little Difficult`, lang === "bn" ? /একটু কঠিন/.test(bands.legend) : /Little Difficult/.test(bands.legend), JSON.stringify(bands.legend));
+  check(`${tag} (4) MUTATION TARGET (nolegend): the legend also names Little Hard (the Owner's word, 13 Nov 2026)`, lang === "bn" ? /একটু কঠিন/.test(bands.legend) : /Little Hard/.test(bands.legend), JSON.stringify(bands.legend));
   check(`${tag} (4) the legend names both new colours`, lang === "bn" ? /আগে থেকেই জানা/.test(bands.legend) && /খুব কঠিন/.test(bands.legend) : /Already Known/.test(bands.legend) && /Very Hard/.test(bands.legend), JSON.stringify(bands.legend));
   await page.close(); await ctx.close();
 }

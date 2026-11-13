@@ -82,12 +82,12 @@ check("the flag in the repository is TRUE, because the Owner published the Rules
 check("the six marks, in the Owner's order, with their kinds", () => {
   // UPDATED IN PLACE (13 Nov 2026, the Owner: "Mark chips order: Already known, Learned Easy, Little Hard, Difficult, Very Hard, Learn"): the six buttons are in that order (the labels are unchanged).
   assert.deepEqual(W.WORD_MARKS.map((m) => m.id), ["known", "easy", "little", "difficult", "very", "learn"]);
-  assert.deepEqual(W.WORD_MARKS.map((m) => m.names.en), ["Already Known", "Learned Easy", "Little Difficult", "Difficult", "Very Hard", "Learn"]);
+  assert.deepEqual(W.WORD_MARKS.map((m) => m.names.en), ["Already Known", "Learned Easy", "Little Hard", "Hard", "Very Hard", "Learn Now"]); // UPDATED IN PLACE 13 Nov 2026 (the Owner, again, in full): the words are Little Hard, Hard, Very Hard, Learn Now
   assert.deepEqual(W.WORD_MARKS.map((m) => m.kind), ["result", "result", "result", "assessment", "result", "act"]);
 });
 check("five counted degrees (Little Difficult between Learned Easy and Hard), both languages filled (I11)", () => {
   assert.deepEqual(W.EFFORT_DEGREES.map((d) => d.id), ["known", "easy", "little", "hard", "very"]);
-  assert.deepEqual(W.EFFORT_DEGREES.map((d) => d.names.en), ["Already Known", "Learned Easy", "Little Difficult", "Hard", "Very Hard"]);
+  assert.deepEqual(W.EFFORT_DEGREES.map((d) => d.names.en), ["Already Known", "Learned Easy", "Little Hard", "Hard", "Very Hard"]); // UPDATED IN PLACE 13 Nov 2026 (the Owner, again, in full): the words are Little Hard, Hard, Very Hard, Learn Now
   for (const d of W.EFFORT_DEGREES) assert.ok(d.names.bn && d.names.bn !== d.names.en, `${d.id} has no Bangla name`);
   for (const m of W.WORD_MARKS) assert.ok(m.names.bn && m.sub.bn, `${m.id} has no Bangla`);
 });

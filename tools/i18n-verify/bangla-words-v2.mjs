@@ -17,6 +17,8 @@ const MUT = {
   oneKind: ["const out = BANGLA_KINDS.filter((k) => set.has(k));", "const out = BANGLA_KINDS.filter((k) => set.has(k)).slice(0, 1);"],
   order: ["const out = BANGLA_KINDS.filter((k) => set.has(k));", "const out = [...set];"],
   adminopen: ["if (!BANGLA_LISTS.includes(target) || !canEditList(target, canAdmin) || typeof lemma !== \"string\" || !lemma) return s;\n  const wanted", "if (!BANGLA_LISTS.includes(target) || typeof lemma !== \"string\" || !lemma) return s;\n  const wanted"],
+  // The Owner, 13 Nov 2026 (the three kind chips): a tap switches ONE kind on or off and leaves the others.
+  togglewipes: ["const next = current.includes(kind) ? current.filter((k) => k !== kind) : [...current, kind];", "const next = current.includes(kind) ? [] : [kind];"],
   keepempty: ["if (!wanted.length) { ids.delete(lemma); delete map[lemma]; } else", "if (false) { ids.delete(lemma); delete map[lemma]; } else"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -89,6 +91,30 @@ check("the old setBanglaWord keeps the kinds in step (on = bangla, off removes)"
   assert.deepEqual(M.banglaKindsOf(st, "w", "mine"), ["bangla"]);
   st = M.setBanglaWord(st, "w", false, { list: "mine" });
   assert.deepEqual(M.banglaKindsOf(st, "w", "mine"), []);
+});
+check("toggleBanglaKind: one tap = one kind (on, then all three, then one off leaves the others, the last off removes the word)", () => {
+  let st = M.emptyBanglaState();
+  st = M.toggleBanglaKind(st, "w", "rituals", { list: "mine" });
+  assert.deepEqual(M.banglaKindsOf(st, "w", "mine"), ["rituals"]);
+  st = M.toggleBanglaKind(M.toggleBanglaKind(st, "w", "bangla", { list: "mine" }), "w", "names", { list: "mine" });
+  assert.deepEqual(M.banglaKindsOf(st, "w", "mine"), ["names", "rituals", "bangla"], "all three at once, in the Owner's order");
+  st = M.toggleBanglaKind(st, "w", "rituals", { list: "mine" });
+  assert.deepEqual(M.banglaKindsOf(st, "w", "mine"), ["names", "bangla"], "switching one off leaves the others");
+  st = M.toggleBanglaKind(M.toggleBanglaKind(st, "w", "names", { list: "mine" }), "w", "bangla", { list: "mine" });
+  assert.deepEqual(M.banglaKindsOf(st, "w", "mine"), []);
+  assert.ok(!st.mine.includes("w"), "a word with no kind leaves the list");
+});
+check("toggleBanglaKind: an unknown kind changes nothing; the Admin's list refuses a reader who is not an admin, and takes an admin", () => {
+  const st = M.emptyBanglaState();
+  assert.deepEqual(M.toggleBanglaKind(st, "w", "nonsense", { list: "mine" }), st);
+  assert.deepEqual(M.toggleBanglaKind(st, "w", "names", { list: "admin", canAdmin: false }).admin, []);
+  assert.deepEqual(M.toggleBanglaKind(st, "w", "names", { list: "admin", canAdmin: true }).admin, ["w"]);
+});
+check("a v1 word (in the list with no kind) shows In Daily Use pressed, and tapping Names ADDS to it", () => {
+  let st = M.normaliseBanglaState({ list: "admin", on: true, admin: ["old"], mine: [] });
+  assert.deepEqual(M.banglaKindsOf(st, "old", "admin"), ["bangla"]);
+  st = M.toggleBanglaKind(st, "old", "names", { list: "admin", canAdmin: true });
+  assert.deepEqual(M.banglaKindsOf(st, "old", "admin"), ["names", "bangla"]);
 });
 check("garbage in storage never throws: a bad v2 falls back to v1, a bad v1 to empty", () => {
   assert.deepEqual(M.loadBanglaState(store({ "mm_bangla_words.v2": "{{", "mm_bangla_words.v1": V1 })).mine, ["m1"]);

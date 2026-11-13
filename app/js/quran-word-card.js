@@ -280,7 +280,9 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // PCF J23 -- one sentence per level. {percent} is the progress circle with "54%" written inside it (the Owner,
   // 14 Oct: option C's circle IN PLACE of the number, never both).
   wholeQuranLevelSentence: "{level}: Achieved {known} and {percent} of {total} words",
-  learnNextTitle: "Learn next",
+  // The Owner, 13 Nov 2026: the bar is "Learn the Next Word" (the sheet it opens keeps its own title), and says how many words the reader already knows.
+  learnNextTitle: "Learn the Next Word",
+  learnNextKnown: "You already know {n} words",
   practiseThisWord: "Practise this word",
   menuLabel: "Menu",
   learnWord: "Learn",
@@ -453,6 +455,23 @@ export function setProgressDataOn(on) {
 }
 
 /**
+ * PCF J40, moved and renamed 13 Nov 2026 (the Owner): the purple "Learn the Next Word" bar. It sits AFTER the Bangla marking, says
+ * "You already know N words" after its title (N from the vocabulary list, the same figure Know Your Status gives), and its Arabic is
+ * 30% smaller than the Word Card's other small Arabic. `learnNext` is { word, meaning, count, known }, already in the reader's language.
+ */
+export function learnNextBarHtml(learnNext, text = {}, formatNumber = String) {
+  if (!learnNext?.word) return "";
+  const grouped = (n) => Number(n ?? 0).toLocaleString("en-US");
+  const known = Number.isFinite(learnNext.known)
+    ? `<span class="word-card-learnnext-known" data-learn-next-known>${escapeHtml(String(text.learnNextKnown ?? WORD_CARD_TEXT.learnNextKnown)).replace("{n}", () => `<strong>${escapeHtml(formatNumber(grouped(learnNext.known)))}</strong>`)}</span>`
+    : "";
+  return `<button type="button" class="word-card-learnnext" data-learn-next-open>
+      <span class="word-card-learnnext-head"><span class="word-card-learnnext-title">${escapeHtml(String(text.learnNextTitle ?? WORD_CARD_TEXT.learnNextTitle))}</span>${known}</span>
+      <span class="word-card-learnnext-line">${escapeHtml(String(text.learnNextLine ?? WORD_CARD_TEXT.learnNextLine)).replace("{word}", () => `<bdi lang="ar" dir="rtl" class="word-card-learnnext-ar">${escapeHtml(lemmaText(learnNext.word))}</bdi>`).replace("{meaning}", () => escapeHtml(learnNext.meaning ?? "")).replace("{count}", () => escapeHtml(formatNumber(grouped(learnNext.count))))}</span>
+    </button>`;
+}
+
+/**
  * Issue #303 -- the whole-Qur'an running total, read straight off
  * quranWordTotals (getWordTotals(), already gated by
  * study-wbw-total-readiness.js and switched on since v08.53 -- no new gate).
@@ -486,13 +505,8 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals, 
         .replace("{total}", big(formatNumber(grouped(total.total))));
       return `<p class="word-progress-whole-quran" data-whole-quran-level="${escapeHtml(level)}">${sentence}</p>`;
     });
-    // PCF J40: the purple "Learn next" line -- the highest-ranked word the chosen person does not yet know.
-    // `learnNext` is { word, meaning, count } (already in the reader's language), or absent while it is loading.
-    const next = learnNext?.word ? `<button type="button" class="word-card-learnnext" data-learn-next-open>
-      <span class="word-card-learnnext-title">${escapeHtml(String(text.learnNextTitle ?? WORD_CARD_TEXT.learnNextTitle))}</span>
-      <span class="word-card-learnnext-line">${escapeHtml(String(text.learnNextLine ?? WORD_CARD_TEXT.learnNextLine)).replace("{word}", () => `<bdi lang="ar" dir="rtl" class="word-card-learnnext-ar">${escapeHtml(lemmaText(learnNext.word))}</bdi>`).replace("{meaning}", () => escapeHtml(learnNext.meaning ?? "")).replace("{count}", () => escapeHtml(formatNumber(grouped(learnNext.count))))}</span>
-    </button>` : "";
-    return `<div class="word-progress-whole-quran-box">${rows.join("")}${next}</div>`;
+    // The Owner, 13 Nov 2026: the purple Learn next bar is no longer part of this box; it sits after the Bangla marking (learnNextBarHtml).
+    return `<div class="word-progress-whole-quran-box">${rows.join("")}</div>`;
   }
   if (!wholeQuranTotal) return "";
   // Thousands grouped here only ("77,429"; Bangla keeps its own digits via
@@ -565,6 +579,8 @@ function notApplicableHtml(progress, authority, text) {
 // MSA · QR J128 -- the three marks (Difficult / Need practice / Done) and "Learn" (was "Practise this word") are ONE row of
 // four, BELOW the Word Progress buttons. renderQuranWordCard sets this before it builds a level panel (a synchronous render).
 let markLearnRowHtml = "";
+// The Owner, 13 Nov 2026: the third marking ("Quranic/ Arabic word in Bangla Language:"), drawn by the page, sits right below Mark the Word.
+let banglaMarkHtml = "";
 function markLearnRow(word, context, text) {
   // MSA · QR J135: the row is the three marks only (Difficult · Learn · Learned); the old "Learn" practise button is gone.
   if (!context.marksHtml) return "";
@@ -619,6 +635,8 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
     ${wbw.where ? `<p class="word-progress-where">${escapeHtml(wbw.where)}</p>` : ""}
     ${wbw.notApplicable ? notApplicableHtml(progress, authority, text) : `<div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("practising")}${stateButton("achieved")}</div>`}
     ${markLearnRowHtml}
+    ${banglaMarkHtml}
+    ${learnNextBarHtml(wbw.learnNext, text, formatNumber)}
     ${progress.ask ? `<div class="word-progress-ask" data-word-progress-question role="group" aria-label="${escapeHtml(progress.ask.message)}"><p class="word-progress-state">${escapeHtml(progress.ask.message)}</p>${progress.ask.lines.length ? `<ul>${progress.ask.lines.map((l) => `<li>${escapeHtml(l)}</li>`).join("")}</ul>` : ""}<div class="word-progress-ask-buttons"><button type="button" data-word-progress-ask="change">${escapeHtml(progress.ask.change)}</button><button type="button" data-word-progress-ask="cancel">${escapeHtml(progress.ask.cancel)}</button></div></div>` : ""}
     ${progress.saving ? `<p class="word-progress-state" data-word-progress-saving role="status">${escapeHtml(text.saving ?? "Saving…")}</p>` : ""}
     ${reviewLine ? `<p class="word-progress-state" data-word-progress-review>${escapeHtml(reviewLine)}</p>` : ""}
@@ -1772,8 +1790,9 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   // MSA · QR J128: the marks + Learn row lives in the Word Progress block; where that block is not drawn (progress not loaded
   // or none at this level) the row still shows, at the top of the panel, so the marks are never missing.
   markLearnRowHtml = markLearnRow(word, context, text);
+  banglaMarkHtml = context.banglaMarkHtml ?? "";
   let panelWithMarks = levelPanel(state.level, word, layers, context, text, formatNumber);
-  if (markLearnRowHtml && !panelWithMarks.includes("data-word-card-marks")) panelWithMarks = markLearnRowHtml + panelWithMarks;
+  if (markLearnRowHtml && !panelWithMarks.includes("data-word-card-marks")) panelWithMarks = markLearnRowHtml + banglaMarkHtml + panelWithMarks;
   // PCF MSA J127 (the Owner, 11 Nov 2026: "J127:A"): the two navigation buttons, ‹ ›, sit TOGETHER at the start of the header row.
   return `<section class="quran-word-card" role="region" aria-label="${escapeHtml(text.cardRegion)}" data-occurrence-id="${escapeHtml(occurrenceId)}"${showSegmentColour ? " data-stem-mark" : ""}>
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>

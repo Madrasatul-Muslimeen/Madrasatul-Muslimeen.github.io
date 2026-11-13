@@ -4285,7 +4285,9 @@
      light surface in every look. */
   /* Architect review: `.word-card-progress button` (0,1,1) out-ranked a bare class here and painted the line gold. */
   .word-card-progress button.word-card-learnnext, .word-card-learnnext { display: block; width: 100%; min-height: 44px; margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; text-align: start; border-radius: 0.5rem; background: var(--wc-purple-bg); color: var(--wc-purple-ink); border: 1px solid var(--wc-purple-line); font: inherit; cursor: pointer; overflow-wrap: anywhere; box-sizing: border-box; }
-  .word-card-learnnext-title { display: block; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+  .word-card-learnnext-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 0.6rem; }
+  .word-card-learnnext-title { display: inline-block; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+  .word-card-learnnext-known { font-size: 0.8rem; font-weight: 600; }
   .word-card-learnnext-line { display: block; font-size: 0.92rem; font-weight: 700; line-height: 1.4; }
   .word-card-learnnext-ar { font-family: var(--quran-font, serif); font-size: 2.3rem; }
   .learn-next-sheet { position: fixed; inset: 0; z-index: 1400; display: flex; flex-direction: column; background: #fff; color: #13241f; }
@@ -4440,6 +4442,8 @@
   .word-card-fact b.word-card-fact-ar, .word-card-part .word-card-part-arname { font-size: calc(var(--wc-head-ar) * 0.9); }
   .word-card-irab bdi[lang="ar"], .word-card-irab-head bdi[lang="ar"] { font-family: var(--quran-font); line-height: 1.5; }
   .word-card-learnnext .word-card-learnnext-ar { line-height: 1.5; }
+  /* the Owner, 13 Nov 2026: the Arabic in the "Learn the Next Word" bar is 30% less than it was (than the Word Card's other small Arabic) */
+  .quran-word-card .word-card-learnnext .word-card-learnnext-ar { font-size: calc(var(--wc-small-ar) * 0.7); }
   /* J60 (the Owner: "For each meaning with its occurances, give it a distinctive look/ plate"): each meaning is a plate of
      its own -- its own face, a solid edge with a thick purple bar at its start, and a shadow -- so one meaning's places
      are never read as the next one's. Text stays --wc-purple-ink on --wc-purple-plate in both looks. */
@@ -8046,8 +8050,8 @@
     import { loadSurahKeys, loadPersonSurahKeys, setAyahKey, setWordKey, setWordMarks } from "./js/ayah-keys-data.js";
     import { wordMarksRowHtml, wireWordMarksRow, tapMark, tallyDegrees, effortTableHtml, WORD_EFFORT_CSS } from "./js/word-effort.js"; // MSA · QR J136
     // PCF MSA J119 -- words the Qur'an shares with Bangla (Word Card button + list; marks stay on this device until the Rules are published).
-    import { loadBanglaState, saveBanglaState, setBanglaWord, setBanglaWheel, banglaWheelPlan, activeBanglaSet, banglaFigures, banglaTagText } from "./js/bangla-words.js";
-    import { banglaBlockHtml, wireBanglaBlock, banglaWheelSwitchesHtml, wireBanglaWheelSwitches, BANGLA_CSS } from "./js/bangla-words-ui.js";
+    import { loadBanglaState, saveBanglaState, setBanglaWord, toggleBanglaKind, setBanglaWheel, banglaWheelPlan, activeBanglaSet, banglaFigures } from "./js/bangla-words.js";
+    import { banglaBlockHtml, wireBanglaBlock, banglaMarkRowHtml, wireBanglaMarkRow, banglaWheelSwitchesHtml, wireBanglaWheelSwitches, BANGLA_CSS } from "./js/bangla-words-ui.js";
     import { TITLE_LINE_CSS } from "./js/title-line.js";
     import { marksRowHtml, wireMarksRow, wheelPieces, marksWheelHtml, wireMarksWheel, marksLegendHtml, MARKS_CSS, MARKS_WHEEL_VIEWS } from "./js/marks-ui.js";
     import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
@@ -19163,7 +19167,8 @@
           wholeQuranPercentLevelShort: t("You know ({level}) {percent}% of the words"),
         }),
         wholeQuranLevelSentence: t("{level}: Achieved {known} and {percent} of {total} words"),
-        learnNextTitle: t("Learn next"),
+        learnNextTitle: t("Learn the Next Word"), // the Owner, 13 Nov 2026
+        learnNextKnown: t("You already know {n} words"),
         practiseThisWord: t("Practise this word"),
         menuLabel: t("Menu"),
         learnWord: t("Learn"),
@@ -20330,7 +20335,7 @@
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: wordMarksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Mark the Word")), banglaHtml: banglaHtmlFor(word), menuOpen: wordCardMenuOpen, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: wordMarksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Mark the Word")), banglaHtml: banglaHtmlFor(word), banglaMarkHtml: banglaMarkHtmlFor(word), menuOpen: wordCardMenuOpen, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       wireMarksRow(content, onMarkToggle); // PCF MSA J03 K2
       wireWordMarksRow(content, onWordMarkTap); // MSA · QR J136
       wireBanglaFor(content); // PCF MSA J119
@@ -20787,7 +20792,10 @@
     async function learnNextLineFor(args) {
       const ctx = await ensureLearnNext(args);
       const row = firstUnknownRow(ctx.data.rows, learnNextIsKnown);
-      return row ? { word: row.l, meaning: learnNextMeaning(row), count: row.n, rank: row.r } : null;
+      // The Owner, 13 Nov 2026: "You already know ... words", the count from the vocabulary list (the same figure the vocabulary badge gives as "You know {n} words").
+      let known = 0;
+      for (const r of ctx.data.rows) if (learnNextIsKnown(r)) known++;
+      return row ? { word: row.l, meaning: learnNextMeaning(row), count: row.n, rank: row.r, known } : null;
     }
 
     function learnNextSheetEl() {
@@ -24286,26 +24294,46 @@
       const lemma = word?.morphology?.lemma;
       if (!lemma) return "";
       banglaEnsureRows();
-      const set = activeBanglaSet(banglaState), rows = banglaData ? [...set].map((l) => banglaByLemma.get(l)).filter(Boolean).sort((x, y) => y.n - x.n) : [];
+      const set = activeBanglaSet(banglaState), rows = banglaData ? [...set].map((l) => banglaByLemma.get(l) && { ...banglaByLemma.get(l), k: banglaState.kinds?.[banglaState.list]?.[l] }).filter(Boolean).sort((x, y) => y.n - x.n) : []; // k: the kinds this word carries, for the Category list
       const figures = banglaData ? banglaFigures(banglaData.rows, banglaData.total, set) : null;
-      const inList = set.has(lemma);
-      const bn = banglaByLemma?.get(lemma)?.b ?? "";
+      // The Owner, 13 Nov 2026: the "Also in Bangla" button and its "Also in Bangla: word" tag are gone from this menu; the three kind chips on the card mark the word now.
       return banglaBlockHtml({
         state: { ...banglaState, on: banglaCardOn }, lemma, canAdmin: canAdminCatalogueClientSide(), figures, rows, open: banglaListOpen, listOn: banglaState.on, // J134: the heading switch is this card's own; listOn is the SAVED whole-list setting
-        tag: inList && banglaCardOn ? banglaTagText(bn, getAppLang() === "bn" ? "bn" : "en") : "",
         text: {
-          mark: t("Also in Bangla"), marked: t("In Bangla"), heading: t("Bangla list"), admin: t("Admin's"), mine: t("Mine"),
+          language: t("Bangla"), kindNames: { names: t("In {language} Names", { language: t("Bangla") }), rituals: t("In Rituals"), bangla: t("In Daily Use") },
+          heading: t("Bangla list"), admin: t("Admin's"), mine: t("Mine"),
           adminNote: t("admin marks"), readOnly: t("read only"), yours: t("yours"), listHeading: t("Words also in Bangla ({n})"),
           listSwitch: t("Use the Bangla word list"), savedSwitch: t("Count Bangla words as known and on the Wheel"), savedSwitchLabel: t("Bangla words count as known and on the Wheel"), wordSwitch: t("{word} in the list"), deviceOnly: t("Saved on this device only for now."),
           count: t("{words} words, {percent}% of the Qur'an's words"), empty: t("No words in this list yet."),
         },
       });
     }
+    /** The Owner, 13 Nov 2026: the marking below Mark the Word. It edits the list the menu is showing (Admin's or Mine). */
+    function banglaMarkHtmlFor(word) {
+      const lemma = word?.morphology?.lemma;
+      if (!lemma) return "";
+      const language = t("Bangla");
+      return banglaMarkRowHtml({
+        state: banglaState, lemma, canAdmin: canAdminCatalogueClientSide(), language,
+        text: { title: t("Quranic/ Arabic word in {language} Language:"), names: t("In {language} Names"), rituals: t("In Rituals"), bangla: t("In Daily Use"), readOnly: t("These marks go in the Admin's list, which only an admin can change. Choose Mine in the ☰ menu to mark for yourself.") },
+      });
+    }
+    /** A Bangla word counts as known, so a mark here changes "You already know N words" and may change the next word: the bar is read again. */
+    async function refreshLearnNextBar() {
+      const c = learnNextCtx, l = quranWordCardLemmaContext;
+      if (!c || !l?.learnNext) return;
+      try {
+        const ln = await learnNextLineFor({ tenantId: c.tenantId, personId: c.personId, confirmationRequired: c.confirmationRequired });
+        if (quranWordCardLemmaContext === l) { quranWordCardLemmaContext = { ...l, learnNext: ln }; if (quranWordCardState?.open) renderPersistentWordCard(); }
+      } catch (error) { console.warn("Learn next not refreshed", error); }
+    }
     function banglaChanged(next) {
       banglaState = next; saveBanglaState(banglaState);
       if (quranWordCardState?.open) renderPersistentWordCard();
+      refreshLearnNextBar();
     }
     function wireBanglaFor(content) {
+      wireBanglaMarkRow(content, (lemma, kind) => banglaChanged(toggleBanglaKind(banglaState, lemma, kind, { canAdmin: canAdminCatalogueClientSide() })));
       wireBanglaBlock(content, {
         onWord: (lemma, on) => banglaChanged(setBanglaWord(banglaState, lemma, on, { canAdmin: canAdminCatalogueClientSide() })),
         onList: (id) => banglaChanged({ ...banglaState, list: id }),

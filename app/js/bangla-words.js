@@ -97,6 +97,17 @@ export function setBanglaWordKinds(state, lemma, kinds, { list, canAdmin = false
   return { ...s, [target]: cleanIds([...ids]), kinds: { ...s.kinds, [target]: map } };
 }
 
+/** The Owner, 13 Nov 2026 ("Quranic/ Arabic word in Bangla Language:"): a tap on one of the three kind chips. A word may carry one kind or all
+ *  three, so a tap switches THAT kind on or off and leaves the others; switching the last one off takes the word out of the list. A word that
+ *  was in the list with no kind of its own (every v1 word) already carries "bangla" ("In Daily Use"), so it shows that chip pressed. */
+export function toggleBanglaKind(state, lemma, kind, { list, canAdmin = false } = {}) {
+  const s = normaliseBanglaState(state);
+  if (!BANGLA_KINDS.includes(kind)) return s;
+  const current = banglaKindsOf(s, lemma, list);
+  const next = current.includes(kind) ? current.filter((k) => k !== kind) : [...current, kind];
+  return setBanglaWordKinds(s, lemma, next, { list, canAdmin });
+}
+
 /** May this reader change this list? Their own list: always. The admin's: only an admin (the page passes canAdmin). */
 export function canEditList(list, canAdmin) {
   return list === LIST_MINE ? true : list === LIST_ADMIN ? canAdmin === true : false;
