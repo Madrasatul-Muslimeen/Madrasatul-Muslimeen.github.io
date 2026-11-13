@@ -453,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v14.34 on `main`** (14 Nov 2026 Sydney, shown as "v14.34-14.11.26". **One Hadith Lead fix, reviewed and merged by the Architect 103L.** On the Hadith page in the night look, the open 👥 account list now has a solid box colour (it had none, because the night card colour is a gradient), so the names read clearly; claim-for-family-word-hadith goes from 152/6 to 158/0 (#1693). Nothing published to Firestore; the Owner's Dua groups Rules line is PCF MSA J104 line 26. Checks: see the CHANGELOG entry.)
+**Current milestone: v14.35 on `main`** (14 Nov 2026 Sydney, shown as "v14.35-14.11.26". **Dua groups, three PRs, reviewed and merged by the Architect 104L.** On the Dua page the menu has a new "Admin's and my groups" button: one pop-up with two switches, the madrasah's groups (everyone reads, owner/prime change them) and the person's own groups (each holds a list of dua numbers). It loads only when pressed (I9). Its saving code is #1695, the pop-up #1698, and `firestore.rules` now carries the Dua groups Rules the Owner published on 13 Nov (#1696). The Architect added the way back: Back from a dua opened in the pop-up reopens it on the same switch and group. Nothing new published to Firestore; the Owner's Rules tick box is PCF MSA J104 line 26. Checks: see the CHANGELOG entry.)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
