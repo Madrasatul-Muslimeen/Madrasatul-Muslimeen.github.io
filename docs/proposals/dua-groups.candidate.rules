@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // PCF MSA J104 line 25 (Dua module) -- DUA GROUPS -- CANDIDATE, NOT PUBLISHED, NOT IN firestore.rules.
+    //
+    // Prepared by the MSA Architect 102L, 13 Nov 2026, on the Owner's tick J104 line 25 (13 Nov): groups the person drags
+    // to any level, sub groups at most 3 levels (C), a real delete (B), the pop-up (E); shape agreed by the Architect 101L
+    // with the Dua Lead 11L, and the nested node shape settled by the PCA (13 Nov). firestore.rules is UNTOUCHED: Rules are an Owner Control Gate, and nothing here is
+    // live until the Owner publishes it. Nothing in the app writes this collection yet; the Dua Lead's writer comes AFTER.
+    //
+    // ONE COLLECTION, ONE DOCUMENT PER GROUP TREE
+    //
+    //  duaGroups/{tenantId}__{ownerKey}
+    //    ownerKey  "admin"   the madrasah's own groups (the ones every member sees), or
+    //              a personId  that person's own groups. No personId shape can be "admin" (p1..p4, p + 13 digits,
+    //                          person_<uid8>, person_admin1, 7 digits), and a person's document also requires that the
+    //                          person belongs to the tenant (personInTenant).
+    //    nodes     the TOP level of the tree, a list of { id "g-xxxxxxxx", name { en, bn? }, kids [ ...same, nested ],
+    //              duas [ dua keys ] on a person's groups only }
+    //              (the Dua Lead's model, app/js/dua-group-tree.js, merged in #1680; the PCA settled the shape 13 Nov).
+    //              Node ids are permanent (I5): a rename or a move never changes an id. At most 3 levels, at most 200
+    //              groups in all, unique ids and names of at most 60 characters are checked by the client (cleanTree),
+    //              as dua-saving-data.js does for placements: Rules cannot look inside a list. The Rules cap the top
+    //              level at 200, and Firestore's 1 MiB document limit bounds the rest.
+    //    MEMBERSHIP, one home per kind (the Dua Lead 11L, 13 Nov):
+    //      the madrasah's groups: duaEdits.placements[].group = the node id (the published duaEdits block, unchanged);
+    //      a person's groups ("My groups"): a `duas` list ON EACH NODE of that person's document, of dua keys (the
+    //      published duaKey forms, checked by the client), at most 500 per node and 5000 per document (client caps).
+    //      So the madrasah's membership is never in a person's document, and a person's is never in duaEdits.
+    //    A DELETED GROUP's placements are not rewritten: a placement whose group id is no longer in the tree is ignored
+    //    on read (the dua shows in its other groups, else ungrouped) and dropped the next time that dua's edit is saved.
+    //
+    //  WHO
+    //    "admin" document:   every member of the madrasah READS; owner and prime WRITE (canAdminIdentity, as duaEdits).
+    //    a person's document: READ and WRITTEN by exactly canRecordFor() for a person of this tenant (as duaPlans): the
+    //                         person themself, their guardian, a co-enrolled teacher, owner/prime.
+    //    By document id only (no `allow list`), so NO index. The read-before-create probe: a missing document may be read
+    //    by anyone signed in (it has no data to expose).
+    //
+    //  REAL DELETE (the Owner's B): removing a group is an UPDATE that writes `nodes` without it (and without the groups
+    //  inside it). The group is gone for good -- there is no undo -- but no DOCUMENT is ever deleted (D6), and the duas
+    //  and their marks are not touched. `allow delete: if false`.
+    //
+    // EVERYWHERE: every document carries schemaVersion, createdAt, updatedAt, createdBy (I17); createdBy is the writer on
+    // create and write-once after; tenantId and ownerKey are pinned on update.
+    //
+    // THE DEPLOYMENT FILE (docs/proposals/dua-groups.DEPLOYMENT-candidate.rules) is the whole live firestore.rules with
+    // this block added at the end (nothing above changed): the file the Owner pastes into the Firebase Console
+    // (docs/governance/2026-11-13-dua-groups-rules-publish-guide.md).
+    // =====================================================================
+
+    match /duaGroups/{groupKey} {
+
+      function groupShapeOk() {
+        return d().keys().hasOnly([
+                 'tenantId', 'ownerKey', 'nodes',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'tenantId', 'ownerKey', 'nodes',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().ownerKey is string && d().ownerKey.size() > 0 && d().ownerKey.size() <= 64
+            && groupKey == d().tenantId + '__' + d().ownerKey
+            && d().nodes is list && d().nodes.size() <= 200
+            && d().schemaVersion is number
+            && d().createdAt is timestamp && d().updatedAt is timestamp
+            && d().createdBy is string && d().createdBy.size() > 0;
+      }
+
+      // The madrasah's own groups: any member reads, owner/prime write. A person's own groups: canRecordFor, and the
+      // person must belong to the tenant. The `!= 'admin'` guard comes first, so "admin" is never looked up as a person.
+      function groupMayRead(tenantId, ownerKey) {
+        return (ownerKey == 'admin' && signedIn() && myRolesIn(tenantId).size() > 0)
+            || (ownerKey != 'admin' && personInTenant(tenantId, ownerKey) && canRecordFor(tenantId, ownerKey));
+      }
+
+      function groupMayWrite(tenantId, ownerKey) {
+        return (ownerKey == 'admin' && canAdminIdentity(tenantId))
+            || (ownerKey != 'admin' && personInTenant(tenantId, ownerKey) && canRecordFor(tenantId, ownerKey));
+      }
+
+      // The read-before-create probe: a nonexistent document has no data to expose.
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/duaGroups/$(groupKey));
+      // No `allow list`: a group tree is read by document id only.
+      allow get: if groupMayRead(resource.data.tenantId, resource.data.ownerKey);
+
+      allow create: if groupShapeOk()
+                    && groupMayWrite(d().tenantId, d().ownerKey)
+                    && d().createdBy == myUid();
+
+      allow update: if resource != null
+                    && groupShapeOk()
+                    && groupMayWrite(resource.data.tenantId, resource.data.ownerKey)
+                    && d().tenantId == resource.data.tenantId
+                    && d().ownerKey == resource.data.ownerKey
+                    && d().createdBy == resource.data.createdBy;
+
+      allow delete: if false; // I4/D6 -- a real delete of a GROUP writes `nodes` without it; the document stays.
+    }
+  }
+}

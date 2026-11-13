@@ -14,6 +14,7 @@
 //   --no-reach  skip the reach pass   --list  print every finding   --names=short  keep the fixture's short names   --tag=x  name the rows file
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { tabClick } from "./dua-tab-reveal.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -239,7 +240,7 @@ const wait = (P, sel, ms = 25000) => P.waitForSelector(sel, { timeout: ms });
 const listReady = (P) => wait(P, ".dua-row, [data-dua-empty], .dua-tile", 25000);
 const openMenuIfClosed = async (P) => { const t = await P.$("[data-dua-menu-toggle]"); if (t && (await t.getAttribute("aria-expanded")) === "false") await t.click(); await P.waitForTimeout(200); }; // build 2: the card's menu sits under its Menu button
 const cardReady = async (P) => { await wait(P, "[data-dua-open] [data-dua-menu-toggle], [data-dua-tie-open] [data-dua-menu-toggle]", 30000); await openMenuIfClosed(P); await P.waitForTimeout(600); };
-const popOpen = (key) => async (P) => { await cardReady(P); await P.click(`[data-dua-menu="${key}"]`); await wait(P, `[data-dua-pop="${key}"]`, 15000); await P.waitForTimeout(500); };
+const popOpen = (key) => async (P) => { await cardReady(P); await tabClick(P, `[data-dua-menu="${key}"]`); await wait(P, `[data-dua-pop="${key}"]`, 15000); await P.waitForTimeout(500); };
 const RASUL_CARD = "?g=rasul&open=1";
 const VIEWS = [
   { id: "opens", label: "The page as it opens (the Rasulullah list, page 1)", url: "", go: listReady },
@@ -261,7 +262,7 @@ const VIEWS = [
   { id: "pop-poster", label: "The 🖼 Poster", url: RASUL_CARD, go: popOpen("poster") },
   { id: "pop-share", label: "Copy / share", url: RASUL_CARD, go: popOpen("share") },
   { id: "hisn-card", label: "A Hisn al-Muslim card", url: "?g=occasions&part=wake&open=1", go: async (P) => { await wait(P, "[data-dua-hisn]", 25000); await P.waitForTimeout(500); } },
-  { id: "hisn-source", label: "A Hisn al-Muslim card: Source pop-up (holds the 'same dua in the Hadith books' tie)", url: "?g=occasions&part=wake&open=1", go: async (P) => { await wait(P, "[data-dua-hisn]", 25000); await openMenuIfClosed(P); await P.click('[data-dua-menu="source"]'); await wait(P, '[data-dua-pop="source"]', 10000); await P.waitForTimeout(400); } },
+  { id: "hisn-source", label: "A Hisn al-Muslim card: Source pop-up (holds the 'same dua in the Hadith books' tie)", url: "?g=occasions&part=wake&open=1", go: async (P) => { await wait(P, "[data-dua-hisn]", 25000); await openMenuIfClosed(P); await tabClick(P, '[data-dua-menu="source"]'); await wait(P, '[data-dua-pop="source"]', 10000); await P.waitForTimeout(400); } },
   { id: "hisn-tie", label: "The Hisn dhikr's tied Dua card opened", url: "?g=occasions&part=wake&open=1&tie=1671", go: cardReady },
   { id: "prophet-card", label: "A Prophets' card", url: "?g=prophets&open=1", go: async (P) => { await wait(P, "[data-dua-quran]", 25000); await P.waitForTimeout(500); } },
 ];
