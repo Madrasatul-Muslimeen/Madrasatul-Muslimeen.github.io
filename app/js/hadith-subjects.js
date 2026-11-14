@@ -337,7 +337,9 @@ export function renderSubjectEditor(box, onChange) {
       en.setAttribute("aria-label", t("English name"));
       const bn = el("input", "hadith-subject-edit-name");
       bn.type = "text"; bn.maxLength = 120; bn.value = sub.nameOverride?.bn || ""; bn.dataset.hadithSubjectEditBn = sub.id;
-      bn.placeholder = t("Bangla name (optional)"); bn.setAttribute("aria-label", t("Bangla name"));
+      // 107L: a shipped Subject's Bangla name is the placeholder (in Bangla only, where the catalogue is loaded), so an empty box
+      // does not look like "no Bangla name": it keeps showing the shipped one.
+      bn.placeholder = !sub.custom && !sub.nameOverride?.bn && t(sub.name) !== sub.name ? t(sub.name) : t("Bangla name (optional)"); bn.setAttribute("aria-label", t("Bangla name"));
       const save = button("hadith-subject-btn", t("Save name"));
       save.dataset.hadithSubjectEditSave = sub.id;
       save.addEventListener("click", () => { save.disabled = true; apply(() => renameSubject(builtins, data.meta, sub.id, { en: en.value, bn: bn.value }, ctxOf(session)), t("Name saved."), t("The name could not be saved. Check the connection and try again.")); });

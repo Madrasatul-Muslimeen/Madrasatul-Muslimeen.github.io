@@ -37,6 +37,7 @@ import { getActiveContext, getSelectedPersonId, effectiveRoles, scopedRoster } f
 import { langText } from "./lang.js";
 import { getAppLang } from "./prefs.js";
 import { buildUnitKey } from "./unit-keys.js";
+import { writePlan } from "./hadith-names-model.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
 import { getBookmarks, saveBookmark, removeSavedBookmark, findSavedBookmark } from "./bookmarks.js";
 import { notesForStudyUnit } from "./study-note-service.js";
@@ -396,6 +397,37 @@ export async function toggleDuaBookmark(session, number, name) {
 // ---------------------------------------------------------------------------
 
 export const HADITH_SUBJECTS_COLLECTION = "hadithSubjects";
+// ---------------------------------------------------------------------------
+// PCF MSA J106 S3 part 2 -- the madrasah's own names for the Hadith books and chapters, hadithNames/{tenantId}.
+// The Rules are a CANDIDATE (tests/firestore/hadith-names-v1.proposed.rules); hadith-names-switch.js keeps every caller
+// of the functions below OFF until the Owner has published them.
+// ---------------------------------------------------------------------------
+
+export const HADITH_NAMES_COLLECTION = "hadithNames";
+
+export async function getHadithNamesDoc(tenantId) {
+  const snap = await getDoc(doc(db, HADITH_NAMES_COLLECTION, tenantId));
+  return snap.exists() ? snap.data() : null;
+}
+
+/**
+ * Saves names. First write (no document yet): a create carrying `names`. After that: an update of only the names that
+ * changed (`names.<key>`), so two edits to different books never overwrite each other; updatedAt is stamped by the envelope
+ * (I17). I15: a failure reaches the user through safeWrite(); returns true only when saved.
+ */
+export async function saveHadithNames({ tenantId, names, keys = [], docExists, uid }) {
+  const res = await safeWrite(
+    () => {
+      const plan = writePlan({ tenantId, names, keys, docExists });
+      return plan.kind === "create"
+        ? createDocument(db, HADITH_NAMES_COLLECTION, tenantId, plan.data, uid)
+        : updateDocument(db, HADITH_NAMES_COLLECTION, tenantId, plan.data);
+    },
+    { action: "save the Hadith book names", collection: HADITH_NAMES_COLLECTION, docId: tenantId },
+  );
+  return !!res?.ok;
+}
+
 
 /**
  * Who is reading, for the Subject lists: null when signed out or with no madrasah chosen. `canManage` is the
