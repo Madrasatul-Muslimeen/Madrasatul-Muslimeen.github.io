@@ -453,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v15.00 on `main`** (14 Nov 2026 Sydney, shown as "v15.00-14.11.26". **The Owner's new layout, so a new line: v15.** One QR Lead PR, reviewed by measurement and merged pinned by the Architect 108L, plus the v14 archive and one Architect check fix. #1724 (QR Lead 47L): one bar above the wheel, gold Read | Take an Approach | Choose a Unit, navy Know Your Status | ⓘ Legend; the controls are moved into its panels, never copied, and the old row under the wheel is retired. `legacy-v14/` keeps v14.42 (bdd96952), linked beside v13 on every page. Checks: see the CHANGELOG entry.)
+**Current milestone: v15.01 on `main`** (14 Nov 2026 Sydney, shown as "v15.01-14.11.26". **One Hadith Lead PR, reviewed by measurement and merged pinned by the Architect 108L.** #1726 (PCF MSA J106 S3 part 2): the writer and editor for the madrasah's own Bangla names for the Hadith books and their chapters (`hadithNames/{tenantId}`), **switched OFF** (`HADITH_NAMES_PUBLISHED = false` in `app/js/hadith-names-switch.js`): nothing reads, shows or writes it until the Owner publishes the candidate Rules (`tests/firestore/hadith-names-v1.proposed.rules`, an Owner Control Gate); then the Architect merges the block into `firestore.rules` and flips the constant in one release. `firestore.rules` unchanged. Checks: see the CHANGELOG entry.)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

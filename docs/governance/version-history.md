@@ -1146,3 +1146,4 @@ total). Allocated by the MMSA Architect.
 14.41: Qur'anic duas in Dua groups, drag order (#1718). Allocated by the MMSA Architect.
 14.42: editable Hadith Subjects (#1720). Allocated by the MMSA Architect.
 15.00: the one wheel bar (#1724) and legacy-v14/. Allocated by the MMSA Architect.
+15.01: the Hadith book and chapter names writer, switched off (#1726). Allocated by the MMSA Architect.
