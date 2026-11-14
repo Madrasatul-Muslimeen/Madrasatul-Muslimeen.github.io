@@ -2671,6 +2671,24 @@
     padding: 0.3rem 0.5rem; cursor: pointer; line-height: 1.15;
   }
   .read-unit-chip[hidden] { display: none; }
+  /* The Owner, 15 Nov 2026: 📍 location on the Read bar (see the markup). 40px tall, the page number beside the pin; the list drops below it. */
+  .read-loc-wrap { flex: 0 0 auto; }
+  /* a phone keeps the bar at TWO lines from 360px (the 13 Nov rule): the pin goes icon-only and the unit chip steps down to two short lines */
+  @media (max-width: 899.98px) { .read-loc-page { display: none; } .read-loc-btn { padding: 0; width: 36px; min-width: 36px; } } /* tablet: the bar has ~43px to spare, so the pin is icon-only there too */
+  @media (max-width: 399.98px) {
+    body.read-bar-steps-in-menu #readBar :is(#prevAyahBtn, #nextAyahBtn) { width: 36px; min-width: 36px; padding-inline: 0; }
+    #readBar .read-unit-chip { max-width: 3.6rem; padding: 0.3rem 0.25rem; }
+    #readBar #readMeaningLayersSlot .ml-count { display: none; } /* Read on moved to the right group: the Show button gives up its count so row two still holds both */
+  }
+  .read-loc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem; min-width: 40px; height: 40px; box-sizing: border-box; padding: 0 0.5rem; margin: 0; border: 1px solid #c9d1e0; border-radius: 10px; background: #fff; color: #1F3A6E; font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+  .read-loc-btn[aria-expanded="true"] { background: #1F3A6E; color: #fff; }
+  .read-loc-btn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
+  .read-loc-palette { position: fixed; width: min(24rem, calc(100vw - 16px)); left: 8px; right: auto; transform: none; top: 8rem; text-align: left; z-index: 80; } /* fixed: stays on screen whatever the bar's line; top is set when it opens */
+  .read-loc-note { margin: 0 0 0.35rem; font-weight: 700; }
+  .read-loc-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.3rem; }
+  .read-loc-list button { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border: 1px solid #e3d6ab; border-radius: 999px; background: #f6f2e4; color: #1F3A6E; font: inherit; font-size: 0.8rem; cursor: pointer; overflow-wrap: anywhere; }
+  .read-loc-list button.is-active { background: #1F3A6E; border-color: #1F3A6E; color: #fff; font-weight: 600; }
+  .read-loc-list .read-loc-wide { grid-column: 1 / -1; }
   .read-unit-chip-text { display: block; overflow-wrap: break-word; word-break: break-word; }
   /* v08.31 -- the Phase 4 ✓ while evidence persistence is NOT ready (E1 closed).
      `aria-disabled`, NOT `disabled`, and the difference is the whole point: a
@@ -3153,7 +3171,9 @@
   /* The Owner, 13 Nov 2026 (picture demo): on a phone in Read on, ⏮ ◂ ▸ ⏭ live in the bar's ⋮ menu (the tiles show), not on the bar (two lines, not three). */
   .qm-sheet .qm-tile.qm-step-tile { display: none; }
   body.read-bar-steps-in-menu .qm-sheet .qm-tile.qm-step-tile { display: flex; }
-  body.read-bar-steps-in-menu #readBar :is(#prevUnitBtn, #prevAyahBtn, #nextAyahBtn, #nextUnitBtn) { display: none !important; }
+  .qm-sheet .qm-tile.qm-step-tile:is([data-qm-act="stepprevayah"], [data-qm-act="stepnextayah"]) { display: none !important; } /* ◂ ▸ stay on the bar (15 Nov 2026) */
+  /* The Owner, 15 Nov 2026 ("Add nav buttons"): ◂ ▸ (the previous / next āyah) stay on the bar; only ⏮ ⏭ go to the ⋮ menu. */
+  body.read-bar-steps-in-menu #readBar :is(#prevUnitBtn, #nextUnitBtn) { display: none !important; }
   #readQuickRow { display: none; gap: 0.4rem; flex: 0 0 auto; }
   #readQuickRow[hidden] { display: none !important; }
   body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow { display: flex; }
@@ -4484,7 +4504,26 @@
   .word-card-irab bdi[lang="ar"], .word-card-irab-head bdi[lang="ar"] { font-family: var(--quran-font); line-height: 1.5; }
   .word-card-learnnext .word-card-learnnext-ar { line-height: 1.5; }
   /* the Owner, 13 Nov 2026: the Arabic in the "Learn the Next Word" bar is 30% less than it was (than the Word Card's other small Arabic) */
-  .quran-word-card .word-card-learnnext .word-card-learnnext-ar { font-size: calc(var(--wc-small-ar) * 0.7); }
+  /* the Owner, 15 Nov 2026: the Arabic in the "Learn the Next Word" bar is 20% smaller again (0.7 -> 0.56 of the Word Card's other small Arabic) */
+  .quran-word-card .word-card-learnnext .word-card-learnnext-ar { font-size: calc(var(--wc-small-ar) * 0.56); }
+  /* the Owner, 15 Nov 2026 ("make all titles look similar, elegant, tiny but noticeable"): Word Progress, Mark the Word, the Bangla marking
+     title and Learn the Next Word share ONE title look: small capitals, spaced, in the card's muted heading colour, never bold-loud. */
+  .quran-word-card .word-progress-heading-phone, .quran-word-card .we-row > .we-label, .quran-word-card .bnk-row > .we-label, .quran-word-card .word-card-learnnext-title {
+    display: block; margin: 0 0 0.25rem; font-size: 0.66rem; font-weight: 700; line-height: 1.3; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--card-text-muted); opacity: 1;
+  }
+  .quran-word-card .word-card-learnnext-title { display: inline-block; margin: 0; color: inherit; opacity: 0.85; }
+  /* the Owner, 15 Nov 2026 ("Can you try to fit the 6 'Mark the Word' chips in one row?"): six equal columns on a phone (under 560px; a wider card keeps its roomier grid); the name wraps to two lines and
+     the small line under it shrinks, so a phone holds all six (measured at 320, 360 and 390px). */
+  @media (max-width: 559.98px) {
+    .quran-word-card .we-buttons { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.25rem; }
+    .quran-word-card .we-row .we-btn { padding: 0.2rem 0.1rem; font-size: 0.7rem; line-height: 1.15; min-height: 46px; overflow-wrap: normal; hyphens: none; }
+    .quran-word-card .we-row .we-btn .we-sub { font-size: 0.56rem; }
+  }
+  @media (max-width: 359.98px) { /* 320px: no word may break mid-word ("Alread|y" was measured), so the type gives a little */
+    .quran-word-card .we-row .we-btn { font-size: 0.6rem; padding: 0.2rem 0; letter-spacing: -0.01em; }
+    .quran-word-card .we-row .we-btn .we-sub { font-size: 0.48rem; letter-spacing: -0.02em; }
+  }
   /* J60 (the Owner: "For each meaning with its occurances, give it a distinctive look/ plate"): each meaning is a plate of
      its own -- its own face, a solid edge with a thick purple bar at its start, and a shadow -- so one meaning's places
      are never read as the next one's. Text stays --wc-purple-ink on --wc-purple-plate in both looks. */
@@ -6801,6 +6840,12 @@
                a long label wraps inside itself rather than pushing the rest
                of the row. -->
           <button type="button" id="readUnitChip" class="read-unit-chip" hidden><span class="read-unit-chip-text"></span></button>
+          <!-- The Owner, 15 Nov 2026 ("Add a location button, i.e. Page no, Sura, Ruku, Juz this Ayah / page belongs to"): 📍 and the page number on the
+               bar; it drops a small list of where the āyah being read sits (Āyah, Ruku', Page, Hizb, Juz, Surah), each a way to that unit's card. -->
+          <span class="bar-palette-wrap read-loc-wrap" data-bar-palette-wrap="readLoc">
+            <button type="button" id="readLocBtn" class="read-loc-btn bar-palette-toggle" data-bar-palette-toggle="readLoc" aria-haspopup="true" aria-expanded="false" aria-label="Where this āyah is" title="Where this āyah is"><span aria-hidden="true">📍</span><span class="read-loc-page" data-read-loc-page></span></button>
+            <div class="bar-palette read-loc-palette" data-bar-palette="readLoc"><p class="bar-palette-note read-loc-note" data-read-loc-title>Where this āyah is</p><div class="read-loc-list" data-read-loc-list></div></div>
+          </span>
           <!-- PCF MSA J82 parts 4-5 (the Owner, 23 Oct 2026): ‹ › one printed Mushaf page back / on, in the bar's empty space.
                Shown with the page reference (Mushaf view), in the full screen too; disabled at page 1 and 604. -->
           <button type="button" class="secondary qr-ico" id="mushafPagePrevBtn" aria-label="Previous page" title="Previous page" hidden>‹</button>
@@ -6833,10 +6878,11 @@
                switches sit in the bar's own empty space, not on a line of their own (renderMeaningFlow()). -->
           <!-- The Owner, 9 Nov 2026 (Demo 1 chosen): ONE Ayah view with a "Read on" switch instead of a separate Reading View.
                Read on = the Reading View's flow, from the āyah being read; off = back on the āyah reached. Hidden in the Mushaf. -->
-          <label id="readOnSwitch" class="read-on-switch"><input type="checkbox" id="readOnCheck"><span data-read-on-word>Read on</span></label>
           <div id="readMeaningLayersSlot" class="meaning-layers-bar" role="group" aria-label="Show" hidden></div>
           <span id="readBackSlot" class="read-back-slot" data-back-dock></span>
           <div id="readBarEnd" class="read-bar-end">
+            <!-- The Owner, 15 Nov 2026 ("move Read on beside the other buttons on the right"): the Read on switch is the first of the right-hand group. -->
+            <label id="readOnSwitch" class="read-on-switch"><input type="checkbox" id="readOnCheck"><span data-read-on-word>Read on</span></label>
             <!-- The Owner, 11 Nov 2026 (the empty gap beside Read on, circled on a phone): a quick 🔍 Search on the Read bar. The same search as the
                  banner's 🔍 (openHeadSearch(): Study options with the cursor in the search box, which takes "2:255" or a word). Hidden in the
                  bare full-screen state by the #readBarEnd rule, like every button that is not named there. -->
@@ -20417,7 +20463,7 @@
       // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
       const typed = content.querySelector("[data-word-card-search-input]");
       if (typed) wordCardSearch.value = typed.value;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: wordMarksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Mark the Word")), banglaHtml: banglaHtmlFor(word), banglaMarkHtml: banglaMarkHtmlFor(word), menuOpen: wordCardMenuOpen, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, marksHtml: wordMarksRowFor(`qword:${currentSurahData.surahNumber}:${ayah.ayah}:${word.position}`, currentSurahData.surahNumber, t("Mark the Word")), banglaHtml: banglaHtmlFor(word), banglaMarkHtml: banglaMarkHtmlFor(word), effortDetailsHtml: wordEffortDetailsFor(currentSurahData.surahNumber), menuOpen: wordCardMenuOpen, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, nounForms: nounFormsTable, nounFormsFailed, formTexts: nounFormTexts, nounBox: wordCardNounBox?.id === quranWordCardState.occurrenceId ? wordCardNounBox.key : null, depthOpen: wordCardDepthOpen, conjView: wordCardConjView, conjBasic: wordCardConjBasic === quranWordCardState.occurrenceId, formsOpen, meaningLang: getAppLang() === "bn" ? "bn" : "en", conjNarrow: window.matchMedia("(max-width: 640px)").matches, needsSource: needsSourceContext(word, currentSurahData.surahNumber), ...wordCardDictionaryContext(word), ...intermediateContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: true, translitScript: getTransliterationScript(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       wireMarksRow(content, onMarkToggle); // PCF MSA J03 K2
       wireWordMarksRow(content, onWordMarkTap); // MSA · QR J136
       wireBanglaFor(content); // PCF MSA J119
@@ -24285,6 +24331,40 @@
         "Inside" chip both carry it forward unchanged (spec: the ladder
         follows the reader, not the unit currently on screen). Closes
         whichever of the other two shared-mount cards is open first. */
+    /** The Owner, 15 Nov 2026: the Read bar's 📍 -- the printed page number on the button, and (on a tap) where the āyah being read sits: Āyah, Ruku', Page,
+        Hizb, Juz, Surah, the same ladder the Āyah card carries; each rung opens that unit's card (the card has its own way back). Read on first use (I9). */
+    function updateReadLocLabel() {
+      const el = document.querySelector("[data-read-loc-page]");
+      if (!el) return;
+      const pg = currentSurahData?.ayahs?.find((x) => x.ayah === currentAyahNum)?.page ?? null;
+      el.textContent = pg ? num(pg) : "";
+    }
+    async function renderReadLocList() {
+      const list = document.querySelector("[data-read-loc-list]");
+      if (!list) return;
+      list.innerHTML = `<p class="bar-palette-note read-loc-wide">${escapeHtml(t("Loading…"))}</p>`;
+      let rungs = [];
+      try {
+        const tables = await unitCardBoundaryTables();
+        rungs = ladderRungsForAyah(currentSurahNum, currentAyahNum, { ...tables, ayahRecordAyah: currentRecordAyah(), ayahLabel: ayahLabelFor(currentSurahNum, currentAyahNum, currentHalf()) });
+      } catch (error) { reportWriteFailure(error, { what: "find where this āyah is" }); } // I15
+      const surahLine = `${surahName(currentSurahNum, surahIndex.find((x) => x.surahNumber === currentSurahNum)?.nameEnglish)} ${num(currentSurahNum)}:${ayahLabelFor(currentSurahNum, currentAyahNum, currentHalf())}`;
+      list.innerHTML = rungs.map((r) => `<button type="button" class="${r.active ? "is-active " : ""}${r.unitType === "surah" || r.unitType === "ayah" ? "read-loc-wide" : ""}" data-read-loc-unit="${escapeHtml(r.unitKey)}">${escapeHtml(r.unitType === "ayah" ? surahLine : r.label)}</button>`).join("");
+    }
+    document.getElementById("readLocBtn")?.addEventListener("click", () => {
+      if (document.getElementById("readLocBtn").getAttribute("aria-expanded") === "true") return;
+      const pal = document.querySelector('[data-bar-palette="readLoc"]');
+      if (pal) pal.style.top = `${Math.round(document.getElementById("readBar").getBoundingClientRect().bottom + 6)}px`;
+      renderReadLocList();
+    });
+    document.querySelector("[data-read-loc-list]")?.addEventListener("click", (event) => {
+      const b = event.target.closest("[data-read-loc-unit]");
+      if (!b) return;
+      closeAllBarPalettes(null);
+      const key = b.dataset.readLocUnit, { unitType } = parseUnitKey(key);
+      if (unitType === "ayah") openAyahActionSheet(`${currentSurahNum}:${currentAyahNum}`);
+      else openUnitCard(key, { surah: currentSurahNum, ayah: currentAyahNum });
+    });
     function openUnitCard(unitKey, openedFromAyah = null) {
       closeAyahActionSheet();
       closePageApproachCard();
@@ -24519,8 +24599,15 @@
       ensureSurahMarks(surah);
       if (!marksReadyFor(surah)) return "";
       const lang = marksLang();
+      return wordMarksRowHtml({ unitKey, keys: marksStore.mine[unitKey] ?? [], effort: marksStore.mineEffort[unitKey] ?? null, lang, heading, busy: marksBusy.has(unitKey), note: wordEffortNote.unitKey === unitKey ? wordEffortNote.text : "", detailsHtml: "" });
+    }
+    /** The Owner, 15 Nov 2026: "Move the 'how hard' line below Bangla Marking." The "How hard was it, in this sūrah" table is no longer inside the
+        Mark the Word row; the Word Card draws it after the Bangla marking (context.effortDetailsHtml). */
+    function wordEffortDetailsFor(surah) {
+      if (!marksCtx() || !marksReadyFor(surah)) return "";
+      const lang = marksLang();
       const detailsHtml = `<details class="we-details" data-word-effort-details><summary>${escapeHtml(t("How hard was it, in this sūrah"))}</summary>${effortTableHtml(wordEffortTally(surah), { lang, scopeLabel: "", countLabel: t("Count"), degreeLabel: t("Degree"), ofWords: t("of {n} words") })}</details>`;
-      return wordMarksRowHtml({ unitKey, keys: marksStore.mine[unitKey] ?? [], effort: marksStore.mineEffort[unitKey] ?? null, lang, heading, busy: marksBusy.has(unitKey), note: wordEffortNote.unitKey === unitKey ? wordEffortNote.text : "", detailsHtml });
+      return detailsHtml;
     }
     async function onWordMarkTap(unitKey, markId) {
       const c = marksCtx();
@@ -27273,6 +27360,7 @@
         readUnitChip.setAttribute("aria-label", t("Open {unit}", { unit: unitInfo.label }));
         readUnitChip.title = unitInfo.label;
       }
+      updateReadLocLabel();
 
       // 30 Aug 2026 round -- "place a button on both READ and NOTE VIEW"
       // (may be placing it with the copy/share button). Owner/prime only --
