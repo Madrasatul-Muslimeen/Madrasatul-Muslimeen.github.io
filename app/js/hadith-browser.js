@@ -294,7 +294,7 @@ function controls(state, render) {
 /** PCF MSA J106: the four Subjects (the Owner's names and order, 14 Nov 2026). Each becomes a list of hadith the Owner files (answer 3A). */
 export const HADITH_SUBJECTS = [
   { id: "akhlaq", name: "Learning Akhlaq", about: "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself." },
-  { id: "rasulullah", name: "Loving Rasulullah", about: "Learning to love Rasulullah Sallallahu A'laihi Wa Sallam, through the hadith of his character and his ways (Shamayyl Muhammadiya)." },
+  { id: "rasulullah", name: "Loving Rasulullah Sallallahu A'laihi Wa Sallam", about: "Learning to love Rasulullah Sallallahu A'laihi Wa Sallam, through the hadith of his character and his ways (Shamayyl Muhammadiya)." },
   { id: "ghayb", name: "Knowing Al-Ghayb", about: "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows." },
   { id: "stories", name: "Learning Stories from Hadith", about: "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them." },
 ];

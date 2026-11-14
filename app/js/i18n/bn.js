@@ -4733,7 +4733,7 @@ export const BN = {
   "Dua ↗": "দুআ ↗", // ? (a link to the Dua module's own page, from Hadith Study's Menu)
   "· Preview": "· পূর্বরূপ", // ? (the cue on the Menu button while a "View as" preview is on)
   "Learning Akhlaq": "আখলাক শেখা", // ?
-  "Loving Rasulullah": "রাসূলুল্লাহ ﷺ-কে ভালোবাসা", // ? (PCF MSA J106 S2: the Subject for the Shamayyl Muhammadiya card; Bangla proposed, the Owner corrects)
+  "Loving Rasulullah Sallallahu A'laihi Wa Sallam": "রাসূলুল্লাহ ﷺ-কে ভালোবাসা", // ? (PCF MSA J106 S2: the Subject for the Shamayyl Muhammadiya card; Bangla proposed, the Owner corrects)
   "Knowing Al-Ghayb": "আল-গায়ব জানা", // ?
   "Stories from Hadith": "হাদীসের কাহিনি", // ?
   "Learning Stories from Hadith": "হাদীসের কাহিনি থেকে শিক্ষা", // the Owner renamed the Subject (14 Nov 2026); Bangla proposed, the Owner corrects

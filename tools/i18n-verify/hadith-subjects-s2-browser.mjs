@@ -15,7 +15,7 @@ import { chromium, newContext, openPage } from "./harness.mjs";
 const MUT = {
   nostrip: ["js/hadith-browser.js", "  mountContinueStrip(box);\n", "\n"],
   nopark: ["js/hadith-continue-mount.js", "if (strip && strip.isConnected) ensureHolder().appendChild(strip);", "void 0;"],
-  threeonly: ["js/hadith-browser.js", "  { id: \"rasulullah\", name: \"Loving Rasulullah\"", "  { id: \"rasulullah-off\", name: \"Loving Rasulullah\""],
+  threeonly: ["js/hadith-browser.js", "  { id: \"rasulullah\", name: \"Loving Rasulullah Sallallahu A'laihi Wa Sallam\"", "  { id: \"rasulullah-off\", name: \"Loving Rasulullah\""],
   wrongorder: ["js/hadith-browser.js", "export const HADITH_SUBJECTS = [\n", "export const HADITH_SUBJECTS = [\n  { id: \"stories\", name: \"Learning Stories from Hadith\", about: \"x\" },\n"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -62,7 +62,7 @@ for (const [lang, width] of [["en", 390], ["bn", 320], ["en", 1280]]) {
   await P.click('#hadithMenu-subjects [data-hadith-subject-pick="rasulullah"]');
   await P.waitForSelector('[data-hadith-subject="rasulullah"]', { timeout: 10000 }).catch(() => {});
   const top = await P.evaluate(() => { const box = document.querySelector('[data-hadith-subject="rasulullah"]'); const s = box?.firstElementChild; const r = s?.getBoundingClientRect(); return { first: s?.id, text: s?.innerText.slice(0, 60), shown: !!r && r.width > 0 && r.height > 0, h2: box?.querySelector("h2")?.textContent, one: document.querySelectorAll("#continueStrip").length }; });
-  check(`${tag} Loving Rasulullah opens as a Subject`, !!top.h2, JSON.stringify(top));
+  check(`${tag} Loving Rasulullah Sallallahu A'laihi Wa Sallam opens as a Subject (the Owner's rule saw128: the full salaam after the name, in English)`, !!top.h2 && (lang !== "en" || top.h2 === "Loving Rasulullah Sallallahu A'laihi Wa Sallam"), JSON.stringify(top));
   check(`${tag} the Continue chips are the FIRST thing in Subjects, shown, and it is the same single #continueStrip`, top.first === "continueStrip" && top.shown && top.one === 1 && /Continue|চালিয়ে/.test(top.text || ""), JSON.stringify(top));
   // Leaving Subjects: the strip is parked IN the page, not lost.
   await P.click('button[data-hadith-tab="explore"]');
