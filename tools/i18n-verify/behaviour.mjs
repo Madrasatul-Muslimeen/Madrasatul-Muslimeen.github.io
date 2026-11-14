@@ -5062,7 +5062,10 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
     // heading line beside "Mastery Wheel", and the row under the wheel holds
     // the three action buttons. Still asserted: the title is on screen with
     // its text, and the action row is shown, from first paint.
-    capsuleShown: !document.getElementById("wheelIntroSettled").hidden
+    // UPDATED IN PLACE, 14 Nov 2026 (v15.00, the Owner's one wheel bar, #1724; Architect 108L): the old action row
+    // under the wheel (#wheelIntroSettled) is retired, hidden on purpose; its buttons are the bar above the wheel
+    // (#wheelBar). Still asserted: the title capsule with its text, and the action row (now the bar) on screen.
+    capsuleShown: (() => { const b = document.getElementById("wheelBar"); return !!b && !b.hidden && b.getBoundingClientRect().width > 0; })()
                   && document.getElementById("approachListCapsule")?.getBoundingClientRect().width > 0
                   && document.getElementById("approachListCapsule")?.textContent.trim() === "Quran Approaches - 40 Ways", // v08.112: the Owner renamed it ("40 ways should reflect Everywhere"); updated in place
   }));
@@ -5075,7 +5078,7 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
     ctaHidden: getComputedStyle(document.getElementById("wheelCtaBtn")).display === "none",
     hubVisible: getComputedStyle(document.getElementById("wheelHubPickers")).display !== "none" && !document.getElementById("wheelHubUnitLabel").hidden,
     veiled: document.getElementById("wheelStageWrap").classList.contains("wheel-veiled"),
-    capsuleShown: !document.getElementById("wheelIntroSettled").hidden,
+    capsuleShown: (() => { const b = document.getElementById("wheelBar"); return !!b && !b.hidden && b.getBoundingClientRect().width > 0; })(), // v15.00: the bar, not the retired row (see 43a)
   }));
   check("43b tapping it hides the button and lifts the veil -- one time, no way back -- with the capsule still in place",
         after.ctaHidden && after.hubVisible && !after.veiled && after.capsuleShown, JSON.stringify(after));
