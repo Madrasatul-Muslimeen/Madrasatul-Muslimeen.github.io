@@ -168,11 +168,12 @@ check("files no rule touches are copied exactly (only the expected files differ)
 });
 // 38 -> 34 (25 Oct 2026, the Owner: "Range is missing here"): QR's four Range-bookmark edits (#4a-#4d, QR J03) moved
 // into app/quranrevival.html itself, so MSA offers Range too and QR no longer needs to edit it in.
-check("every one of QR's edits is in the built file (and there are 35)", () => {
+// 35 -> 36 (15 Nov 2026, v15.02, J120): app/js/sw-register.js#1 keeps MSA's front-door worker registration out of QR's build.
+check("every one of QR's edits is in the built file (and there are 36)", () => {
   const edits = JSON.parse(read(SRC, qs.edits));
   const missing = edits.filter((e) => !read(qrPre, e.file).includes(e.to));
   if (missing.length) throw new Error(missing.map((e) => e.id).join(", "));
-  return edits.length === 35;
+  return edits.length === 36;
 });
 check("every one of QR's own files is in the built app byte for byte (the Asma app, the front page, the fonts)", () => {
   const own = listFiles(path.join(SRC, qs.overlay), ["app", "index.html", "404.html", ".nojekyll"]);
