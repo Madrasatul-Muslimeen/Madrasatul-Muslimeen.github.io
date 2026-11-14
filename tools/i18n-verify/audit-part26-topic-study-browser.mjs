@@ -87,7 +87,10 @@ async function open(lang, width, m, query, extra) {
     if (n !== 1) throw new Error(`mutation anchor for ${MUTATE} found ${n} times`);
     await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".html") ? "text/html; charset=utf-8" : "text/javascript; charset=utf-8", body: body.split(from).join(to) }));
   }
-  const { page, errors } = await openPage(ctx, m.page + (query || ""));
+  // Updated in place 14 Nov 2026 (PCF MSA J106 S2): hadith-study.html hides the SHARED card list by default (the Owner removed the cards);
+  // this suite tests the shared tree, so the Hadith row opens it with the page's unlinked ?topicTree=1 switch (off by default, proven by hadith-topic-surface-browser).
+  const treeQ = m.id === "hadith" ? (query ? `${query}&topicTree=1` : "?topicTree=1") : (query || "");
+  const { page, errors } = await openPage(ctx, m.page + treeQ);
   await page.waitForTimeout(800);
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
   return { ctx, page, errors };

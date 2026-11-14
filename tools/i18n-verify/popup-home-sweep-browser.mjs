@@ -84,7 +84,7 @@ for (const lang of ["en", "bn"]) {
   for (const m of TOPICS) {
     const tag = `[${lang} 1440 ${m.id}]`;
     const ctx = await ctxFor(lang, 1440, { seed: seedOf(m) });
-    const { page: P } = await openPage(ctx, `/app/${m.page}`);
+    const { page: P } = await openPage(ctx, `/app/${m.page}${m.id === "hadith" ? "?topicTree=1" : ""}`); // J106 S2: the shared card list is hidden on the Hadith page by default; this suite tests the shared tree
     await clean(P);
     try {
       await openTopicTrack(P);
@@ -158,6 +158,9 @@ for (const lang of ["en", "bn"]) {
     let F = null;
     for (let i = 0; i < 80 && !F; i++) { F = P.frames().find((x) => x.url().includes("/app/hadith-study.html") && /inWindow=1/.test(x.url())) || null; if (!F) await P.waitForTimeout(100); }
     check(`${tag} POSITIVE CONTROL: Hadith opens in the page window`, !!F);
+    // J106 S2: the window loads the page as the menu links it (no switch), so show the shared card list the way ?topicTree=1 does.
+    await F.waitForSelector("#app", { state: "attached", timeout: 20000 });
+    await F.evaluate(() => document.getElementById("app").classList.remove("hadith-tree-off"));
     await openTopicTrack(F);
     const s = await F.evaluate(() => { const r = document.getElementById("wayModalMount").getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), vw: innerWidth, vh: innerHeight }; });
     check(`${tag} Track fills the window's frame (the home size there)`, s.x === 0 && s.y === 0 && Math.abs(s.w - s.vw) <= 1 && Math.abs(s.h - s.vh) <= 1, JSON.stringify(s));
@@ -169,7 +172,7 @@ for (const lang of ["en", "bn"]) {
 for (const lang of ["en", "bn"]) {
   const tag = `[${lang} 390 hadith]`;
   const ctx = await ctxFor(lang, 390, { seed: seedOf(TOPICS[0]) });
-  const { page: P } = await openPage(ctx, "/app/hadith-study.html");
+  const { page: P } = await openPage(ctx, "/app/hadith-study.html?topicTree=1"); // J106 S2: see above
   await clean(P);
   try {
     await openTopicTrack(P);
