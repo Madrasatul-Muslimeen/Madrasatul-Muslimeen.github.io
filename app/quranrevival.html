@@ -672,6 +672,34 @@
        Measured before and after -- see the round's own numbers. */
     text-align: center; margin: 0; max-width: 100%;
   }
+  /* v15.00 -- the wheel bar (see the markup's comment). Gold group = doing, navy group = knowing. A phone shows icon over a
+     two-line word, all five in one row; a tablet or computer shows the icon beside the word. Every tap target is >= 40px. */
+  #wheelIntroSettled[hidden], #wheelDrawerPanels[hidden], #wheelKindTitleSlot:empty { display: none; }
+  .wheel-bar { display: flex; flex-direction: column; gap: 0.4rem; align-self: stretch; box-sizing: border-box; margin: 0 0 0.4rem; min-width: 0; }
+  .wheel-bar-groups { display: flex; gap: 0.5rem; justify-content: center; align-items: stretch; min-width: 0; }
+  .wheel-bar-group { display: flex; gap: 2px; padding: 3px; border-radius: 14px; min-width: 0; box-shadow: 0 6px 16px -10px rgba(0,0,0,0.6); }
+  .wheel-bar-g1 { background: var(--card-button-bg); flex: 3 1 0; }
+  .wheel-bar-g2 { background: #1d3557; flex: 2 1 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.28), 0 6px 16px -10px rgba(0,0,0,0.6); }
+  .wheel-bar-btn { flex: 1 1 0; min-width: 0; min-height: 44px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    padding: 0.25rem 0.2rem; border: 0; border-radius: 11px; background: transparent; color: var(--card-button-text); font: 800 0.66rem/1.12 'Inter', sans-serif; text-align: center; cursor: pointer; }
+  .wheel-bar-g2 .wheel-bar-btn { color: #fff; }
+  .wheel-bar-btn svg { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; }
+  .wheel-bar-word { display: block; min-width: 0; overflow-wrap: anywhere; }
+  .wheel-bar-icon { flex: 0 0 2.75rem; }
+  .wheel-bar-btn[aria-expanded="true"] { background: rgba(255,255,255,0.28); box-shadow: inset 0 0 0 1.5px currentColor; }
+  .wheel-bar-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }
+  .wheel-bar-panels { min-width: 0; }
+  .wheel-bar-panel { border: 1px solid var(--card-line); border-radius: 12px; padding: 0.5rem; background: #14233a; color: #f4ecd8; display: flex; flex-direction: column; gap: 0.45rem; min-width: 0; }
+  .wheel-bar-panel[hidden] { display: none; }
+  .wheel-bar-panel .wheel-kind-row, .wheel-bar-panel #wheelKindSwitch { margin: 0; padding: 0; border: 0; }
+  .wheel-bar-panel .wheel-unit-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+  .wheel-bar-panel .wheel-unit-row select { flex: 1 1 8rem; min-width: 0; }
+  .wheel-bar-panel .wheel-unit-go { display: flex; gap: 0.4rem; }
+  .wheel-bar-status-card { align-self: flex-start; }
+  @media (min-width: 581px) {
+    .wheel-bar-btn { flex-direction: row; gap: 0.4rem; font-size: 0.8rem; padding: 0.3rem 0.5rem; }
+    .wheel-bar-btn svg { width: 1.25rem; height: 1.25rem; }
+  }
   .wheel-intro-capsule {
     display: inline-block; max-width: 100%;
     background: var(--card-button-bg); color: var(--card-button-text);
@@ -6279,6 +6307,29 @@
              row while the landing page could not scroll) is gone: the page
              scrolls on a phone now, so "My Status" joins the other two in one
              stack of equal capsules (#myStatusWideBtn, every width). -->
+        <!-- v15.00 (the Owner, 14 Nov 2026, "one bar above the wheel, below the 40 Ways text"): every wheel button in ONE bar, two groups.
+             Gold: Read (straight to the Mushaf) | Take an Approach | Choose a Unit.  Navy: Know Your Status | (i) Legend.
+             "Choose a Unit" lives here ONLY (it is no longer inside Take an Approach). The panels below the bar hold the ORIGINAL
+             controls, moved by script (wireWheelBar) -- never copies -- so every listener, id and saved choice is unchanged.
+             The old bottom buttons (#wheelIntroSettled) and the Wheel / Legend / Unit drawers are retired from sight, still wired. -->
+        <div id="wheelBar" class="wheel-bar" role="toolbar" aria-label="Wheel actions">
+          <div class="wheel-bar-groups">
+            <div class="wheel-bar-group wheel-bar-g1">
+              <button type="button" id="wbRead" class="wheel-bar-btn" data-wb="read"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.4 5.3 8.2 4.7 5 4.7v12.6c3.2 0 5.4.6 7 1.8 1.6-1.2 3.8-1.8 7-1.8V4.7c-3.2 0-5.4.6-7 1.8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="wheel-bar-word">Read</span></button>
+              <button type="button" id="wbApproach" class="wheel-bar-btn" data-wb="approach"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg><span class="wheel-bar-word">Take an Approach</span></button>
+              <button type="button" id="wbUnit" class="wheel-bar-btn" data-wb="unit" data-wb-panel-btn aria-expanded="false" aria-controls="wbPanelUnit"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.6" fill="currentColor"/></svg><span class="wheel-bar-word">Choose a Unit</span></button>
+            </div>
+            <div class="wheel-bar-group wheel-bar-g2">
+              <button type="button" id="wbStatus" class="wheel-bar-btn" data-wb="status" data-wb-panel-btn aria-expanded="false" aria-controls="wbPanelStatus"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V10M10 19V5M16 19v-7M21 19H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="wheel-bar-word">Know Your Status</span></button>
+              <button type="button" id="wbLegend" class="wheel-bar-btn wheel-bar-icon" data-wb="legend" data-wb-panel-btn aria-expanded="false" aria-controls="wbPanelLegend" aria-label="Legend" title="Legend"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v5.5M12 7.6v.1" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+            </div>
+          </div>
+          <div id="wheelBarPanels" class="wheel-bar-panels">
+            <div id="wbPanelUnit" class="wheel-bar-panel" data-wb-panel="unit" hidden></div>
+            <div id="wbPanelStatus" class="wheel-bar-panel" data-wb-panel="status" hidden></div>
+            <div id="wbPanelLegend" class="wheel-bar-panel" data-wb-panel="legend" hidden></div>
+          </div>
+        </div>
         <div id="wheelSection" class="wheel-box">
         <div class="wheel-col">
           <!-- The wheel's own one-time intro: a plain invitation over the
@@ -6477,7 +6528,7 @@
           <!-- Owner decision 46 -- the three ACTION buttons, one row under
                the wheel and above its colour key, at every width: Read |
                Choose a Unit | Know Your Status. -->
-          <div id="wheelIntroSettled" class="wheel-intro-settled">
+          <div id="wheelIntroSettled" class="wheel-intro-settled" hidden>
             <button type="button" id="readContentsBtn" class="wheel-intro-capsule wheel-unit-capsule" aria-haspopup="dialog">
               <span class="wheel-unit-capsule-word">Read</span>
             </button>
@@ -6546,7 +6597,7 @@
                Legend | Unit. The choices open ABOVE the drawer row (between it
                and the Read bar); one at a time; closed on every load. The
                elements inside are the original ones, moved -- not copies. -->
-          <div id="wheelDrawerPanels" class="wheel-drawer-panels">
+          <div id="wheelDrawerPanels" class="wheel-drawer-panels" hidden>
           <div class="wheel-drawer-panel" data-wheel-drawer-panel="wheel" hidden>
           <!-- 27 Sep 2026, owner: "Enable an option for the user to choose the
                wheel dark greyed (as it is now) at the background or light
@@ -6584,9 +6635,6 @@
           </div>
           </div>
           <div id="wheelDrawerRow" class="wheel-drawer-row">
-            <button type="button" class="wheel-drawer-btn" data-wheel-drawer="wheel" aria-expanded="false"><span>Wheel</span><span class="wheel-drawer-caret" aria-hidden="true">&#9652;</span></button>
-            <button type="button" class="wheel-drawer-btn" data-wheel-drawer="legend" aria-expanded="false"><span>Legend</span><span class="wheel-drawer-caret" aria-hidden="true">&#9652;</span></button>
-            <button type="button" class="wheel-drawer-btn" data-wheel-drawer="unit" aria-expanded="false"><span>Unit</span><span class="wheel-drawer-caret" aria-hidden="true">&#9652;</span></button>
             <!-- The Owner, 15 Oct 2026 (PCF J25, photo): the 🧰 moves here, at the row's right end, instead of
                  floating over the "Mapping My Journey" tab. zab-bar.js fills it on a phone when Zab is on. -->
             <span class="wheel-zab-dock" data-zab-dock></span>
@@ -11449,19 +11497,39 @@
       wheelStageWrapEl?.classList.toggle("wheel-vocab", wheelKind === "vocab");
     }
     {
-      // Where the switch costs the wheel nothing: on a computer (the Wheel window, >= 900px) in the window's title bar;
-      // on a phone or tablet at the top of the "Wheel" drawer (measured: a row of its own above the wheel made the wheel
-      // 4-22% smaller there, 209 -> 162px at 320 wide, because the wheel is fitted to the first screen).
-      const slot = document.getElementById("wheelKindTitleSlot");
-      const drawer = document.querySelector('[data-wheel-drawer-panel="wheel"]');
-      const wide = window.matchMedia("(min-width: 900px)");
-      const place = () => {
-        if (!wheelKindRowEl || !slot || !drawer) return;
-        if (wide.matches) { if (wheelKindRowEl.parentElement !== slot) slot.appendChild(wheelKindRowEl); }
-        else if (drawer.firstElementChild !== wheelKindRowEl) drawer.prepend(wheelKindRowEl);
-      };
-      place();
-      wide.addEventListener("change", place);
+      // v15.00: the switch lives in the wheel bar's "Know Your Status" panel at every width (it used to sit in the Wheel
+      // window's title bar on a computer and in the Wheel drawer elsewhere). Moved, never copied: ids and listeners stay.
+      const bar = document.getElementById("wheelBar");
+      const unitP = document.getElementById("wbPanelUnit"), statusP = document.getElementById("wbPanelStatus"), legendP = document.getElementById("wbPanelLegend");
+      if (bar && unitP && statusP && legendP && wheelKindRowEl) {
+        // Choose a Unit: what the wheel shows, then the unit pickers (the old capsule's own rows).
+        unitP.append(document.getElementById("wheelShowSwitch"));
+        const oldPalette = document.querySelector('[data-bar-palette="wheelUnit"]');
+        if (oldPalette) [...oldPalette.children].forEach((c) => unitP.append(c));
+        // Know Your Status: which wheel, how it looks, and the full status card.
+        statusP.append(wheelKindRowEl, document.getElementById("wheelLookSwitch"));
+        const card = document.createElement("button");
+        card.type = "button"; card.id = "wbStatusCardBtn"; card.className = "wheel-look-btn wheel-bar-status-card";
+        card.textContent = t("Open my full status");
+        card.addEventListener("click", () => openMyStatus());
+        statusP.append(card);
+        legendP.append(document.getElementById("wheelLegendContainer"));
+        const panelBtns = [...bar.querySelectorAll("[data-wb-panel-btn]")];
+        const panels = [...bar.querySelectorAll("[data-wb-panel]")];
+        const setPanel = (name) => {
+          panelBtns.forEach((b) => b.setAttribute("aria-expanded", String(b.dataset.wb === name)));
+          panels.forEach((pn) => { pn.hidden = pn.dataset.wbPanel !== name; });
+          requestAnimationFrame(() => { try { fitLandingFirstScreen(); layoutWheelHub(); } catch { /* not ready */ } });
+        };
+        panelBtns.forEach((b) => b.addEventListener("click", () => setPanel(b.getAttribute("aria-expanded") === "true" ? "" : b.dataset.wb)));
+        document.getElementById("wbRead")?.addEventListener("click", () => { setPanel(""); mushafToggle.checked = true; mushafToggle.dispatchEvent(new Event("change")); openReadingScreen(); });
+        document.getElementById("wbApproach")?.addEventListener("click", () => {
+          setPanel("");
+          if (wheelKind !== "approaches") { wheelKind = "approaches"; renderWheel(); requestAnimationFrame(fitApproachWheelToWindow); } // taking an Approach means the Approaches wheel
+          if (wheelStageWrapEl.classList.contains("wheel-veiled")) wheelCtaBtn.click();
+          document.getElementById("wheelStageWrap")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        });
+      }
     }
     wheelKindRowEl?.addEventListener("click", (e) => {
       const kind = e.target.closest("[data-wheel-kind]")?.dataset.wheelKind;
@@ -11999,10 +12067,6 @@
         const on = mq.matches;
         if (on) {
           document.querySelectorAll("#wheelDrawerRow [data-wheel-drawer], [data-tablet-home='drawer']").forEach((b) => { b.dataset.tabletHome = "drawer"; move(b, "tl"); });
-          move(document.getElementById("wheelDrawerPanels"), "tl");
-          move(document.getElementById("readContentsBtn"), "tr");
-          move(document.querySelector('[data-bar-palette-wrap="wheelUnit"]'), "bl");
-          move(document.getElementById("myStatusWideBtn"), "br");
           for (const k of ["tl", "tr", "bl", "br"]) if (corners[k] && corners[k].parentElement !== wrap) wrap.append(corners[k]);
         } else {
           for (const [el, ph] of homes) ph.replaceWith(el);
