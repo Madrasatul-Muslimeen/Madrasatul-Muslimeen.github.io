@@ -1359,9 +1359,10 @@ if (want("hadith")) {
       const nl = await page.evaluate(() => { const a = document.querySelector('[data-hadeethenc-note-link="4563"]'); return { text: a?.textContent.trim(), href: a?.getAttribute("href") }; });
       check(`[${tag}] Hadith "Studied" and notes: 📝 My Notes links the hadith to its notes (the Manual's label: "📝 My Notes"; the page says "${nl.text}")`, /My Notes/.test(nl.text || "") && /unit=hadith:hadeethenc:4563|unit=hadith%3Ahadeethenc%3A4563/.test(nl.href || ""), JSON.stringify(nl));
       await page.click('[data-hadith-tab="books"]'); // J106 round 1: from the Encyclopedia, Hadith Books goes to the shelf
-      await page.waitForSelector("#openitiSection .openiti-study-soon", { timeout: 25000 });
+      // Updated in place 14 Nov 2026 (PCF MSA J106 S1, the Owner's tick 1B): the grey "not enabled here yet" note is gone from the shelf.
+      await page.waitForSelector("#openitiSection .openiti-body", { timeout: 25000 }); // positive control: the shelf is drawn
       const soon = await page.evaluate(() => document.querySelector("#openitiSection .openiti-study-soon")?.textContent ?? "");
-      check(`[${tag}] Hadith "Studied" and notes: the OpenITI Arabic books say "not enabled here yet"`, /not enabled here yet/.test(soon), soon.slice(0, 120));
+      check(`[${tag}] Hadith "Studied" and notes: the OpenITI Arabic books no longer carry the "not enabled here yet" note (the Owner removed it)`, soon === "", soon.slice(0, 120));
       check(`[${tag}] Hadith "Studied" and notes: no page error`, quiet(errors).length === 0, JSON.stringify(quiet(errors)));
       await ctx.close();
     } catch (e) { crash(e); }
