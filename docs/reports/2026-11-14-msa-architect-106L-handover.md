@@ -58,4 +58,10 @@ Hadith Lead = 14L `session_01PL2xbNbDNZXULwY3eGdqPD` (writing its own handover).
 - **Test a Lead PR in a worktree** (`git worktree add /tmp/claude-0/wtNNNN pr<N>`, merge origin/main, symlink node_modules, run
   serve.js there) so the main checkout can stay on a release branch.
 
-## RESULTS (filled at handover if the run finished)
+## RESULTS
+106L, on #1720 head **7bbba554** merged with main v14.41 (worktree /tmp/claude-0/wt1720, gone with this container):
+hadith-subjects-s3 **45/0**, hadith-subjects 58/0, hadith-subjects-s2 21/0, hadith-menu-bar 188/0, hadith-topic-surface 21/0,
+popup-home-sweep 44/0, audit-part26 840/0, bn-duplicate-keys 6/0, stub-parity 4/0, rules-authorisation-executable 128/0,
+emulator (extract and firestore.rules) ok. **STILL TO DO by 107L:** hadith-subjects-s3 `--prove` (the Lead reports 9/9; check
+every anchor occurs once and each run ends on a real FAIL line), the rules mutate.sh (14/14 reported), a look at the editor at
+360 en / 390 bn / 1280, then merge pinned to the head you tested and release v14.42.
