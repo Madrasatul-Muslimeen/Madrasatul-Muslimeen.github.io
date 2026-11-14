@@ -4516,11 +4516,13 @@
   /* the Owner, 15 Nov 2026 ("Can you try to fit the 6 'Mark the Word' chips in one row?"): six equal columns on a phone (under 560px; a wider card keeps its roomier grid); the name wraps to two lines and
      the small line under it shrinks, so a phone holds all six (measured at 320, 360 and 390px). */
   @media (max-width: 559.98px) {
-    .quran-word-card .we-buttons { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.25rem; }
+    .quran-word-card .we-buttons { grid-template-columns: repeat(auto-fit, minmax(3rem, 1fr)); gap: 0.25rem; } /* rem: with enlarged text the six fall to two rows of three instead of being cut */
     .quran-word-card .we-row .we-btn { padding: 0.2rem 0.1rem; font-size: 0.7rem; line-height: 1.15; min-height: 46px; overflow-wrap: normal; hyphens: none; }
     .quran-word-card .we-row .we-btn .we-sub { font-size: 0.56rem; }
   }
+  @media (max-width: 399.98px) { .quran-word-card .we-row .we-btn .we-sub { font-size: 0.5rem; letter-spacing: -0.02em; } } /* "assessment" must not be cut at 360 */
   @media (max-width: 359.98px) { /* 320px: no word may break mid-word ("Alread|y" was measured), so the type gives a little */
+    .quran-word-card .we-buttons { grid-template-columns: repeat(auto-fit, minmax(2.5rem, 1fr)); }
     .quran-word-card .we-row .we-btn { font-size: 0.6rem; padding: 0.2rem 0; letter-spacing: -0.01em; }
     .quran-word-card .we-row .we-btn .we-sub { font-size: 0.48rem; letter-spacing: -0.02em; }
   }

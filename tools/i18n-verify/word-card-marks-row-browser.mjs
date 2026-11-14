@@ -57,7 +57,8 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 768, 1024, 1280,
   check(`${tag} six buttons: Already Known · Learned Easy · Little Hard · Hard · Very Hard · Learn Now`, m.btns.length === 6 && nm.length === 6 && (lang === "en" ? EN.every((x, i) => nm[i] === x) : nm.every((x) => x && !/^[A-Za-z ]+$/.test(x))), nm.join(" | "));
   const widths = m.btns.map((b) => Math.round(b.rt - b.l));
   const perRow = Object.values(m.btns.reduce((a, b) => (a[b.top] = (a[b.top] || 0) + 1, a), {}));
-  check(`${tag} a tidy grid: equal-width buttons${width <= 520 ? ", at most 3 to a row" : ""}`, Math.max(...widths) - Math.min(...widths) <= 2 && (width > 520 || Math.max(...perRow) <= 3), `widths ${widths} per row ${perRow}`);
+  // UPDATED IN PLACE, 15 Nov 2026 (the Owner: "Can you try to fit the 6 Mark the Word chips in one row?"): below 560px all six stand in ONE row (it was at most three to a row).
+  check(`${tag} a tidy grid: equal-width buttons${width < 560 ? ", all six in one row" : ""}`, Math.max(...widths) - Math.min(...widths) <= 2 && (width >= 560 || (perRow.length === 1 && perRow[0] === 6)), `widths ${widths} per row ${perRow}`);
   check(`${tag} below the Word Progress buttons (not above the tabs)`, m.statesBottom !== null && m.rowTop >= m.statesBottom - 1 && (m.tabsTop === null || m.rowTop > m.tabsTop), `states ${m.statesBottom} row ${m.rowTop} tabs ${m.tabsTop}`);
   check(`${tag} each button at least 40px tall, inside the card, text not clipped`, m.btns.every((b) => b.h >= 40 && b.l >= m.cardL - 1 && b.rt <= m.cardR + 1) && !m.overflow, JSON.stringify(m.btns.map((b) => [b.h, Math.round(b.l), Math.round(b.rt)])) + " " + m.cardL + "-" + m.cardR);
   if (width === 320 || width === 390 || width === 1280) { await page.evaluate(() => document.querySelector(".word-card-markrow")?.scrollIntoView({ block: "center" })); await page.waitForTimeout(150); await page.screenshot({ path: `/tmp/j128-${lang}-${width}-${MUTATE || "ok"}.png` }); }
