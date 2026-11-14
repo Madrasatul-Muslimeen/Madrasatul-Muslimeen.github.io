@@ -3347,3 +3347,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.41** (2026-11-14): Qur'anic duas in Dua groups, drag order (#1718).
 - **v14.42** (2026-11-14): editable Hadith Subjects (#1720).
 - **v15.00** (2026-11-14): the one wheel bar (#1724) and legacy-v14/.
+- **v15.01** (2026-11-14): the Hadith book and chapter names writer, switched off (#1726).

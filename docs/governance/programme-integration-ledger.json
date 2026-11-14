@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "15.00",
+    "version": "15.01",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7205,8 +7205,20 @@
     {
       "version": "15.00",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v15.00: QR Lead 47L's one wheel bar (#1724), the Owner's v15 layout, with the v14.42 archive legacy-v14/.",
+      "integration": {
+        "authorizedOn": "2026-11-14",
+        "integratedOn": "2026-11-14",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "15.01",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "v15.01: Hadith Lead 14L's hadithNames writer + UI (#1726), switched off until the Owner publishes its Rules.",
       "integration": {
         "authorizedOn": "2026-11-14",
         "integratedOn": "2026-11-14",
@@ -7215,8 +7227,9 @@
       }
     }
   ],
-  "nextUnallocated": "15.01",
+  "nextUnallocated": "15.02",
   "nextUnallocatedNote": [
+    "v15.01 was allocated to the Hadith book and chapter names writer, switched off (#1726), 2026-11-14.",
     "v15.00 was allocated to the one wheel bar (#1724) and legacy-v14/, 2026-11-14.",
     "v14.42 was allocated to editable Hadith Subjects (#1720), 2026-11-14.",
     "v14.41 was allocated to Qur'anic duas in Dua groups, drag order (#1718), 2026-11-14.",
