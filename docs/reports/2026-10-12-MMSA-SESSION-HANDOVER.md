@@ -3342,3 +3342,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.36** (2026-11-13): Word Card words and Bangla kinds, Difficulty Level, Hadith Topics tab off, Learning Stories (#1699, #1701, #1702, #1703).
 - **v14.37** (2026-11-13): Dua chapters on the Dua page (#1705).
 - **v14.38** (2026-11-14): Hadith Study's one menu bar (J106 S1, #1709).
+- **v14.39** (2026-11-14): Dua groups in the Dua groups menu, titles, Add a new Dua (#1712).

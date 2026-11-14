@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.38",
+    "version": "14.39",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7145,8 +7145,20 @@
     {
       "version": "14.38",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Hadith Study menu redesign S1: one bar, Menu with Settings, Preview cue, Dua redirects (#1709); plus tests-only #1710.",
+      "integration": {
+        "authorizedOn": "2026-11-14",
+        "integratedOn": "2026-11-14",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "14.39",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Dua groups inside the Dua groups menu; Keep tab groups and admin titles; Add a new Dua (#1712), from the Owner's 14 Nov answer.",
       "integration": {
         "authorizedOn": "2026-11-14",
         "integratedOn": "2026-11-14",
@@ -7155,8 +7167,9 @@
       }
     }
   ],
-  "nextUnallocated": "14.39",
+  "nextUnallocated": "14.40",
   "nextUnallocatedNote": [
+    "v14.39 was allocated to Dua groups in the Dua groups menu, titles, Add a new Dua (#1712), 2026-11-14.",
     "v14.38 was allocated to Hadith Study's one menu bar (J106 S1, #1709), 2026-11-14.",
     "v14.37 was allocated to Dua chapters on the Dua page (#1705), 2026-11-13.",
     "v14.36 was allocated to Word Card words and Bangla kinds, Difficulty Level, Hadith Topics tab off, Learning Stories (#1699, #1701, #1702, #1703), 2026-11-13.",
