@@ -18,13 +18,19 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const EXTRACT = "tests/firestore/hadith-names-v1.proposed.rules";
 // MUTANT_FILE (absolute path) runs this suite against a deliberately broken copy of the extract: every mutation in
 // hadith-names-v1.mutate.sh must turn this suite red.
-const candidate = process.env.MUTANT_FILE
+// FULL_RULES_FILE (repo-relative; Architect 108L, 14 Nov 2026) runs the same cases against a WHOLE rules file, e.g.
+// docs/proposals/hadith-names.DEPLOYMENT-candidate.rules, the file the Owner pastes: then every other collection is in it too.
+const FULL = process.env.FULL_RULES_FILE;
+const candidate = FULL
+  ? fs.readFileSync(path.resolve(here, "../..", FULL), "utf8")
+  : process.env.MUTANT_FILE
   ? fs.readFileSync(process.env.MUTANT_FILE, "utf8")
   : fs.readFileSync(path.resolve(here, "../..", EXTRACT), "utf8");
 assert.match(PROJECT, /^demo-/);
 assert.notEqual(PROJECT, "study-monitoring");
 const matchBlocks = [...new Set([...candidate.matchAll(/match \/(\w+)\//g)].map((m) => m[1]))].filter((n) => n !== "databases");
-assert.deepEqual(matchBlocks, ["hadithNames"], `the candidate must govern exactly hadithNames, saw: ${matchBlocks.join(",")}`);
+if (FULL) assert.ok(matchBlocks.includes("hadithNames") && matchBlocks.length > 20, `the full file must carry hadithNames among the rest, saw ${matchBlocks.length} blocks`);
+else assert.deepEqual(matchBlocks, ["hadithNames"], `the candidate must govern exactly hadithNames, saw: ${matchBlocks.join(",")}`);
 const T = "t1";
 const T2 = "t2";
 const nameEntry = (bn, over = {}) => ({ bn, status: "active", updatedAt: "2026-11-14T00:00:00.000Z", updatedBy: "pO", ...over });

@@ -995,5 +995,48 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   });
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// HADITH NAMES (PCF MSA J106 S3 part 2; Architect 108L, 14 Nov 2026): tests/firestore/hadith-names-v1.proposed.rules is the
+// Hadith Lead's tested extract; docs/proposals/hadith-names.DEPLOYMENT-candidate.rules is the file the Owner pastes (today's
+// firestore.rules + exactly the extract's hadithNames block). PENDING: until the Owner publishes, firestore.rules must NOT carry
+// the block, and the app's one switch (app/js/hadith-names-switch.js) must stay false, so no page can attempt a write production
+// would deny. The day the Owner publishes: firestore.rules becomes the deployment file byte for byte, the switch goes true in the
+// same release, and the "PENDING" checks below are updated in place to forward/backward ones (as DUA GROUPS above).
+{
+  const cand = read("tests/firestore/hadith-names-v1.proposed.rules");
+  const dep = read("docs/proposals/hadith-names.DEPLOYMENT-candidate.rules");
+  const live = read("firestore.rules");
+  const block = cand.slice(cand.indexOf("    // hadithNames/{tenantId} -- NEW."), cand.lastIndexOf("  }\n}"));
+  const sw = read("app/js/hadith-names-switch.js");
+  const swVal = (sw.match(/export const HADITH_NAMES_PUBLISHED = (true|false);/) || [])[1];
+  check("HADITH NAMES POSITIVE CONTROL: the extract's block and the app's switch are both found", () => {
+    assert.ok(block.length > 1000 && block.includes("match /hadithNames/{tenantId}") && block.trimEnd().endsWith("}"), "the extract's hadithNames block was not found");
+    assert.ok(swVal === "true" || swVal === "false", "HADITH_NAMES_PUBLISHED not found in hadith-names-switch.js");
+  });
+  check("HADITH NAMES: the block has no delete and no list, any member reads, only owner/prime (canAdminCatalogue) creates or updates, the update may change only names/updatedAt", () => {
+    const b = matchBlock(cand, "hadithNames/");
+    const code = b.split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
+    assert.ok(!/allow [^:]*\b(delete|list|write)\b/.test(code), "hadithNames may only be read, created and updated");
+    assert.match(code, /allow read: if anyMemberOf\(tenantId\);/);
+    assert.match(code, /allow create: if canAdminCatalogue\(tenantId\)/);
+    assert.match(code, /allow update: if resource != null\s*&& canAdminCatalogue\(tenantId\)\s*&& request\.resource\.data\.diff\(resource\.data\)\.affectedKeys\(\)\.hasOnly\(\['names', 'updatedAt'\]\)/);
+    assert.match(code, /request\.resource\.data\.tenantId == tenantId/);
+  });
+  check("HADITH NAMES: the deployment file is today's firestore.rules + exactly the extract's block, OR (once published and synced) firestore.rules itself", () => {
+    if (live.includes("match /hadithNames/")) { assert.equal(live, dep, "firestore.rules carries hadithNames but is not the deployment file"); return; }
+    const i = live.lastIndexOf("  }\n}");
+    assert.equal(dep, live.slice(0, i).replace(/\n+$/, "") + "\n\n" + block + live.slice(i), "the deployment file is not firestore.rules + exactly the block (rebuild it after any Rules change)");
+  });
+  check("HADITH NAMES PENDING: while firestore.rules does not carry the block, the app's switch is false (no write production would deny)", () => {
+    if (!live.includes("match /hadithNames/")) assert.equal(swVal, "false", "HADITH_NAMES_PUBLISHED is true but the Rules are not in firestore.rules");
+  });
+  check("HADITH NAMES: the only app code naming the collection is hadith-study-actions.js", () => {
+    const hits = [];
+    const walk = (d) => { for (const e of fs.readdirSync(path.join(root, d), { withFileTypes: true })) { const p = `${d}/${e.name}`; if (e.isDirectory()) walk(p); else if (/\.(js|html)$/.test(e.name) && /["']hadithNames["']/.test(read(p))) hits.push(p); } };
+    walk("app");
+    assert.deepEqual(hits.sort(), ["app/js/hadith-study-actions.js"], `unexpected files name the collection: ${hits.join(", ")}`);
+  });
+}
+
 console.log(`\n==== Rules authorisation executable: ${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);
