@@ -959,5 +959,41 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   });
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// J106 S3 (14 Nov 2026, Hadith Lead): hadithSubjects -- the Subjects' names, order, added and retired Subjects live in a
+// `subjectMeta` map on the SAME document, under the published rule, with no Rules change. This pins that claim both ways:
+//   FORWARD   the published rule lets owner/prime change `subjects` and `subjectMeta` (no field allow-list narrows it);
+//   BACKWARD  every field the writer sends is allowed, and none of the write-once identity fields is ever sent on an update.
+// ---------------------------------------------------------------------------------------------------------------
+{
+  const published = read("firestore.rules");
+  const block = matchBlock(published, "hadithSubjects/");
+  const writer = read("app/js/hadith-study-actions.js");
+  check("HADITH SUBJECTS: POSITIVE CONTROL: the parser really reads the hadithSubjects block and its pins", () => {
+    assert.match(block, /allow update: if resource != null/);
+    for (const f of ["tenantId", "createdBy", "createdAt", "schemaVersion"]) assert.match(block, new RegExp(`'?${f}'?[^\\n]*==[^\\n]*(resource\\.data|tenantId)`), `${f} is not pinned on update`);
+  });
+  check("HADITH SUBJECTS FORWARD: the update rule names no field list, so `subjectMeta` (and `subjects`) are authorised for owner/prime; delete is refused", () => {
+    const upd = block.slice(block.indexOf("allow update:"), block.indexOf("// No delete"));
+    assert.ok(!/hasOnly|hasAny|affectedKeys/.test(upd), "the update rule now narrows the fields: the S3 subjectMeta writes would need re-checking");
+    assert.match(upd, /canAdminCatalogue\(tenantId\)/);
+    assert.ok(!/allow delete: if (?!false)/.test(block) , "the hadithSubjects block allows delete");
+  });
+  check("HADITH SUBJECTS BACKWARD: the writer's update sends only `subjects`, `subjectMeta.<id>` and the envelope's updatedAt, never an identity field", () => {
+    const fn = writer.slice(writer.indexOf("export async function saveHadithSubjects"));
+    const body = fn.slice(0, fn.indexOf("\n}\n"));
+    assert.match(body, /const data = \{ subjects \};/);
+    assert.match(body, /data\[`subjectMeta\.\$\{id\}`\] = subjectMeta\[id\];/);
+    const updCall = body.match(/updateDocument\(db, HADITH_SUBJECTS_COLLECTION, tenantId, data\)/);
+    assert.ok(updCall, "the update no longer goes through updateDocument (which stamps updatedAt, I17)");
+    for (const f of ["tenantId", "createdBy", "createdAt", "schemaVersion"]) assert.ok(!new RegExp(`data\\[?[.'\"\`]?${f}`).test(body), `the update path writes ${f}`);
+  });
+  check("HADITH SUBJECTS: nothing is ever deleted -- the writer has no delete, and the pure edit functions keep every key", () => {
+    assert.ok(!/deleteDoc|deleteField/.test(writer.slice(writer.indexOf("HADITH_SUBJECTS_COLLECTION =")).slice(0, 3000)), "the hadithSubjects writer deletes");
+    const meta = read("app/js/hadith-subject-meta.js");
+    assert.ok(!/\bdelete\b/.test(meta.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "")), "hadith-subject-meta.js deletes a key");
+  });
+}
+
 console.log(`\n==== Rules authorisation executable: ${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);

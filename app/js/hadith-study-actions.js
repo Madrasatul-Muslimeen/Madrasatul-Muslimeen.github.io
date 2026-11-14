@@ -416,12 +416,21 @@ export async function getHadithSubjectsDoc(tenantId) {
   return snap.exists() ? snap.data() : null;
 }
 
-/** Writes the three lists. I15: a failure reaches the user through safeWrite(); returns true only when saved. */
-export async function saveHadithSubjects({ tenantId, subjects, docExists, uid }) {
+/**
+ * Writes the lists and/or the Subjects' own edits (S3: names, order, added and retired Subjects). I15: a failure
+ * reaches the user through safeWrite(); returns true only when saved. `subjects` is written whole (as always);
+ * `subjectMeta` is written one Subject at a time (`subjectMeta.<id>`), so two edits to different Subjects never
+ * overwrite each other. On the first write (no document yet) the whole map goes into the create. updatedAt is
+ * stamped by the envelope on every write (I17); no key is ever removed.
+ */
+export async function saveHadithSubjects({ tenantId, subjects, subjectMeta = null, metaIds = [], docExists, uid }) {
   const res = await safeWrite(
-    () => (docExists
-      ? updateDocument(db, HADITH_SUBJECTS_COLLECTION, tenantId, { subjects })
-      : createDocument(db, HADITH_SUBJECTS_COLLECTION, tenantId, { tenantId, subjects }, uid)),
+    () => {
+      if (!docExists) return createDocument(db, HADITH_SUBJECTS_COLLECTION, tenantId, { tenantId, subjects, ...(subjectMeta ? { subjectMeta } : {}) }, uid);
+      const data = { subjects };
+      for (const id of metaIds) data[`subjectMeta.${id}`] = subjectMeta[id];
+      return updateDocument(db, HADITH_SUBJECTS_COLLECTION, tenantId, data);
+    },
     { action: "save the Hadith Subject lists", collection: HADITH_SUBJECTS_COLLECTION, docId: tenantId },
   );
   return !!res?.ok;
