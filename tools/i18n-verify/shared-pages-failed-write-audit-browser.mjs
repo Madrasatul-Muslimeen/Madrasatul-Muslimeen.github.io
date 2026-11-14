@@ -86,6 +86,8 @@ const SEEDS = { "notes.html": NOTES_SEED, "journey-map.html": NOTES_SEED, "dawah
 //   pane-attach  journey-map.html: Timeline > the seeded note > 📎 Folders and tags (file into / tick folders and tags / New folder)
 //   pane-edit    journey-map.html: Timeline > the seeded note > ✏️ Edit (the editor's own saves)
 //   notes-menu   notes.html?unit=ayah:2:255: the whole page, controls beyond the part 98 cap (use --cap=100 --from=...)
+const DUA_PAGE = "dua-study.html?g=books";
+const DUA_OPEN = ["[data-dua-part]", "[data-dua-no]"]; // Hadith Books: the first part, then its first dua
 const FLOWS = {
   "pane-menu": { path: "journey-map.html", steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-menu-btn]"] },
   "pane-attach": { path: "journey-map.html", steps: ["[data-view=timeline]", "[data-note-open]", "[data-pane-attach]"] },
@@ -108,9 +110,11 @@ const FLOWS = {
 //   dua-check     Dua tab > ✓ Check this dua: the check panel's Save
 Object.assign(FLOWS, {
   "hadith-card": { path: "hadith-study.html", settle: 2500, only: "[data-hadeethenc-bookmark], [data-hadeethenc-studied]", steps: ["view:collections", '[data-hadeethenc-category="3"]', '[data-hadeethenc-hadith="4563"]'] },
-  "dua-card": { path: "hadith-study.html", settle: 2500, only: "[data-dua-status], [data-dua-bookmark], [data-dua-check-open]", steps: ["view:dua"] },
-  "dua-word": { path: "hadith-study.html", settle: 2500, only: "[data-dua-word-state]", steps: ["view:dua", ".dua-word[role=button]"] },
-  "dua-check": { path: "hadith-study.html", settle: 2500, only: "[data-dua-check-save]", base: 2, steps: ["view:dua", "[data-dua-check-open]", '[data-dua-check-step="3"]'] },
+  // Updated in place 14 Nov 2026 (PCF MSA J106 S1, 105L's follow-up): nothing can reach the Dua view inside hadith-study.html any more
+  // (Dua is its own module), so these three flows audit the REAL surface, dua-study.html (Hadith Books' duas, first part, first dua).
+  "dua-card": { path: DUA_PAGE, settle: 2500, only: "[data-dua-status], [data-dua-bookmark], [data-dua-check-open]", steps: DUA_OPEN },
+  "dua-word": { path: DUA_PAGE, settle: 2500, only: "[data-dua-word-state]", steps: [...DUA_OPEN, ".dua-word[role=button]"] },
+  "dua-check": { path: DUA_PAGE, settle: 2500, only: "[data-dua-check-save]", base: 3, steps: [...DUA_OPEN, "[data-dua-check-open]", '[data-dua-check-step="3"]'] },
 });
 // Part 102: Hadith Study's topic saves (topic-study.js, the shared topic renderer), on a SEEDED topic: synthetic-topic-audit-leaf
 // (name and ids inside the synthetic namespace) with the stub's resource r1, so Track my progress is enabled.
@@ -135,6 +139,7 @@ const HADITH_TOPIC_SEED = `(function () {
   node("synthetic-topic-audit-leaf", "hadith", ["hadith"], "Synthetic audit topic", "কৃত্রিম নিরীক্ষা বিষয়", 1, true);
 })();`;
 const FLOW = arg("flow");
+if (FLOW && FLOWS[FLOW]?.path === DUA_PAGE) PAGES.push(["Dua Study", DUA_PAGE]); // only for these flows: the plain sweep's page list is unchanged
 if (FLOW && !FLOWS[FLOW]) { console.log("unknown --flow=" + FLOW + "; known: " + Object.keys(FLOWS).join(", ")); process.exit(2); }
 if (FLOW) for (const k of ["notes.html", "journey-map.html"]) SEEDS[k] += "\n" + FLOW_SEED;
 if (FLOW && FLOW.startsWith("hadith-topic")) SEEDS["hadith-study.html"] = HADITH_TOPIC_SEED;
