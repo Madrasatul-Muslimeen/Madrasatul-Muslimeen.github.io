@@ -126,10 +126,10 @@ const CASES = [
     dest: /quranrevival\.html/, leave: (P) => clickLink(P, '[data-ayat-quoted-link="36:38"]', /quranrevival\.html/), card: '[data-openiti-passage="611"]' },
   { id: "hc-duaword", page: "hadith-collections.html", what: "Dua 1's word → Open in the Word card (to the Word card)", file: "dua-browser.js",
     open: async (ctx) => { const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html?back=1"); await hadithGo(P, "dua"); await P.waitForSelector('[data-dua-card="1"] [data-dua-word="1"]', { timeout: 20000 }); await P.click('[data-dua-card="1"] [data-dua-word="1"]'); await P.waitForSelector('[data-dua-word-panel="1"]:not([hidden]) [data-dua-word-open]', { timeout: 6000 }).catch(() => {}); return { P, errors }; },
-    dest: /quranrevival\.html/, leave: (P) => clickLink(P, '[data-dua-word-panel="1"] [data-dua-word-open]', /quranrevival\.html\?word=/), card: '[data-dua-card="1"]', picked: ".hadith-card-focused" },
+    dest: /quranrevival\.html/, leave: (P) => clickLink(P, '[data-dua-word-panel="1"] [data-dua-word-open]', /quranrevival\.html\?word=/), card: '[data-dua-card="1"]', returnsTo: "/app/dua-study.html" },
   { id: "hc-duapage", page: "hadith-collections.html", what: "the Dua tab's \"Dua Study ↗\" link (to dua-study.html)", file: "dua-browser.js",
     open: async (ctx) => { const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html?back=1"); await hadithGo(P, "dua"); await P.waitForSelector(".dua-study-link", { timeout: 20000 }); await P.waitForSelector('[data-dua-card="1"]', { timeout: 20000 }).catch(() => {}); return { P, errors }; },
-    dest: /dua-study\.html/, leave: (P) => clickLink(P, ".dua-study-link", /dua-study\.html/), card: '[data-dua-card="1"]' },
+    dest: /dua-study\.html/, leave: (P) => clickLink(P, ".dua-study-link", /dua-study\.html/), card: '[data-dua-card="1"]', returnsTo: "/app/dua-study.html" },
   { id: "ds-quran", page: "dua-study.html", what: "a prophet's dua card → Open in Quran Study ↗ (to the Read view)", file: "dua-study.js",
     open: duaStudy("prophets"), dest: /quranrevival\.html/, leave: async (P) => { await openMenu(P, "source"); return clickLink(P, ".dua-quran-open", /quranrevival\.html/); }, card: "[data-dua-open]" },
   { id: "ds-note", page: "dua-study.html", what: "a Hadith-books dua card 📝 My Notes (to notes.html)", file: "hadith-study-actions.js",
@@ -166,7 +166,9 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[390, 844], [102
     await mutate(ctx);
     let P = null, errors = [];
     try { ({ P, errors } = await c.open(ctx)); } catch (e) { check(`${ctag} origin state reached: ${c.what}`, false, String(e.message).split("\n")[0]); await ctx.close(); continue; }
-    const originPath = new URL(P.url()).pathname;
+    // Updated in place 14 Nov 2026 (PCF MSA J106 S1, tick 7A): the Hadith page's old Dua address is sent on to Dua Study, so for the two
+    // cases that start in the Hadith page's Dua view the way back lands on Dua Study (c.returnsTo), on the same dua's card.
+    const originPath = c.returnsTo ?? new URL(P.url()).pathname;
     const scrollY0 = await P.evaluate(() => scrollY);
     const hadCard = c.card ? !!(await P.$(c.card)) : true;
     n.attempted++;
