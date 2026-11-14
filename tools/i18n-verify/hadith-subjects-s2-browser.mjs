@@ -16,7 +16,7 @@ const MUT = {
   nostrip: ["js/hadith-browser.js", "  mountContinueStrip(box);\n", "\n"],
   nopark: ["js/hadith-continue-mount.js", "if (strip && strip.isConnected) ensureHolder().appendChild(strip);", "void 0;"],
   threeonly: ["js/hadith-browser.js", "  { id: \"rasulullah\", name: \"Loving Rasulullah\"", "  { id: \"rasulullah-off\", name: \"Loving Rasulullah\""],
-  oldorder: ["js/hadith-subjects.js", "[\"akhlaq\", \"rasulullah\", \"ghayb\", \"stories\"]", "[\"akhlaq\", \"ghayb\", \"rasulullah\", \"stories\"]"],
+  wrongorder: ["js/hadith-browser.js", "export const HADITH_SUBJECTS = [\n", "export const HADITH_SUBJECTS = [\n  { id: \"stories\", name: \"Learning Stories from Hadith\", about: \"x\" },\n"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
 const MUTATE = arg("mutate");
