@@ -403,12 +403,15 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .hadith-menubar .hadith-tab[data-hadith-tab="search"] { margin-left: auto; }
 @media (max-width: 520px) { .hadith-menubar .hadith-tabs { gap: 0.1rem; } .hadith-menubar .hadith-tab { padding-left: 0.3rem; padding-right: 0.3rem; font-size: 0.86rem; } .hadith-menubar .hadith-menu-caret { margin-left: 0.1rem; font-size: 0.7em; } }
 @media (max-width: 360px) { .hadith-menubar .hadith-tabs { gap: 0; } .hadith-menubar .hadith-tab { padding-left: 0.18rem; padding-right: 0.18rem; font-size: 0.8rem; } .hadith-menubar .hadith-menu-caret { margin-left: 0.05rem; } }
+@media (max-width: 340px) { .hadith-menubar .hadith-tab, .hadith-menubar .hadith-menu-btn { font-size: 0.74rem; } .hadith-menubar .hadith-tab[data-hadith-tab="status"] { font-size: 0.7rem; } .hadith-menubar .hadith-menu-cue { font-size: 0.58rem; } }
 .hadith-menu-cue { margin-left: 0.3rem; font-size: 0.78em; font-weight: 700; }
 /* On a phone the cue sits UNDER "Menu ▾" in small type, so the five buttons still share one row while a preview is on. */
 @media (max-width: 520px) { .hadith-menubar .hadith-menu-btn { display: inline-flex; flex-wrap: nowrap; align-items: center; justify-content: center; }
   .hadith-menubar [data-hadith-tab="menu"].hadith-menu-btn { flex-wrap: wrap; } /* only Menu carries the Preview cue on a second line; Books and Subjects keep their caret beside the word (Know Your Status made 320px tight, and the caret dropped under the label) */
-  .hadith-menubar .hadith-tab[data-hadith-tab="status"] { line-height: 1.12; white-space: normal; }
-  .hadith-menubar .hadith-menu-cue { flex-basis: 100%; margin: 0; font-size: 0.62rem; line-height: 1; text-align: center; } }
+  .hadith-menubar [data-hadith-tab="menu"].hadith-menu-btn:has(.hadith-menu-cue:not([hidden])) { min-width: 3.2rem; } /* the stacked "· Preview" cue is wider than "Menu▾"; it sizes the button so it is never cut */
+  .hadith-menubar .hadith-tab[data-hadith-tab="status"] { line-height: 1.12; white-space: normal; align-self: stretch; }
+  .hadith-menubar .hadith-tabs > .hadith-menu, .hadith-menubar .hadith-tab:not([data-hadith-tab="status"]) { flex-shrink: 0; } /* only Know Your Status gives way (it wraps to two lines): Explore had been squeezed to 38px for a 46px word at 320 and 340 */
+  .hadith-menubar .hadith-menu-cue { flex-basis: 100%; contain: inline-size; white-space: nowrap; margin: 0; font-size: 0.62rem; line-height: 1; text-align: center; } }
 .hadith-menu-cue[hidden], .hadith-menubar .hadith-menu-cue[hidden] { display: none; }
 .hadith-menu-heading { margin: 0.6rem 0.2rem 0.3rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; }
 .hadith-menu-panel .hadith-row { box-sizing: border-box; flex: 0 0 auto; } /* the Dua link is an <a>: same box as the button rows (it ran past the panel edge and stretched) */
