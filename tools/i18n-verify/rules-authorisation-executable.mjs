@@ -32,6 +32,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { writePlan } from "../../app/js/hadith-names-model.js";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
@@ -65,6 +66,18 @@ function stripGroups(text) {
   const block = cand.slice(cand.indexOf("    // ====="), cand.lastIndexOf("  }\n}"));
   assert.ok(block.length > 1000 && block.includes("match /duaGroups/"), "stripGroups: POSITIVE CONTROL, the candidate's block was not found");
   assert.equal(text.split("\n\n" + block).length - 1, 1, "stripGroups: the duaGroups block is not present exactly once");
+  return text.replace("\n\n" + block, "\n");
+}
+// UPDATED IN PLACE 14 Nov 2026 (Architect 109L): the Owner PUBLISHED the Hadith names Rules (PCF MSA J106 S3 part 2), so firestore.rules
+// is now docs/proposals/hadith-names.DEPLOYMENT-candidate.rules: the Dua groups file plus exactly the hadithNames block. The checks that
+// pinned the groups file byte for byte now read stripNames(firestore.rules), which proves that taking that one block out gives the
+// groups file again, so "only the hadithNames block was added" stays checked.
+const NAMES_DEPLOYMENT = () => read("docs/proposals/hadith-names.DEPLOYMENT-candidate.rules");
+function stripNames(text) {
+  const cand = read("tests/firestore/hadith-names-v1.proposed.rules");
+  const block = cand.slice(cand.indexOf("    // hadithNames/{tenantId} -- NEW."), cand.lastIndexOf("  }\n}"));
+  assert.ok(block.length > 1000 && block.includes("match /hadithNames/"), "stripNames: POSITIVE CONTROL, the extract's block was not found");
+  assert.equal(text.split("\n\n" + block).length - 1, 1, "stripNames: the hadithNames block is not present exactly once");
   return text.replace("\n\n" + block, "\n");
 }
 
@@ -752,8 +765,9 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   // file with the duaKey pattern widened in duaEdits and duaShares. The DUA KEYS checks below pin that difference exactly.
   check("DUA SAVING: firestore.rules IS the published deployment file (now the dua-keys file), and carries the candidate's three blocks, the duaKey pattern widened", () => {
     const dep = read("docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
-    const live = read("firestore.rules");
-    assert.equal(live, GROUPS_DEPLOYMENT(), "firestore.rules differs from docs/proposals/dua-groups.DEPLOYMENT-candidate.rules, which is what production carries since 13 Nov 2026");
+    assert.equal(read("firestore.rules"), NAMES_DEPLOYMENT(), "firestore.rules differs from docs/proposals/hadith-names.DEPLOYMENT-candidate.rules, which is what production carries since 14 Nov 2026");
+    const live = stripNames(read("firestore.rules"));
+    assert.equal(live, GROUPS_DEPLOYMENT(), "firestore.rules, with the hadithNames block taken out, differs from docs/proposals/dua-groups.DEPLOYMENT-candidate.rules");
     assert.equal(stripGroups(live), EFFORT_DEPLOYMENT(), "firestore.rules, with the duaGroups block taken out, differs from docs/proposals/word-effort.DEPLOYMENT-candidate.rules");
     assert.equal(stripEffort(stripGroups(live)), dep, "firestore.rules, with the duaGroups block and the three effort edits taken out, differs from docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
     const OLDP = "d().duaKey.matches('^([0-9]{1,6}|new-[A-Za-z0-9_-]{6,40})$')";
@@ -873,7 +887,7 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     assert.ok(m[1].endsWith("|hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?"), "the app's DUA_KEY lacks the candidate's new forms: " + m[1]);
   });
   check("DUA KEYS PUBLISHED: firestore.rules IS the dua-keys file, byte for byte (the Owner published it, 9 Nov 2026)", () => {
-    const fr = read("firestore.rules");
+    const fr = stripNames(read("firestore.rules"));
     assert.equal(stripEffort(stripGroups(fr)), cand, "firestore.rules, with the duaGroups block and the effort edits taken out, differs from the published dua-keys file");
     assert.equal(fr.split(NEW).length - 1, 2, "firestore.rules does not carry the widened pattern twice");
   });
@@ -906,7 +920,7 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     const block = blockOf(cand);
     assert.ok(block.length > 1000 && block.includes("match /duaGroups/"), "POSITIVE CONTROL: the candidate's block was not found");
     // Architect 103L, 14 Nov 2026: once synced, the construction is still proved (stripGroups gives the effort file back).
-    if (live.includes("match /duaGroups/")) { assert.equal(live, dep, "firestore.rules carries duaGroups but is not the published deployment file"); assert.equal(stripGroups(dep), EFFORT_DEPLOYMENT(), "the deployment file is not the effort file plus exactly the candidate's block"); }
+    if (live.includes("match /duaGroups/")) { assert.equal(live.includes("match /hadithNames/") ? stripNames(live) : live, dep, "firestore.rules carries duaGroups but is not the published deployment file"); assert.equal(stripGroups(dep), EFFORT_DEPLOYMENT(), "the deployment file is not the effort file plus exactly the candidate's block"); }
     else assert.equal(dep, live.slice(0, i).replace(/\n+$/, "") + "\n\n" + block + live.slice(i));
   });
   const published = live.includes("match /duaGroups/") ? live : dep;
@@ -1027,8 +1041,36 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     const i = live.lastIndexOf("  }\n}");
     assert.equal(dep, live.slice(0, i).replace(/\n+$/, "") + "\n\n" + block + live.slice(i), "the deployment file is not firestore.rules + exactly the block (rebuild it after any Rules change)");
   });
-  check("HADITH NAMES PENDING: while firestore.rules does not carry the block, the app's switch is false (no write production would deny)", () => {
-    if (!live.includes("match /hadithNames/")) assert.equal(swVal, "false", "HADITH_NAMES_PUBLISHED is true but the Rules are not in firestore.rules");
+  // UPDATED IN PLACE 14 Nov 2026 (Architect 109L): the Owner PUBLISHED the hadithNames Rules, so "PENDING" is replaced by the
+  // published state and the forward/backward comparison of the Rules against the one data layer (hadith-names-model.js writePlan,
+  // through envelope.js createDocument/updateDocument), as for DUA GROUPS above.
+  check("HADITH NAMES PUBLISHED: firestore.rules carries the block and the app's switch is true (and never true without the block)", () => {
+    assert.ok(live.includes("match /hadithNames/"), "firestore.rules does not carry the hadithNames block");
+    assert.equal(swVal, "true", "the Rules are published but HADITH_NAMES_PUBLISHED is still false");
+  });
+  const nb = live.includes("match /hadithNames/") ? matchBlock(live, "hadithNames/") : ""; // absent: every check below fails by name
+  const listOf = (re) => { const m = nb.match(re); return new Set(m ? idsIn(m[1]) : []); };
+  const nCreate = listOf(/allow create:[\s\S]*?keys\(\)\.hasOnly\(\[([\s\S]*?)\]\)/);
+  const nUpdate = listOf(/allow update:[\s\S]*?affectedKeys\(\)\.hasOnly\(\[([\s\S]*?)\]\)/);
+  const createStamps = ["schemaVersion", "createdAt", "updatedAt", "createdBy"], updateStamps = ["updatedAt"];
+  const pc = writePlan({ tenantId: "t1", names: { b1: { bn: "x" } }, docExists: false });
+  const pu = writePlan({ tenantId: "t1", names: { b1: { bn: "x" }, b2: { bn: "y" } }, keys: ["b1", "b2"], docExists: true });
+  const cWritten = new Set([...Object.keys(pc.data), ...createStamps]);
+  const uWritten = new Set([...Object.keys(pu.data).map((k) => k.split(".")[0]), ...updateStamps]);
+  check("HADITH NAMES POSITIVE CONTROL (published): the parsers read the create and update lists and the data layer's two plans", () => {
+    assert.ok(nCreate.has("tenantId") && nCreate.has("names") && nUpdate.has("names") && pc.kind === "create" && pu.kind === "update" && Object.keys(pu.data).length === 2, `create=${[...nCreate]} update=${[...nUpdate]} plans=${pc.kind}/${pu.kind}`);
+  });
+  check("HADITH NAMES BACKWARD (create): every field the data layer creates with (plus the envelope's stamps) is one the Rules allow", () => {
+    assert.deepEqual([...cWritten].filter((f) => !nCreate.has(f)), [], "denied in production");
+  });
+  check("HADITH NAMES FORWARD (create): every field the Rules allow on create is written by the data layer or the envelope", () => {
+    assert.deepEqual([...nCreate].filter((f) => !cWritten.has(f)), [], "an authorised field no code can perform");
+  });
+  check("HADITH NAMES BACKWARD (update): every top-level field the data layer updates (plus updatedAt) is one the Rules let change", () => {
+    assert.deepEqual([...uWritten].filter((f) => !nUpdate.has(f)), [], "denied in production");
+  });
+  check("HADITH NAMES FORWARD (update): every field the Rules let change is changed by the data layer or the envelope", () => {
+    assert.deepEqual([...nUpdate].filter((f) => !uWritten.has(f)), [], "an authorised field no code can perform");
   });
   check("HADITH NAMES: the only app code naming the collection is hadith-study-actions.js", () => {
     const hits = [];

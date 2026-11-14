@@ -1,8 +1,10 @@
 // PCF MSA J106 S3 part 2 (the writer round, 14 Nov 2026): the madrasah's own Bangla names for the Hadith books and chapters
 // (hadithNames/{tenantId}; the Rules are a CANDIDATE, tests/firestore/hadith-names-v1.proposed.rules). Checked on the real
 // page against the real library:
-//   OFF (the code as shipped: hadith-names-switch.js says false): no read of hadithNames, no editor, no name shown, no write;
-//   ON (the suite serves the switch as true, nothing else changes): the owner/prime sees "Edit names" in an open book, sets a
+//   UPDATED IN PLACE 14 Nov 2026 (Architect 109L, v15.02): the Owner PUBLISHED the Rules, so the code as shipped is ON
+//   (hadith-names-switch.js says true) and the OFF case is the one the suite serves (the switch as false, nothing else changes).
+//   OFF (served): no read of hadithNames, no editor, no name shown, no write;
+//   ON (the code as shipped): the owner/prime sees "Edit names" in an open book, sets a
 //   chapter's Bangla name (the first write is the create, with the envelope facts), and a Bangla reader sees it under that
 //   chapter; Remove retires it (the entry stays, marked retired) and it stops showing; a refused write is said in words (I15)
 //   and nothing shows as saved; a reader viewing as a teacher is told why and gets no field; an existing document is UPDATED
@@ -13,7 +15,7 @@ import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import { chromium, newContext, openPage } from "./harness.mjs";
 
-const SWITCH = ["js/hadith-names-switch.js", "export const HADITH_NAMES_PUBLISHED = false;", "export const HADITH_NAMES_PUBLISHED = true;"];
+const SWITCH = ["js/hadith-names-switch.js", "export const HADITH_NAMES_PUBLISHED = true;", "export const HADITH_NAMES_PUBLISHED = false;"]; // served for OFF
 const MUT = {
   alwayson: ["js/hadith-names-switch.js", "export const namesEnabled = () => HADITH_NAMES_PUBLISHED === true;", "export const namesEnabled = () => true;"],
   nofail: ["js/hadith-names.js", "if (!ok) { await draw({ text: failText, failed: true }); return; }", "if (false) { return; }"],
@@ -54,7 +56,7 @@ const CH3 = `${BK}__ch-3`;
 async function open(lang, width, { on = true, extraSeedJs = null, viewAs = null } = {}) {
   const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 900 }, extraSeedJs });
   const edits = [];
-  if (on) edits.push(SWITCH);
+  if (!on) edits.push(SWITCH);
   if (MUTATE) edits.push(MUT[MUTATE]);
   // A mutation and the switch may name the same file: apply every edit for a file in one route.
   const byFile = new Map();
@@ -84,7 +86,7 @@ const openEditor = async (p) => { await tap(p, "[data-hadith-names-open]"); awai
 const msgOf = (p) => p.$eval(".hadith-names-panel [data-hadith-names-msg]", (n) => ({ text: n.textContent, failed: "hadithNamesFailed" in n.dataset })).catch(() => null);
 const own = (p, key) => p.$eval(`[data-hadith-own-name="${key}"]`, (n) => n.textContent).catch(() => null);
 
-// ---- 0. OFF: the code as shipped does nothing ---------------------------------------------------------------
+// ---- 0. OFF: the switch served as false does nothing ---------------------------------------------------------------
 {
   const tag = "[en 1280 OFF]";
   console.log(`\n===== hadith names ${tag} =====`);
