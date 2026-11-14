@@ -453,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v14.41 on `main`** (14 Nov 2026 Sydney, shown as "v14.41-14.11.26". **One Dua Lead PR, reviewed by measurement and merged by the Architect 106L.** The Owner's answer of 14 Nov (in the Dua Lead's chat, 5:14 pm, PCF J104: "Quranic Dua should be under the Dua Groups, not Hsn … We will keep it as a resources only. Yes, Enable Draggable order"): a Qur'anic dua's card now has the group editor on its Keep tab (permanent key `quran-<surah>-<ayah>`); Hisn al-Muslim cards keep none; the Duas of a group the reader may change are dragged into order, with ↑ ↓ buttons too (#1718). No new read, no Rules change. Checks: see the CHANGELOG entry.)
+**Current milestone: v14.42 on `main`** (14 Nov 2026 Sydney, shown as "v14.42-14.11.26". **One Hadith Lead PR, reviewed by measurement and merged pinned by the Architect 107L, plus one Architect fix.** #1720 (PCF J106 S3 part 1): the owner or a prime can rename the Hadith Subjects (English and an optional Bangla name), move them up and down, add a Subject and retire or restore one, stored per Subject in a `subjectMeta` map on the existing `hadithSubjects/{tenantId}` document (nothing deleted, I4; no Rules change). The Architect's fix: a shipped Subject renamed in one language keeps its shipped wording in the other. Checks: see the CHANGELOG entry.)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

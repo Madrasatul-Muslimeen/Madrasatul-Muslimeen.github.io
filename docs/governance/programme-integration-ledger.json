@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "14.41",
+    "version": "14.42",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7181,8 +7181,20 @@
     {
       "version": "14.41",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Qur'anic duas can be put in Dua groups (Hisn stays resources only); a group's Duas are dragged into order (#1718), from the Owner's 14 Nov answer.",
+      "integration": {
+        "authorizedOn": "2026-11-14",
+        "integratedOn": "2026-11-14",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "14.42",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Hadith S3 part 1 (#1720): editable Subject names, order, add, retire; plus 107L's shipped-name fix.",
       "integration": {
         "authorizedOn": "2026-11-14",
         "integratedOn": "2026-11-14",
@@ -7191,8 +7203,9 @@
       }
     }
   ],
-  "nextUnallocated": "14.42",
+  "nextUnallocated": "14.43",
   "nextUnallocatedNote": [
+    "v14.42 was allocated to editable Hadith Subjects (#1720), 2026-11-14.",
     "v14.41 was allocated to Qur'anic duas in Dua groups, drag order (#1718), 2026-11-14.",
     "v14.40 was allocated to Hadith Study's four Subjects with Continue chips at the top (J106 S2, #1713), 2026-11-14.",
     "v14.39 was allocated to Dua groups in the Dua groups menu, titles, Add a new Dua (#1712), 2026-11-14.",

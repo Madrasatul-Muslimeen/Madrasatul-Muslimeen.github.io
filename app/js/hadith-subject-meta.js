@@ -64,10 +64,14 @@ export function effectiveSubjects(builtins, meta, { includeRetired = false } = {
   return includeRetired ? ordered : ordered.filter((s) => !s.retired);
 }
 
-/** The Subject's name in `lang` ("en" | "bn"): the madrasah's own wording when it has one, else null (use the shipped text). */
+/** The Subject's name in `lang` ("en" | "bn"): the madrasah's own wording when it has one, else null (use the shipped text).
+ *  A SHIPPED Subject renamed in one language keeps its shipped wording in the other (the editor opens its Bangla box empty,
+ *  so an English-only rename must not show English to every Bangla reader); a Subject the madrasah made has no shipped
+ *  wording, so its one name stands in for the other language. Checked by tools/i18n-verify/hadith-subject-names.mjs. */
 export function overrideName(subject, lang) {
   const n = subject?.nameOverride;
   if (!n) return null;
+  if (!subject.custom) return (lang === "bn" ? n.bn : n.en) || null;
   return (lang === "bn" ? n.bn || n.en : n.en || n.bn) || null;
 }
 
