@@ -41,7 +41,7 @@ const state = (page) => page.evaluate(() => ({
 // heading-line #readHeadBtn is gone.
 const readBtnSel = async () => "#readContentsBtn";
 const openList = async (page) => {
-  await page.click(await readBtnSel(page));
+  await page.evaluate(() => document.getElementById("readContentsBtn").click()); // v15.00: the retired button is still wired; the bar's Read now goes to the Mushaf
   await page.waitForFunction(() => document.querySelectorAll("#readContentsBody .rc-row").length > 0);
 };
 const pick = async (page, tab, n) => {
@@ -95,20 +95,12 @@ for (const lang of ["en", "bn"]) {
       };
     });
     const tag = `${lang} ${width}px`;
-    // UPDATED IN PLACE (Owner, 3 Oct 2026, tablets: "let the wheel fit to the
-    // entire screen well n then, you place those buttons in the gaps"): from
-    // 581 to 720px the three buttons are in the wheel's corners, not a row --
-    // Read top right, Choose a Unit bottom left, Know Your Status bottom right
-    // (tablet-wheel-browser measures their places against the ring).
-    if (width > 580 && width <= 720) {
-      const corners = await page.evaluate(() => ["readContentsBtn", "wheelUnitBtn", "myStatusWideBtn"].map((id) => document.getElementById(id).closest(".tablet-corner")?.className.match(/tablet-corner-(\w+)/)?.[1] ?? null));
-      check(`${tag}: (tablet) Read, Choose a Unit and Know Your Status are all shown, in the top-right, bottom-left and bottom-right corners`, m.shown.every(Boolean) && JSON.stringify(corners) === '["tr","bl","br"]', JSON.stringify(corners));
-      check(`${tag}: (tablet) each is one line, 40px tall`, m.heights.every((x) => x === 40), JSON.stringify(m.heights));
-    } else {
-    check(`${tag}: Read, Choose a Unit and Know Your Status are all shown, in that order, in the one action row`, m.shown.every(Boolean) && m.order && m.inRow, JSON.stringify(m));
-    check(`${tag}: the action row is one line of 40px buttons`, m.tops === 1 && m.heights.every((x) => x === 40), JSON.stringify(m));
-    check(`${tag}: the action row sits under the wheel and above its colour key`, m.underWheel && m.aboveLegend, JSON.stringify(m));
-    }
+    // UPDATED IN PLACE, 14 Nov 2026 (v15.00, the Owner: ONE bar above the wheel): the old action row (and the tablet corners) are
+    // retired from sight; Read, Choose a Unit and Know Your Status are the bar's buttons (wheel-bar-browser.mjs measures the bar in
+    // full). What this suite keeps: the old row is really gone, and the bar holds the three, in order, on one 40px+ row.
+    const bar = await page.evaluate(() => ["wbRead", "wbUnit", "wbStatus"].map((id) => { const q = document.getElementById(id).getBoundingClientRect(); return [Math.round(q.top), Math.round(q.left), Math.round(q.height)]; }));
+    check(`${tag}: the old action row is gone from sight (v15.00)`, m.shown.every((x) => !x), JSON.stringify(m.shown));
+    check(`${tag}: Read, Choose a Unit and Know Your Status are in the bar, in that order, on one row of 40px+ buttons`, bar[0][1] < bar[1][1] && bar[1][1] < bar[2][1] && new Set(bar.map((b) => b[0])).size === 1 && bar.every((b) => b[2] >= 40), JSON.stringify(bar));
     check(`${tag}: no button is cut or off screen, and no sideways scroll`, !m.cut && m.inView && !m.over, JSON.stringify(m));
     check(`${tag}: the heading line holds no buttons`, m.headButtons === 0, JSON.stringify(m));
     check(`${tag}: the two titles are together on one line (${width < 900 ? "heading line" : "window title bar"}), separator between them, nothing cut`,
@@ -238,7 +230,7 @@ for (const lang of ["en", "bn"]) {
   check("search '112' leaves one row", (await page.$$eval("#readContentsBody .rc-row", (e) => e.length)) === 1);
   await page.keyboard.press("Escape");
   check("Escape closes the panel", await page.$eval("#readContentsMount", (e) => e.hidden));
-  await page.click(await readBtnSel(page));
+  await page.evaluate(() => document.getElementById("readContentsBtn").click()); // v15.00: the retired button is still wired; the bar's Read now goes to the Mushaf
   await page.waitForTimeout(150);
   await page.click("#readContentsCloseBtn");
   check("the X closes the panel", await page.$eval("#readContentsMount", (e) => e.hidden));

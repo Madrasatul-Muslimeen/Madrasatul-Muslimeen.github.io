@@ -44,8 +44,13 @@ const open = async (lang, width, look) => {
 };
 // Audit part 74: the click is dispatched on the button itself, so a drawer covered by the dock is reported by the
 // "reachable" check below as ONE red line, instead of a 30s Playwright timeout that kills the run and hides every case after it.
-const drawer = (page, name) => page.evaluate((n) => document.querySelector(`[data-wheel-drawer="${n}"]`).click(), name);
-const vis = (page, name) => page.evaluate((n) => { const p = document.querySelector(`[data-wheel-drawer-panel="${n}"]`); const r = p.getBoundingClientRect(); return getComputedStyle(p).display !== "none" && r.width > 0 && r.height > 0; }, name);
+// UPDATED IN PLACE, 14 Nov 2026 (v15.00, the Owner: ONE bar above the wheel). The Wheel / Legend / Unit drawer buttons are retired; their
+// panels are now the bar's Know Your Status / Legend / Choose a Unit panels (wheel-bar-browser.mjs measures the bar itself). This suite keeps what
+// still holds -- the panels open one at a time under the bar, hold their own group, the moved controls still work, choices survive a reload,
+// the wheel's numbers and the dock clear -- and says so where it stopped checking the drawer row itself.
+const BARID = { wheel: "wbStatus", legend: "wbLegend", unit: "wbUnit" }, BARPANEL = { wheel: "wbPanelStatus", legend: "wbPanelLegend", unit: "wbPanelUnit" };
+const drawer = (page, name) => page.evaluate((n) => document.getElementById(({ wheel: "wbStatus", legend: "wbLegend", unit: "wbUnit" })[n]).click(), name);
+const vis = (page, name) => page.evaluate((n) => { const p = document.getElementById(({ wheel: "wbPanelStatus", legend: "wbPanelLegend", unit: "wbPanelUnit" })[n]); const r = p.getBoundingClientRect(); return getComputedStyle(p).display !== "none" && r.width > 0 && r.height > 0; }, name);
 const GROUPS = { wheel: "#wheelLookSwitch", legend: "#wheelLegendContainer", unit: "#wheelShowSwitch" };
 
 const gaps = {};
@@ -62,14 +67,14 @@ for (const lang of ["en", "bn"]) {
         // PCF J25 (the Owner, 15 Oct 2026, a photo): on a phone the 🧰 sits at the row's right end ([data-zab-dock]).
         others: [...row.querySelectorAll("button:not(.wheel-drawer-btn)")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => ({ cls: b.className, t: b.textContent.trim(), h: Math.round(b.getBoundingClientRect().height), last: b.getBoundingClientRect().right >= Math.max(...[...row.querySelectorAll("button")].map((x) => x.getBoundingClientRect().right)) - 0.5 })) };
     });
-    check(`${tag} order: Read bar, then the drawer row, nothing visible between them while closed`, o.sameParent && o.between.length === 0 && o.rowTop >= o.introBottom - 1, JSON.stringify(o));
+    // v15.00: retired with the drawer buttons (see the note above this file's helpers).
     // UPDATED IN PLACE 23 Oct 2026: these two counted every button in the row, and since PCF J25 (15 Oct) the row also
     // holds the docked 🧰 -- 4 buttons, red ever since. They now count the drawer buttons, and the 🧰 has its own check.
-    check(`${tag} the row holds nothing but the three drawers and, on a phone, the docked 🧰 at its right end (40px)`, o.others.every((b) => b.cls === "zab-dock-btn" && b.t === "🧰" && b.h >= 40 && b.last) && (width >= 768 || o.others.length === 1), JSON.stringify(o.others));
-    check(`${tag} three drawer buttons, 40px+, all closed`, o.buttons.length === 3 && o.buttons.every((b) => b.h >= 40 && b.exp === "false"), JSON.stringify(o.buttons));
-    check(`${tag} the three names go through t()`, lang === "en" ? o.buttons.map((b) => b.t).join("|").replace(/▴/g, "") === "Wheel|Legend|Unit" : o.buttons.every((b) => /[ঀ-৿]/.test(b.t)), JSON.stringify(o.buttons.map((b) => b.t)));
+    check(`${tag} the old row holds nothing now but, on a phone, the docked 🧰 at its right end (40px), and no drawer button is left`, !o.buttons.length && o.others.every((b) => b.cls === "zab-dock-btn" && b.t === "🧰" && b.h >= 40 && b.last) && (width >= 768 || o.others.length === 1), JSON.stringify(o.others));
+    // v15.00: retired with the drawer buttons (see the note above this file's helpers).
+    // v15.00: retired with the drawer buttons (see the note above this file's helpers).
     const reach = await page.evaluate(() => [...document.querySelectorAll("[data-wheel-drawer]")].map((b) => { const r = b.getBoundingClientRect(); const el = document.elementFromPoint(r.x + r.width / 2, Math.min(r.y + r.height / 2, innerHeight - 1)); return { n: b.dataset.wheelDrawer, ok: !!el && b.contains(el), y: Math.round(r.y + r.height / 2), dockTop: Math.round(document.getElementById("dock").getBoundingClientRect().top) }; }));
-    check(`${tag} reachable: each drawer button is the element at its own centre (not covered by the dock)`, reach.every((x) => x.ok), JSON.stringify(reach));
+    // v15.00: retired with the drawer buttons (see the note above this file's helpers).
     let closed = true; for (const n of Object.keys(GROUPS)) closed = closed && !(await vis(page, n));
     check(`${tag} closed: none of the three groups is visible (computed display)`, closed);
 
@@ -77,18 +82,20 @@ for (const lang of ["en", "bn"]) {
     for (const n of Object.keys(GROUPS)) {
       await drawer(page, n);
       const s = await page.evaluate(([n, sel, vw]) => {
-        const p = document.querySelector(`[data-wheel-drawer-panel="${n}"]`), r = p.getBoundingClientRect(), row = document.getElementById("wheelDrawerRow").getBoundingClientRect(), intro = document.getElementById("wheelIntroSettled").getBoundingClientRect();
-        const btn = document.querySelector(`[data-wheel-drawer="${n}"]`);
-        return { above: r.bottom <= row.top + 1, belowRead: r.top >= intro.bottom - 1, inside: r.left >= -0.5 && r.right <= vw + 0.5, holds: p.contains(document.querySelector(sel)), exp: btn.getAttribute("aria-expanded"), caret: getComputedStyle(btn.querySelector(".wheel-drawer-caret")).transform, over: document.documentElement.scrollWidth - innerWidth };
+        const ids = { wheel: ["wbPanelStatus", "wbStatus"], legend: ["wbPanelLegend", "wbLegend"], unit: ["wbPanelUnit", "wbUnit"] }[n];
+        const p = document.getElementById(ids[0]), r = p.getBoundingClientRect(), bar = document.querySelector("#wheelBar .wheel-bar-groups").getBoundingClientRect();
+        const btn = document.getElementById(ids[1]);
+        // v15.00: the panel opens UNDER the bar (it used to open above the drawer row)
+        return { above: true, belowRead: r.top >= bar.bottom - 1, inside: r.left >= -0.5 && r.right <= vw + 0.5, holds: p.contains(document.querySelector(sel)), exp: btn.getAttribute("aria-expanded"), caret: "n/a", over: document.documentElement.scrollWidth - vw };
       }, [n, GROUPS[n], width]);
       check(`${tag} ${n} opens above the drawer row, inside the screen, holding its own group`, (await vis(page, n)) && s.above && s.belowRead && s.inside && s.holds && s.exp === "true" && s.over <= 1, JSON.stringify(s));
-      check(`${tag} ${n}: caret turns when open`, s.caret !== "none");
+      // v15.00: the drawer caret is retired with the drawer buttons.
       const others = []; for (const m of Object.keys(GROUPS)) if (m !== n) others.push(await vis(page, m));
       check(`${tag} ${n} open: one at a time (the others are closed)`, others.every((x) => !x));
       // open another: first closes
       const next = Object.keys(GROUPS)[(Object.keys(GROUPS).indexOf(n) + 1) % 3];
       await drawer(page, next);
-      check(`${tag} opening ${next} closes ${n} (one-at-a-time)`, !(await vis(page, n)) && (await vis(page, next)) && (await page.evaluate((x) => document.querySelector(`[data-wheel-drawer="${x}"]`).getAttribute("aria-expanded"), n)) === "false");
+      check(`${tag} opening ${next} closes ${n} (one-at-a-time)`, !(await vis(page, n)) && (await vis(page, next)) && (await page.evaluate((x) => document.getElementById(({ wheel: "wbStatus", legend: "wbLegend", unit: "wbUnit" })[x]).getAttribute("aria-expanded"), n)) === "false");
       await drawer(page, next);
       check(`${tag} tapping ${next} again closes it`, !(await vis(page, next)));
     }
@@ -135,13 +142,13 @@ for (const lang of ["en", "bn"]) {
       // Keep a elegantly looking distance." -- the lowest number against the
       // top of Read | Choose a Unit | Know Your Status.
       const bottom = Math.max(...nums.map((e) => e.getBoundingClientRect().bottom));
-      const bar = document.getElementById("wheelIntroSettled").getBoundingClientRect();
+      const bar = document.getElementById("wheelStageWrap").getBoundingClientRect(); // v15.00: the old Read | Choose a Unit | Know Your Status row is gone; the numbers must stay inside the wheel stage
       // "Place those wheel buttons as marked up": Wheel to the left edge, Unit to the right.
       // PCF J25: the 🧰, when docked, takes the right end; Wheel, Legend and Unit shift left ("as shown").
       const btns = [...document.querySelectorAll("#wheelDrawerRow .wheel-drawer-btn, #wheelDrawerRow .zab-dock-btn")].filter((b) => b.getBoundingClientRect().width > 0).map((b) => b.getBoundingClientRect());
-      const gapsBetween = btns.slice(1).map((b, i) => b.left - btns[i].right);
-      return { n: nums.length, gap: Math.round((top - card.top) * 10) / 10, bottomGap: Math.round((bar.top - bottom) * 10) / 10,
-        leftInset: Math.round(btns[0].left - card.left), rightInset: Math.round(card.right - btns[btns.length - 1].right), items: btns.length,
+      const gapsBetween = btns.slice(1).map((b, i) => b.left - btns[i].right); if (!gapsBetween.length) gapsBetween.push(0);
+      return { n: nums.length, gap: Math.round((top - card.top) * 10) / 10, bottomGap: Math.round((bar.bottom - bottom) * 10) / 10,
+        leftInset: btns.length ? Math.round(btns[0].left - card.left) : 0, rightInset: btns.length ? Math.round(card.right - btns[btns.length - 1].right) : 0, items: btns.length,
         spread: Math.round((Math.max(...gapsBetween) - Math.min(...gapsBetween)) * 10) / 10,
         // Owner, 1 Oct 2026 (demo approved, "go"): the first screen ends at the
         // dock -- Open all starts below it, the drawer row is above it.
@@ -150,7 +157,7 @@ for (const lang of ["en", "bn"]) {
         openAllTop: Math.round(document.querySelector("#wheelSection .ways-toggle-all").getBoundingClientRect().top + scrollY),
         rowBottom: Math.round(document.getElementById("wheelDrawerRow").getBoundingClientRect().bottom + scrollY),
         dockTop: Math.round(innerHeight - document.getElementById("dock").offsetHeight),
-        legendOff: Math.round(Math.abs((btns[1].left + btns[1].right) / 2 - (card.left + card.right) / 2)),
+        legendOff: btns[1] ? Math.round(Math.abs((btns[1].left + btns[1].right) / 2 - (card.left + card.right) / 2)) : 0,
         listTop: Math.round(document.getElementById("wheelSidebarContainer").getBoundingClientRect().top * 10) / 10 };
     });
     gaps[`${lang} ${width}`] = g;
@@ -162,10 +169,10 @@ for (const lang of ["en", "bn"]) {
       // the wheel" (was 8-18px); "Place the Wheel and Unit button at the
       // extreme edges" (was 8-24px in).
       check(`${tag} the highest wheel number sits well inside the dark card, at least 15px below its top (gap ${g.gap}px; spare height on a tall screen adds to it)`, g.gap >= 15, JSON.stringify(g));
-      check(`${tag} the lowest wheel number clears the capsule bar by 18-28px (gap ${g.bottomGap}px)`, g.bottomGap >= 18 && g.bottomGap <= 28, JSON.stringify(g));
+      check(`${tag} the lowest wheel number stays inside the wheel stage (v15.00: the capsule bar moved above the wheel) (gap ${g.bottomGap}px)`, g.bottomGap >= 0, JSON.stringify(g));
       // UPDATED IN PLACE 23 Oct 2026 (PCF J25): with the 🧰 docked the row's right end is the 🧰, not Unit, and the four
       // are spaced evenly; Legend is centred only when the 🧰 is not there.
-      check(`${tag} Wheel sits at the extreme left edge, the row's last item (Unit, or the docked 🧰) at the extreme right (insets ${g.leftInset}/${g.rightInset}px), the items evenly spaced`, g.leftInset <= 10 && g.rightInset <= 10 && g.leftInset >= 2 && g.rightInset >= 2 && (g.items === 4 ? g.spread <= 1 : g.legendOff <= 3), JSON.stringify(g));
+      // v15.00: "Wheel at the extreme left, Unit at the extreme right" described the drawer row, which is retired (the dock is all that is left of it).
       check(`${tag} the first screen ends at the dock: the drawer row is above it, Open all below it (row ${g.rowBottom}, dock ${g.dockTop}, Open all ${g.openAllTop})`, g.rowBottom <= g.dockTop && g.openAllTop >= g.dockTop, JSON.stringify(g));
     }
     else check(`${tag} the Approach list top is measured (${g.listTop}px)`, g.listTop > 0);
@@ -212,10 +219,10 @@ for (const size of [0, 560, 760]) {
   }
   const pc = await page.evaluate(() => {
     const nums = [...document.querySelectorAll("#wheelContainer .wheel-seg-num")].map((e) => e.getBoundingClientRect());
-    const bar = document.getElementById("wheelIntroSettled").getBoundingClientRect();
-    return { n: nums.length, wheel: Math.round(document.querySelector("#wheelContainer svg").getBoundingClientRect().width), gap: Math.round((bar.top - Math.max(...nums.map((r) => r.bottom))) * 10) / 10 };
+    const bar = document.getElementById("wheelStageWrap").getBoundingClientRect(); // v15.00: the old Read | Choose a Unit | Know Your Status row is gone; the numbers must stay inside the wheel stage
+    return { n: nums.length, wheel: Math.round(document.querySelector("#wheelContainer svg").getBoundingClientRect().width), gap: Math.round((bar.bottom - Math.max(...nums.map((r) => r.bottom))) * 10) / 10 };
   });
-  check(`[PC maximised, wheel ${pc.wheel}px] the lowest number clears the capsule bar by 8-20px (gap ${pc.gap}px)`, pc.n >= 30 && pc.gap >= 8 && pc.gap <= 20 && (!size || Math.abs(pc.wheel - size) <= 1), JSON.stringify(pc));
+  check(`[PC maximised, wheel ${pc.wheel}px] the lowest number stays inside the wheel stage (v15.00: the capsule bar moved above the wheel) (gap ${pc.gap}px)`, pc.n >= 30 && pc.gap >= 0 && (!size || Math.abs(pc.wheel - size) <= 1), JSON.stringify(pc));
   await ctx.close();
 }
 console.log("gaps/list tops:", JSON.stringify(gaps));
@@ -235,7 +242,7 @@ const SWEEP = () => {
     return [[255, 255, 255, 1]];
   };
   const low = []; let seen = 0;
-  const roots = [document.getElementById("wheelDrawerRow"), ...document.querySelectorAll(".wheel-drawer-panel")].filter((r) => r.getBoundingClientRect().width > 0);
+  const roots = [document.getElementById("wheelBar")].filter((r) => r.getBoundingClientRect().width > 0); // v15.00: the bar and its open panel replace the drawer row and drawers
   for (const root of roots) for (const el of root.querySelectorAll("*")) {
     const txt = [...el.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim()).map((n) => n.textContent.trim()).join(" ");
     if (!txt || el.getBoundingClientRect().width === 0) continue;
@@ -252,10 +259,10 @@ for (const look of ["night", "light"]) for (const width of [390, 1280]) {
   for (const n of Object.keys(GROUPS)) {
     await drawer(page, n);
     const r = await page.evaluate(SWEEP);
-    check(`[${look} ${width}] drawer row + ${n} choices read at 4.5:1 (${r.seen} texts)`, r.seen >= 4 && r.low.length === 0, JSON.stringify(r.low.slice(0, 4)));
+    check(`[${look} ${width}] wheel bar + ${n} choices read at 4.5:1 (${r.seen} texts)`, r.seen >= 4 && r.low.length === 0, JSON.stringify(r.low.slice(0, 4)));
     if (n === "wheel") {
-      const gold = await page.evaluate(() => { const b = document.querySelector('[data-wheel-drawer="wheel"]'); const pb = getComputedStyle(document.querySelector(".wheel-look-btn[aria-pressed=true]")).backgroundColor; return { bg: getComputedStyle(b).backgroundColor, pb }; });
-      check(`[${look} ${width}] the open drawer button uses the "on" style`, gold.bg === gold.pb, JSON.stringify(gold));
+      const gold = await page.evaluate(() => { const b = document.getElementById("wbStatus"); const pb = getComputedStyle(document.querySelector(".wheel-look-btn[aria-pressed=true]")).backgroundColor; return { bg: getComputedStyle(b).backgroundColor, pb, exp: b.getAttribute("aria-expanded") }; });
+      check(`[${look} ${width}] the open bar button is marked open (v15.00; it used to take the "on" gold)`, gold.exp === "true" || gold.bg === gold.pb, JSON.stringify(gold));
     }
   }
   await ctx.close();

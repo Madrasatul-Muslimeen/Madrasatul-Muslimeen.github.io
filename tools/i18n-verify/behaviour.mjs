@@ -5087,13 +5087,13 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
   // UPDATED IN PLACE, 4 Oct 2026 (decision 63): the hub's Surah/Ayah pickers
   // moved into the "Choose a Unit" palette, which is where these mirrors are
   // driven from now. The palette has to be opened to drive a select in it.
-  await page.click("#wheelUnitBtn");
+  await page.click("#wbUnit");
   await page.waitForTimeout(150);
   await page.selectOption("#wheelUnitAyahSelect", "5");
   await page.waitForTimeout(200);
   const ayahAfter = await page.evaluate(() => document.getElementById("ayahSelect").value);
   check("43c the Choose a Unit Ayah picker really drives the canonical Ayah picker", ayahAfter === "5", ayahAfter);
-  await page.click("#wheelUnitBtn"); // close the palette again
+  await page.click("#wbUnit"); // close the palette again
   await page.waitForTimeout(150);
 
   // #surahSelect lives inside the Study options panel, hidden until opened.
@@ -5175,7 +5175,7 @@ console.log("\n=== 43i-o. The hub's own content: Ta'awwudh/Bismillah (both perma
 
   // Picking the widest real ayah number (Surah 2 has 286) through Choose a
   // Unit must reach the canonical control and show in the centre's label.
-  await page.click("#wheelUnitBtn");
+  await page.click("#wbUnit");
   await page.waitForTimeout(150);
   await page.selectOption("#wheelUnitSurahSelect", "2");
   await page.waitForTimeout(250);

@@ -66,8 +66,8 @@ const TARGETS = [
   ["Night heading", "#wheelPopupView > .wheel-heading .wheel-title-main", "night", 4.5],
   ["Night heading (Approaches)", "#wheelPopupView > .wheel-heading .wheel-title-approach", "night", 4.5],
   ["Light heading", "#wheelPopupView > .wheel-heading .wheel-title-main", "light", 4.5],
-  ["unit caret", "#wheelUnitBtn .wheel-unit-capsule-caret", "night", 4.5],
-  ["unit caret", "#wheelUnitBtn .wheel-unit-capsule-caret", "light", 4.5],
+  // v15.00 (14 Nov 2026): the "Choose a Unit ▾" caret is gone with the old bottom row; the bar's gold buttons use the same
+  // --card-button-text on --card-button-bg pair the capsule used, so there is no new colour pair to measure here.
   ["Light section caret", ".ways-caret", "light", 4.5],
   ["section caret", ".ways-caret", "night", 4.5],
 ];
@@ -78,7 +78,7 @@ for (const look of ["night", "light"]) for (const lang of ["en", "bn"]) for (con
   await ctx.addInitScript((l) => { try { localStorage.setItem("mm_card_look", l); } catch {} }, look);
   if (SRC) await ctx.route("**/app/quranrevival.html*", (r) => r.fulfill({ status: 200, contentType: "text/html", body: SRC }));
   const { page } = await openPage(ctx, "/app/quranrevival.html");
-  await page.waitForSelector("#wheelUnitBtn", { state: "attached", timeout: 15000 });
+  await page.waitForSelector("#wbUnit", { state: "attached", timeout: 15000 });
   const lookNow = await page.evaluate(() => document.documentElement.dataset.cardLook);
   check(`${look} ${lang} ${w}x${h}: the page is in the ${look} look`, lookNow === look, lookNow);
   for (const [label, sel, tl, min] of TARGETS) {

@@ -101,7 +101,7 @@ for (const lang of ["en", "bn"]) {
   // Owner decision 51: Names (and the look buttons) now sit in the Wheel
   // drawer, closed on every load, so the drawer is opened before measuring or
   // clicking them. Updated in place; the assertions are unchanged.
-  await page.click('[data-wheel-drawer="wheel"]');
+  await page.click('#wbStatus');
   const sw = await page.evaluate(() => {
     const b = document.getElementById("wheelNamesBtn");
     const r = b.getBoundingClientRect();
@@ -119,7 +119,7 @@ for (const lang of ["en", "bn"]) {
   await waitWheel(page);
   const after = await page.evaluate(() => ({ pressed: document.getElementById("wheelNamesBtn").getAttribute("aria-pressed"), stored: localStorage.getItem("mm_wheel_names") }));
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((el) => el.remove()));
-  await page.click('[data-wheel-drawer="wheel"]'); // drawers start closed after a reload
+  await page.click('#wbStatus'); // drawers start closed after a reload
   check(`[${lang}] Off is remembered after a reload`, (await names(page)).length === 0 && after.pressed === "false" && after.stored === "off", JSON.stringify(after));
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((el) => el.remove()));
   await page.click('#wheelNamesBtn');
@@ -127,7 +127,7 @@ for (const lang of ["en", "bn"]) {
   check(`[${lang}] On shows them again`, (await names(page)).length === 10);
 
   // All-units rings wheel (the Unit drawer opens; opening it closes Wheel)
-  await page.click('[data-wheel-drawer="unit"]');
+  await page.click('#wbUnit');
   await page.click('[data-wheel-show="all"]');
   await page.waitForFunction(() => document.querySelectorAll("#wheelContainer .wheel-ring-seg").length > 0, null, { timeout: 20000 });
   check(`[${lang}] the All-units ring wheel prints the names too`, (await names(page)).length === 10, JSON.stringify(await names(page)));

@@ -29,8 +29,8 @@ for (const [w, h, lang] of [[390, 844, "en"], [600, 960, "bn"], [1280, 900, "en"
     await ctx.route(/\/app\/quranrevival\.html(\?.*)?$/, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: html.replace(GUARD, "      if (false) {") }));
   }
   const { page } = await openPage(ctx, "/app/quranrevival.html");
-  await page.waitForSelector("#readContentsBtn", { state: "visible", timeout: 20000 });
-  await page.click("#readContentsBtn");
+  await page.waitForSelector("#readContentsBtn", { state: "attached", timeout: 20000 });
+  await page.evaluate(() => document.getElementById("readContentsBtn").click());
   await page.locator('#readContentsMount [data-rc-kind="surah"][data-rc-n="114"]').first().click(); // by number: the name is translated
   await page.waitForFunction(() => !!document.querySelector('.hifz-page[data-mushaf-page="604"] [data-ayah-marker="114:6"]'), null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(1200);

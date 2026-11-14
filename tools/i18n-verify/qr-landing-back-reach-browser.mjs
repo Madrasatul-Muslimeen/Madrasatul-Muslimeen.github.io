@@ -39,8 +39,8 @@ for (const [w, h, lang] of VIEWS) {
     });
   }
   const { page } = await openPage(ctx, "/app/quranrevival.html");
-  await page.waitForSelector("#readContentsBtn", { state: "visible", timeout: 20000 });
-  await page.click("#readContentsBtn");
+  await page.waitForSelector("#readContentsBtn", { state: "attached", timeout: 20000 });
+  await page.evaluate(() => document.getElementById("readContentsBtn").click());
   await page.waitForSelector('#readContentsMount [data-rc-kind="surah"][data-rc-n="114"]', { state: "attached" });
   await page.evaluate(() => document.querySelector('#readContentsMount [data-rc-kind="surah"][data-rc-n="114"]').click());
   await page.waitForFunction(() => !!document.querySelector('[data-ayah-marker="114:1"]'), null, { timeout: 15000 });

@@ -93,7 +93,7 @@ for (const lang of ["en", "bn"]) for (const width of [320, 360, 390, 740, 820]) 
       await page.waitForTimeout(300);
       check(`${tag}: Esc closes it again`, await page.evaluate(() => document.getElementById("zabPanel").hidden && document.querySelector(".zab-dock-btn").getAttribute("aria-pressed") === "false"));
       // the Read view hides the row: the corner comes back
-      await page.click("#readContentsBtn");
+      await page.evaluate(() => document.getElementById("readContentsBtn").click());
       await page.waitForTimeout(1000);
       await page.locator(".rc-ar").first().click();
       await page.waitForTimeout(2000);

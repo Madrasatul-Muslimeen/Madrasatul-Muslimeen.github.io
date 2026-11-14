@@ -118,7 +118,7 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 1440, 900], ["bn",
   await settle(page, 300);
   await ev(page, () => document.getElementById("tabApproachBtn")?.click());
   await settle(page, 500);
-  if (width < 900) { await page.click('#wheelDrawerRow [data-wheel-drawer="wheel"]').catch(() => {}); await settle(page, 300); }
+  if (width < 900) { await page.click('#wbStatus').catch(() => {}); await settle(page, 300); }
   await ev(page, () => document.querySelector('[data-wheel-kind="marks"]')?.click());
   await page.waitForSelector("#wheelContainer svg[data-mk-wheel]", { timeout: 6000 }).catch(() => {});
   await ev(page, () => document.querySelector('[data-mk-view="all-words"]')?.click());

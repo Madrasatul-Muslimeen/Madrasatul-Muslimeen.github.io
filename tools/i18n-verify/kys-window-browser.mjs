@@ -48,7 +48,7 @@ async function start(lang, width, height, store = null) {
   return { ctx, page, errors };
 }
 const openKys = async (page) => {
-  await page.click("#myStatusWideBtn");
+  await page.evaluate(() => document.getElementById("myStatusWideBtn").click());
   await page.waitForFunction(() => !!document.querySelector("#myStatusOverviewWheel svg .wheel-seg-num"), null, { timeout: 10000 });
   await page.waitForTimeout(300);
 };

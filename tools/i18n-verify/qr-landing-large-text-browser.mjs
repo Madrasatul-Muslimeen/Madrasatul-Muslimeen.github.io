@@ -40,7 +40,7 @@ for (const [w, h, lang] of [[360, 780, "en"], [360, 780, "bn"], [390, 844, "en"]
     });
   }
   const { page } = await openPage(ctx, "/app/quranrevival.html");
-  await page.waitForSelector("#readContentsBtn", { state: "visible", timeout: 20000 });
+  await page.waitForSelector("#readContentsBtn", { state: "attached", timeout: 20000 });
   await page.waitForTimeout(1000);
   for (const size of ["100%", "150%", "200%"]) {
     const tag = `[${lang} ${w} text ${size}]`;

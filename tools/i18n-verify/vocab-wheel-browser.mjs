@@ -140,11 +140,11 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
 
   // (8) where the switch is: never a row of its own that the wheel pays for
   if (width < 900) {
-    const before = await page.evaluate(() => ({ inDrawer: !!document.querySelector('[data-wheel-drawer-panel="wheel"]')?.contains(document.getElementById("wheelKindRow")) }));
-    await page.click('#wheelDrawerRow [data-wheel-drawer="wheel"]');
+    const before = await page.evaluate(() => ({ inDrawer: !!document.getElementById("wbPanelStatus")?.contains(document.getElementById("wheelKindRow")) }));
+    await page.click('#wbStatus');
     await page.waitForTimeout(250);
     const shown = await page.evaluate(() => [...document.querySelectorAll("#wheelKindRow [data-wheel-kind]")].map((b) => Math.round(b.getBoundingClientRect().height)));
-    check(`${tag} (8) on a phone the switch is in the Wheel drawer and shows when it opens, buttons at least 40px`, before.inDrawer && shown.length === 3 && shown.every((h) => h >= 40), JSON.stringify({ before, shown }));
+    check(`${tag} (8) on a phone the switch is in the bar's Know Your Status panel (v15.00) and shows when it opens, buttons at least 40px`, before.inDrawer && shown.length === 3 && shown.every((h) => h >= 40), JSON.stringify({ before, shown }));
   }
 
   // (2) + (3)
@@ -171,10 +171,10 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   if (width >= 900) {
     const bar = await page.evaluate(() => {
       const b = document.getElementById("wheelPopupTitleBar");
-      return { inBar: !!b?.contains(document.getElementById("wheelKindRow")), h: b?.getBoundingClientRect().height ?? 0,
+      return { inBar: !!document.getElementById("wbPanelStatus")?.contains(document.getElementById("wheelKindRow")), h: b?.getBoundingClientRect().height ?? 0,
         cut: [...(b?.querySelectorAll("button, .note-popup-title") ?? [])].filter((e) => e.scrollWidth > e.clientWidth + 1).length };
     });
-    check(`${tag} (8) on a computer the switch sits in the window's title bar, one line, nothing cut (no wheel height spent)`, bar.inBar && bar.h <= 60 && bar.cut === 0, JSON.stringify(bar));
+    check(`${tag} (8) on a computer the title bar stays one line, nothing cut, and the switch sits in the bar's Know Your Status panel (v15.00: it left the title bar)`, bar.inBar && bar.h <= 60 && bar.cut === 0, JSON.stringify(bar));
   }
   if (width >= 900) check(`${tag} (8) the Vocabulary Wheel sits inside the window (no taller than its space)`, fit.svgB <= fit.secB + 1 && fit.w >= 200, JSON.stringify(fit));
   else check(`${tag} (8) the Vocabulary Wheel fits the phone, no sideways scroll`, fit.over <= 0 && fit.svgL >= 0 && fit.svgR <= width + 1, JSON.stringify(fit));

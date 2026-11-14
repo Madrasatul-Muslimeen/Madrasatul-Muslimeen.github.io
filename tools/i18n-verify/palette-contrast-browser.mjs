@@ -40,7 +40,7 @@ for (const look of ["night", "light"]) {
     const ctx = await newContext(browser, { viewport: { width, height: 844 } });
     await ctx.addInitScript((l) => { try { localStorage.setItem("mm_card_look", l); } catch {} }, look);
     const { page } = await openPage(ctx, "/app/quranrevival.html");
-    await page.waitForSelector("#wheelUnitBtn", { state: "visible", timeout: 20000 });
+    await page.waitForSelector("#wbUnit", { state: "visible", timeout: 20000 });
     await page.waitForTimeout(800);
     check(`[${look} ${width}] the page really is in the ${look} card look`, (await page.evaluate(() => document.documentElement.dataset.cardLook)) === look);
     for (const [where, toggle] of [["landing", "wheelUnit"], ["explore", "exploreApproach"]]) {

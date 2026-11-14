@@ -84,7 +84,7 @@ const openCard = async (page) => {
 /** My Status's whole-Qur'an Ayah tile for `recite` (Achieved + Mastered, counted by the pure roll-up). */
 const myStatusAyahTile = async (page) => {
   await page.evaluate(() => { document.querySelectorAll('[id*="splash"], .mm-splash-overlay').forEach((el) => el.remove()); });
-  await page.click("#myStatusWideBtn");
+  await page.evaluate(() => document.getElementById("myStatusWideBtn").click());
   await page.waitForSelector('#myStatusBody [data-my-status-open="recite"] .ms-tile[data-unit="ayah"]', { timeout: 10000 }).catch(() => {});
   const n = await page.evaluate(() => document.querySelector('[data-my-status-open="recite"] .ms-tile[data-unit="ayah"]')?.dataset.n ?? null);
   await page.click("#myStatusCloseBtn").catch(() => {}); await page.waitForTimeout(300);

@@ -84,13 +84,13 @@ for (const lang of ["en", "bn"]) {
     check(`${L} no sideways scroll`, !m.overflow);
     check(`${L} the wheel and its corner buttons end above the dock`, m.wrap.b <= m.dock + 1, `${m.wrap.b} vs dock ${m.dock}`);
     // A drawer opens over the wheel, on screen.
-    await page.click('[data-wheel-drawer="wheel"]');
+    await page.click('#wbStatus');
     await page.waitForTimeout(300);
-    const panel = await page.evaluate(() => { const p = document.querySelector('[data-wheel-drawer-panel="wheel"]'); const r = p.getBoundingClientRect(); const btn = document.querySelector('[data-wheel-drawer="wheel"]').getBoundingClientRect(); return { shown: !p.hidden && r.height > 0, l: Math.round(r.left), r: Math.round(r.right), below: r.top >= btn.bottom - 1, vw: innerWidth }; });
+    const panel = await page.evaluate(() => { const p = document.querySelector('[data-wheel-drawer-panel="wheel"]'); const r = p.getBoundingClientRect(); const btn = document.querySelector('#wbStatus').getBoundingClientRect(); return { shown: !p.hidden && r.height > 0, l: Math.round(r.left), r: Math.round(r.right), below: r.top >= btn.bottom - 1, vw: innerWidth }; });
     check(`${L} the Wheel drawer opens under its button, on screen`, panel.shown && panel.below && panel.l >= 0 && panel.r <= panel.vw, JSON.stringify(panel));
-    await page.click('[data-wheel-drawer="wheel"]');
+    await page.click('#wbStatus');
     // Choose a Unit's list opens on screen.
-    await page.click("#wheelUnitBtn");
+    await page.click("#wbUnit");
     await page.waitForTimeout(300);
     const pal = await page.evaluate(() => { const p = document.querySelector("[data-bar-palette-wrap='wheelUnit'] .wheel-unit-palette"); if (!p) return null; const r = p.getBoundingClientRect(); return { shown: r.height > 0, l: Math.round(r.left), r: Math.round(r.right), t: Math.round(r.top), b: Math.round(r.bottom), vw: innerWidth, vh: innerHeight }; });
     check(`${L} Choose a Unit's list opens on screen`, !!pal && pal.shown && pal.l >= 0 && pal.r <= pal.vw && pal.t >= 0 && pal.b <= pal.vh, JSON.stringify(pal));

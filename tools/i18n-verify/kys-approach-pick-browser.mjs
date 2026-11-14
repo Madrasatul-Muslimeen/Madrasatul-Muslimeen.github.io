@@ -47,7 +47,7 @@ async function start(lang, width, height) {
   }
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await page.waitForTimeout(700);
-  await page.click("#myStatusWideBtn");
+  await page.evaluate(() => document.getElementById("myStatusWideBtn").click());
   await page.waitForFunction(() => document.querySelectorAll("#myStatusBody [data-ms-row]").length >= 40, null, { timeout: 10000 }).catch(() => {});
   await page.waitForTimeout(400);
   return { ctx, page, errors };

@@ -52,7 +52,7 @@ async function open(lang, [w, h]) {
   return { ctx, page, errors };
 }
 const setUnit = (page, unit) => page.evaluate((u) => { const s = document.getElementById("wheelUnitTypeSelect"); s.value = u; s.dispatchEvent(new Event("change")); }, unit);
-const openPalette = async (page) => { if ((await page.getAttribute("#wheelUnitBtn", "aria-expanded")) !== "true") await page.click("#wheelUnitBtn"); await page.waitForTimeout(150); };
+const openPalette = async (page) => { if ((await page.getAttribute("#wheelUnitBtn", "aria-expanded")) !== "true") await page.click("#wbUnit"); await page.waitForTimeout(150); };
 const readViewShown = (page) => page.evaluate(() => { const r = document.getElementById("readView"); const b = r.getBoundingClientRect(); return !r.hidden && getComputedStyle(r).display !== "none" && b.width > 0 && b.height > 0; });
 const paletteState = (page) => page.evaluate(() => {
   const p = document.querySelector(".wheel-unit-palette"), b = p.getBoundingClientRect();
