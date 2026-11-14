@@ -304,3 +304,13 @@ body.dua-has-popped::before { content: ""; position: fixed; inset: 0; z-index: 5
 .dua-add-open:focus-visible, .dua-add-form :focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }
 .dua-added-ar { font-size: 1.5rem; line-height: 2; margin: 0.4rem 0; }
 .dua-added-meaning { margin: 0.4rem 0; }
+
+/* Drag order inside a group the reader may change (the Owner, 14 Nov): a grip to drag, and ↑ ↓ for keyboard and phone. */
+.dua-list-item-ordered { display: flex; align-items: stretch; gap: 0.3rem; }
+.dua-list-item-ordered > .dua-row { flex: 1 1 auto; min-width: 0; }
+.dua-order-tools { flex: none; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.2rem; }
+.dua-order-grip { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; cursor: grab; touch-action: none; user-select: none; font-size: 1.3rem; color: var(--card-text-muted, #5f6470); }
+.dua-order-btn { min-width: 44px; min-height: 44px; }
+.dua-order-btn:focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }
+.dua-drop-before { box-shadow: 0 -4px 0 #c9a24b; }
+.dua-drop-after { box-shadow: 0 4px 0 #c9a24b; }
