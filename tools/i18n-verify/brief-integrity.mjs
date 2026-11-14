@@ -150,7 +150,7 @@ check("the brief's own version claim matches app/js/version.js", () => {
 });
 
 check("the nine reachable lines the brief names are all present", () => {
-  for (const p of ["legacy/index.html", "legacy-v07/index.html", "legacy-v08/index.html", "legacy-v09/index.html", "legacy-v10/index.html", "legacy-v11/index.html", "legacy-v12/index.html", "legacy-v13/index.html", "app/index.html"]) {
+  for (const p of ["legacy/index.html", "legacy-v07/index.html", "legacy-v08/index.html", "legacy-v09/index.html", "legacy-v10/index.html", "legacy-v11/index.html", "legacy-v12/index.html", "legacy-v13/index.html", "legacy-v14/index.html", "app/index.html"]) {
     assert.ok(fs.existsSync(path.join(root, p)), `${p} is named in the brief's own table and is missing`);
   }
 });
@@ -182,6 +182,9 @@ const LEGACY_ARCHIVES = [
   // archived when v14.01 opened the v14 line (the Owner, 9 Nov: "the new view QR is building goes to the new version v14"),
   // with the same one change and README.
   { dir: "legacy-v13", release: "v13.62", source: "b00c01b20f7d65a0d046e9f013b9a95747e261f7" },
+  // 14 Nov 2026: legacy-v14/ is app/ as RELEASED at v14.42, the last v14 release (merge commit bdd96952),
+  // archived when v15.00 opened the v15 line (the Owner's wheel bar, "We will call this v15.00"), with the same one change and README.
+  { dir: "legacy-v14", release: "v14.42", source: "bdd969529ae1fc28194f2341ae5a05dfe329c358" },
 ];
 for (const { dir: archive, release, source } of LEGACY_ARCHIVES) {
 check(`${archive}/ is still exactly the ${release} release, apart from its one documented change`, () => {

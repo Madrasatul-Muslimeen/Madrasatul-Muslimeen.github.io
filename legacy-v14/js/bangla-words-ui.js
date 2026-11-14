@@ -1,0 +1,141 @@
+// PCF MSA J119 (QR Lead, 8 Nov 2026) -- the Word Card's "Also in Bangla" block, from demo v03.
+// PURE: HTML in, HTML out, plus one delegated listener. It never reads or writes storage or Firestore; the page owns the
+// state (app/js/bangla-words.js) and saves it. Everything a reader sees comes in through `text`, already translated.
+//
+// The block holds, in the order of demo v03:
+//   * (the blue "Also in Bangla" button and its tag are gone, 13 Nov 2026: the three kind chips on the card, banglaMarkRowHtml, mark the word now)
+//   * "Bangla list": Admin's | Mine, to choose whose marks are in force
+//   * the count: known with the Bangla words, and the Bangla words' own share
+//   * the list of words in force, a switch for each word, and ONE switch for the whole list in its heading row.
+import { LIST_ADMIN, LIST_MINE, BANGLA_KINDS, banglaKindsOf, canEditList } from "./bangla-words.js";
+
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+export const BANGLA_TEXT = Object.freeze({
+  heading: "Bangla list", admin: "Admin's", mine: "Mine",
+  adminNote: "admin marks", readOnly: "read only", yours: "yours", listHeading: "Words also in Bangla ({n})",
+  listSwitch: "Use the Bangla word list", savedSwitch: "Count Bangla words as known and on the Wheel", savedSwitchLabel: "Bangla words count as known and on the Wheel", wordSwitch: "{word} in the list", deviceOnly: "Saved on this device only for now.",
+  count: "{words} words, {percent}% of the Qur'an's words", empty: "No words in this list yet.",
+});
+/** The Owner, 13 Nov 2026: the three kinds and the marking's title. {language} is "Bangla" here and becomes Urdu, Hindi ... where a tenant has them. */
+export const BANGLA_MARK_TEXT = Object.freeze({
+  title: "Quranic/ Arabic word in {language} Language:", language: "Bangla",
+  names: "In {language} Names", rituals: "In Rituals", bangla: "In Daily Use",
+  readOnly: "These marks go in the Admin's list, which only an admin can change. Choose Mine in the ☰ menu to mark for yourself.",
+});
+const fill = (s, vars) => String(s).replace(/\{(\w+)\}/g, (_, k) => esc(vars?.[k] ?? ""));
+
+/**
+ * @param {object} p
+ *  state   normalised Bangla state; lemma  this word's lemma id; bn  its Bangla meaning (for the tag)
+ *  canAdmin  may this reader change the admin's list; figures  banglaFigures(); rows  [{l,b,n,ar?}] the words in force; text  BANGLA_TEXT, translated
+ */
+export function banglaBlockHtml({ state, lemma, canAdmin = false, figures = null, rows = [], text = BANGLA_TEXT, open = false, listOn = null } = {}) {
+  if (!state || !lemma) return "";
+  const T = { ...BANGLA_TEXT, ...text };
+  const editable = canEditList(state.list, canAdmin) && state.on;
+  const who = state.list === LIST_MINE ? T.yours : canAdmin ? T.adminNote : T.readOnly;
+  const seg = (id, label) => `<button type="button" class="bnw-seg" data-bangla-list="${id}" aria-pressed="${state.list === id}">${esc(label)}</button>`;
+  const oneRow = (r) => `<div class="bnw-lrow"><button type="button" class="bnw-sw" data-bangla-word="${esc(r.l)}" aria-pressed="${inListSet(state, r.l)}" aria-label="${fill(T.wordSwitch, { word: r.b || r.l })}"${editable ? "" : " disabled"}></button><span lang="bn">${esc(r.b || "")}</span><span class="bnw-ar" dir="rtl" lang="ar">${esc(r.l)}</span><span class="bnw-n">${esc(r.n ?? "")}</span></div>`;
+  // The Owner, 13 Nov 2026: marks "reflected in the Bangla words Category list in the same way": the list is grouped by the three kinds, a word under each kind it carries.
+  const kindsOfRow = (r) => (Array.isArray(r.k) && r.k.length ? r.k : ["bangla"]);
+  const cats = BANGLA_KINDS.map((k) => ({ k, items: rows.filter((r) => kindsOfRow(r).includes(k)) })).filter((c) => c.items.length);
+  const kindName = (k) => fill(T.kindNames?.[k] ?? BANGLA_MARK_TEXT[k], { language: T.language ?? BANGLA_MARK_TEXT.language });
+  const rowHtml = cats.map((c) => `<div class="bnw-cat" data-bangla-cat="${c.k}"><span>${esc(kindName(c.k))}</span><span class="bnw-n">${c.items.length}</span></div>${c.items.map(oneRow).join("")}`).join("");
+  const count = figures ? fill(T.count, { words: figures.words, percent: figures.share.toFixed(2) }) : "";
+  return `<div class="bnw" data-bangla-block>
+    <div class="bnw-row" role="group" aria-label="${esc(T.heading)}"><span class="bnw-lab">${esc(T.heading)}</span>${seg(LIST_ADMIN, T.admin)}${seg(LIST_MINE, T.mine)}<span class="bnw-sub">${esc(who)}</span></div>
+    ${listOn === null ? "" : `<div class="bnw-row bnw-saved" data-bangla-saved-row><span class="bnw-lab">${esc(T.savedSwitch)}</span><button type="button" class="bnw-sw" data-bangla-saved-onoff aria-pressed="${listOn === true}" aria-label="${esc(T.savedSwitchLabel)}"></button></div>`}
+    ${count ? `<div class="bnw-count" data-bangla-count>${count}</div>` : ""}
+    <details class="bnw-list" data-bangla-details${open ? " open" : ""}>
+      <summary><span>${fill(T.listHeading, { n: state.on ? state[state.list].length : 0 })}</span><button type="button" class="bnw-sw" data-bangla-onoff aria-pressed="${state.on}" aria-label="${esc(T.listSwitch)}"></button></summary>
+      <div class="bnw-body">${rowHtml || `<p class="bnw-empty">${esc(T.empty)}</p>`}</div>
+      <p class="bnw-sub bnw-device" data-bangla-device>${esc(T.deviceOnly)}</p>
+    </details>
+  </div>`;
+}
+/**
+ * The Owner, 13 Nov 2026: the third marking on the Word Card, below "Word Progress" and "Mark the Word": the title
+ * "Quranic/ Arabic word in Bangla Language:" over three chips, In Bangla Names, In Rituals, In Daily Use. One, two or all three
+ * may be on. It reuses the Mark-the-Word row's look (.we-row / .we-btn). `text` = BANGLA_MARK_TEXT, translated; `language` the language's name.
+ */
+export function banglaMarkRowHtml({ state, lemma, canAdmin = false, text = {}, language = "" } = {}) {
+  if (!state || !lemma) return "";
+  const T = { ...BANGLA_MARK_TEXT, ...text };
+  const lang = language || T.language;
+  const editable = canEditList(state.list, canAdmin);
+  const on = new Set(banglaKindsOf(state, lemma));
+  const title = fill(T.title, { language: lang });
+  const chips = BANGLA_KINDS.map((k) => `<button type="button" class="we-btn bnk-btn bnk-${k}" data-bangla-kind="${k}" aria-pressed="${on.has(k)}"${editable ? "" : " disabled"}><span class="we-name">${esc(fill(T[k], { language: lang }))}</span></button>`).join("");
+  return `<div class="we-row bnk-row" data-bangla-marks data-bangla-lemma="${esc(lemma)}" role="group" aria-label="${esc(title)}"><span class="we-label" data-bangla-marks-title>${esc(title)}</span><div class="we-buttons">${chips}</div>${editable ? "" : `<p class="we-note" role="status" data-bangla-marks-note>${esc(T.readOnly)}</p>`}</div>`;
+}
+/** Delegated wiring: `onKind(lemma, kind)` on a tap of an enabled chip. */
+export function wireBanglaMarkRow(root, onKind) {
+  root?.querySelectorAll?.("[data-bangla-marks]").forEach((row) => row.addEventListener("click", (e) => {
+    const b = e.target.closest?.("[data-bangla-kind]");
+    if (!b || b.disabled) return;
+    e.stopPropagation();
+    onKind?.(row.dataset.banglaLemma, b.dataset.banglaKind);
+  }));
+}
+/** The three Wheel switches (ring, centre line, tenth part), for the Wheel's legend row. `text` = { ring, centre, tenth, label }. */
+export function banglaWheelSwitchesHtml(state, text = {}) {
+  if (!state) return "";
+  const T = { label: "Bangla words on the Wheel", ring: "Ring", centre: "Centre", tenth: "Part", ...text };
+  const sw = (k) => `<button type="button" class="bnw-chip" data-bangla-wheel="${k}" aria-pressed="${state.wheel?.[k] === true}">${esc(T[k])}</button>`;
+  return `<div class="bnw-wheelsw" role="group" aria-label="${esc(T.label)}" data-bangla-wheel-switches>${sw("ring")}${sw("centre")}${sw("tenth")}</div>`;
+}
+export function wireBanglaWheelSwitches(root, onSwitch) {
+  root?.querySelectorAll?.("[data-bangla-wheel]").forEach((b) => b.addEventListener("click", () => onSwitch?.(b.dataset.banglaWheel, b.getAttribute("aria-pressed") !== "true")));
+}
+const inListSet = (state, l) => state.on && new Set(state[state.list]).has(l);
+
+/** One delegated listener. onWord(lemma, on), onList(id), onOnOff(on). A click on the summary's switch never toggles the details. */
+export function wireBanglaBlock(root, { onWord, onList, onOnOff, onSaved } = {}) {
+  root?.querySelectorAll?.("[data-bangla-block]").forEach((block) => block.addEventListener("click", (e) => {
+    // J134 follow-up (the MSA Architect 93L, A): the SAVED whole-list setting (banglaState.on), which the Wheel and "known" read.
+    const saved = e.target.closest("[data-bangla-saved-onoff]");
+    if (saved) { e.preventDefault(); e.stopPropagation(); onSaved?.(saved.getAttribute("aria-pressed") !== "true"); return; }
+    const sw = e.target.closest("[data-bangla-onoff]");
+    if (sw) { e.preventDefault(); e.stopPropagation(); onOnOff?.(sw.getAttribute("aria-pressed") !== "true"); return; }
+    const w = e.target.closest("[data-bangla-word]");
+    if (w && !w.disabled) { onWord?.(w.dataset.banglaWord, w.getAttribute("aria-pressed") !== "true"); return; }
+    const l = e.target.closest("[data-bangla-list]");
+    if (l) onList?.(l.dataset.banglaList);
+  }));
+}
+
+export const BANGLA_CSS = `
+.bnw{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.bnw-row{display:flex;flex-wrap:nowrap;gap:5px;align-items:center}
+.bnw-lab{font-size:.85rem;opacity:.85;white-space:nowrap}
+.bnw-saved{justify-content:space-between}
+.bnw-saved .bnw-lab{white-space:normal;min-width:0}
+.we-row.bnk-row{--bnk:#5fd0c4}
+[data-card-look="light"] .we-row.bnk-row{--bnk:#0d6b63}
+.we-row .bnk-btn{--we-c:var(--bnk)}
+/* three chips, always ONE line (the Mark-the-Word grid's auto-fit wrapped them in the Word Card's narrow computer column) */
+.we-row.bnk-row .we-buttons{grid-template-columns:repeat(3,minmax(0,1fr))}
+.bnw-cat{display:flex;justify-content:space-between;gap:8px;padding:6px 10px;background:#12263f;font-weight:700;font-size:.82rem;border-bottom:1px solid #1b2e47}
+.bnw-seg{min-height:40px;padding:2px 10px;border-radius:8px;border:1px solid #2c4262;background:#0b1826;color:#e9eef5;font:inherit;font-weight:600;cursor:pointer}
+.bnw-seg[aria-pressed="true"]{background:#c9a24a;color:#10233a;border-color:#c9a24a}
+.bnw-sw:disabled{opacity:.45;cursor:default}
+.bnw-sub{font-size:.8rem;opacity:.85}
+.bnw-wheelsw{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0 8px}
+.bnw-chip{min-height:40px;min-width:44px;padding:2px 12px;border-radius:999px;border:1px solid #c9a24a;background:transparent;color:inherit;font:inherit;font-weight:600;cursor:pointer}
+.bnw-chip[aria-pressed="true"]{background:#c9a24a;color:#10233a}
+.bnw-count{border:1px solid #c9a24a;border-radius:10px;padding:8px 12px;background:#0b1826;font-size:.9rem}
+.bnw-list{border:1px solid #2c4262;border-radius:10px;background:#0b1826}
+.bnw-list summary{padding:8px 12px;font-weight:700;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:10px;list-style:none}
+.bnw-list summary::-webkit-details-marker{display:none}
+.bnw-body{max-height:300px;overflow-y:auto;border-top:1px solid #2c4262}
+.bnw-lrow{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid #1b2e47;font-size:.9rem}
+.bnw-ar{font-family:'Amiri','Scheherazade New','Noto Naskh Arabic',serif;font-size:1.1rem}
+.bnw-n{font-variant-numeric:tabular-nums;opacity:.85}
+.bnw-empty,.bnw-device{margin:0;padding:8px 12px}
+.bnw-sw{width:52px;height:40px;border:0;background:transparent;position:relative;cursor:pointer;padding:0;flex:none}
+.bnw-sw::before{content:"";position:absolute;left:3px;top:7px;width:46px;height:26px;box-sizing:border-box;border-radius:999px;border:1px solid #5fb3ff;background:#10233a}
+.bnw-sw::after{content:"";position:absolute;top:10px;left:6px;width:20px;height:20px;border-radius:50%;background:#8fcaff;transition:left .15s}
+.bnw-sw[aria-pressed="true"]::before{background:#5fb3ff}
+.bnw-sw[aria-pressed="true"]::after{left:28px;background:#0b1826}
+`;
