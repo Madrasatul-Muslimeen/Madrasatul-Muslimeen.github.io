@@ -17,6 +17,10 @@ const MUT = {
   anyone: ["app/js/dua-groups-menu.js", "const canAdmin = () => !!S.session?.canCheck;", "const canAdmin = () => true;"],
   nolist: ["app/js/dua-groups-menu.js", "data.groups.set(n.id, { id: n.id, custom: \"admin\", items });", "data.groups.set(n.id, { id: n.id, custom: \"admin\", items: [] });"],
   noadded: ["app/js/dua-groups-menu.js", "placements: groupId ? [{ group: groupId, order }] : [], added });", "placements: groupId ? [{ group: groupId, order }] : [], added: undefined });"],
+  noorder: ["app/js/dua-groups-menu.js", "const order = a != null && b != null ? (a + b) / 2 : a != null ? a + 1 : b != null ? b - 1 : 1;", "const order = placementOrder(cur, groupId);"],
+  studentgrip: ["app/js/dua-groups-menu.js", 'return w === "admin" ? canAdmin() : w === "mine" ? canMine() : false;', "return !!w;"],
+  hisn: ["app/js/dua-study.js", "    ], bar).remove();\n    return card;", '    ], bar).remove();\n    { const k = el("div"); card.appendChild(k); attachKeepEditor(card, k, "hisn-" + String(e.h).replace(":", "-")); }\n    return card;'],
+  noquran: ["app/js/dua-study.js", "if (qKey) attachKeepEditor(card, quranKeep, qKey); else quranKeep.remove();", "quranKeep.remove();"],
   stale: ["app/js/dua-groups-menu.js", "if (r.ok) S[which] = r.nodes;", ""],
   nosavetree: ["app/js/dua-groups-menu.js", "const r = await saveTree(which, next);", "const r = { ok: true };"],
   nowayback: ["app/js/dua-study.js", '    u.searchParams.set("g", where.g);', '    u.searchParams.set("g", CUSTOM_ID.test(where.g) ? "rasul" : where.g);'],
@@ -29,8 +33,11 @@ const SEED = `
 DATA.duaGroups = [{ _id: TENANT_ID + "__admin", tenantId: TENANT_ID, ownerKey: "admin", schemaVersion: 1, nodes: [
   { id: "g-adminaa1", name: { en: "Madrasah morning", bn: "সকালের দুআ" }, kids: [{ id: "g-adminaa2", name: { en: "Waking" }, kids: [] }] }] }];
 DATA.duaGroups.push({ _id: TENANT_ID + "__p1", tenantId: TENANT_ID, ownerKey: "p1", schemaVersion: 1, nodes: [
-  { id: "g-mineaaa1", name: { en: "My list" }, kids: [], duas: ["2"] }, { id: "g-mineaaa2", name: { en: "Second list" }, kids: [], duas: [] }] });
-DATA.duaEdits = [{ _id: TENANT_ID + "__2", tenantId: TENANT_ID, duaKey: "2", title: {}, placements: [{ group: "g-adminaa1", order: 1 }], hidden: false, schemaVersion: 1 }];`;
+  { id: "g-mineaaa1", name: { en: "My list" }, kids: [], duas: ["2", "3", "1"] }, { id: "g-mineaaa2", name: { en: "Second list" }, kids: [], duas: [] }] });
+DATA.duaEdits = [
+  { _id: TENANT_ID + "__2", tenantId: TENANT_ID, duaKey: "2", title: {}, placements: [{ group: "g-adminaa1", order: 1 }], hidden: false, schemaVersion: 1 },
+  { _id: TENANT_ID + "__3", tenantId: TENANT_ID, duaKey: "3", title: {}, placements: [{ group: "g-adminaa1", order: 2 }], hidden: false, schemaVersion: 1 },
+  { _id: TENANT_ID + "__1", tenantId: TENANT_ID, duaKey: "1", title: {}, placements: [{ group: "g-adminaa1", order: 3 }], hidden: false, schemaVersion: 1 }];`;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 async function applyMut(ctx) {
   if (!MUTATE) return;
@@ -250,6 +257,81 @@ for (const [id, label] of [["g-adminaa1", "Admin group"], ["g-mineaaa1", "My gro
   const { ctx, P } = await open(1280, "en", null, "/app/dua-study.html?g=g-zzzzzzzz");
   await P.waitForSelector(".dua-group-missing", { timeout: 25000 });
   check("[missing group] the list says in words that the group could not be found", true);
+  await ctx.close();
+}
+
+// Qur'anic duas can be put in groups; Hisn al-Muslim is resources only and cannot (the Owner, 14 Nov)
+{
+  const { ctx, P } = await open(1280, "en", null, "/app/dua-study.html?g=prophets&open=1");
+  await P.waitForSelector("[data-dua-quran]", { timeout: 25000 });
+  await P.click("[data-dua-menu-toggle]");
+  const hasQEditor = await P.waitForSelector("[data-dua-keep-edit]", { state: "attached", timeout: 8000 }).then(() => true, () => false);
+  check("[quran] a Qur'anic dua card has the group editor on its Keep tab", hasQEditor);
+  if (!hasQEditor) { await ctx.close(); console.log(`\n${pass} passed, ${fail} failed`); process.exit(1); }
+  await P.evaluate(() => { for (const b of document.querySelectorAll(".dua-menu-tab")) if (/keep/i.test(b.textContent)) b.click(); });
+  await P.check('[data-dua-keep-groups="admin"] input[data-dua-group-id="g-adminaa2"]');
+  await P.click('[data-dua-keep-save="groups"]');
+  await P.waitForFunction(() => (window.__stubWriteData || []).some((w) => w.col === "duaEdits" && /__quran-7-23$/.test(w.id)));
+  const wq = (await writes(P)).filter((w) => w.col === "duaEdits" && /__quran-7-23$/.test(w.id)).at(-1);
+  check("[quran] a Qur'anic dua (7:23) is put in a group: one note under its permanent key quran-7-23", wq.data.duaKey === "quran-7-23" && wq.data.placements?.[0]?.group === "g-adminaa2", JSON.stringify(wq.data));
+  const same = await P.evaluate(async () => {
+    const [a, b] = await Promise.all([import("/app/js/dua-study.js"), import("/app/js/dua-saving-data.js")]);
+    return ["7:23", "2:285-286", "bad", "1000:1", "7:23:1"].every((r) => a.quranKeyOf(r) === b.quranPlanKey(r));
+  });
+  check("[quran] the page's own key rule equals the saving layer's quranPlanKey (no drift)", same);
+  await ctx.close();
+}
+{
+  const { ctx, P } = await open(1280, "en", null, "/app/dua-study.html?g=occasions&part=wake&open=1");
+  await P.waitForSelector("[data-dua-menu-toggle]", { timeout: 25000 });
+  await P.click("[data-dua-menu-toggle]");
+  await P.waitForTimeout(1500);
+  check("[hisn] a Hisn al-Muslim card has NO group editor (resources only)", (await P.$$("[data-dua-keep-edit]")).length === 0);
+  await ctx.close();
+}
+// drag order inside a group: the madrasah's group puts a number between the neighbours on ONE note; My group rewrites its list
+{
+  const { ctx, P } = await open(1280, "en", null, "/app/dua-study.html?g=g-adminaa1");
+  await P.waitForSelector("[data-dua-down]", { timeout: 25000 });
+  const rowsBefore = await P.$$eval("#duaBody .dua-row", (r) => r.map((x) => x.querySelector(".dua-row-meta").textContent.match(/\d+/)?.[0]));
+  const before = (await writes(P)).length;
+  await P.click('[data-dua-down="1"]');
+  await P.waitForFunction((n) => (window.__stubWriteData || []).length > n, before);
+  const wo = (await writes(P)).filter((w) => w.col === "duaEdits");
+  check("[order] ↓ on the first Dua writes ONE note: its number now sits between its two new neighbours (2.5)", wo.length === 1 && /__2$/.test(wo[0].id) && wo[0].data.placements?.[0]?.order === 2.5, JSON.stringify(wo.map((w) => [w.id, w.data.placements])));
+  check("[order] the list starts with Dua 1, 2 untouched until the stub re-reads (positive control: three rows)", rowsBefore.length === 3, rowsBefore.join());
+  // a drag with the mouse on the grip: last row to the top
+  const g = await (await P.$('[data-dua-grip="3"]')).boundingBox();
+  const top = await (await P.$("#duaBody .dua-list-item-ordered >> nth=0")).boundingBox();
+  const n0 = (await writes(P)).length;
+  await P.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
+  await P.mouse.down();
+  await P.mouse.move(top.x + 60, top.y + 4, { steps: 8 });
+  await P.mouse.up();
+  await P.waitForFunction((n) => (window.__stubWriteData || []).length > n, n0);
+  const wd = (await writes(P)).at(-1);
+  check("[order] dragging the last Dua to the top writes ONE note with a number just before the new first Dua (which sits at 2): order 1", wd.col === "duaEdits" && /__1$/.test(wd.id) && wd.data.placements?.[0]?.order === 1, JSON.stringify([wd.id, wd.data.placements]));
+  await ctx.close();
+}
+{
+  const { ctx, P } = await open(1280, "en", null, "/app/dua-study.html?g=g-mineaaa1");
+  await P.waitForSelector("[data-dua-up]", { timeout: 25000 });
+  const n0 = (await writes(P)).length;
+  await P.click('[data-dua-up="3"]');
+  await P.waitForFunction((n) => (window.__stubWriteData || []).length > n, n0);
+  const wm = (await writes(P)).filter((w) => w.col === "duaGroups" && /__p1$/.test(w.id)).at(-1);
+  check("[order] ↑ in My group rewrites MY list in the new order (2, 1, 3), under my own document", JSON.stringify(wm.data.nodes.find((n) => n.id === "g-mineaaa1").duas) === '["2","1","3"]', JSON.stringify(wm.data.nodes[0].duas));
+  await P.evaluate(() => { window.__stubFailWrites = true; });
+  await P.click('[data-dua-down="1"]');
+  await P.waitForFunction((m) => document.querySelector(".dua-order-status")?.textContent === m, "Could not save. Nothing was changed.");
+  check("[I15] a refused reorder says so in words", true);
+  await ctx.close();
+}
+{
+  const { ctx, P } = await open(1280, "en", "student", "/app/dua-study.html?g=g-adminaa1");
+  await P.waitForSelector("#duaBody .dua-row", { timeout: 25000 });
+  await P.waitForTimeout(700);
+  check("[student preview] the madrasah's group list has no drag grips or ↑ ↓", (await P.$$("[data-dua-grip], [data-dua-up], [data-dua-down]")).length === 0);
   await ctx.close();
 }
 

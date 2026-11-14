@@ -305,5 +305,39 @@ export function createCustomGroups(opts = {}) {
     host.appendChild(box);
   }
 
-  return { ensure, apply, mountMenuTrees, keepEditor, newDuaForm, names, state: S, canAdmin, canMine };
+  const whichTree = (groupId) => (find(S.admin, groupId) ? "admin" : find(S.mine, groupId) ? "mine" : null);
+  /** May this reader put the Duas of group `groupId` in order? (The madrasah's groups: owner/prime. A person's own: that person.) */
+  function canEditGroup(groupId) {
+    const w = whichTree(groupId);
+    return w === "admin" ? canAdmin() : w === "mine" ? canMine() : false;
+  }
+  /**
+   * Drag order (the Owner, 14 Nov): moves the Dua `key` inside group `groupId` to sit right after `prevKey` (null: first) and right before
+   * `nextKey` (null: last). One write: the madrasah's group puts a number between its two neighbours' numbers on THAT Dua's own note;
+   * a person's own group rewrites its list. Never removes or hides anything. Returns { ok } (or the failed save's entry, already reported).
+   */
+  async function moveInGroup(groupId, key, { prevKey = null, nextKey = null } = {}) {
+    const which = whichTree(groupId);
+    if (!which || !canEditGroup(groupId)) return { ok: false, refused: "not-allowed" };
+    if (which === "mine") {
+      const next = JSON.parse(JSON.stringify(S.mine));
+      const node = find(next, groupId).node;
+      const arr = (node.duas ?? []).filter((k) => k !== key);
+      if (!(node.duas ?? []).includes(key)) return { ok: false, refused: "not-in-group" };
+      const at = prevKey && arr.includes(prevKey) ? arr.indexOf(prevKey) + 1 : nextKey && arr.includes(nextKey) ? arr.indexOf(nextKey) : arr.length;
+      arr.splice(at, 0, key);
+      node.duas = arr;
+      return saveTree("mine", next);
+    }
+    const cur = S.edits.get(key);
+    if (!cur || !cur.placements.some((p) => p.group === groupId)) return { ok: false, refused: "not-in-group" };
+    const ord = (k) => (k && S.edits.get(k) ? placementOrder(S.edits.get(k), groupId) : null);
+    const a = ord(prevKey), b = ord(nextKey);
+    const order = a != null && b != null ? (a + b) / 2 : a != null ? a + 1 : b != null ? b - 1 : 1;
+    const r = await saveDuaEdit(S.db, S.ctx, { duaKey: key, placements: cur.placements.map((p) => (p.group === groupId ? { ...p, order } : p)) });
+    if (r.ok) S.edits.set(key, r.edit);
+    return r;
+  }
+
+  return { ensure, apply, mountMenuTrees, keepEditor, newDuaForm, moveInGroup, canEditGroup, keyOfEntry: entryKey, names, state: S, canAdmin, canMine };
 }

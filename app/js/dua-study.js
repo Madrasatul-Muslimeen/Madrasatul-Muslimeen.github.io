@@ -37,6 +37,14 @@ export const GROUP_IDS = ["occasions", "books", "prophets", "rasul", "sahaba", "
 // (dua-groups-menu.js, loaded on demand); their names are kept here once they are loaded.
 const CUSTOM_ID = /^g-[a-z0-9]{8}$/;
 const customNames = new Map();
+/**
+ * A Qur'anic dua reference "7:23" / "2:285-286" -> its permanent group key "quran-7-23" / "quran-2-285-286" (null otherwise). The same rule as
+ * quranPlanKey in dua-saving-data.js, kept here so this page does not import the saving layer at start-up (I9); a test compares the two.
+ */
+export function quranKeyOf(ref) {
+  const m = /^([0-9]{1,3}):([0-9]{1,3})(?:-([0-9]{1,3}))?$/.exec(String(ref ?? ""));
+  return m ? `quran-${m[1]}-${m[2]}${m[3] ? `-${m[3]}` : ""}` : null;
+}
 // D01: the seven groups' names. "Rasulullah" is always followed by "Sallallahu A'laihi Wa Sallam" (saw128).
 export function groupName(id) {
   if (customNames.has(id)) { const n = customNames.get(id); return (getAppLang() === "bn" && n.bn) || n.en; }
@@ -157,7 +165,8 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
   // pressed, when the address names a group, and once in the background after the first paint (for the admin's titles and group lists).
   let cg = null;
   const getCg = () => (cg ??= import("./dua-groups-menu.js").then((m) => m.createCustomGroups()));
-  const applyCustom = (c) => { c.apply(data); customNames.clear(); for (const [id, nm] of c.names) customNames.set(id, nm); };
+  let cgCtl = null; // the controller once loaded (the list reads it to know whether the reader may put a group's Duas in order)
+  const applyCustom = (c) => { cgCtl = c; c.apply(data); customNames.clear(); for (const [id, nm] of c.names) customNames.set(id, nm); };
   let groupNote = false; // an address named a group that could not be found or loaded: the list says so, once, in words
   let bgStarted = false;
   function backgroundCustom() {
@@ -444,6 +453,45 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     body.appendChild(pager());
     const ol = el("ol", "dua-list");
     ol.start = from + 1;
+    const canOrder = !!(g.custom && cgCtl?.canEditGroup(where.g) && list.length > 1);
+    const orderStatus = el("p", "hadith-note dua-order-status");
+    orderStatus.setAttribute("role", "status");
+    if (canOrder) body.appendChild(orderStatus);
+    // Moves the entry at list index `from` to sit before the entry currently at `before` (an index into the same list, 0..length).
+    async function placeAt(fromIdx, before) {
+      const rest = list.filter((_, k) => k !== fromIdx);
+      const pos = before > fromIdx ? before - 1 : before;
+      if (pos === fromIdx || pos < 0 || pos > rest.length) return;
+      const key = cgCtl.keyOfEntry(list[fromIdx]);
+      const prevKey = pos > 0 ? cgCtl.keyOfEntry(rest[pos - 1]) : null;
+      const nextKey = pos < rest.length ? cgCtl.keyOfEntry(rest[pos]) : null;
+      const r = await cgCtl.moveInGroup(where.g, key, { prevKey, nextKey });
+      if (!r.ok) { orderStatus.textContent = t("Could not save. Nothing was changed."); return; }
+      applyCustom(cgCtl);
+      render();
+    }
+    // Pointer drag (mouse or finger) on the grip: the row under the pointer shows where it will land; letting go moves it there.
+    function startDrag(ev, grip, fromIdx, olEl) {
+      ev.preventDefault();
+      grip.setPointerCapture?.(ev.pointerId);
+      let target = null, after = false;
+      const clear = () => olEl.querySelectorAll(".dua-drop-before, .dua-drop-after").forEach((x) => x.classList.remove("dua-drop-before", "dua-drop-after"));
+      const move = (e) => {
+        clear();
+        const li = document.elementFromPoint(e.clientX, e.clientY)?.closest?.(".dua-list-item-ordered");
+        if (!li || !olEl.contains(li)) { target = null; return; }
+        const r = li.getBoundingClientRect();
+        after = e.clientY > r.top + r.height / 2;
+        target = Number(li.dataset.duaIndex);
+        li.classList.add(after ? "dua-drop-after" : "dua-drop-before");
+      };
+      const up = () => {
+        grip.removeEventListener("pointermove", move); grip.removeEventListener("pointerup", up); grip.removeEventListener("pointercancel", up);
+        clear();
+        if (target != null) placeAt(fromIdx, target + (after ? 1 : 0));
+      };
+      grip.addEventListener("pointermove", move); grip.addEventListener("pointerup", up); grip.addEventListener("pointercancel", up);
+    }
     list.slice(from, from + PER_PAGE).forEach((e, k) => {
       const i = from + k + 1;
       const li = el("li", "dua-list-item");
@@ -465,6 +513,25 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       b.appendChild(main);
       b.addEventListener("click", () => { where.open = i; render(); root.scrollIntoView({ block: "start" }); });
       li.appendChild(b);
+      // The Owner (14 Nov): the Duas of a group the reader may change are dragged into order (a grip), or moved with ↑ ↓ (keyboard, phone).
+      if (canOrder) {
+        li.classList.add("dua-list-item-ordered");
+        li.dataset.duaIndex = String(i - 1);
+        const tools = el("span", "dua-order-tools");
+        const grip = el("span", "dua-order-grip", "⠿");
+        grip.dataset.duaGrip = String(i); grip.setAttribute("aria-hidden", "true");
+        const up = el("button", "dua-ref dua-order-btn", "↑");
+        up.type = "button"; up.dataset.duaUp = String(i); up.disabled = i <= 1;
+        up.setAttribute("aria-label", `${t("Move up")} ${num(i)}`);
+        up.addEventListener("click", () => placeAt(i - 1, i - 2));
+        const down = el("button", "dua-ref dua-order-btn", "↓");
+        down.type = "button"; down.dataset.duaDown = String(i); down.disabled = i >= list.length;
+        down.setAttribute("aria-label", `${t("Move down")} ${num(i)}`);
+        down.addEventListener("click", () => placeAt(i - 1, i + 1));
+        grip.addEventListener("pointerdown", (ev) => startDrag(ev, grip, i - 1, ol));
+        tools.append(grip, up, down);
+        li.appendChild(tools);
+      }
       ol.appendChild(li);
     });
     body.appendChild(ol);
@@ -824,6 +891,30 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     return keep;
   }
 
+  /**
+   * The Keep tab's group and title editor for ONE dua (`key`: its number as text, or quran-<surah>-<ayah>), read on the first press of the
+   * card's Menu, never when the card opens. Hisn al-Muslim cards never get it: the Owner (14 Nov) keeps Hisn as resources only.
+   */
+  function attachKeepEditor(article, keep, key) {
+    const editHost = el("div", "dua-keep-edit-host");
+    keep.appendChild(editHost);
+    article.addEventListener("click", function onceEdit(ev) {
+      if (!ev.target.closest?.("[data-dua-menu-toggle]")) return;
+      article.removeEventListener("click", onceEdit);
+      getCg().then(async (c) => {
+        await c.ensure({ wait: true });
+        if (!c.state.session) return;
+        applyCustom(c);
+        c.keepEditor(editHost, key, {
+          current: CUSTOM_ID.test(where.g) ? where.g : null,
+          onSaved: () => applyCustom(c),
+          onRemoved: () => { applyCustom(c); backToList(); },
+        });
+        keep.hidden = false;
+      }).catch(() => { /* the card works without the editor */ });
+    });
+  }
+
   /** A Dua from the Hadith books: the same card as Hadith Study's Dua tab (progress, notes, bookmark, checks). */
   function mountHadithDuaCard(host, n, bar = null) {
     host.appendChild(el("p", "hadith-note", t("Loading…")));
@@ -856,23 +947,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       });
       // The Owner (14 Nov): put this Dua in the madrasah's groups and your own, take it out of a list, and (admin) edit its title.
       // It lives in the Menu's Keep tab and is read on the first press of the Menu (never when the card opens).
-      const editHost = el("div", "dua-keep-edit-host");
-      keep.appendChild(editHost);
-      article.addEventListener("click", function onceEdit(ev) {
-        if (!ev.target.closest?.("[data-dua-menu-toggle]")) return;
-        article.removeEventListener("click", onceEdit);
-        getCg().then(async (c) => {
-          await c.ensure({ wait: true });
-          if (!c.state.session) return;
-          applyCustom(c);
-          c.keepEditor(editHost, String(n), {
-            current: CUSTOM_ID.test(where.g) ? where.g : null,
-            onSaved: () => applyCustom(c),
-            onRemoved: () => { applyCustom(c); backToList(); },
-          });
-          keep.hidden = false;
-        }).catch(() => { /* the card works without the editor */ });
-      });
+      attachKeepEditor(article, keep, String(n));
       host.appendChild(article);
       popIfCarried(article);
       // My Notes and Bookmark are written into the progress block as it fills: they move into the Menu's Keep group.
@@ -991,12 +1066,15 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const a = el("a", "dua-ref dua-quran-open", t("Open in Quran Study ↗"));
     a.href = `./quranrevival.html?goto=${e.ref}&back=1`;
     card.appendChild(a);
-    dressCard(card, [
+    const quranKeep = dressCard(card, [
       { key: "meaning", label: t("Meaning"), nodes: kids(card, ".dua-quran-meaning") },
       { key: "source", label: t("Source"), nodes: kids(card, ".dua-quran-open") },
       ...sheetSections(() => ({ ...titled(titleOf(data, e)), ar: e.ar, words: e.words ?? null, en: e.en, bn: e.bn, line: e.who[L], quran: e.ref,
         ref: `${t("Qur'an {ref}", { ref: num(e.ref) })} · ${e.surah?.en ?? ""}` })),
-    ], bar).remove();
+    ], bar);
+    // The Owner (14 Nov): Qur'anic duas belong in the Dua groups. The Keep slot stays (empty and hidden until the editor fills it).
+    const qKey = quranKeyOf(e.ref);
+    if (qKey) attachKeepEditor(card, quranKeep, qKey); else quranKeep.remove();
     wireQuranPlay(card, e.ref);
     return card;
   }
