@@ -8,7 +8,7 @@
 //   --mutate=noscroll   the reopened card is not brought on screen -> a "lands on 4563" check fails
 //   --mutate=noresume   hadith-collections.html ignores resume  -> the collections "lands on 4563" check fails
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -42,7 +42,7 @@ for (const [pagePath, lang, width] of [["/app/hadith-collections.html", "en", 39
     });
   }
   const { page: P, errors } = await openPage(ctx, pagePath);
-  await P.click('[data-hadith-tab="collections"]').catch(() => {});
+  await hadithGo(P, "collections").catch(() => {});
   await P.waitForSelector('[data-hadeethenc-category="3"]', { timeout: 20000 });
   await P.click('[data-hadeethenc-category="3"]');
   await P.waitForSelector('[data-hadeethenc-hadith="4563"]', { timeout: 15000 });

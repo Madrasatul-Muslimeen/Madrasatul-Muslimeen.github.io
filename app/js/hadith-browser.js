@@ -33,6 +33,7 @@ import { hadithMarksRow } from "./hadith-key-marks.js";
 import { termsFolder } from "./hadith-terms-ui.js";
 import { HADITH_COLOURS, getHadithColours, setHadithColours } from "./hadith-colours.js";
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
+import { settingsHost, addPreviewCue } from "./hadith-menu-settings.js";
 import { subjectAddRow, renderSubjectList } from "./hadith-subjects.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
@@ -262,17 +263,20 @@ function controls(state, render) {
     focusActiveTab();
     return true;
   };
-  tabs.appendChild(menuButton(state, render, "books", t("Hadith Books"), (list, close) => fillBooksMenu(list, close, state, render), toShelf));
+  // PCF MSA J106 (the Owner, 14 Nov 2026, demo ticks 1B 4A): ONE bar -- Menu, Books, Subjects, Explore, Search (Search at
+  // the right edge). Encyclopedia, Classical Explanations, a Dua link and Settings (Text language, Card colours, Person,
+  // and the "Previewing as" note) live in Menu. Every control keeps its data-hadith-tab / id; the Menu panel starts hidden.
+  const menuWrap = menuButton(state, render, "menu", t("Menu"), (list, close) => fillMenuMenu(list, close, state, render));
+  const menuBtn = menuWrap.querySelector(".hadith-menu-btn");
+  // Encyclopedia and Classical Explanations are rows of Menu: while one is the view, Menu is the "current" button (and the one that keeps focus).
+  if (["collections", "commentary"].includes(state.view)) { menuBtn.classList.add("active"); menuBtn.setAttribute("aria-current", "page"); }
+  addPreviewCue(menuBtn);
+  tabs.appendChild(menuWrap);
+  tabs.appendChild(menuButton(state, render, "books", t("Books|Hadith Study menu"), (list, close) => fillBooksMenu(list, close, state, render), toShelf));
   tabs.appendChild(menuButton(state, render, "subjects", t("Subjects|Hadith Study menu"), (list, close) => fillSubjectsMenu(list, close, state, render)));
-  tabs.appendChild(el("span", "hadith-menubar-sep"));
   for (const [view, label] of [
-    ["collections", t("Encyclopedia")],
-    // No "Topics" tab (the Owner, 13 Nov 2026: "Subject and Topic are same"): the Subjects menu is the way in. The view itself stays (additive),
-    // reachable only from code and tests through window.__hadithCorpus.
-    ["search", t("Search")],
     ["explore", t("Explore")],
-    ["commentary", PANEL_TITLE[getAppLang()] ?? PANEL_TITLE.en],
-    ["dua", t("Dua")],
+    ["search", t("Search")],
   ]) {
     const b = el("button", `hadith-tab${state.view === view ? " active" : ""}`, label);
     b.type = "button";
@@ -282,35 +286,6 @@ function controls(state, render) {
     tabs.appendChild(b);
   }
   bar.appendChild(tabs);
-
-  const langWrap = el("label", "hadith-lang-wrap");
-  langWrap.appendChild(el("span", "hadith-lang-label", t("Text language")));
-  const sel = el("select", "hadith-lang-select");
-  // It already carries this id. Named here because a language-leak check
-  // excludes it BY NAME: like every other language picker in the app, it
-  // names each language in that language's own script, in every UI language,
-  // on purpose -- that is how a reader of one of them finds the setting.
-  sel.id = "hadithContentLang";
-  for (const l of CONTENT_LANGUAGES) {
-    const o = el("option", null, CONTENT_LANG_LABELS[l]);
-    o.value = l;
-    o.lang = l; // each language is named in its own script; marking it keeps a reader's widened letter-spacing off the Arabic (audit part 34)
-    if (l === state.contentLang) o.selected = true;
-    sel.appendChild(o);
-  }
-  sel.addEventListener("change", () => { state.contentLang = sel.value; render(); });
-  langWrap.appendChild(sel);
-  bar.appendChild(langWrap);
-  // Card colours (the Owner's choice, 8 Nov 2026): one of four sets, remembered on this device; changes the cards at once.
-  const colWrap = el("label", "hadith-lang-wrap hadith-colours-wrap");
-  colWrap.appendChild(el("span", "hadith-lang-label", t("Card colours")));
-  const colSel = el("select", "hadith-lang-select hadith-colours-select");
-  colSel.id = "hadithColours";
-  const nowColours = getHadithColours();
-  for (const c of HADITH_COLOURS) { const o = el("option", null, t(c.name)); o.value = c.id; if (c.id === nowColours) o.selected = true; colSel.appendChild(o); }
-  colSel.addEventListener("change", () => { setHadithColours(colSel.value); });
-  colWrap.appendChild(colSel);
-  bar.appendChild(colWrap);
   return bar;
 }
 
@@ -365,6 +340,56 @@ function menuButton(state, render, view, label, fill, before = null) {
   });
   wrap.append(btn, panel);
   return wrap;
+}
+
+/** The Menu panel: the former corpus tabs that no longer sit on the bar, a link to the Dua module, and Settings. */
+function fillMenuMenu(panel, close, state, render) {
+  const go = (view) => { close(); state.view = view; render(); focusActiveTab(); };
+  for (const [view, label] of [["collections", t("Encyclopedia")], ["commentary", PANEL_TITLE[getAppLang()] ?? PANEL_TITLE.en]]) {
+    const row = el("button", `hadith-row hadith-menu-item${state.view === view ? " active" : ""}`);
+    row.type = "button";
+    row.dataset.hadithTab = view;
+    if (state.view === view) row.setAttribute("aria-current", "page");
+    row.appendChild(el("span", "hadith-row-name", label));
+    row.addEventListener("click", () => go(view));
+    panel.appendChild(row);
+  }
+  // Dua is its own module (the Owner, 14 Nov 2026): a link to its own page, with a way back (the way-back law).
+  const dua = el("a", "hadith-row hadith-menu-item");
+  dua.href = "dua-study.html?back=1";
+  dua.dataset.hadithDuaLink = "true";
+  dua.appendChild(el("span", "hadith-row-name", t("Dua ↗")));
+  panel.appendChild(dua);
+
+  panel.appendChild(el("h3", "hadith-menu-heading", t("Settings")));
+  const langWrap = el("label", "hadith-lang-wrap");
+  langWrap.appendChild(el("span", "hadith-lang-label", t("Text language")));
+  const sel = el("select", "hadith-lang-select");
+  // It already carries this id. Named here because a language-leak check excludes it BY NAME: like every other
+  // language picker in the app, it names each language in that language's own script, in every UI language, on purpose.
+  sel.id = "hadithContentLang";
+  for (const l of CONTENT_LANGUAGES) {
+    const o = el("option", null, CONTENT_LANG_LABELS[l]);
+    o.value = l;
+    o.lang = l; // each language is named in its own script; marking it keeps a reader's widened letter-spacing off the Arabic (audit part 34)
+    if (l === state.contentLang) o.selected = true;
+    sel.appendChild(o);
+  }
+  sel.addEventListener("change", () => { state.contentLang = sel.value; close(); render(); });
+  langWrap.appendChild(sel);
+  panel.appendChild(langWrap);
+  // Card colours (the Owner's choice, 8 Nov 2026): one of four sets, remembered on this device; changes the cards at once.
+  const colWrap = el("label", "hadith-lang-wrap hadith-colours-wrap");
+  colWrap.appendChild(el("span", "hadith-lang-label", t("Card colours")));
+  const colSel = el("select", "hadith-lang-select hadith-colours-select");
+  colSel.id = "hadithColours";
+  const nowColours = getHadithColours();
+  for (const c of HADITH_COLOURS) { const o = el("option", null, t(c.name)); o.value = c.id; if (c.id === nowColours) o.selected = true; colSel.appendChild(o); }
+  colSel.addEventListener("change", () => { setHadithColours(colSel.value); });
+  colWrap.appendChild(colSel);
+  panel.appendChild(colWrap);
+  // Person (and Tenant) and the "Previewing as" note are the shared page's own elements: mounted here, never changed.
+  panel.appendChild(settingsHost());
 }
 
 function fillBooksMenu(panel, close, state, render) {
@@ -1104,9 +1129,7 @@ const OPENITI_CHAPTER_PAGE = 100;
 function renderOpenitiSource(state) {
   const section = el("section", "openiti-section");
   section.id = "openitiSection";
-  section.appendChild(el("h2", null, t("Hadith Books")));
-  section.appendChild(el("p", "openiti-study-soon",
-    t("Notes, bookmarking and marking a hadith or passage as studied are not enabled here yet — the Owner has only decided this for HadeethEnc so far.")));
+  // The "Hadith Books" heading and the grey "not enabled here yet" note are gone (the Owner, 14 Nov 2026).
   const body = el("div", "openiti-body");
   section.appendChild(body);
 

@@ -7,7 +7,7 @@
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/dua-tab-browser.mjs
 import fs from "node:fs";
 import path from "node:path";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 import { groupNarrations, assignDuaNumbers } from "../hadith-data-pull/dua-index.mjs";
 
 const EXE = process.env.CHROMIUM_PATH || undefined;
@@ -92,8 +92,8 @@ for (const [lang, width, look] of [["bn", 390, "light"], ["en", 1280, "night"], 
     const n = await page.$$eval(".hadith-synthetic-banner", (r) => r.length);
     if (n !== 1) throw new Error(`${n}`);
   });
-  await acheck("the Hadith page has a Dua tab; its Dua chapters list the eleven books", async () => {
-    await page.click('[data-hadith-tab="dua"]');
+  await acheck("the Hadith page reaches the Dua view; its Dua chapters list the eleven books", async () => {
+    await hadithGo(page, "dua");
     await page.click('[data-dua-mode="chapters"]');
     await page.waitForSelector("[data-dua-book]");
     const n = await page.$$eval("[data-dua-book]", (r) => r.length);

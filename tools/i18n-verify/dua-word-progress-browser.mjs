@@ -8,7 +8,7 @@
 //   --mutate=nosave    the dua word's record is not written -> the save checks fail
 //   --mutate=nofollow  a linked word does not go on to the Word card -> the Qur'an check fails
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 // D20 (Dua round R4): a failed save now says WHY in plain words (errors.js), never the computer's own error text.
 const PERM_EN = "That save was blocked by a permissions rule. Nothing was lost, but it did not save — please tell the admin.";
 const PERM_BN = (() => { const s = fs.readFileSync("app/js/i18n/bn.js", "utf8"); const k = JSON.stringify(PERM_EN) + ":"; const i = s.indexOf(k); return JSON.parse(/^\s*("(?:[^"\\]|\\.)*")/.exec(s.slice(i + k.length))[1]); })();
@@ -55,7 +55,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   const tag = `[${lang} ${width} ${look}]`;
   const ctx = await context(lang, width, look);
   const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html");
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.waitForSelector('[data-dua-card="1"] [data-dua-word="4"]');
   await openWord(P, 4);
   const before = await P.evaluate(() => { const p = document.querySelector('[data-dua-word-panel="1"] [data-dua-word-progress]'); const b = [...(p?.querySelectorAll("[data-dua-word-state]") ?? [])]; return { pos: p?.dataset.duaWordPosition, here: p?.querySelector("[data-dua-word-dua-state-now]")?.textContent, quran: !!p?.querySelector("[data-dua-word-state-now]"), n: b.length, h: Math.min(...b.map((x) => x.getBoundingClientRect().height)) }; });
@@ -91,7 +91,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   // The linked word's own record is written BEFORE leaving (read from a page that does not leave: the follow-on is cut).
   const ctx2 = await context(lang, width, look, ["js/dua-browser.js", "        location.href = `${wordCardHref(place, dua)}&progress=${id}`;\n", "        window.__wouldGo = `${wordCardHref(place, dua)}&progress=${id}`;\n"]);
   const { page: Q } = await openPage(ctx2, "/app/hadith-collections.html");
-  await Q.click('[data-hadith-tab="dua"]');
+  await hadithGo(Q, "dua");
   await Q.waitForSelector('[data-dua-card="1"] [data-dua-word="1"]');
   await openWord(Q, 1);
   await Q.evaluate(() => { window.__stubWriteData = []; });
@@ -105,7 +105,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   // I15: a failed save says so, keeps the old state, and opens nothing.
   const ctx3 = await context(lang, width, look, ["js/hadith-study-actions.js", "  const unitKey = duaWordUnitKey(number, position);\n  const result", "  throw Object.assign(new Error(\"permission-denied\"), { code: \"permission-denied\" });\n  const unitKey = duaWordUnitKey(number, position);\n  const result"]);
   const { page: R } = await openPage(ctx3, "/app/hadith-collections.html");
-  await R.click('[data-hadith-tab="dua"]');
+  await hadithGo(R, "dua");
   await R.waitForSelector('[data-dua-card="1"] [data-dua-word="1"]');
   await openWord(R, 1);
   const u = R.url();

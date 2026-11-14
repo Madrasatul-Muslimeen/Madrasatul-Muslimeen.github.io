@@ -4729,6 +4729,9 @@ export const BN = {
   "The book's opening": "কিতাবের শুরু", // ? (the title page and Bismillah before a book's first heading)
   "Encyclopedia": "বিশ্বকোষ", // ?
   "Subjects|Hadith Study menu": "পাঠ্য বিষয়", // ? (distinct from Topics, বিষয়সমূহ, on the same bar)
+  "Books|Hadith Study menu": "কিতাব", // ? (PCF MSA J106 S1: the bar is one row of five on a phone, so the short word; the old "Hadith Books" was হাদীসের কিতাবসমূহ)
+  "Dua ↗": "দুআ ↗", // ? (a link to the Dua module's own page, from Hadith Study's Menu)
+  "· Preview": "· পূর্বরূপ", // ? (the cue on the Menu button while a "View as" preview is on)
   "Learning Akhlaq": "আখলাক শেখা", // ?
   "Knowing Al-Ghayb": "আল-গায়ব জানা", // ?
   "Stories from Hadith": "হাদীসের কাহিনি", // ?

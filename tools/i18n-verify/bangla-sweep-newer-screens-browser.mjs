@@ -13,7 +13,7 @@
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/bangla-sweep-newer-screens-browser.mjs
 // Mutation: --mutate="<English phrase>" makes the page's bn lookup miss that phrase (proves the sweep names it).
 import fs from "node:fs";
-import { chromium, newContext, openPage, BASE } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -121,7 +121,7 @@ async function mk(lang, width = 390) {
 
   await sweep(P, "Hadith page, landing");
 
-  await P.click('[data-hadith-tab="collections"]'); await settle(P, 600);
+  await hadithGo(P, "collections"); await settle(P, 600);
   await sweep(P, "Hadith Collections (OpenITI books, HadeethEnc, pilot)");
 
   await P.click('[data-hadeethenc-category="3"]'); await settle(P, 600);
@@ -129,7 +129,7 @@ async function mk(lang, width = 390) {
   await P.click('[data-hadeethenc-hadith="4563"]'); await settle(P, 600);
   await sweep(P, "HadeethEnc hadith card");
 
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.waitForSelector("[data-dua-card]");
   await settle(P, 600);
   await sweep(P, "Dua tab, cards");

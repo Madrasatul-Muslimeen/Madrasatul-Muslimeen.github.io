@@ -11,7 +11,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage, BASE } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE, hadithGo } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -275,7 +275,7 @@ const TABLETS = [[768, 1024], [820, 1180], [1024, 768]].filter(([w]) => !WONLY |
 for (const lang of LANGS) for (const [width, height] of TABLETS) {
   await flow("dua", lang, width, height, "/app/hadith-collections.html", DUA_SEED, async (t, page, errors) => {
     const CARD = '[data-dua-card="2"]';
-    await page.click('[data-hadith-tab="dua"]');
+    await hadithGo(page, "dua");
     await page.waitForSelector(`${CARD} [data-dua-check-status]`, { timeout: 20000 });
     await settle(page, 400);
     check(`${t}: POSITIVE CONTROL Dua 2 has a ✓ Check button`, await visible(page, `${CARD} [data-dua-check-open]`));

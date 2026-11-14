@@ -13,7 +13,7 @@
 // Exits 0 only if every check passed (the "meaningful exit code" lesson --
 // several suites in this directory silently exited 0 on a real regression
 // for months before that was fixed).
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo, hadithMenuRow } from "./harness.mjs";
 
 const EXE = process.env.CHROMIUM_PATH || undefined;
 const LANG = process.argv[2] === "bn" ? "bn" : "en";
@@ -41,7 +41,7 @@ console.log(`===== hadith-source-navigation-browser (${LANG}) =====`);
 // book's title from an occurrence attached to it -- and no occurrence in
 // this fixture is ever attached directly to a book that has a chapter
 // level, so it silently fell through to the raw internal book id.
-await click('[data-hadith-tab="collections"]');
+await hadithGo(page, "collections");
 await settle();
 await click('[data-hadith-edition="synthetic-alpha-ar-v1"]');
 await settle();
@@ -87,7 +87,7 @@ await click(".hadith-crumb");
 await settle();
 
 // --- Collections tab never shows a self-referential "View in source" -------
-await click('[data-hadith-tab="collections"]');
+await hadithGo(page, "collections");
 await settle();
 await click('[data-hadith-edition="synthetic-alpha-ar-v1"]');
 await settle();
@@ -120,7 +120,7 @@ check("the menu bar has NO Topics tab (Owner, 13 Nov 2026: Subject and Topic are
 // One-shot: switching away and back without a new jump must NOT re-apply it.
 await showTopics();
 await settle();
-await click('[data-hadith-tab="collections"]');
+await hadithGo(page, "collections");
 await settle();
 check("the focus highlight is ONE-SHOT -- gone on the next unrelated render",
   !(await page.evaluate(() =>
@@ -144,7 +144,7 @@ const sourceIdHandle = await page.evaluate(() => document.querySelector("[data-h
 await click("[data-hadith-view-source]");
 await settle();
 check("the jump lands on the Collections tab",
-  await page.evaluate(() => document.querySelector('[data-hadith-tab="collections"]').classList.contains("active")));
+  await page.evaluate(() => window.__hadithCorpus.state.view === "collections"));
 check("the jump lands on the SAME occurrence id the control named",
   await has(`[data-hadith-occurrence="${sourceIdHandle}"][data-hadith-focused="true"]`));
 
@@ -219,7 +219,7 @@ for (const literal of ["Translation coverage", "Topic coverage"]) {
 // covers only a Topics/Search "View in source" jump and never calls
 // `.focus()` at all) and of the breadcrumb TEXT fix earlier in this file
 // (which does not touch focus).
-await click('[data-hadith-tab="collections"]');
+await hadithGo(page, "collections");
 await settle();
 // `state.editionId` may already be set from the Search jump above -- reset
 // to the top-level edition list first via the breadcrumb's own reset, the
@@ -334,15 +334,15 @@ check("returning to Search after a 'View in source' jump lands focus on the Sear
 check("returning to Search after the jump keeps the SAME query and results (nothing was lost, only focus needed restoring)",
   (await page.inputValue("#hadithSearchInput")) === "Prayer" &&
   (await page.evaluate(() => document.querySelectorAll(".hadith-search-hit").length)) > 0);
-await click('[data-hadith-tab="collections"]');
+await hadithMenuRow(page, "collections"); // updated in place 14 Nov 2026 (J106 S1): Encyclopedia is a row of Menu, so a reader chooses it there
 await settle();
-check("switching to the Collections tab lands keyboard focus on the Collections tab button, not <body>",
-  await page.evaluate(() => document.activeElement?.dataset?.hadithTab === "collections"));
+check("choosing Encyclopedia in Menu lands keyboard focus on the Menu button (the current one), not <body>",
+  await page.evaluate(() => document.activeElement?.dataset?.hadithTab === "menu"));
 await click('[data-hadith-tab="explore"]');
 await settle();
 check("switching to the Explore tab lands keyboard focus on the Explore tab button, not <body>",
   await page.evaluate(() => document.activeElement?.dataset?.hadithTab === "explore"));
-await click('[data-hadith-tab="collections"]');
+await hadithGo(page, "collections");
 await settle();
 
 check("no page error was raised anywhere in this run", errors.length === 0);

@@ -9,7 +9,7 @@
 //  no-ring(5) no-esc(6) no-esc-return(6) trap(7) offscreen(8) covered(8).
 // Run from the repo root with node serve.js on 8080:
 //   node tools/i18n-verify/hadith-dua-keyboard-browser.mjs [--page=dua|hcol|hstudy] [--only=id] [--width=390] [--lang=bn] [--scale=200] [--mutate=name]
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 import { tabClick, reveal } from "./dua-tab-reveal.mjs";
 let pass = 0, fail = 0;
 const tally = {}; // "page|n" -> [pass, fail]
@@ -35,7 +35,7 @@ const PAGES = { dua: "/app/dua-study.html", hcol: "/app/hadith-collections.html"
 const ROOT = { dua: "#duaRoot", hcol: "#hadithRoot", hstudy: "#hadithCorpusRoot" };
 const openMenuIfClosed = async (P) => { const t = await P.$("[data-dua-menu-toggle]"); if (t && (await t.getAttribute("aria-expanded")) === "false") await t.click(); await P.waitForTimeout(200); }; // build 2: the card's menu sits under its Menu button
 const openCard = async (P) => { await P.click('[data-dua-no="2"]'); await P.waitForSelector("[data-dua-menu-toggle]", { timeout: 8000 }); await openMenuIfClosed(P); await P.waitForTimeout(500); };
-const hadithDua = async (P) => { await P.click('[data-hadith-tab="dua"]'); await P.waitForSelector("[data-dua-bookmark]", { timeout: 8000 }); await P.waitForTimeout(500); };
+const hadithDua = async (P) => { await hadithGo(P, "dua"); await P.waitForSelector("[data-dua-bookmark]", { timeout: 8000 }); await P.waitForTimeout(500); };
 const CONTROLS = [];
 const add = (page, c) => CONTROLS.push({ page, ...c });
 add("dua", { id: "groups-pull", kind: "menu", toggle: '[data-dua-pd="groups"]', panel: ".dua-pull", expanded: true });

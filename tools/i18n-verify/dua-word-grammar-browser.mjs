@@ -8,7 +8,7 @@
 //   --mutate=nofp     the fingerprint is not compared      -> the "stale file is ignored" check fails
 //   --mutate=rawpos   the raw tag is shown, not plain words -> the part-of-speech checks fail
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -50,7 +50,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   const tag = `[${lang} ${width} ${look}]`;
   const ctx = await context(lang, width, look);
   const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html?back=1");
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.waitForSelector('[data-dua-card="1"] [data-dua-word]');
   await tap(P, 1, 4);
   await P.waitForSelector('[data-dua-word-panel="1"] [data-dua-word-dict="ejtaal"]', { timeout: 6000 }).catch(() => {});

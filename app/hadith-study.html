@@ -204,6 +204,7 @@
     import { mountHadithBrowser } from "./js/hadith-browser.js";
     import { mountIntentionReminder } from "./js/intention-mount.js";
     import { t } from "./js/i18n.js";
+    import { duaRedirectTarget } from "./js/hadith-dua-redirect.js";
 
     document.getElementById("hadithCorpusSection").setAttribute("aria-label", t("Hadith Study"));
     try {
@@ -225,7 +226,10 @@
       const initialDua = duaQs.get("view") === "dua" && Number.isInteger(duaPageParam) && duaPageParam > 0 ? { page: duaPageParam, dua: Number.isInteger(duaParam) ? duaParam : null }
         : resumeDua ? { page: 1, dua: Number(resumeDua[1]), findPage: true } : null;
       mountIntentionReminder(document.getElementById("intentionHost"));
-      const corpus = mountHadithBrowser(document.getElementById("hadithCorpusRoot"), { mount: "hadith-module", initialHadeethEncId, initialDua });
+      // J106 (14 Nov 2026, 7A): Dua is its own module now; an old Dua address is sent to dua-study.html.
+      const duaTo = duaRedirectTarget(location.search);
+      if (duaTo) location.replace(duaTo);
+      const corpus = duaTo ? null : mountHadithBrowser(document.getElementById("hadithCorpusRoot"), { mount: "hadith-module", initialHadeethEncId, initialDua });
       window.__hadithCorpus = corpus; // the same handle hadith-collections.html exposes (tests reach views through it)
       // The corpus's own study actions (Note/bookmark/Studied, issue #311)
       // read the signed-in session fresh on every render, but nothing tells
@@ -233,8 +237,8 @@
       // those belong to initTopicStudyPage() above, a separate script by
       // design (see this block's own header comment). A second listener on
       // the same elements costs nothing and touches no shared module.
-      document.getElementById("tenantSelect")?.addEventListener("change", () => corpus.render());
-      document.getElementById("personSelect")?.addEventListener("change", () => corpus.render());
+      document.getElementById("tenantSelect")?.addEventListener("change", () => corpus?.render());
+      document.getElementById("personSelect")?.addEventListener("change", () => corpus?.render());
     } catch (err) {
       // I15: a failure reaches the reader rather than only the console.
       const root = document.getElementById("hadithCorpusRoot");

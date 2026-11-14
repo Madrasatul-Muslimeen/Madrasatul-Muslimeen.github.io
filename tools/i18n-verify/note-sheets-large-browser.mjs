@@ -11,7 +11,7 @@
 //   node tools/i18n-verify/note-sheets-large-browser.mjs [--width=390] [--lang=bn] [--scale=200]
 //   --mutate=listzero | attachlong | notagwrap | noellipsis | arrow   (each must FAIL its own check)
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
   if (typeof ok?.then === "function") throw new Error(`check "${name}" was given a promise`);
@@ -67,7 +67,7 @@ async function frameOf(P) {
   return f;
 }
 async function openHadith(P, long) {
-  await P.click('[data-hadith-tab="collections"]').catch(() => {});
+  await hadithGo(P, "collections").catch(() => {});
   await P.waitForSelector('[data-hadeethenc-category="3"]', { timeout: 20000 });
   await P.click('[data-hadeethenc-category="3"]');
   await P.waitForSelector('[data-hadeethenc-hadith="4563"]', { timeout: 15000 });
@@ -84,7 +84,7 @@ async function openHadith(P, long) {
 }
 
 async function openLongHadithNote(P) {
-  await P.click('[data-hadith-tab="collections"]').catch(() => {});
+  await hadithGo(P, "collections").catch(() => {});
   await P.waitForSelector('[data-hadeethenc-category="3"]', { timeout: 20000 });
   await P.click('[data-hadeethenc-category="3"]');
   await P.waitForSelector('[data-hadeethenc-hadith="4563"]', { timeout: 15000 });

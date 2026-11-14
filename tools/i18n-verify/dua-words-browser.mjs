@@ -8,7 +8,7 @@
 //   --mutate=nofont  the words keep the page's font     -> the Quranic font check fails
 //   --mutate=nomark  the narration has no marked words  -> the mark check fails
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 const { duaWords } = await import("../../app/js/dua-words.js");
 
 let pass = 0, fail = 0;
@@ -42,7 +42,7 @@ for (const [lang, width, look, font] of [["en", 390, "light", null], ["bn", 390,
   }
   const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html");
   await P.evaluate((l) => document.documentElement.setAttribute("data-card-look", l), look);
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.click('[data-dua-mode="duas"]').catch(() => {});
   await P.waitForSelector("[data-dua-card]");
   await P.waitForTimeout(600);

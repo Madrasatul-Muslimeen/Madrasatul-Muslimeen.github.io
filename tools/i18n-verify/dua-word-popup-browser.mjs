@@ -8,7 +8,7 @@
 //   --mutate=noout      a tap outside does not close              -> the outside-tap check fails
 //   --mutate=notrap     Tab is not kept inside                    -> the Tab check fails
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -52,7 +52,7 @@ for (const [lang, width, look] of [["en", 390, "night"], ["bn", 390, "night"], [
   const tag = `[${lang} ${width} ${look}]`;
   const ctx = await context(lang, width, look);
   const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html?back=1");
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.waitForSelector(W);
   const before = await state(P);
   check(`${tag} POSITIVE CONTROL: before the tap there is no pop-up and the panel sits in the card, hidden`, !before.pop && before.panelInCard && before.hidden, JSON.stringify(before));

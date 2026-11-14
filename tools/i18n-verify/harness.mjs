@@ -159,3 +159,24 @@ export async function clickAyahTile(page, selector, options) {
   }
   return page.click(selector, options);
 }
+
+// PCF MSA J106 S1 (14 Nov 2026): Encyclopedia, Classical Explanations, Dua and Topics left the Hadith bar (the first two live in
+// Menu, a PANEL that starts hidden, so a direct click on them hangs). A suite reaches a corpus view through the page's own
+// handle instead. The Menu entries themselves are proven by hadith-menu-bar-browser.mjs.
+export async function hadithGo(page, view) {
+  await page.waitForFunction(() => window.__hadithCorpus?.render && window.__hadithCorpus?.state, null, { timeout: 25000 });
+  await page.evaluate((v) => { window.__hadithCorpus.state.view = v; window.__hadithCorpus.render(); }, view);
+  await page.waitForFunction((v) => !!window.__hadithCorpus && window.__hadithCorpus.state.view === v, view, { timeout: 5000 });
+}
+/** Opens the Hadith Menu panel (it starts hidden) so Settings (#hadithContentLang, #hadithColours, Person) can be reached. */
+export async function hadithMenuOpen(page) {
+  await page.waitForSelector('button[data-hadith-tab="menu"]', { timeout: 25000 });
+  const open = await page.$eval('button[data-hadith-tab="menu"]', (b) => b.getAttribute("aria-expanded") === "true");
+  if (!open) await page.click('button[data-hadith-tab="menu"]');
+  await page.waitForSelector('#hadithMenu-menu:not([hidden])', { timeout: 5000 });
+}
+/** Chooses one row of the Hadith Menu panel (Encyclopedia = "collections", Classical Explanations = "commentary") the way a reader does. */
+export async function hadithMenuRow(page, view) {
+  await hadithMenuOpen(page);
+  await page.click(`#hadithMenu-menu [data-hadith-tab="${view}"]`);
+}

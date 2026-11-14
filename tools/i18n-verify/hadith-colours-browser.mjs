@@ -9,7 +9,7 @@
 //   --mutate=<name> serves one deliberate break (the run must FAIL); --prove runs them all.
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithMenuOpen } from "./harness.mjs";
 
 const MUT = {
   nopersist: ["js/hadith-colours.js", "try { localStorage.setItem(COLOURS_KEY, v); } catch { /* the choice still applies to this visit */ }", ""],
@@ -80,6 +80,7 @@ for (const [lang, width, zoom] of [["en", 1280, 1], ["bn", 390, 1], ["en", 360, 
   const tag = `[${lang} ${width}px x${zoom}]`;
   console.log(`\n===== hadith card colours ${tag} =====`);
   const { ctx, page: P, errors } = await open(lang, width, zoom);
+  await hadithMenuOpen(P); // Settings now live in the Menu panel (PCF MSA J106 S1); it starts hidden
   const opts = await P.$$eval("#hadithColours option", (os) => os.map((o) => ({ v: o.value, t: o.textContent.trim() })));
   check(`${tag} the menu bar offers four choices`, opts.map((o) => o.v).join() === "original,a,a2,a6", JSON.stringify(opts));
   if (lang === "bn") check(`${tag} named in Bangla`, opts[0].t === "আসল" && opts[3].t.startsWith("তামার"), JSON.stringify(opts.map((o) => o.t)));
@@ -103,6 +104,7 @@ for (const [lang, width, zoom] of [["en", 1280, 1], ["bn", 390, 1], ["en", 360, 
   }
   await P.selectOption("#hadithColours", "a2");
   await P.reload({ waitUntil: "networkidle" });
+  await hadithMenuOpen(P);
   await P.waitForSelector('[data-hadeethenc-card="65070"]', { timeout: 25000 }).catch(() => {});
   const after = await measure(P);
   check(`${tag} the choice survives a reload`, after.attr === "a2" && after.cardBg === EXPECT.a2, JSON.stringify([after.attr, after.cardBg]));

@@ -11,7 +11,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -394,7 +394,7 @@ const SEED_UNIT = SEED.replace("})();", `
 for (const lang of LANGS) for (const width of WIDTHS.filter((w) => w !== 320 || true)) {
   const bn = lang === "bn";
   await flow("mynotes", lang, width, "/app/hadith-collections.html", async (t, page, errors) => {
-    await page.click('[data-hadith-tab="dua"]');
+    await hadithGo(page, "dua");
     const ROW = '[data-dua-note-bookmark="20"]';
     await page.waitForSelector(`${ROW} [data-dua-note-link]`, { timeout: 20000 });
     check(`${t}: POSITIVE CONTROL Dua 20's card has 📝 My Notes`, (await ev(page, (s) => document.querySelector(s)?.textContent, `${ROW} [data-dua-note-link]`)) === (bn ? "📝 আমার নোট" : "📝 My Notes"));

@@ -10,7 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -221,7 +221,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${t}: Tab leaves the Zab ${region}`, r === true);
   });
   await flow("trap:dua", lang, width, width < 600 ? 844 : 800, "/app/hadith-collections.html", `DATA.ayahCollections = [{ _id: TENANT_ID, tenantId: TENANT_ID, collections: [] }];`, async (t, page) => {
-    await page.click('[data-hadith-tab="dua"]');
+    await hadithGo(page, "dua");
     await page.waitForSelector("[data-dua-card]", { timeout: 20000 });
     await page.waitForTimeout(500);
     const r = await leaves(page, "[data-dua-card]");

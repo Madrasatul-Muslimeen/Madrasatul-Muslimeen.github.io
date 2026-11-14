@@ -13,7 +13,7 @@
 //   --mutate=nokeep    the card is not kept in view          -> the Back-lands check fails (often, not always)
 //   --mutate=noplace   the card's place is not remembered    -> the Back-lands check fails
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 // D20 (Dua round R4): a failed save now says WHY in plain words (errors.js), never the computer's own error text.
 const PERM_EN = "That save was blocked by a permissions rule. Nothing was lost, but it did not save — please tell the admin.";
 const PERM_BN = (() => { const s = fs.readFileSync("app/js/i18n/bn.js", "utf8"); const k = JSON.stringify(PERM_EN) + ":"; const i = s.indexOf(k); return JSON.parse(/^\s*("(?:[^"\\]|\\.)*")/.exec(s.slice(i + k.length))[1]); })();
@@ -61,7 +61,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   const bn = lang === "bn";
   const ctx = await context(lang, width, look);
   const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html");
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.waitForSelector(`${ROW} [data-dua-bookmark]`, { timeout: 15000 }).catch(() => {});
   const row = await P.evaluate((sel) => {
     const r = document.querySelector(sel);
@@ -114,7 +114,9 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
       await P.waitForFunction(onScreen, null, { timeout: 40000 }).catch(() => {});
       await P.waitForTimeout(3000); // ...and STAYS on screen once the cards above have filled in (found in this round)
       const there = await P.evaluate((f) => ({ url: location.search, onScreen: eval(f)(), focused: !!document.querySelector('[data-dua-card="20"].hadith-card-focused') }), `(${onScreen})`);
-      check(`${tag} ← Back lands on the Duas page again, with Dua 20's card on screen`, back && /view=dua/.test(there.url) && /dua=20\b/.test(there.url) && there.onScreen, JSON.stringify(there));
+      // Updated in place 14 Nov 2026 (PCF MSA J106 S1, tick 7A): Dua is its own module; the Hadith page's old Dua address is sent on to
+      // Dua Study, which reopens the same dua (open=20), so the way back lands there with Dua 20's card on screen.
+      check(`${tag} ← Back lands on the Duas page again (Dua Study), with Dua 20's card on screen`, back && /[?&]open=20\b/.test(there.url) && there.onScreen, JSON.stringify(there));
     }
   }
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
@@ -123,15 +125,16 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   // The Bookmarks page's link (?resume=dua:45) reopens Dua 45 on its own page (page 2).
   const ctx2 = await context(lang, width, look);
   const { page: R } = await openPage(ctx2, "/app/hadith-study.html?resume=dua:45");
-  await R.waitForSelector('[data-dua-card="45"].hadith-card-focused', { timeout: 20000 }).catch(() => {});
-  const res = await R.evaluate(() => ({ focused: !!document.querySelector('[data-dua-card="45"].hadith-card-focused'), page: document.querySelector(".dua-pager .hadith-note")?.textContent ?? "" }));
-  check(`${tag} a dua bookmark (?resume=dua:45) reopens Dua 45's card, on page 2`, res.focused && res.page.includes(bn ? "২" : "2"), JSON.stringify(res));
+  // Updated in place 14 Nov 2026 (J106 S1, tick 7A): an OLD Hadith-page bookmark address is sent on to Dua Study, which opens Dua 45's card.
+  await R.waitForSelector('[data-dua-card="45"]', { timeout: 20000 }).catch(() => {});
+  const res = await R.evaluate(() => ({ path: location.pathname, card: !!document.querySelector('[data-dua-card="45"]') }));
+  check(`${tag} a dua bookmark (?resume=dua:45) on the old Hadith address reopens Dua 45's card on Dua Study`, res.card && res.path.endsWith("/dua-study.html"), JSON.stringify(res));
   await ctx2.close();
 
   // I15: a failed bookmark save says so and keeps the old state.
   const ctx3 = await context(lang, width, look, ["js/hadith-study-actions.js", "  const unitKey = duaUnitKey(number);\n  const existing", "  throw Object.assign(new Error(\"permission-denied\"), { code: \"permission-denied\" });\n  const unitKey = duaUnitKey(number);\n  const existing"]);
   const { page: F } = await openPage(ctx3, "/app/hadith-collections.html");
-  await F.click('[data-hadith-tab="dua"]');
+  await hadithGo(F, "dua");
   await F.waitForSelector(`${ROW} [data-dua-bookmark]`, { timeout: 15000 }).catch(() => {});
   await F.click(`${ROW} [data-dua-bookmark]`);
   await F.waitForTimeout(600);

@@ -9,7 +9,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -155,7 +155,7 @@ for (const lang of LANGS) {
   // Dua cards at tablet width.
   for (const [width, height] of DUA_WIDTHS) {
     await flow("dua", lang, width, height, "/app/hadith-collections.html", SEED_CHECK, async (t, page, errors) => {
-      await page.click('[data-hadith-tab="dua"]');
+      await hadithGo(page, "dua");
       await page.waitForSelector("[data-dua-card]", { timeout: 20000 });
       await settle(page, 600);
       const nCards = await ev(page, () => document.querySelectorAll("[data-dua-card]").length);

@@ -11,7 +11,7 @@
 //   --mutate=nostep    the ‹ › buttons do nothing       -> the word-step checks fail
 //   --mutate=nodict    the meaning is never looked up   -> the meaning/credit checks fail
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -56,7 +56,7 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   const tag = `[${lang} ${width}]`;
   const ctx = await context(lang, width);
   const { page: P, errors } = await openPage(ctx, "/app/hadith-collections.html?back=1");
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.waitForSelector('[data-dua-card="1"] [data-dua-word]');
   await tap(P, 4);
   const lv = await P.evaluate((s) => [...document.querySelectorAll(`${s} [data-dua-wc-level]`)].map((b) => [b.dataset.duaWcLevel, b.getBoundingClientRect().height, b.getAttribute("aria-pressed")]), P1);

@@ -11,7 +11,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage, BASE } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE, hadithGo } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -359,7 +359,7 @@ if (!MONLY || MONLY === "sheets") {
 
     if (want("dua")) await flow(`${lang} ${vpTag} dua`, lang, vp, "/app/hadith-collections.html", false, async (page) => {
       const t = `${lang} ${vpTag}`;
-      await page.click('[data-hadith-tab="dua"]');
+      await hadithGo(page, "dua");
       await page.waitForSelector('[data-dua-card="2"] [data-dua-check-open]', { timeout: 20000 });
       await settle(page, 400);
       await page.click('[data-dua-card="2"] [data-dua-check-open]');

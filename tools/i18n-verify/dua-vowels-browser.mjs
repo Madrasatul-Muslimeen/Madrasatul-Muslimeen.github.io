@@ -6,7 +6,7 @@
 //   --mutate=novowels  the card ignores the vowels file -> the vowel checks fail
 //   --mutate=notoggle  the switch changes nothing       -> the switch checks fail
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -40,7 +40,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   P.on("request", (r) => { const m = /\/output\/dua\/(vowels-\d+\.json)/.exec(r.url()); if (m) fetched.push(m[1]); });
   await P.waitForTimeout(400);
   check(`${tag} nothing of the vowels is read before the Dua tab is opened (I9)`, fetched.length === 0);
-  await P.click('[data-hadith-tab="dua"]');
+  await hadithGo(P, "dua");
   await P.waitForSelector('[data-dua-card="4"] [data-dua-word]');
   await P.waitForTimeout(300);
   const read = (n) => P.evaluate((d) => {
