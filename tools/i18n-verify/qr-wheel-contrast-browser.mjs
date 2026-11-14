@@ -72,7 +72,7 @@ const TARGETS = [
   ["section caret", ".ways-caret", "night", 4.5],
 ];
 const browser = await chromium.launch();
-let seen = { "Night heading": 0, "unit caret": 0, "Light section caret": 0 };
+let seen = { "Night heading": 0, "Light section caret": 0 }; // v15.00: "unit caret" retired with the old capsule
 for (const look of ["night", "light"]) for (const lang of ["en", "bn"]) for (const [w, h] of VIEWS) {
   const ctx = await newContext(browser, { viewport: { width: w, height: h }, appLang: lang });
   await ctx.addInitScript((l) => { try { localStorage.setItem("mm_card_look", l); } catch {} }, look);

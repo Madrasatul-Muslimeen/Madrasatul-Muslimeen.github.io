@@ -141,8 +141,8 @@ for (const lang of ["en", "bn"]) {
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await waitWheel(page);
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((el) => el.remove()));
-  const id = await page.evaluate(() => ["myStatusBtn", "myStatusWideBtn"].find((i) => { const el = document.getElementById(i); return el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().width > 0; }));
-  await page.click(`#${id}`);
+  const id = await page.evaluate(() => ["wbStatus"].find((i) => { const el = document.getElementById(i); return el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().width > 0; }));
+  await page.click(`#${id}`); await page.click("#wbStatusCardBtn"); // v15.00: Know Your Status is the bar button #wbStatus, then the panel's "Open my full status" (#wbStatusCardBtn)
   await page.waitForFunction(() => document.querySelectorAll("#myStatusBody .wheel-seg").length > 0, null, { timeout: 10000 });
   const n = await page.evaluate(() => [...document.querySelectorAll("#myStatusBody .wheel-seg-name")].map((e) => e.textContent.trim()));
   check("My Status's wheel prints the 10 names", n.length === 10 && n.includes("Own Short") && n.includes("Hifz"), JSON.stringify(n));

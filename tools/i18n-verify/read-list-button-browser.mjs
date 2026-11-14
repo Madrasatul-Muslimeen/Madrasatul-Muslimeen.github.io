@@ -29,7 +29,7 @@ async function start(lang, width) {
   return { ctx, page };
 }
 const openList = async (page, sel = "#readContentsBtn") => {
-  await page.click(sel);
+  await page.evaluate((q) => document.querySelector(q).click(), sel); // v15.00: retired-from-sight landing button, still wired
   await page.waitForFunction(() => !document.getElementById("readContentsMount")?.hidden && document.querySelectorAll("#readContentsBody .rc-row").length > 0);
 };
 const pickRow = async (page, tab, n) => {

@@ -646,8 +646,8 @@ const K425_TOTALS = { juz: 30, surah: 114, hizb: 60, ruku: 556, page: 604, ayah:
 const K425_NO = { juz: 0, surah: 3, hizb: 0, ruku: 0, page: 0, ayah: 0 };
 
 async function openKys(page, width) {
-  const id = "myStatusWideBtn"; // decision 46: the one Know Your Status button at every width (was #myStatusBtn on a phone)
-  await clickSafely(page, `#${id}`);
+  const id = "wbStatus"; // v15.00: Know Your Status is the bar button #wbStatus, then the panel's "Open my full status" (#wbStatusCardBtn)
+  await clickSafely(page, `#${id}`); await clickSafely(page, "#wbStatusCardBtn");
   await page.waitForFunction(() => document.querySelectorAll("#myStatusBody .ms-tile").length > 0, null, { timeout: 15000 });
 }
 const tileNs = (page, id) => page.evaluate((tid) => Object.fromEntries([...document.querySelectorAll(`[data-my-status-open="${tid}"] .ms-tile`)].map((t) => [t.dataset.unit, Number(t.dataset.n)])), id);

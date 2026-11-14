@@ -692,10 +692,15 @@
   .wheel-bar-panel { border: 1px solid var(--card-line); border-radius: 12px; padding: 0.5rem; background: var(--card-bg-inset); color: var(--card-text); display: flex; flex-direction: column; gap: 0.45rem; min-width: 0; }
   .wheel-bar-panel[hidden] { display: none; }
   .wheel-bar-panel .wheel-kind-row, .wheel-bar-panel #wheelKindSwitch { margin: 0; padding: 0; border: 0; }
-  .wheel-bar-panel .wheel-unit-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
-  .wheel-bar-panel .wheel-unit-row select { flex: 1 1 8rem; min-width: 0; }
-  .wheel-bar-panel .wheel-unit-go { display: flex; gap: 0.4rem; }
+  .wheel-bar-panel .wheel-unit-row select { max-width: 24rem; }
   .wheel-bar-status-card { align-self: flex-start; }
+  /* In the computer window (>= 900px) the wheel is fitted to a fixed-height window, so an inline panel would take the wheel's room
+     (measured: 387px -> 160px for the Unit panel). There the panel floats over the wheel like the old Choose a Unit list did. */
+  @media (min-width: 900px) {
+    .wheel-bar { position: relative; z-index: 6; }
+    .wheel-bar-panels { position: absolute; left: 0; right: 0; top: 100%; margin-top: 0.3rem; }
+    .wheel-bar-panel { box-shadow: 0 14px 30px -12px rgba(0,0,0,0.7); max-height: min(60vh, 460px); overflow: auto; }
+  }
   @media (max-width: 359px) { /* 320px: no word may break mid-word ("Approac|h" was measured), so the type and padding give a little */
     .wheel-bar-g1 { flex: 3.3 1 0; } .wheel-bar-g2 { flex: 1.7 1 0; }
     .wheel-bar-btn { font-size: 0.6rem; padding: 0.25rem 0.1rem; }
@@ -881,7 +886,7 @@
   .wheel-drawer-panel[hidden] { display: none; }
   /* Owner, 1 Oct 2026 (the same photo, arrows drawn): Wheel to the left
      edge, Unit to the right, Legend in the middle. */
-  .wheel-drawer-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.35rem; align-self: stretch; box-sizing: border-box; padding: 0; } /* wrap: audit part 131, large text */
+  .wheel-drawer-row { display: flex; flex-wrap: wrap; justify-content: flex-end; /* v15.00: only the 🧰 dock is left in the row, and it stays at the right end */ gap: 0.35rem; align-self: stretch; box-sizing: border-box; padding: 0; } /* wrap: audit part 131, large text */
   .wheel-drawer-row .wheel-drawer-btn { flex: 0 0 auto; min-width: 5.5rem; }
   /* The Owner, 15 Oct 2026 (PCF J25): Wheel, Legend and Unit shift left and the 🧰 takes the right end. */
   .wheel-zab-dock { display: inline-flex; align-items: center; flex: 0 0 auto; }
@@ -9012,7 +9017,11 @@
       const capEls = [wheel, document.getElementById("wheelResizeWrap")].filter(Boolean);
       capEls.forEach((el) => el.style.removeProperty("--landing-wheel-max"));
       const panels = document.getElementById("wheelDrawerPanels");
-      const panelsH = panels && panels.getBoundingClientRect().height > 0 ? panels.getBoundingClientRect().height + parseFloat(getComputedStyle(col).rowGap || "0") : 0;
+      // v15.00: the wheel bar's open panel sits ABOVE the wheel; it is judged like the old drawers (the reader asked for it), so
+      // opening one never shrinks the wheel (measured before this: a Unit panel took a 377px wheel to 0px at 390 x 844).
+      const barPanels = document.getElementById("wheelBarPanels");
+      const barPanelsH = barPanels ? barPanels.getBoundingClientRect().height : 0;
+      const panelsH = (panels && panels.getBoundingClientRect().height > 0 ? panels.getBoundingClientRect().height + parseFloat(getComputedStyle(col).rowGap || "0") : 0) + barPanelsH;
       // Measured again after each step: the wheel's height does not shrink
       // exactly one-for-one with its width, so up to three passes settle it.
       for (let pass = 0; pass < 3; pass++) {

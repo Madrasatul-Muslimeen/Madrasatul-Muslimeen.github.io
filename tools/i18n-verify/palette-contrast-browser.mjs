@@ -20,7 +20,7 @@ const SWEEP = () => {
   const lum = ([r,g,b]) => { const l=c=>{c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4)}; return 0.2126*l(r)+0.7152*l(g)+0.0722*l(b); };
   const bgOf = (el) => { for (let n = el; n; n = n.parentElement) { const c = parse(getComputedStyle(n).backgroundColor); if (c && c[3] > 0.5) return c; } return [255,255,255,1]; };
   const out = [];
-  for (const pal of document.querySelectorAll(".bar-palette")) {
+  for (const pal of document.querySelectorAll(".bar-palette, #wbPanelUnit")) {
     if (getComputedStyle(pal).display === "none") continue;
     for (const el of pal.querySelectorAll("*")) {
       const txt = [...el.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim()).map(n => n.textContent.trim()).join(" ");
@@ -34,7 +34,7 @@ const SWEEP = () => {
   return out;
 };
 
-const TEXT_COUNT = () => [...document.querySelectorAll(".bar-palette")].filter((p) => getComputedStyle(p).display !== "none").reduce((n, p) => n + [...p.querySelectorAll("*")].filter((el) => [...el.childNodes].some((c) => c.nodeType === 3 && c.textContent.trim()) && el.getBoundingClientRect().width > 0).length, 0);
+const TEXT_COUNT = () => [...document.querySelectorAll(".bar-palette, #wbPanelUnit")].filter((p) => getComputedStyle(p).display !== "none").reduce((n, p) => n + [...p.querySelectorAll("*")].filter((el) => [...el.childNodes].some((c) => c.nodeType === 3 && c.textContent.trim()) && el.getBoundingClientRect().width > 0).length, 0);
 for (const look of ["night", "light"]) {
   for (const width of [390, 1280]) {
     const ctx = await newContext(browser, { viewport: { width, height: 844 } });
@@ -45,7 +45,7 @@ for (const look of ["night", "light"]) {
     check(`[${look} ${width}] the page really is in the ${look} card look`, (await page.evaluate(() => document.documentElement.dataset.cardLook)) === look);
     for (const [where, toggle] of [["landing", "wheelUnit"], ["explore", "exploreApproach"]]) {
       if (where === "explore") { await page.evaluate(() => document.getElementById("tabExploreBtn")?.click()); await page.waitForSelector('[data-bar-palette-toggle="exploreApproach"]', { state: "visible", timeout: 10000 }); await page.waitForTimeout(600); }
-      await page.click(`[data-bar-palette-toggle="${toggle}"]`);
+      await page.click(toggle === "wheelUnit" ? "#wbUnit" : `[data-bar-palette-toggle="${toggle}"]`); // UPDATED IN PLACE, 14 Nov 2026 (v15.00): the landing "palette" is the wheel bar's Choose a Unit panel (#wbUnit / #wbPanelUnit)
       await page.waitForTimeout(300);
       const n = await page.evaluate(TEXT_COUNT);
       // Positive control: the palette is open and holds text, or a "nothing below 4.5" result means nothing.
