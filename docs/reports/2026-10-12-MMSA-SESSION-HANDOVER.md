@@ -3345,3 +3345,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.39** (2026-11-14): Dua groups in the Dua groups menu, titles, Add a new Dua (#1712).
 - **v14.40** (2026-11-14): Hadith Study's four Subjects with Continue chips at the top (J106 S2, #1713).
 - **v14.41** (2026-11-14): Qur'anic duas in Dua groups, drag order (#1718).
+- **v14.42** (2026-11-14): editable Hadith Subjects (#1720).
