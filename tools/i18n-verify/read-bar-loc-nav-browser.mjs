@@ -1,10 +1,12 @@
 // The Owner, 15 Nov 2026 (the Read bar on a phone: "move Read on beside the other buttons on the right; add a location button, i.e. Page no, Sura, Ruku, Juz
 // this Ayah / page belongs to; add nav buttons"). Proves, at 360 / 390 (English and Bangla) / 820 / 1280, with Read on off and on:
 //   * Read on is the first of the right-hand group (#readBarEnd), on the same row and right beside 🔍 (gap <= 12px);
-//   * 📍 is on the bar (36px+), shows the printed page, and its list names this āyah's Ruku', Page, Hizb, Juz and Surah; a rung opens that unit's card;
+//   * 📍 is on the bar from 400px (36px+; the printed page beside it from 900px) and, below 400px (110L: so a way-back label keeps sharing the bar's line), is a tile
+//     of the bar's ⋮ menu instead; its list names this āyah's Ruku', Page, Hizb, Juz and Surah; a rung opens that unit's card;
 //   * ◂ ▸ are on the bar, 36px+, and ▸ moves to the next āyah;
 //   * a phone's bar is still two lines from 360px (the 13 Nov rule), nothing cut, no sideways scroll.
 //   --mutate=noloc     the pin is gone                       -> the location checks FAIL by name
+//   --mutate=notile    below 400px the ⋮ tile presses nothing -> the tile check FAILS by name
 //   --mutate=nosteps   ◂ ▸ go back into the ⋮ menu on a phone  -> the nav checks FAIL by name
 //   --mutate=readonleft  Read on stands apart from 🔍 again     -> the "right beside 🔍" check FAILS by name
 // Run from the repository root with serve.js up:  node tools/i18n-verify/read-bar-loc-nav-browser.mjs [--mutate=NAME] [--lang=en|bn]
@@ -21,6 +23,7 @@ const PAGE = "app/quranrevival.html";
 const MUT = {
   noloc: ['<button type="button" id="readLocBtn" class="read-loc-btn', '<button type="button" id="readLocBtnGone" class="read-loc-btn'],
   nosteps: ["body.read-bar-steps-in-menu #readBar :is(#prevUnitBtn, #nextUnitBtn) { display: none !important; }", "body.read-bar-steps-in-menu #readBar :is(#prevUnitBtn, #prevAyahBtn, #nextAyahBtn, #nextUnitBtn) { display: none !important; }"],
+  notile: ['if (key === "location") { setTimeout(() => document.getElementById("readLocBtn")?.click(), 0); return; }', ''],
   readonleft: [".read-on-switch { position: relative; box-sizing: border-box; margin: 0; }", ".read-on-switch { position: relative; box-sizing: border-box; margin: 0 80px 0 0; }"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -54,8 +57,18 @@ try {
       });
       check(`${tag} Read on is the first of the right-hand group`, m.inEnd);
       check(`${tag} MUTATION TARGET (readonleft): Read on sits on 🔍's row, right beside it (gap <= 12px)`, !!m.on && !!m.search && Math.abs(m.on.t - m.search.t) < 4 && m.search.l - m.on.r >= 0 && m.search.l - m.on.r <= 12, JSON.stringify([m.on, m.search]));
-      check(`${tag} MUTATION TARGET (noloc): the 📍 location button is on the bar, 36px+ wide and 40px tall`, !!m.loc && m.loc.w >= 35.5 && m.loc.h >= 39.5 && m.loc.r <= m.vw + 0.5, JSON.stringify(m.loc));
-      if (width >= 400) check(`${tag} the printed page (266) shows beside the pin`, /^(266|২৬৬)$/.test(m.page ?? ""), String(m.page));
+      if (width >= 400) check(`${tag} MUTATION TARGET (noloc): the 📍 location button is on the bar, 36px+ wide and 40px tall`, !!m.loc && m.loc.w >= 35.5 && m.loc.h >= 39.5 && m.loc.r <= m.vw + 0.5, JSON.stringify(m.loc));
+      else {
+        check(`${tag} the 📍 is off the bar below 400px (it moved into the ⋮ menu)`, !!m.loc && m.loc.w === 0, JSON.stringify(m.loc));
+        await page.evaluate(() => document.querySelector("#readBar .ayah-quick-btn")?.click()); await page.waitForTimeout(500);
+        const tile = await page.evaluate(() => { const e = document.querySelector('#readBar [data-qm-act="location"]'), q = e?.getBoundingClientRect(); return e && q.width > 0 ? { w: Math.round(q.width), h: Math.round(q.height) } : null; });
+        check(`${tag} MUTATION TARGET (noloc): the ⋮ menu has the "Where this āyah is" tile, 40px+`, !!tile && tile.w >= 40 && tile.h >= 40, JSON.stringify(tile));
+        await page.evaluate(() => document.querySelector('#readBar [data-qm-act="location"]')?.click()); await page.waitForTimeout(2500);
+        const lo = await page.evaluate(() => { const p = document.querySelector('[data-bar-palette="readLoc"]'), q = p.getBoundingClientRect(); return { open: p.classList.contains("open"), n: p.querySelectorAll("[data-read-loc-unit]").length, l: q.left, r: q.right }; });
+        check(`${tag} MUTATION TARGET (notile): the tile opens the list, on screen, with its rungs`, lo.open && lo.n >= 6 && lo.l >= -0.5 && lo.r <= width + 0.5, JSON.stringify(lo));
+        await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))); await page.waitForTimeout(300);
+      }
+      if (width >= 900) check(`${tag} the printed page (266) shows beside the pin`, /^(266|২৬৬)$/.test(m.page ?? ""), String(m.page));
       // Plain: the unit buttons ⏮ ⏭ are the nav (for a single āyah ◂ ▸ would only repeat them). Read on on a phone: ⏮ ⏭ go to the ⋮ menu and ◂ ▸ stay on the bar.
       const navA = readOn && width < 600 ? [m.prev, m.next] : [m.pu, m.nu];
       check(`${tag} MUTATION TARGET (nosteps): the nav buttons are on the bar, 36px+ wide`, navA.every((r) => !!r && r.w >= 35.5), JSON.stringify(navA));

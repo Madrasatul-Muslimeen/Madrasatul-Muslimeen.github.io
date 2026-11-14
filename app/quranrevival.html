@@ -2674,6 +2674,11 @@
   /* The Owner, 15 Nov 2026: 📍 location on the Read bar (see the markup). 40px tall, the page number beside the pin; the list drops below it. */
   .read-loc-wrap { flex: 0 0 auto; }
   /* a phone keeps the bar at TWO lines from 360px (the 13 Nov rule): the pin goes icon-only and the unit chip steps down to two short lines */
+  .qm-sheet .qm-tile.qm-loc-tile { display: none; }
+  @media (max-width: 399.98px) { /* 110L: the pin leaves the bar below 400px (a way-back label then keeps sharing the bar line); its tile is in the ⋮ menu */
+    .qm-sheet .qm-tile.qm-loc-tile { display: flex; }
+    #readBar .read-loc-wrap { display: contents; } #readBar .read-loc-btn { display: none; }
+  }
   @media (max-width: 899.98px) { .read-loc-page { display: none; } .read-loc-btn { padding: 0; width: 36px; min-width: 36px; } } /* tablet: the bar has ~43px to spare, so the pin is icon-only there too */
   @media (max-width: 429.98px) {
     body.read-bar-steps-in-menu #readBar :is(#prevAyahBtn, #nextAyahBtn) { width: 36px; min-width: 36px; padding-inline: 0; }
@@ -23214,7 +23219,7 @@
           if (rec && readBarRecordBtn) rec.title = readBarRecordBtn.title; // title only: the tile's spoken name stays "Record Your Progress"
         },
         // The tiles the page adds to the bar's ⋮ (barUnitTilesHtml): each presses the bar button it stands for.
-        onExtra: (key) => { document.getElementById({ complete: "readCompleteBtn", approach: "readBarTakeBtn", record: "readBarRecordBtn", status: "readBarStatusBtn", stepprevunit: "prevUnitBtn", stepprevayah: "prevAyahBtn", stepnextayah: "nextAyahBtn", stepnextunit: "nextUnitBtn" }[key])?.click(); },
+        onExtra: (key) => { if (key === "location") { setTimeout(() => document.getElementById("readLocBtn")?.click(), 0); return; } /* after this tile's own click has reached the page, so the palette's outside-click close does not shut it at once */ document.getElementById({ complete: "readCompleteBtn", approach: "readBarTakeBtn", record: "readBarRecordBtn", status: "readBarStatusBtn", stepprevunit: "prevUnitBtn", stepprevayah: "prevAyahBtn", stepnextayah: "nextAyahBtn", stepnextunit: "nextUnitBtn", location: "readLocBtn" }[key])?.click(); },
         onTakeNote: (unitKey) => { openNewNoteFromAyahCard(unitKey, { fromQuickMenu: true }); }, // the Owner, 3 Nov 2026: no Note yet, so a new Note
         onToggleBookmark: async (unitKey) => { await toggleAyahBookmark(unitKey, undefined, undefined, { unitChoices: await quickMenuBookmarkChoices(unitKey) }); },
         // The Owner, 9 Oct 2026 (Read view): "there's no button for attaching this Ayah to QCR." The same route as the
@@ -23402,7 +23407,9 @@
       // (body.read-bar-steps-in-menu shows these tiles and hides the bar's four); each presses the bar button it stands for (onExtra).
       const steps = [["stepprevunit", "⏮", t("Previous"), t("Previous")], ["stepprevayah", "◂", t("Previous āyah"), t("Previous āyah")], ["stepnextayah", "▸", t("Next āyah"), t("Next āyah")], ["stepnextunit", "⏭", t("Next"), t("Next")]]
         .map(([act, glyph, label, full]) => tileHtml(act, glyph, label, full, " qm-step-tile")).join("");
-      return steps + textSize + tileHtml("complete", "✓", t("Mark complete"), t("Mark this reading complete"));
+      // The Owner's Architect (110L, 15 Nov 2026): below 400px the 📍 leaves the bar for this menu, so a way-back label keeps sharing the bar's line.
+      const where = tileHtml("location", "📍", t("Where"), t("Where this āyah is"), " qm-loc-tile");
+      return steps + where + textSize + tileHtml("complete", "✓", t("Mark complete"), t("Mark this reading complete"));
     }
     /** PCF MSA J132 (the Owner, 10 Nov 2026: "Study moves to dot. Place it elegantly."): the Study ▾ pill, the three pickers and the
         Take an Approach | Record Your Progress | Know Your Status pill leave the Read bar and become ONE labelled group at the top of the
