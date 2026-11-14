@@ -277,7 +277,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // invite who hasn't clicked their invite link yet. Points there first.
 
     signInBtn.addEventListener("click", () => {
-      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+      signInWithPopup(auth, new GoogleAuthProvider().setCustomParameters({ prompt: "select_account" })).catch((err) => {
         whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
       });
     });

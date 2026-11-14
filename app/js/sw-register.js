@@ -191,6 +191,11 @@ export function registerServiceWorker() {
       });
       return navigator.serviceWorker.ready;
     }).then((reg) => {
+      // J120 (15 Nov 2026): the tiny worker for the site's own address (/root-sw.js), so madrasatul-muslimeen.github.io
+      // itself opens offline. It answers only "/" and "/index.html", and only when the network fails.
+      if (reg && (location.origin === "https://madrasatul-muslimeen.github.io" || location.hostname === "localhost")) { // MSA only: QR registers its own
+        navigator.serviceWorker.register("/root-sw.js", { scope: "/" }).catch(() => {});
+      }
       // J120 O5: the Offline line's code is kept too, so it can open the first time the line drops.
       reg?.active?.postMessage({ type: "warm", urls: [...loadedAppFiles(), new URL("./offline-line.js", import.meta.url).href] });
       warmLaterFiles(reg);

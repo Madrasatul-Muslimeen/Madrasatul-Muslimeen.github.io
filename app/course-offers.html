@@ -197,7 +197,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     dayChecks.innerHTML = DAY_NAME_LABELS.map((d, i) => `<label><input type="checkbox" value="${i}" /> ${t(d)}</label>`).join("");
 
     signInBtn.addEventListener("click", () => {
-      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+      signInWithPopup(auth, new GoogleAuthProvider().setCustomParameters({ prompt: "select_account" })).catch((err) => {
         whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
       });
     });

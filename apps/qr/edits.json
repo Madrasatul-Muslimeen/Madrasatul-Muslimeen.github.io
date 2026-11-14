@@ -278,5 +278,13 @@
   "from": "export const PRINTED_BASE = \"/tools/quran-data-pull/output/mushaf-printed/ksu-madani/\";",
   "to": "export const PRINTED_BASE = \"https://madrasatul-muslimeen.github.io/tools/quran-data-pull/output/mushaf-printed/ksu-madani/\";",
   "exact": 1
+ },
+ {
+  "id": "app/js/sw-register.js#1",
+  "file": "app/js/sw-register.js",
+  "why": "MSA's front-door worker registration (J120, v15.02) is MSA's: QR registers its own /root-sw.js from qr-front.js, only on its address, and keeps exactly one worker on every /app/ page (one-worker-browser, upgrade-browser).",
+  "from": "        navigator.serviceWorker.register(\"/root-sw.js\", { scope: \"/\" }).catch(() => {});",
+  "to": "        /* QR: its own /root-sw.js is registered by qr-front.js on its address only. */",
+  "exact": 1
  }
 ]

@@ -24,6 +24,7 @@
   "hiddenModules": ["general", "naturelife", "lifeskill", "health"],
   "site": [
     "index.html",
+    "root-sw.js",
     "app",
     "mushaf",
     "tools/quran-data-pull/output",
