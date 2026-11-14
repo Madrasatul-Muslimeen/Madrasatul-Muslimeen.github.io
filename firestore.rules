@@ -3355,5 +3355,28 @@ service cloud.firestore {
 
       allow delete: if false; // I4/D6 -- a real delete of a GROUP writes `nodes` without it; the document stays.
     }
+
+    // hadithNames/{tenantId} -- NEW. One document per madrasah.
+    match /hadithNames/{tenantId} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(tenantId);
+      allow create: if canAdminCatalogue(tenantId)
+                    && request.resource.data.keys().hasOnly(['tenantId', 'schemaVersion', 'createdBy', 'createdAt', 'updatedAt', 'names'])
+                    && request.resource.data.tenantId == tenantId
+                    && request.resource.data.get('schemaVersion', 0) == 1
+                    && request.resource.data.get('createdBy', null) == myUid()
+                    && request.resource.data.get('createdAt', null) is timestamp
+                    && request.resource.data.get('names', null) is map
+                    && request.resource.data.names.size() <= 3000;
+      // `resource != null` keeps a create from tripping this clause into an
+      // evaluation error (Firestore evaluates every matching allow).
+      allow update: if resource != null
+                    && canAdminCatalogue(tenantId)
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['names', 'updatedAt'])
+                    && request.resource.data.get('names', null) is map
+                    && request.resource.data.names.size() <= 3000;
+      // No delete (I4/D6) -- a name is retired with status: "retired"
+      // inside the document, never removed from Firestore.
+    }
   }
 }
