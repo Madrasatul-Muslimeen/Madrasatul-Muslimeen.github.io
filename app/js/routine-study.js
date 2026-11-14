@@ -109,7 +109,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
 
   signInBtn.addEventListener("click", () => {
-    signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+    signInWithPopup(auth, new GoogleAuthProvider().setCustomParameters({ prompt: "select_account" })).catch((err) => {
       whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
     });
   });
