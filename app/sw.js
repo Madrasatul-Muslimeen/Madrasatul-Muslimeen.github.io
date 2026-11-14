@@ -634,7 +634,18 @@ self.addEventListener("fetch", (event) => {
       event.waitUntil(revalidate);
 
       const fresh = await revalidate;
-      return fresh || Response.error();
+      if (fresh) return fresh;
+      // J120 (the Owner, 15 Nov 2026: "Offline didn't work. all files downloaded, tick mark shown"): a PAGE opened
+      // with anything after "?" (hadith-study.html?resume=…, notes.html?back=1, quranrevival.html?s=2 -- the app
+      // writes these itself) missed the saved copy, which is stored under the bare address, so with no internet
+      // Chrome showed its own offline page. Every page here is static and reads its "?" part in the browser, so
+      // the saved copy of the same page is the right answer. Only after the network has failed, so nothing changes
+      // online.
+      if (request.mode === "navigate") {
+        const page = await cache.match(request, { ignoreSearch: true });
+        if (page) return page;
+      }
+      return Response.error();
     })()
   );
 });
