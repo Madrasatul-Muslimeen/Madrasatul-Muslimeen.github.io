@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // PCF MSA J106 S3 part 2 -- CANDIDATE Rules for the madrasah's own NAMES
+    // for the Hadith books and their groups (the Bukhari books' and groups'
+    // Bangla names, edited by the owner or a prime and read by everyone).
+    //
+    // STATUS (14 Nov 2026): CANDIDATE. NOT MERGED INTO firestore.rules. NOT
+    // DEPLOYED. Rules are an Owner Control Gate and firestore.rules is a
+    // protected, shared path: the MSA Architect reviews this and merges it,
+    // the Owner publishes it. NOTHING in the app reads or writes
+    // hadithNames yet; the writer is the next round, after the publish.
+    //
+    // A SELF-CONTAINED extract: the helpers below are reproduced from the
+    // deployed rules unchanged, so the emulator can run this in isolation.
+    // It must never be deployed as a whole file.
+    //
+    // THE SHAPE is hadithSubjects/{tenantId} (one document per madrasah, the
+    // docId IS the tenantId; any member reads, only owner/prime writes, no
+    // delete, identity write-once), with TWO deliberate tightenings that
+    // hadithSubjects, already published, does not have:
+    //   1. a create may carry ONLY the envelope fields and `names`, and an
+    //      update may change ONLY `names` and `updatedAt` (hasOnly), so a
+    //      stray field can never be parked on the document;
+    //   2. `names` is capped at 3000 entries (the Bukhari books and groups
+    //      are a few hundred; 3000 keeps the document far under Firestore's
+    //      1 MiB and stops a runaway write).
+    //
+    // THE DATA: names.<key> = { bn: string, en?: string, status: 'active' |
+    // 'retired', updatedAt, updatedBy }. A key is the book (the OpenITI
+    // version uri with each "." written "_") or a group inside it (that, a
+    // double underscore, then the group id). A name is retired with
+    // status 'retired', never removed (I4/D6); the document cannot be
+    // deleted.
+    //
+    // WHAT IS NOT ENFORCED HERE, stated rather than hidden: the shape of each
+    // entry inside `names` and the key spelling are validated client-side, the same
+    // accepted trust boundary as hadithSubjects, asmaCollections and
+    // records.entries (a rule cannot inspect an arbitrarily keyed map one entry at a time).
+    // =====================================================================
+
+    function signedIn() { return request.auth != null; }
+    function myUid() { return request.auth.uid; }
+
+    function tenantMemberRef(tenantId) {
+      return /databases/$(database)/documents/tenantMemberUids/$(tenantId + '__' + myUid());
+    }
+    function tenantMemberHeld(tenantId) { return signedIn() && exists(tenantMemberRef(tenantId)); }
+    function tenantMemberDoc(tenantId)  { return get(tenantMemberRef(tenantId)).data; }
+    function myRolesIn(tenantId)        { return tenantMemberHeld(tenantId) ? tenantMemberDoc(tenantId).roles : []; }
+    function hasRoleIn(tenantId, role)  { return role in myRolesIn(tenantId); }
+    function isPlatformAdmin() {
+      return signedIn()
+          && exists(/databases/$(database)/documents/userIndex/$(myUid()))
+          && get(/databases/$(database)/documents/userIndex/$(myUid())).data.get('platformAdmin', false) == true;
+    }
+    function isOwnerIn(tenantId) { return hasRoleIn(tenantId, 'owner'); }
+    function isPrimeIn(tenantId) { return hasRoleIn(tenantId, 'prime'); }
+    function canAdminIdentity(tenantId) { return isOwnerIn(tenantId) || isPrimeIn(tenantId) || isPlatformAdmin(); }
+    function canAdminCatalogue(tenantId) { return canAdminIdentity(tenantId); }
+    function anyMemberOf(tenantId) { return myRolesIn(tenantId).size() > 0; }
+
+    // hadithNames/{tenantId} -- NEW. One document per madrasah.
+    match /hadithNames/{tenantId} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(tenantId);
+      allow create: if canAdminCatalogue(tenantId)
+                    && request.resource.data.keys().hasOnly(['tenantId', 'schemaVersion', 'createdBy', 'createdAt', 'updatedAt', 'names'])
+                    && request.resource.data.tenantId == tenantId
+                    && request.resource.data.get('schemaVersion', 0) == 1
+                    && request.resource.data.get('createdBy', null) == myUid()
+                    && request.resource.data.get('createdAt', null) is timestamp
+                    && request.resource.data.get('names', null) is map
+                    && request.resource.data.names.size() <= 3000;
+      // `resource != null` keeps a create from tripping this clause into an
+      // evaluation error (Firestore evaluates every matching allow).
+      allow update: if resource != null
+                    && canAdminCatalogue(tenantId)
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['names', 'updatedAt'])
+                    && request.resource.data.get('names', null) is map
+                    && request.resource.data.names.size() <= 3000;
+      // No delete (I4/D6) -- a name is retired with status: "retired"
+      // inside the document, never removed from Firestore.
+    }
+  }
+}
