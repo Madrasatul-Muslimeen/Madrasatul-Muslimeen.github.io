@@ -16,6 +16,7 @@ const MUT = {
   wrongdoc: ["app/js/dua-groups-menu.js", 'ownerKey: which === "admin" ? ADMIN_GROUP_KEY : S.session.personId', "ownerKey: ADMIN_GROUP_KEY"],
   anyone: ["app/js/dua-groups-menu.js", "const canAdmin = () => !!S.session?.canCheck;", "const canAdmin = () => true;"],
   nolist: ["app/js/dua-groups-menu.js", "data.groups.set(n.id, { id: n.id, custom: \"admin\", items });", "data.groups.set(n.id, { id: n.id, custom: \"admin\", items: [] });"],
+  noadded: ["app/js/dua-groups-menu.js", "placements: groupId ? [{ group: groupId, order }] : [], added });", "placements: groupId ? [{ group: groupId, order }] : [], added: undefined });"],
   hideit: ["app/js/dua-groups-menu.js", "const r = await saveDuaEdit(S.db, S.ctx, { duaKey: key, placements: [...keep, ...add] });", "const r = await saveDuaEdit(S.db, S.ctx, { duaKey: key, placements: [...keep, ...add], hidden: !ticks.admin.size });"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -116,6 +117,35 @@ for (const [width, lang] of [[1280, "en"], [390, "bn"]]) {
   check("[keep] removing the Dua from its only list leaves it in NO group, still shown in the Rasulullah list (not hidden)", (wo.data.placements ?? []).length === 0 && wo.data.hidden !== true && wo.kind !== "delete", JSON.stringify({ p: wo.data.placements, h: wo.data.hidden }));
   await P.waitForSelector("#duaBody", { timeout: 20000 });
   check("[keep] and the page goes back to the (now shorter) list", new URL(P.url()).searchParams.get("open") === null);
+  await ctx.close();
+}
+
+// the admin adds a new Dua of the madrasah's own text to a group; a student cannot
+{
+  const { ctx, P } = await open(1280, "en", null, "/app/dua-study.html?g=g-adminaa1");
+  await P.waitForSelector("[data-dua-add-open]", { timeout: 25000 });
+  await P.click("[data-dua-add-open]");
+  await P.fill('[data-dua-add="ar"]', "بِسْمِ اللَّهِ تَوَكَّلْتُ عَلَى اللَّهِ");
+  await P.fill('[data-dua-add="en"]', "In the name of Allah, I rely on Allah.");
+  await P.fill('[data-dua-add="titleEn"]', "Leaving home");
+  await P.click('[data-dua-add-form] button[type="submit"]');
+  await P.waitForFunction(() => (window.__stubWriteData || []).some((w) => w.col === "duaEdits" && /^t1__new-/.test(w.id)));
+  const wn = (await writes(P)).filter((w) => w.col === "duaEdits" && /__new-/.test(w.id)).at(-1);
+  check("[add] a new Dua is saved as ONE new note with a permanent new- key, its own text and the group it was added in", /^new-[a-z0-9]{10}$/.test(wn.data.duaKey) && wn.data.added?.ar?.includes("بِسْمِ") && wn.data.added?.en?.startsWith("In the name") && wn.data.placements?.[0]?.group === "g-adminaa1" && wn.data.hidden === false, JSON.stringify(wn.data));
+  await P.waitForSelector("#duaBody .dua-row", { timeout: 20000 });
+  const titles = await P.$$eval("#duaBody .dua-row-title", (x) => x.map((y) => y.textContent));
+  check("[add] it shows in the group's list with its title", titles.includes("Leaving home"), titles.join());
+  await P.click("#duaBody .dua-row >> nth=-1");
+  await P.waitForSelector("[data-dua-added-card]", { timeout: 20000 });
+  const txt = await P.$eval("[data-dua-added-card]", (c) => c.innerText);
+  check("[add] its card shows the Arabic and the English the admin wrote", txt.includes("تَوَكَّلْتُ") && txt.includes("I rely on Allah"), txt.slice(0, 120));
+  await ctx.close();
+}
+{
+  const { ctx, P } = await open(1280, "en", "student", "/app/dua-study.html?g=g-adminaa1");
+  await P.waitForSelector("#duaBody .dua-row", { timeout: 25000 });
+  await P.waitForTimeout(500);
+  check("[student preview] no Add a new Dua button", (await P.$$("[data-dua-add-open]")).length === 0);
   await ctx.close();
 }
 

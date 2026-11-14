@@ -100,7 +100,7 @@ const partName = (p) => (getAppLang() === "bn" && p.bn) || p.en;
  */
 export function titleOf(data, e, lang = getAppLang()) {
   const pick = (tt) => (tt ? (lang === "bn" && tt.bn) || tt.en || null : null);
-  if (e.kind === "quran") { const x = pick(e.title); return x ? { text: x, ar: false } : null; }
+  if (e.kind === "quran" || e.kind === "added") { const x = pick(e.title); return x ? { text: x, ar: false } : null; }
   if (e.kind === "hisn") { const x = pick(e.title); return x ? { text: x, ar: false } : e.chapter ? { text: e.chapter, ar: true } : null; }
   const x = pick(data.titles?.[e.n]);
   if (x) return { text: x, ar: false };
@@ -407,6 +407,12 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       body.appendChild(tiles);
       return;
     }
+    // The admin may add a Dua of the madrasah's own text to one of the madrasah's groups (dua-groups-menu.js, already loaded for it).
+    if (g.custom === "admin") {
+      const addHost = el("div", "dua-add-host");
+      body.appendChild(addHost);
+      getCg().then((c) => c.newDuaForm(addHost, { groupId: where.g, onSaved: () => { applyCustom(c); render(); } })).catch(() => {});
+    }
     if (!list.length) {
       const e = el("p", "hadith-note dua-empty", EMPTY[where.g]?.() ?? t("No duas here yet."));
       e.dataset.duaEmpty = where.g;
@@ -478,6 +484,10 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
       if (e.count > 1) bits.push(t("{n} times", { n: num(e.count) }));
       return [{ text: e.ar.length > 90 ? `${e.ar.slice(0, 90)} …` : e.ar }, bits.join(" · ")];
     }
+    if (e.kind === "added") {
+      const ar = e.added.ar ?? "";
+      return [{ text: ar.length > 90 ? `${ar.slice(0, 90)} …` : ar }, t("Added by the madrasah")];
+    }
     // A Qur'anic dua of a Prophet.
     const L = getAppLang() === "bn" ? "bn" : "en";
     return [{ text: e.ar.length > 90 ? `${e.ar.slice(0, 90)} …` : e.ar }, `${e.who[L]} · ${t("Qur'an {ref}", { ref: num(e.ref) })}`];
@@ -525,10 +535,35 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const slot = framedHost(body, titleOf(data, e));
     slot.parentElement.dataset.duaOpen = String(i);
     if (e.kind === "dua") return mountHadithDuaCard(slot, e.n, bar);
+    if (e.kind === "added") { slot.appendChild(addedCard(e)); return; }
     if (e.kind === "hisn") { const c = hisnCard(e, bar); slot.appendChild(c); return popIfCarried(c); }
     const qc = quranCard(e, bar);
     slot.appendChild(qc);
     popIfCarried(qc);
+  }
+  /** A Dua the madrasah added: its own text, and the groups / title editor in plain view (there is no Hadith-book card to hang them on). */
+  function addedCard(e) {
+    const card = el("article", "hadith-card dua-card dua-added-card");
+    card.dataset.duaAddedCard = e.key;
+    const ar = el("p", "dua-added-ar", e.added.ar ?? ""); ar.lang = "ar"; ar.dir = "rtl"; ar.style.fontFamily = quranFontStack();
+    card.appendChild(ar);
+    const L = getAppLang() === "bn" ? "bn" : "en";
+    const meaning = e.added[L] || e.added.en || e.added.bn;
+    if (meaning) card.appendChild(el("p", "dua-added-meaning", meaning));
+    card.appendChild(el("p", "hadith-note", t("Added by the madrasah")));
+    const editHost = el("div", "dua-keep-edit-host");
+    card.appendChild(editHost);
+    getCg().then(async (c) => {
+      await c.ensure({ wait: true });
+      if (!c.state.session) return;
+      applyCustom(c);
+      c.keepEditor(editHost, e.key, {
+        current: CUSTOM_ID.test(where.g) ? where.g : null,
+        onSaved: () => applyCustom(c),
+        onRemoved: () => { applyCustom(c); backToList(); },
+      });
+    }).catch(() => { /* the text still shows */ });
+    return card;
   }
   function renderDetour(body) {
     const detour = detourOf();

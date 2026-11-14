@@ -295,3 +295,12 @@ body.dua-has-popped::before { content: ""; position: fixed; inset: 0; z-index: 5
 .dua-keep-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .dua-keep-edit input[type="text"] { width: 100%; min-width: 0; min-height: 40px; }
 .dua-pull-custom button:focus-visible, .dua-keep-edit button:focus-visible, .dua-keep-edit input:focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }
+
+.dua-add-host { margin: 0.4rem 0; }
+.dua-add-form { display: grid; gap: 0.4rem; margin-top: 0.4rem; padding: 0.6rem; border: 1px solid rgba(201, 162, 75, 0.35); border-radius: 0.65rem; }
+.dua-add-label { display: grid; gap: 0.2rem; font-size: 0.9rem; }
+.dua-add-form textarea, .dua-add-form input[type="text"] { width: 100%; min-width: 0; min-height: 44px; font: inherit; }
+.dua-add-form textarea { min-height: 80px; }
+.dua-add-open:focus-visible, .dua-add-form :focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }
+.dua-added-ar { font-size: 1.5rem; line-height: 2; margin: 0.4rem 0; }
+.dua-added-meaning { margin: 0.4rem 0; }

@@ -10,7 +10,7 @@ import { el } from "./hadith-shared-ui.js";
 import { mountGroupTree } from "./dua-group-ui.js";
 import { addGroup, find, MAX_DUAS_PER_GROUP } from "./dua-group-tree.js";
 import {
-  ADMIN_GROUP_KEY, loadDuaGroups, saveDuaGroups, loadDuaEdits, saveDuaEdit, dropStalePlacements, hisnPlanKey, quranPlanKey,
+  ADMIN_GROUP_KEY, loadDuaGroups, saveDuaGroups, loadDuaEdits, saveDuaEdit, dropStalePlacements, hisnPlanKey, quranPlanKey, newDuaKey,
 } from "./dua-saving-data.js";
 
 /** A custom group's id has the permanent shape g-xxxxxxxx; the built-in groups never do. */
@@ -58,7 +58,7 @@ export function createCustomGroups(opts = {}) {
   }
 
   // key -> list entry, for the entries the page already knows (a Dua by number; a Hisn dhikr; a Qur'anic dua)
-  const entryKey = (e) => (e.kind === "dua" ? String(e.n) : e.kind === "hisn" ? hisnPlanKey(e.h) : e.kind === "quran" ? quranPlanKey(e.ref) : null);
+  const entryKey = (e) => (e.kind === "added" ? e.key : e.kind === "dua" ? String(e.n) : e.kind === "hisn" ? hisnPlanKey(e.h) : e.kind === "quran" ? quranPlanKey(e.ref) : null);
   function indexEntries(data) {
     const map = new Map();
     for (const id of ["rasul", "occasions", "books", "prophets", "sahaba", "salaf", "ulama"]) {
@@ -75,6 +75,8 @@ export function createCustomGroups(opts = {}) {
     for (const id of [...data.groups.keys()]) if (isCustomId(id)) data.groups.delete(id);
     names.clear();
     const byKey = indexEntries(data);
+    // A Dua the madrasah added carries its own text (`added`); it is a list entry of its own kind.
+    for (const [key, ed] of S.edits) if (key.startsWith("new-") && ed.added) byKey.set(key, { kind: "added", key, added: ed.added, title: ed.title });
     const visible = (ed) => ed && !ed.hidden;
     for (const [key, ed] of S.edits) {
       if (!ed.title || (!ed.title.en && !ed.title.bn)) continue;
@@ -145,6 +147,57 @@ export function createCustomGroups(opts = {}) {
       return wrap;
     };
     host.append(section("admin", t("Admin's groups"), canAdmin()), section("mine", t("My groups"), canMine()), status);
+  }
+
+  /**
+   * "Add a new Dua" (admin): a form for a Dua of the madrasah's own text, put into the group `groupId`. Saved as one new note
+   * (a permanent key new-xxxxxxxxxx) carrying the text; no number of the Hadith books is used or invented.
+   */
+  function newDuaForm(host, { groupId, onSaved } = {}) {
+    host.textContent = "";
+    if (!canAdmin()) return;
+    const open = el("button", "dua-ref dua-add-open", `＋ ${t("Add a new Dua")}`);
+    open.type = "button"; open.dataset.duaAddOpen = "";
+    const form = el("form", "dua-add-form"); form.hidden = true; form.dataset.duaAddForm = "";
+    const field = (key, label, area, dir) => {
+      const lab = el("label", "dua-add-label", label);
+      const inp = el(area ? "textarea" : "input"); if (!area) inp.type = "text";
+      inp.dataset.duaAdd = key; inp.maxLength = area ? 4000 : 300;
+      if (dir) { inp.dir = dir; inp.lang = "ar"; }
+      lab.appendChild(inp);
+      form.appendChild(lab);
+      return inp;
+    };
+    const fAr = field("ar", t("Arabic text"), true, "rtl");
+    const fEn = field("en", t("English meaning (optional)"), true);
+    const fBn = field("bn", t("Bangla meaning (optional)"), true);
+    const tEn = field("titleEn", t("Title (English)"), false);
+    const tBn = field("titleBn", t("Title (Bangla)"), false);
+    const status = el("p", "hadith-note"); status.setAttribute("role", "status");
+    const row = el("div", "dua-keep-row");
+    const save = el("button", "dua-ref dua-menu-btn", t("Save new Dua")); save.type = "submit";
+    const cancel = el("button", "dua-ref dua-menu-btn", t("Cancel")); cancel.type = "button";
+    row.append(save, cancel);
+    form.append(row, status);
+    open.addEventListener("click", () => { form.hidden = !form.hidden; });
+    cancel.addEventListener("click", () => { form.hidden = true; });
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const ar = fAr.value.trim();
+      if (!ar) { status.textContent = t("Please write the Arabic text first."); return; }
+      const added = { ar };
+      if (fEn.value.trim()) added.en = fEn.value.trim();
+      if (fBn.value.trim()) added.bn = fBn.value.trim();
+      const key = newDuaKey();
+      const order = [...S.edits.values()].reduce((m, ed) => Math.max(m, ed.placements.find((p) => p.group === groupId)?.order ?? 0), 0) + 1;
+      const r = await saveDuaEdit(S.db, S.ctx, { duaKey: key, title: { en: tEn.value.trim(), bn: tBn.value.trim() }, placements: groupId ? [{ group: groupId, order }] : [], added });
+      if (!r.ok) { status.textContent = t("Could not save. Nothing was changed."); return; }
+      S.edits.set(key, r.edit);
+      status.textContent = t("Saved.");
+      form.reset(); form.hidden = true;
+      onSaved?.(key);
+    });
+    host.append(open, form);
   }
 
   /**
@@ -247,5 +300,5 @@ export function createCustomGroups(opts = {}) {
     host.appendChild(box);
   }
 
-  return { ensure, apply, mountMenuTrees, keepEditor, names, state: S, canAdmin, canMine };
+  return { ensure, apply, mountMenuTrees, keepEditor, newDuaForm, names, state: S, canAdmin, canMine };
 }
