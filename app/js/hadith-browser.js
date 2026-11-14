@@ -34,6 +34,7 @@ import { termsFolder } from "./hadith-terms-ui.js";
 import { HADITH_COLOURS, getHadithColours, setHadithColours } from "./hadith-colours.js";
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 import { settingsHost, addPreviewCue } from "./hadith-menu-settings.js";
+import { mountContinueStrip, parkContinueStrip } from "./hadith-continue-mount.js";
 import { subjectAddRow, renderSubjectList } from "./hadith-subjects.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
@@ -89,6 +90,7 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
   }
 
   function render() {
+    parkContinueStrip(); // a mounted Continue strip (Subjects, J106 S2) must not be cleared away with the view
     root.textContent = "";
     removeReaderWindows(); // a popped-out Hadith Books pane closes with the view it belongs to
     // The Collections landing now leads with REAL HadeethEnc text (#309), so
@@ -289,9 +291,10 @@ function controls(state, render) {
   return bar;
 }
 
-/** PCF MSA J106: the three Subjects (the Owner's names). Each becomes a list of hadith the Owner files (answer 3A). */
+/** PCF MSA J106: the four Subjects (the Owner's names and order, 14 Nov 2026). Each becomes a list of hadith the Owner files (answer 3A). */
 export const HADITH_SUBJECTS = [
   { id: "akhlaq", name: "Learning Akhlaq", about: "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself." },
+  { id: "rasulullah", name: "Loving Rasulullah Sallallahu A'laihi Wa Sallam", about: "Learning to love Rasulullah Sallallahu A'laihi Wa Sallam, through the hadith of his character and his ways (Shamayyl Muhammadiya)." },
   { id: "ghayb", name: "Knowing Al-Ghayb", about: "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows." },
   { id: "stories", name: "Learning Stories from Hadith", about: "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them." },
 ];
@@ -452,6 +455,8 @@ function renderSubjects(body, state, render) {
   state.subjectId = sub.id;
   const box = el("section", "hadith-subject");
   box.dataset.hadithSubject = sub.id;
+  // The Continue chips (the Owner, tick 6A) sit at the top of Subjects: the shared strip, mounted unchanged.
+  mountContinueStrip(box);
   box.appendChild(el("h2", null, t(sub.name)));
   box.appendChild(el("p", "hadith-note", t(sub.about)));
   body.appendChild(box);

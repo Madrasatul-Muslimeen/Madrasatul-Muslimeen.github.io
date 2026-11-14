@@ -241,7 +241,9 @@ async function openFresh(path, w, h, lang) {
   await ctx.route("**/archive.org/**", (r) => r.abort());
   await ctx.addInitScript(INSTALL); // every navigation, so a page that reloads itself keeps the helpers
   const sep = path.includes("?") ? "&" : "?";
-  const { page, errors } = await openPage(ctx, "/app/" + path + sep + (path.startsWith("hadith-collections") ? "back=1" : "navBack=1"));
+  const { page, errors } = await openPage(ctx, "/app/" + path + sep + (path.startsWith("hadith-collections") ? "back=1" : "navBack=1")
+    // Updated in place 14 Nov 2026 (PCF MSA J106 S2): the Hadith page hides the SHARED card list by default; the hadith-topic-* flows press its rows, so they open it with ?topicTree=1.
+    + (FLOW && FLOW.startsWith("hadith-topic") && path.startsWith("hadith-study") ? "&topicTree=1" : ""));
   page.on("dialog", (d) => d.accept(d.type() === "prompt" ? MARK : undefined).catch(() => {}));
   await page.waitForTimeout(1000);
   await page.evaluate(INSTALL);

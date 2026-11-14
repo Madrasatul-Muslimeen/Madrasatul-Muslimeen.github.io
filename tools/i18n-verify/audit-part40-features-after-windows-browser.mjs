@@ -362,7 +362,8 @@ for (const lang of LANGS) for (const look of LOOKS) for (const width of WIDTHS) 
   await flow("hadeethenc-hs", lang, look, width, "/app/hadith-study.html", "", wrap(hadeethenc));
   await flow("openiti-hs", lang, look, width, "/app/hadith-study.html", "", wrap(openiti));
   await flow("bookmarks", lang, look, width, "/app/bookmarks.html", BM_SEED, wrap(bookmarksPage));
-  for (const m of Object.values(TOPICS)) await flow(`topic-${m.id}`, lang, look, width, `/app/${m.page}`, topicSeed(m), wrap((t, p) => topic(t, p, m)));
+  // Updated in place 14 Nov 2026 (PCF MSA J106 S2): the Hadith page hides the SHARED card list by default; this audit measures that list, so the Hadith row opens it with ?topicTree=1.
+  for (const m of Object.values(TOPICS)) await flow(`topic-${m.id}`, lang, look, width, `/app/${m.page}${m.id === "hadith" ? "?topicTree=1" : ""}`, topicSeed(m), wrap((t, p) => topic(t, p, m)));
   await flow("continue", lang, look, width, `/app/${TOPICS.deen.page}`, topicSeed(TOPICS.deen), wrap(async (t, p) => { await continueChip(t, p, TOPICS.deen); check(`${t}: the chip opened the topic itself`, await ev(p, () => !!document.getElementById("trackTopicBtn"))); }));
 }
 // the same pages opened from the Qur'an page's menu as a J74 page window

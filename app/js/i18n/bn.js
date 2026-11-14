@@ -4748,10 +4748,12 @@ export const BN = {
   "Dua ↗": "দুআ ↗", // ? (a link to the Dua module's own page, from Hadith Study's Menu)
   "· Preview": "· পূর্বরূপ", // ? (the cue on the Menu button while a "View as" preview is on)
   "Learning Akhlaq": "আখলাক শেখা", // ?
+  "Loving Rasulullah Sallallahu A'laihi Wa Sallam": "রাসূলুল্লাহ ﷺ-কে ভালোবাসা", // ? (PCF MSA J106 S2: the Subject for the Shamayyl Muhammadiya card; Bangla proposed, the Owner corrects)
   "Knowing Al-Ghayb": "আল-গায়ব জানা", // ?
   "Stories from Hadith": "হাদীসের কাহিনি", // ?
   "Learning Stories from Hadith": "হাদীসের কাহিনি থেকে শিক্ষা", // the Owner renamed the Subject (14 Nov 2026); Bangla proposed, the Owner corrects
   "Good character: how a Muslim treats people, speaks, and loves for others what he loves for himself.": "উত্তম চরিত্র: একজন মুসলিম কীভাবে মানুষের সাথে আচরণ করে, কথা বলে, এবং নিজের জন্য যা ভালোবাসে অন্যের জন্যও তা ভালোবাসে।", // ?
+  "Learning to love Rasulullah Sallallahu A'laihi Wa Sallam, through the hadith of his character and his ways (Shamayyl Muhammadiya).": "রাসূলুল্লাহ ﷺ-কে ভালোবাসতে শেখা: তাঁর চরিত্র ও তাঁর পথের হাদীসের মাধ্যমে (শামায়েলে মুহাম্মাদিয়া)।", // ? (proposed)
   "The unseen: belief in Allah, the angels, the Last Day, and what only Allah knows.": "অদৃশ্য জগৎ: আল্লাহ, ফেরেশতা, শেষ দিবসের প্রতি ঈমান, এবং যা কেবল আল্লাহই জানেন।", // ?
   "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them.": "রাসূলুল্লাহ ﷺ ও তাঁর সাহাবীদের জীবনের ঘটনা, যেমন হাদীসে বর্ণিত হয়েছে।", // ?
   "No hadith in this list yet. Open a hadith in Hadith Books and choose “Add to subject”.": "এই তালিকায় এখনো কোনো হাদীস নেই। হাদীসের কিতাবসমূহে একটি হাদীস খুলে “পাঠ্য বিষয়ে যোগ করুন” বেছে নিন।", // ?

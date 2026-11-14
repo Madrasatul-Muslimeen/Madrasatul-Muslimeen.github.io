@@ -20,7 +20,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithMenuOpen } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -87,11 +87,17 @@ async function open(lang, width, m, query, extra) {
     if (n !== 1) throw new Error(`mutation anchor for ${MUTATE} found ${n} times`);
     await ctx.route(glob, (r) => r.fulfill({ status: 200, contentType: file.endsWith(".html") ? "text/html; charset=utf-8" : "text/javascript; charset=utf-8", body: body.split(from).join(to) }));
   }
-  const { page, errors } = await openPage(ctx, m.page + (query || ""));
+  // Updated in place 14 Nov 2026 (PCF MSA J106 S2): hadith-study.html hides the SHARED card list by default (the Owner removed the cards);
+  // this suite tests the shared tree, so the Hadith row opens it with the page's unlinked ?topicTree=1 switch (off by default, proven by hadith-topic-surface-browser).
+  const treeQ = m.id === "hadith" ? (query ? `${query}&topicTree=1` : "?topicTree=1") : (query || "");
+  const { page, errors } = await openPage(ctx, m.page + treeQ);
   await page.waitForTimeout(800);
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
   return { ctx, page, errors };
 }
+// Updated in place 14 Nov 2026 (PCF MSA J106 S1): on the Hadith page the Person picker lives in Menu > Settings (a panel that starts hidden),
+// so the Hadith row opens Menu before choosing a person; every other page still has it in the page.
+async function selPerson(page, m, value) { if (m.id === "hadith") await hadithMenuOpen(page); await page.selectOption("#personSelect", value); }
 async function flow(name, lang, width, m, fn, { query = "", extra = "" } = {}) {
   const full = `${name}-${m.id}`;
   if (ONLY && !ONLY.split(",").some((o) => full.includes(o))) return;
@@ -148,17 +154,17 @@ for (const lang of LANGS) for (const width of WIDTHS) for (const m of MODULES) {
     await page.waitForSelector("#listContainer .topic-row", { timeout: 20000 });
     const persons = await ev(page, () => [...document.querySelectorAll("#personSelect option")].map((o) => o.value));
     check(`${t}: POSITIVE CONTROL the Person picker offers p1 and p2`, persons.includes("p1") && persons.includes("p2"), JSON.stringify(persons));
-    await page.selectOption("#personSelect", "p1"); await settle(page, 800);
+    await selPerson(page, m, "p1"); await settle(page, 800);
     let rows = await names(page);
     const p1chip = rows.find((r) => r.id === "leaf_b")?.chip;
     check(`${t}: POSITIVE CONTROL p1 has not started the short topic`, !!p1chip, JSON.stringify(rows.map((r) => r.chip)));
-    await page.selectOption("#personSelect", "p2"); await settle(page, 800);
+    await selPerson(page, m, "p2"); await settle(page, 800);
     rows = await names(page);
     check(`${t}: switching to p2 shows p2's own status chip on the claimed topic (leaf_b is Not Applicable)`, !!rows.find((r) => r.id === "leaf_b")?.chip && rows.find((r) => r.id === "leaf_b").chip !== p1chip, JSON.stringify(rows.map((r) => [r.id, r.chip])));
-    await page.selectOption("#personSelect", "p1"); await settle(page, 800);
+    await selPerson(page, m, "p1"); await settle(page, 800);
     rows = await names(page);
     check(`${t}: switching back to p1 drops p2's chip again`, rows.find((r) => r.id === "leaf_b")?.chip === p1chip, JSON.stringify(rows.map((r) => r.chip)));
-    await page.selectOption("#personSelect", "p2"); await settle(page, 800); // not the first person, so a claim for "whoever is first" shows
+    await selPerson(page, m, "p2"); await settle(page, 800); // not the first person, so a claim for "whoever is first" shows
     await page.click('.topic-row-leaf[data-id="leaf_b"]'); await settle(page, 800);
     await page.click("#trackTopicBtn"); await settle(page, 600);
     await page.selectOption(".way-status-select", "learning");
@@ -176,7 +182,7 @@ for (const lang of LANGS) for (const width of WIDTHS) for (const m of MODULES) {
 
   await flow("na", lang, width, m, async (t, page, errors) => {
     await page.waitForSelector("#listContainer .topic-row", { timeout: 20000 });
-    await page.selectOption("#personSelect", "p2"); await settle(page, 800);
+    await selPerson(page, m, "p2"); await settle(page, 800);
     await page.click('.topic-row-branch[data-id="branch_a"]'); await settle(page, 200);
     await page.click(".topic-row-leaf"); await settle(page, 900);
     await page.click("#trackTopicBtn"); await settle(page, 600);

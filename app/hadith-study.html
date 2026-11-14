@@ -109,6 +109,15 @@
   .assign-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
   .assign-row .who-name { flex: 1; }
   .assign-row .who-tag { font-size: 0.66rem; color: #666; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
+  /* PCF MSA J106 S2 (the Owner, 14 Nov 2026, tick 5B): the Hadith module's card list (Adab Al-Mufrad, Shamayyl Muhammadiya,
+     Al-Ghayb, Hadith Reading, Stories) is gone; the four Subjects in the menu replace it. The list is the SHARED topic
+     surface (topic-study.js, eight pages), which this page must not change, so the page hides ONLY the two list surfaces
+     with its own class. A topic someone is SENT to (a Continue chip, a bookmark, a Notes way-back: ?resume=<topic>) still
+     opens in #detailContainer, which is never hidden. ?topicTree=1 switches the hide off: an unlinked page-own switch for
+     the suites that test the shared tree on the Hadith root; it is OFF by default (hadith-menu-subjects checks that).
+     Load cost: topic-study.js still reads the Hadith catalogue for the hidden list, exactly as before (no new read). */
+  #app.hadith-tree-off #breadcrumbContainer, #app.hadith-tree-off #listContainer { display: none; }
+  #app.hadith-tree-off #breadcrumbContainer[hidden], #app.hadith-tree-off #listContainer[hidden] { display: none; }
   /* Audit part 2 (PCF J29): the Tenant / Person pickers are finger-sized. */
   #contextBar select { box-sizing: border-box; min-height: 40px; } /* audit2 hadith-pickers */
 </style>
@@ -153,7 +162,7 @@
     <div id="hadithCorpusRoot"></div>
   </section>
 
-  <div id="app" style="display:none;">
+  <div id="app" class="hadith-tree-off" style="display:none;">
     <div id="continueStrip"></div>
     <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
       <label style="margin:0; min-width:0; max-width:100%;">Tenant
@@ -184,6 +193,8 @@
     translateStatic();
     registerServiceWorker();
     armScreensaver();
+    // J106 S2: ?topicTree=1 shows the shared card list again (an unlinked switch for the suites; off by default, see the style above).
+    if (new URLSearchParams(location.search).get("topicTree") === "1") document.getElementById("app")?.classList.remove("hadith-tree-off");
     initTopicStudyPage({ moduleId: "hadith", trackableId: "studied_hadith", rootSubjectId: "hadith" });
 
     // The corpus mounts independently of initTopicStudyPage. It reads only
