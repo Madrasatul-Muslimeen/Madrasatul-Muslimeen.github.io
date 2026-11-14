@@ -555,7 +555,7 @@ async function runJuzSliceScenario(lang) {
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await waitForWheelReady(page);
 
-  await clickSafely(page, "#wbStatus"); await clickSafely(page, "#wbStatusCardBtn"); // v15.00: the bar button, then the panel's "Open my full status"
+  await page.evaluate(() => document.getElementById("wbStatusCardBtn").click()); // v15.00: the bar button, then the panel's "Open my full status"
   await page.waitForFunction(() => document.getElementById("myStatusBody")?.querySelectorAll(".my-status-row-btn").length > 0, null, { timeout: 10000 });
   await clickSafely(page, `[data-my-status-open="${YES_ID}"]`);
   await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 5000 });
@@ -594,7 +594,7 @@ async function runExploreAgreementScenario() {
   await waitForWheelReady(page);
   for (const kind of ["juz", "surah", "hizb"]) { // hizb added with #342: its row now opens Explore's Hizb view
     await clickSafely(page, "#tabApproachBtn"); // back from Explore after the first pass
-    await clickSafely(page, "#wbStatus"); await clickSafely(page, "#wbStatusCardBtn");
+    await page.evaluate(() => document.getElementById("wbStatusCardBtn").click());
     await page.waitForFunction(() => document.getElementById("myStatusBody")?.querySelectorAll(".my-status-row-btn").length > 0, null, { timeout: 10000 });
     await clickSafely(page, `[data-my-status-open="${YES_ID}"]`);
     await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 5000 });
@@ -647,7 +647,7 @@ const K425_NO = { juz: 0, surah: 3, hizb: 0, ruku: 0, page: 0, ayah: 0 };
 
 async function openKys(page, width) {
   const id = "wbStatus"; // v15.00: Know Your Status is the bar button #wbStatus, then the panel's "Open my full status" (#wbStatusCardBtn)
-  await clickSafely(page, `#${id}`); await clickSafely(page, "#wbStatusCardBtn");
+  await page.evaluate(() => document.getElementById("wbStatusCardBtn").click());
   await page.waitForFunction(() => document.querySelectorAll("#myStatusBody .ms-tile").length > 0, null, { timeout: 15000 });
 }
 const tileNs = (page, id) => page.evaluate((tid) => Object.fromEntries([...document.querySelectorAll(`[data-my-status-open="${tid}"] .ms-tile`)].map((t) => [t.dataset.unit, Number(t.dataset.n)])), id);

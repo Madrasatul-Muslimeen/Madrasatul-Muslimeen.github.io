@@ -125,6 +125,10 @@ for (const lang of ["en", "bn"]) {
       check(`${tag} the choices survive a reload; drawers start closed again`, closedAfter && after.look === "true" && after.show === "true", JSON.stringify(after));
     }
 
+    // v15.00: an open bar panel pushes the page down by design (the wheel is judged with the panels CLOSED, as the old drawers were),
+    // so close whatever the moved-controls step above left open before the first-screen geometry is measured.
+    await page.evaluate(() => document.querySelectorAll('#wheelBar [data-wb-panel-btn][aria-expanded="true"]').forEach((b) => b.click()));
+    await page.waitForTimeout(500);
     // Wheel numbers vs the CARD's top edge + list top.
     // UPDATED IN PLACE (Architect review #467): the numbers are pale text on the
     // dark card, so what cuts them is the card's top edge (#wheelSection), not
