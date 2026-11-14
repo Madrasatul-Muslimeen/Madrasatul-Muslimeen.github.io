@@ -16,7 +16,7 @@ import { chromium, newContext, openPage } from "./harness.mjs";
 const SWITCH = ["js/hadith-names-switch.js", "export const HADITH_NAMES_PUBLISHED = false;", "export const HADITH_NAMES_PUBLISHED = true;"];
 const MUT = {
   alwayson: ["js/hadith-names-switch.js", "export const namesEnabled = () => HADITH_NAMES_PUBLISHED === true;", "export const namesEnabled = () => true;"],
-  nofail: ["js/hadith-names.js", "if (ok) { data.names = res.names; data.docExists = true; known = res.names; onChange?.(); await draw({ text: doneText }); } else await draw({ text: failText, failed: true });", "data.names = res.names; known = res.names; onChange?.(); await draw({ text: doneText });"],
+  nofail: ["js/hadith-names.js", "if (!ok) { await draw({ text: failText, failed: true }); return; }", "if (false) { return; }"],
   noguard: ["js/hadith-names.js", "if (!session || !session.canManage) {", "if (!session) {"],
   noretire: ["js/hadith-names-model.js", "return { names: { ...names, [key]: { ...cur, status: \"retired\", updatedAt: at, updatedBy: by } }, changed: true };", "return { names, changed: false };"],
   nodisplay: ["js/hadith-names.js", "  const text = nameOf(known, key, getAppLang());\n  if (!text) return null;", "  return null;"],
@@ -35,7 +35,7 @@ if (process.argv.includes("--prove")) {
   for (const name of only) {
     const r = spawnSync(process.execPath, [process.argv[1], `--mutate=${name}`], { encoding: "utf8", timeout: 900000 });
     const ff = (r.stdout || "").split("\n").find((l) => l.startsWith("  FAIL  "));
-    if (r.status !== 0 && ff) { caught++; console.log(`  CAUGHT  ${name}: ${ff.trim().slice(0, 130)}`); } else { missed.push(name); console.log(`  MISSED  ${name}`); }
+    if (r.status !== 0 && ff && !/mutation anchor missing/.test(ff)) { caught++; console.log(`  CAUGHT  ${name}: ${ff.trim().slice(0, 130)}`); } else { missed.push(name); console.log(`  MISSED  ${name}`); }
   }
   console.log(`\n==== hadith-names mutations: ${caught} of ${only.length} caught ====`);
   process.exit(missed.length ? 1 : 0);

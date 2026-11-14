@@ -23,6 +23,7 @@ const MUT = {
   nomove: ["js/hadith-subject-meta.js", "  if (i < 0 || j < 0 || j >= vis.length) return { meta, changed: false };", "  return { meta, changed: false };"],
   nofail: ["js/hadith-subjects.js", "if (ok) { onChange?.(); await draw({ text: doneText }); } else await draw({ text: failText, failed: true });", "onChange?.(); await draw({ text: doneText });"],
   noguard: ["js/hadith-subjects.js", "    if (!session || !session.canManage) {\n      const why = el(\"p\", \"hadith-note hadith-subject-why\", t(session ? \"Only the madrasah's owner or a prime can edit", "    if (false) {\n      const why = el(\"p\", \"hadith-note hadith-subject-why\", t(session ? \"Only the madrasah's owner or a prime can edit"],
+  noplaceholder: ["js/hadith-subjects.js", "bn.placeholder = !sub.custom && !sub.nameOverride?.bn && t(sub.name) !== sub.name ? t(sub.name) : t(\"Bangla name (optional)\");", "bn.placeholder = t(\"Bangla name (optional)\");"],
   nomenu: ["js/hadith-browser.js", "    for (const sub of knownSubjects({ includeRetired: false })) {", "    for (const sub of HADITH_SUBJECTS) {"],
   eagerstart: ["js/hadith-browser.js", "registerBuiltinSubjects(HADITH_SUBJECTS);\n", "registerBuiltinSubjects(HADITH_SUBJECTS);\nloadSubjectChoices().catch(() => {});\n"],
   alwayscreate: ["js/hadith-study-actions.js", "      if (!docExists) return createDocument(", "      if (true) return createDocument("],
@@ -37,7 +38,7 @@ if (process.argv.includes("--prove")) {
   for (const name of only) {
     const r = spawnSync(process.execPath, [process.argv[1], `--mutate=${name}`], { encoding: "utf8", timeout: 900000 });
     const ff = (r.stdout || "").split("\n").find((l) => l.startsWith("  FAIL  "));
-    if (r.status !== 0 && ff) { caught++; console.log(`  CAUGHT  ${name}: ${ff.trim().slice(0, 130)}`); } else { missed.push(name); console.log(`  MISSED  ${name}`); }
+    if (r.status !== 0 && ff && !/mutation anchor missing/.test(ff)) { caught++; console.log(`  CAUGHT  ${name}: ${ff.trim().slice(0, 130)}`); } else { missed.push(name); console.log(`  MISSED  ${name}`); }
   }
   console.log(`\n==== hadith-subjects-s3 mutations: ${caught} of ${only.length} caught ====`);
   process.exit(missed.length ? 1 : 0);
@@ -99,6 +100,9 @@ for (const [lang, width] of [["en", 1280], ["bn", 390]]) {
   const rows = await P.$$eval("[data-hadith-subject-edit-row]", (ns) => ns.map((n) => n.dataset.hadithSubjectEditRow));
   check(`${tag} the editor lists all four Subjects`, JSON.stringify(rows) === JSON.stringify(["akhlaq", "rasulullah", "ghayb", "stories"]), JSON.stringify(rows));
 
+  // 107L: a shipped Subject's Bangla box shows its shipped Bangla name as the placeholder (in Bangla only)
+  const ph = await P.$eval('[data-hadith-subject-edit-bn="akhlaq"]', (n) => n.placeholder);
+  check(`${tag} a shipped Subject's Bangla box carries its shipped Bangla name as the placeholder (Bangla only)`, lang === "bn" ? ph === "আখলাক শেখা" : /Bangla name/.test(ph), ph);
   // rename
   await P.fill('[data-hadith-subject-edit-en="akhlaq"]', "Learning Good Character");
   await P.fill('[data-hadith-subject-edit-bn="akhlaq"]', "ভালো চরিত্র শেখা");
