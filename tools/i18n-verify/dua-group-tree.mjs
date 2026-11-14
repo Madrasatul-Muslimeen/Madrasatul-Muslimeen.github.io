@@ -33,7 +33,7 @@ function chainsToTarget(target) {
   return found;
 }
 check("POSITIVE CONTROL: the reachability walker finds a wired module (records.js)", () => assert.ok(chainsToTarget("records.js").length > 0));
-check("the ONE lazy door: dua-study.js opens the groups pop-up with a dynamic import() of dua-groups-page.js, and no page imports that statically", () => { assert.match(fs.readFileSync(path.join(appJs, "dua-study.js"), "utf8"), /import\("\.\/dua-groups-page\.js"\)/); assert.deepEqual(chainsToTarget("dua-groups-page.js"), []); });
+check("the ONE lazy door: dua-study.js opens the groups menu with a dynamic import() of dua-groups-menu.js, and no page imports that statically", () => { assert.match(fs.readFileSync(path.join(appJs, "dua-study.js"), "utf8"), /import\("\.\/dua-groups-menu\.js"\)/); assert.deepEqual(chainsToTarget("dua-groups-menu.js"), []); });
 check("dua-group-tree.js is reachable from NO page by a STATIC import chain (it loads only when the Dua groups button is pressed: I9)", () => assert.deepEqual(chainsToTarget("dua-group-tree.js"), []));
 
 // --- the module, with a throw-away mutated copy when --mutate is given ---

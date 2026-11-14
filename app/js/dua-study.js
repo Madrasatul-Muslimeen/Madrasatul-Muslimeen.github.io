@@ -33,8 +33,13 @@ const BANNER_URL = "./img/dua-banner-bottom.webp";
 export const PER_PAGE = 50;
 export const GROUP_IDS = ["occasions", "books", "prophets", "rasul", "sahaba", "salaf", "ulama"];
 
+// The Owner (14 Nov 2026): the madrasah's and a person's own groups are listed with the built-in ones. Their ids look like g-xxxxxxxx
+// (dua-groups-menu.js, loaded on demand); their names are kept here once they are loaded.
+const CUSTOM_ID = /^g-[a-z0-9]{8}$/;
+const customNames = new Map();
 // D01: the seven groups' names. "Rasulullah" is always followed by "Sallallahu A'laihi Wa Sallam" (saw128).
 export function groupName(id) {
+  if (customNames.has(id)) { const n = customNames.get(id); return (getAppLang() === "bn" && n.bn) || n.en; }
   return ({
     occasions: t("Dua by Occasions"), books: t("Dua by Hadith Books"), prophets: t("Dua of Prophets"),
     rasul: t("Dua of Rasulullah Sallallahu A'laihi Wa Sallam"), sahaba: t("Dua of the Sahaba"), salaf: t("Dua of the Salaf"),
@@ -116,7 +121,7 @@ const countOf = (g) => (g.parts ? new Set(g.parts.flatMap((p) => p.items.map(key
 /** Where the reader is, read from and written to this page's address. */
 export function readPlace(search) {
   const q = new URLSearchParams(search);
-  const g = GROUP_IDS.includes(q.get("g")) ? q.get("g") : "rasul";
+  const g = GROUP_IDS.includes(q.get("g")) || CUSTOM_ID.test(q.get("g") ?? "") ? q.get("g") : "rasul";
   const part = q.get("part") || null;
   const lp = Math.max(1, Number.parseInt(q.get("lp"), 10) || 1);
   const open = /^\d{1,5}$/.test(q.get("open") ?? "") ? Number(q.get("open")) : null;
@@ -148,7 +153,22 @@ function writePlace(where) {
 
 export function mountDuaStudy(root, { search = location.search } = {}) {
   const where = readPlace(search);
-  let reopenGroups = new URLSearchParams(search).has("dgp"); // step 6b's way back: reopen the Dua groups pop-up once
+  // The madrasah's and the person's own groups (dua-groups-menu.js), loaded on demand: when the Dua groups menu opens, when a Dua's Menu is
+  // pressed, when the address names a group, and once in the background after the first paint (for the admin's titles and group lists).
+  let cg = null;
+  const getCg = () => (cg ??= import("./dua-groups-menu.js").then((m) => m.createCustomGroups()));
+  const applyCustom = (c) => { c.apply(data); customNames.clear(); for (const [id, nm] of c.names) customNames.set(id, nm); };
+  let bgStarted = false;
+  function backgroundCustom() {
+    if (bgStarted) return;
+    bgStarted = true;
+    getCg().then(async (c) => {
+      await c.ensure({ wait: true });
+      if (!c.state.session) return;
+      applyCustom(c);
+      if (where.open == null && where.tie == null && !where.books && c.state.edits.size) render();
+    }).catch(() => { /* titles and groups stay as they were; the built-in lists are untouched */ });
+  }
   let data = null;
   const detourOf = () => (where.tie != null ? { n: where.tie, from: listOf(data, where)?.[where.open - 1]?.h } : null);
 
@@ -177,7 +197,14 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     root.appendChild(body);
     if (!data) {
       body.appendChild(el("p", "hadith-note", t("Loading…")));
-      loadDuaGroups().then((d) => { data = d; settle(); render(); }).catch((err) => duaLoadFailed(body, render, err));
+      loadDuaGroups().then(async (d) => {
+        data = d;
+        if (CUSTOM_ID.test(where.g)) {
+          try { const c = await getCg(); await c.ensure({ wait: true }); applyCustom(c); } catch { /* falls back below */ }
+          if (!data.groups.has(where.g)) Object.assign(where, { g: "rasul", part: null, open: null });
+        }
+        settle(); render(); backgroundCustom();
+      }).catch((err) => duaLoadFailed(body, render, err));
       return;
     }
     renderMenu(menu);
@@ -268,26 +295,21 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
         it.dataset.duaGroup = id;
         box.appendChild(it);
       }
+      // The Owner (14 Nov): Admin's groups and My groups are part of THIS menu: open one, add, rename, move, delete.
+      const host = el("div", "dua-pull-custom");
+      host.appendChild(el("p", "hadith-note", t("Loading…")));
+      box.appendChild(host);
+      getCg().then(async (c) => {
+        await c.ensure({ wait: true });
+        applyCustom(c);
+        c.mountMenuTrees(host, {
+          onOpen: (n) => { closePull(); go({ g: n.id }); },
+          onChange: () => { applyCustom(c); if (CUSTOM_ID.test(where.g) && !data.groups.has(where.g)) go({ g: "rasul" }); },
+        });
+      }).catch(() => { host.textContent = ""; host.appendChild(el("p", "hadith-note", t("Could not load the groups."))); });
     }));
     wrap.appendChild(gb);
     menu.appendChild(wrap);
-    // PCF MSA J104 item 25 (step 6b): the Admin's groups / My groups pop-up. Loaded only when pressed (I9), so nothing joins the startup path.
-    const gp = el("button", "dua-pd dua-pd-groups");
-    gp.type = "button";
-    gp.dataset.duaPd = "mygroups";
-    gp.append(el("small", null, t("Groups")), el("b", null, t("Admin's and my groups")));
-    const openGroups = async (reopen) => {
-      try {
-        const [{ openDuaGroups, readGroupsPlace }, { db }, check] = await Promise.all([import("./dua-groups-page.js"), import("./firebase-init.js"), import("./dua-check-data.js")]);
-        // The way back (decision 86): coming Back from a dua opened in the pop-up, the address names the switch and the group
-        // (?dgp=...), so the pop-up reopens exactly there. Sign-in finishes after the page paints, so wait for it (up to 8 s).
-        if (reopen) for (let i = 0; i < 40 && !check.getDuaCheckSession(); i++) await new Promise((r) => setTimeout(r, 200));
-        openDuaGroups({ db, getSession: check.getDuaCheckSession, lang: getAppLang(), reopen: reopen ? readGroupsPlace(location.search) : null });
-      } catch (err) { gp.after(el("p", "hadith-note", `${t("Could not load the groups.")} ${err?.message ?? ""}`.trim())); }
-    };
-    gp.addEventListener("click", () => openGroups(false));
-    // Only an address the pop-up itself wrote carries dgp, so an ordinary page load still reads nothing (I9).
-    if (reopenGroups) { reopenGroups = false; openGroups(true); }
     const bk = el("button", "dua-pd");
     bk.type = "button";
     bk.dataset.duaPd = "books";
@@ -297,9 +319,6 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const bkw = el("div", "dua-pd-wrap");
     bkw.appendChild(bk);
     menu.appendChild(bkw);
-    const gpw = el("div", "dua-pd-wrap");
-    gpw.appendChild(gp);
-    menu.appendChild(gpw);
     if (g.parts) {
       const cur = g.parts.find((p) => p.id === where.part);
       const pw = el("div", "dua-pd-wrap");
@@ -793,6 +812,25 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
         if (!ev.target.closest?.("[data-dua-menu-toggle]")) return;
         article.removeEventListener("click", once);
         hadithTr.ready = loadHadithTranslations(c, hadithTr);
+      });
+      // The Owner (14 Nov): put this Dua in the madrasah's groups and your own, take it out of a list, and (admin) edit its title.
+      // It lives in the Menu's Keep tab and is read on the first press of the Menu (never when the card opens).
+      const editHost = el("div", "dua-keep-edit-host");
+      keep.appendChild(editHost);
+      article.addEventListener("click", function onceEdit(ev) {
+        if (!ev.target.closest?.("[data-dua-menu-toggle]")) return;
+        article.removeEventListener("click", onceEdit);
+        getCg().then(async (c) => {
+          await c.ensure({ wait: true });
+          if (!c.state.session) return;
+          applyCustom(c);
+          c.keepEditor(editHost, String(n), {
+            current: CUSTOM_ID.test(where.g) ? where.g : null,
+            onSaved: () => applyCustom(c),
+            onRemoved: () => { applyCustom(c); backToList(); },
+          });
+          keep.hidden = false;
+        }).catch(() => { /* the card works without the editor */ });
       });
       host.appendChild(article);
       popIfCarried(article);

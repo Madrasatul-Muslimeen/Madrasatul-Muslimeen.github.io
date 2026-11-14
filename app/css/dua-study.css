@@ -279,13 +279,19 @@ body.dua-has-popped::before { content: ""; position: fixed; inset: 0; z-index: 5
 .dua-gt-move-go { background: #e0b95c !important; color: #121a33 !important; border-color: #c9a24b !important; }
 .dua-gt-move-say { flex-basis: 100%; margin: 0; color: #ff9d8d; font-size: 0.85rem; }
 
-/* Step 6b: the Admin's groups / My groups pop-up's own parts. */
-.dua-gp-switch { display: flex; gap: 0.4rem; margin: 0 0 0.5rem; }
-.dua-gp-tab { flex: 1 1 0; min-height: 40px; padding: 0.3rem 0.6rem; border: 1px solid #3a4468; border-radius: 0.65rem; background: #121a33; color: #f2e6c4; font: inherit; cursor: pointer; }
-.dua-gp-tab[aria-selected="true"] { background: #f2e6c4; color: #121a33; font-weight: 700; }
-.dua-gp-tab:focus-visible, .dua-gp-add:focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }
-.dua-gp-add { margin-top: 0.5rem; min-height: 40px; }
-.dua-gp-list { list-style: none; margin: 0.4rem 0; padding: 0; }
-.dua-gp-list li { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 40px; }
-.dua-gp-addform { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
-.dua-gp-addform input { flex: 1 1 auto; min-width: 0; min-height: 40px; }
+
+/* The Dua groups menu also holds Admin's groups and My groups (dua-groups-menu.js), and the Keep tab's group and title editor. */
+.dua-pull-custom { border-top: 1px solid rgba(201, 162, 75, 0.35); margin-top: 0.3rem; padding-top: 0.3rem; }
+.dua-pull-h { margin: 0.4rem 0.4rem 0.2rem; font-size: 0.9rem; color: var(--card-heading, #1F3A6E); }
+.dua-pull-custom .dua-gt-row { flex-wrap: wrap; }
+.dua-pull-custom .dua-gt-name { flex: 1 1 8rem; min-width: 0; }
+.dua-pull-custom .dua-gt-menu { position: static; flex: 1 1 100%; box-shadow: none; margin: 0.2rem 0 0.3rem; }
+.dua-pull-add { margin: 0.3rem 0.4rem; min-height: 44px; }
+.dua-pull-status { margin: 0.2rem 0.4rem; min-height: 1.2em; }
+.dua-keep-edit { display: grid; gap: 0.4rem; margin-top: 0.5rem; }
+.dua-keep-groups { border: 1px solid rgba(201, 162, 75, 0.35); border-radius: 0.65rem; margin: 0; padding: 0.3rem 0.6rem; min-width: 0; }
+.dua-keep-tick { display: flex; align-items: center; gap: 0.4rem; min-height: 40px; }
+.dua-keep-tick input { width: 22px; height: 22px; flex: none; }
+.dua-keep-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.dua-keep-edit input[type="text"] { width: 100%; min-width: 0; min-height: 40px; }
+.dua-pull-custom button:focus-visible, .dua-keep-edit button:focus-visible, .dua-keep-edit input:focus-visible { outline: 2px solid #e2662b; outline-offset: 2px; }
