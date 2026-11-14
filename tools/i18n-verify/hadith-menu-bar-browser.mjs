@@ -16,7 +16,7 @@ import { duaRedirectTarget } from "../../app/js/hadith-dua-redirect.js";
 const MUT = {
   panelopen: ["js/hadith-browser.js", "  panel.hidden = true;\n  btn.setAttribute(\"aria-haspopup\"", "  panel.hidden = false;\n  btn.setAttribute(\"aria-haspopup\""],
   wraprow: ["css/hadith.css", "flex-wrap: nowrap; overflow-x: auto;", "flex-wrap: wrap; overflow-x: visible;"],
-  nocue: ["js/hadith-menu-settings.js", "if (c.hidden === on) c.hidden = !on;", "c.hidden = true;"],
+  nocue: ["js/hadith-menu-settings.js", "if (c.hidden === on) c.hidden = !on;", "if (c.hidden === false) c.hidden = true; /* never shows the cue (writes only on a change, so no observer loop) */"],
   cuestay: ["js/hadith-menu-settings.js", "if (c.hidden === on) c.hidden = !on;", "c.hidden = false;"],
   notehome: ["js/hadith-menu-settings.js", "previewSlot.appendChild(fresh[fresh.length - 1]);", "/* left at the top */"],
   tabback: ["js/hadith-browser.js", "    [\"explore\", t(\"Explore\")],\n    [\"search\", t(\"Search\")],", "    [\"collections\", t(\"Encyclopedia\")],\n    [\"explore\", t(\"Explore\")],\n    [\"search\", t(\"Search\")],"],
