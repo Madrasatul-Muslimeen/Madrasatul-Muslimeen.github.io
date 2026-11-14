@@ -22,7 +22,7 @@ const MUT = {
   wrongpos: ["js/hadith-status-model.js", "export const statusPosition = (versionUri, n) => `openiti:${versionUri}:${n}`;", "export const statusPosition = (versionUri, n) => `hadith:${versionUri}:${n}`;"],
   noback: ["js/hadith-browser.js", "state.statusBack = { label: `← ${t(\"Back to Hadith {n}\", { n: num(no) })}` };", "state.statusBack = null;"],
   eagerread: ["js/hadith-browser.js", "registerBuiltinSubjects(HADITH_SUBJECTS);\n", "registerBuiltinSubjects(HADITH_SUBJECTS);\nprimeStatuses(() => {});\n"],
-  clearremoves: ["js/hadith-study-actions.js", "    existing.settings = settings;\n", "    existing.settings = settings;\n    if (status === null) { const i = cache.doc.saved.indexOf(existing); cache.doc.saved.splice(i, 1); }\n"],
+  clearremoves: ["js/hadith-study-actions.js", "    const ok = await updateSavedBookmarkFields(db, session.tenantId, session.personId, existing.id, { position: existing.position, settings });", "    const ok = status === null ? (await removeSavedBookmark(db, session.tenantId, session.personId, existing.id), true) : await updateSavedBookmarkFields(db, session.tenantId, session.personId, existing.id, { position: existing.position, settings });"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
 const MUTATE = arg("mutate");
