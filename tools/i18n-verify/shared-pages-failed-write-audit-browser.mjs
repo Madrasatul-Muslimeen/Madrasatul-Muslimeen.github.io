@@ -114,7 +114,7 @@ Object.assign(FLOWS, {
   // (Dua is its own module), so these three flows audit the REAL surface, dua-study.html (Hadith Books' duas, first part, first dua).
   "dua-card": { path: DUA_PAGE, settle: 2500, only: "[data-dua-status], [data-dua-bookmark], [data-dua-check-open]", steps: DUA_OPEN },
   "dua-word": { path: DUA_PAGE, settle: 2500, only: "[data-dua-word-state]", steps: [...DUA_OPEN, ".dua-word[role=button]"] },
-  "dua-check": { path: DUA_PAGE, settle: 2500, only: "[data-dua-check-save]", base: 3, steps: [...DUA_OPEN, "[data-dua-check-open]", '[data-dua-check-step="3"]'] },
+  "dua-check": { path: DUA_PAGE, settle: 2500, only: "[data-dua-check-save]", base: 5, steps: [...DUA_OPEN, "[data-dua-menu-toggle]", '[data-dua-tab="study"]', '[data-dua-menu="check"]', "[data-dua-check-open]", '[data-dua-check-step="3"]'] },
 });
 // Part 102: Hadith Study's topic saves (topic-study.js, the shared topic renderer), on a SEEDED topic: synthetic-topic-audit-leaf
 // (name and ids inside the synthetic namespace) with the stub's resource r1, so Track my progress is enabled.
