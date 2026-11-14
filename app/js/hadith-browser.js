@@ -35,6 +35,8 @@ import { HADITH_COLOURS, getHadithColours, setHadithColours } from "./hadith-col
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 import { settingsHost, addPreviewCue } from "./hadith-menu-settings.js";
 import { mountContinueStrip, parkContinueStrip } from "./hadith-continue-mount.js";
+import { nameLine, primeNames, renderNamesEditor } from "./hadith-names.js";
+import { bookKey, groupKey } from "./hadith-names-model.js";
 import { subjectAddRow, renderSubjectList, renderSubjectEditor, registerBuiltinSubjects, knownSubjects, loadSubjectChoices, subjectLabel } from "./hadith-subjects.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
@@ -424,6 +426,8 @@ function fillBooksMenu(panel, close, state, render) {
       const ar = el("span", "openiti-title-ar", index.titleAr);
       ar.lang = "ar"; ar.dir = "rtl";
       name.append(ar, document.createTextNode(` — ${index.titleEn}`));
+      const own = nameLine(bookKey(versionUri)); // S3 part 2: the madrasah's own name (off until the Rules are published)
+      if (own) name.append(document.createElement("br"), own);
       row.appendChild(name);
       row.appendChild(el("span", "hadith-row-meta", index.numbering === "sequential-by-paragraph"
         ? t("{n} passages (this edition has no hadith numbers)", { n: num(index.passageCount) })
@@ -1175,6 +1179,7 @@ function renderOpenitiSource(state) {
 async function renderOpenitiBody(body, oi, localRefresh) {
   // The list draws from the small summary; a book's own index loads only when that book is opened.
   if (!oi.books) oi.books = await loadOpenitiBookSummaries();
+  primeNames(localRefresh); // S3 part 2: the madrasah's own names, read after first paint; a no-op while the switch is off
   const found = oi.bookUri ? oi.books.find(([uri]) => uri === oi.bookUri) : null;
   const index = found ? await loadOpenitiBookIndex(oi.bookUri) : null;
   // Round H-DB2: the book's standard numbers, if it has them (null otherwise; a failed load only hides them).
@@ -1388,6 +1393,8 @@ function renderOpenitiBookList(body, oi, localRefresh) {
     ar.lang = "ar"; ar.dir = "rtl";
     nameWrap.appendChild(ar);
     nameWrap.appendChild(document.createTextNode(` — ${index.titleEn}`));
+    const own = nameLine(bookKey(versionUri));
+    if (own) nameWrap.append(document.createElement("br"), own);
     row.appendChild(nameWrap);
     const count = index.numbering === "sequential-by-paragraph"
       ? t("{n} passages (this edition has no hadith numbers)", { n: num(index.passageCount) })
@@ -1471,6 +1478,7 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
     goBox.appendChild(goMsg);
   }
   body.appendChild(goBox);
+  renderNamesEditor(body, { versionUri: oi.bookUri, titleAr: index.titleAr, chapters: index.chapters, onChange: localRefresh }); // owner/prime; nothing while the switch is off
 
   if (alt && oi.indexMode === "my") { renderMyIndex(body, versionUri, oi, localRefresh, conc); return; }
   const shown = oi.showAllChapters ? index.chapters.length : Math.min(OPENITI_CHAPTER_PAGE, index.chapters.length);
@@ -1488,6 +1496,8 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
     if (open) row.setAttribute("aria-current", "true");
     const label = openitiChapterLabel(c, index);
     row.appendChild(label.ar ? openitiArabicRowName(label.text) : el("span", "hadith-row-name", label.text));
+    const ownChapter = nameLine(groupKey(oi.bookUri, c.id));
+    if (ownChapter) row.appendChild(ownChapter);
     if (c.firstNumber != null) {
       row.appendChild(el("span", "hadith-row-meta", `${num(c.firstNumber)}–${num(c.lastNumber)}`));
     }

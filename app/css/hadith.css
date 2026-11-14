@@ -446,6 +446,19 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .hadith-subject-edit-actions .hadith-subject-move { padding-inline: 0; }
 .hadith-subject-edit-panel .hadith-subject-msg { margin: 0; }
 [data-card-look="night"] .hadith-subject-edit-name { background: var(--card-bg); color: var(--card-text); border-color: var(--card-line); }
+/* S3 part 2: the madrasah's own book and chapter names, and their editor (off until the Rules are published).
+   The editor sits in the Chapters pane, which is narrow at every screen width, so its rows are ONE column always (the
+   Arabic name, the Bangla box, the buttons) and never depend on the viewport; colours follow the pane's own surface. */
+.hadith-row-own-name { display: block; font-size: 0.95rem; color: var(--hadith-accent, #1f5f8b); overflow-wrap: anywhere; }
+[data-card-look="night"] .hadith-row-own-name { color: var(--card-heading, var(--card-text)); }
+.hadith-names-editor { margin: 0.8rem 0 0.2rem; }
+.hadith-names-panel { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.7rem; max-height: 60vh; overflow-y: auto; }
+.hadith-names-panel[hidden] { display: none; }
+.hadith-names-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.4rem; padding-bottom: 0.7rem; border-bottom: 1px solid var(--hadith-rule); }
+.hadith-names-ar { font-size: 1.05rem; overflow-wrap: anywhere; color: var(--hadith-ink, #1d2a3a); }
+[data-card-look="night"] .hadith-names-ar { color: var(--card-text); }
+.hadith-names-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); flex: none; }
+.hadith-names-panel .hadith-names-msg { margin: 0; }
 .hadith-subject-open { display: flex; flex-direction: column; align-items: stretch; text-align: start; min-width: 0; width: 100%; }
 .hadith-subject-open > span { overflow-wrap: anywhere; }
 .hadith-subject-title { font-size: 1.05rem; }
