@@ -15,7 +15,7 @@ import { duaRedirectTarget } from "../../app/js/hadith-dua-redirect.js";
 
 const MUT = {
   panelopen: ["js/hadith-browser.js", "  panel.hidden = true;\n  btn.setAttribute(\"aria-haspopup\"", "  panel.hidden = false;\n  btn.setAttribute(\"aria-haspopup\""],
-  wraprow: ["css/hadith.css", ".hadith-menubar .hadith-tabs { flex-wrap: nowrap; }", ".hadith-menubar .hadith-tabs { flex-wrap: wrap; }"],
+  wraprow: ["css/hadith.css", "flex-wrap: nowrap; overflow-x: auto;", "flex-wrap: wrap; overflow-x: visible;"],
   nocue: ["js/hadith-menu-settings.js", "if (c.hidden === on) c.hidden = !on;", "c.hidden = true;"],
   cuestay: ["js/hadith-menu-settings.js", "if (c.hidden === on) c.hidden = !on;", "c.hidden = false;"],
   notehome: ["js/hadith-menu-settings.js", "previewSlot.appendChild(fresh[fresh.length - 1]);", "/* left at the top */"],
@@ -26,6 +26,10 @@ const MUT = {
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
 const MUTATE = arg("mutate");
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
+if (MUTATE) { // a dead anchor must never look like a catch: fail by name, before any page is opened
+  const [file, anchor] = MUT[MUTATE];
+  if (!fs.readFileSync(`app/${file}`, "utf8").includes(anchor)) { console.log(`  FAIL  mutation anchor missing: ${MUTATE} (${file})`); process.exit(1); }
+}
 if (process.argv.includes("--prove")) {
   const missed = []; let caught = 0;
   for (const name of Object.keys(MUT)) {
