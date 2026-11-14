@@ -560,11 +560,19 @@ for (const lang of ["en", "bn"]) {
   await sweepCheck(d, `${lang}: Dawah page`, "#app");
   const { page: q } = await openPage(ctx, "/app/quranrevival.html");
   // UPDATED IN PLACE (Note view retirement, step b): the Note pop-up is deleted; the surface that does its job is the Read view's
-  // Notes pane, opened from the Study menu. The same two checks (a pressed button precondition, and the Night/Light colour sweep)
-  // are made against the pane at the same 1100px.
-  const noteReachable = await q.evaluate(() => { const b = document.getElementById("tabNoteBtn"); return !!b && b.getBoundingClientRect().width > 0; });
-  if (!noteReachable) { await clickSafely(q, "#tabStudyBtn"); await q.waitForTimeout(150); }
-  await q.evaluate(() => document.getElementById("tabNoteBtn")?.click());
+  // Notes pane. The same two checks (a pressed button precondition, and the Night/Light colour sweep) are made against the pane at
+  // the same 1100px.
+  // UPDATED IN PLACE AGAIN (13 Nov 2026, MSA 105L's report; PCF MSA J108, v13.01): the Study menu's Note button (#tabNoteBtn) no longer opens
+  // this pane -- every Note button opens the shared Note opener (a NEW Mapping My Journey Note in a window, an embedded journey-map page), so the
+  // precondition never became true. The pane is still opened by the Read bar's own 📝 (#readNotesBtn, retired from sight by J114 but still wired,
+  // and pressed by a script here exactly as read-note-pane-browser.mjs does), once the Read view is showing. The check keeps its meaning:
+  // the pane is open, a tab is selected, #noteView is absent, and the pane is swept in both looks.
+  const readReachable = await q.evaluate(() => { const b = document.getElementById("tabReadBtn"); return !!b && b.getBoundingClientRect().width > 0; });
+  if (!readReachable) { await clickSafely(q, "#tabStudyBtn"); await q.waitForTimeout(150); }
+  await clickSafely(q, "#tabReadBtn");
+  await q.waitForFunction(() => !!document.getElementById("readNotesBtn") && !document.getElementById("readView")?.hidden, null, { timeout: 10000 }).catch(() => {});
+  await q.waitForTimeout(500);
+  await q.evaluate(() => document.getElementById("readNotesBtn")?.click());
   await q.waitForFunction(() => document.getElementById("readNotePane")?.hidden === false, null, { timeout: 10000 }).catch(() => {});
   await q.waitForTimeout(500);
   const pressed = await q.evaluate(() => !!document.querySelector('#readNotePane [aria-selected="true"], #readNotePane [aria-pressed="true"]') && document.getElementById("noteView") === null);
