@@ -708,6 +708,8 @@ body.book-page-open { overflow: hidden; }
 .hadith-status-chip { min-height: 48px; padding: 4px 2px; border-radius: 9px; border: 1px solid var(--hadith-rule); background: #fff; color: var(--hadith-ink, #1d2a3a); font: inherit; font-size: 0.72rem; font-weight: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; cursor: pointer; min-width: 0; }
 .hadith-status-chip .hs-t { overflow-wrap: normal; word-break: normal; hyphens: none; line-height: 1.15; text-align: center; }
 .hs-glyph { font-weight: 700; display: inline-block; width: 1.1em; text-align: center; }
+/* On a light card the pale night colours measured 1.9-2.5:1; a palette belongs to a surface, so the light card gets the dark four (each 4.5:1 or more on white). */
+:root:not([data-card-look="night"]) .hs-glyph.hs-mem { color: #14733f; } :root:not([data-card-look="night"]) .hs-glyph.hs-rev { color: #1f5fbf; } :root:not([data-card-look="night"]) .hs-glyph.hs-need { color: #955400; } :root:not([data-card-look="night"]) .hs-glyph.hs-saved { color: #566074; }
 .hadith-status-chip[aria-pressed="true"] { border-width: 2px; border-color: var(--hadith-gold); font-weight: 700; background: rgba(201, 162, 75, 0.12); }
 .hadith-status-chip:disabled { opacity: 0.6; cursor: default; }
 .hadith-status-chip:focus-visible, .hadith-status-wheel-link:focus-visible { outline: 2px solid var(--hadith-gold); outline-offset: 2px; }

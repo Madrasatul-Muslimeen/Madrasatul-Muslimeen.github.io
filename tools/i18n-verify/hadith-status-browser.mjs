@@ -22,6 +22,7 @@ const MUT = {
   wrongpos: ["js/hadith-status-model.js", "export const statusPosition = (versionUri, n) => `openiti:${versionUri}:${n}`;", "export const statusPosition = (versionUri, n) => `hadith:${versionUri}:${n}`;"],
   noback: ["js/hadith-browser.js", "state.statusBack = { label: `← ${t(\"Back to Hadith {n}\", { n: num(no) })}` };", "state.statusBack = null;"],
   eagerread: ["js/hadith-browser.js", "registerBuiltinSubjects(HADITH_SUBJECTS);\n", "registerBuiltinSubjects(HADITH_SUBJECTS);\nprimeStatuses(() => {});\n"],
+  paleglyph: ["css/hadith.css", ".hs-glyph.hs-mem { color: #14733f; }", ".hs-glyph.hs-mem { color: #46c486; }"],
   clearremoves: ["js/hadith-study-actions.js", "    const ok = await updateSavedBookmarkFields(db, session.tenantId, session.personId, existing.id, { position: existing.position, settings });", "    const ok = status === null ? (await removeSavedBookmark(db, session.tenantId, session.personId, existing.id), true) : await updateSavedBookmarkFields(db, session.tenantId, session.personId, existing.id, { position: existing.position, settings });"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -59,7 +60,7 @@ async function open(lang, width, { seed = SEED_BK, route = "/app/hadith-study.ht
     const [file, a, b] = MUT[MUTATE];
     await ctx.route(`**/app/${file}*`, async (r) => {
       const src = fs.readFileSync(`app/${file}`, "utf8");
-      await r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: src.split(a).join(b) });
+      await r.fulfill({ status: 200, contentType: file.endsWith(".css") ? "text/css; charset=utf-8" : "text/javascript; charset=utf-8", body: src.split(a).join(b) });
     });
   }
   const { page, errors } = await openPage(ctx, route);
@@ -136,6 +137,11 @@ for (const [lang, width] of [["en", 1280], ["bn", 390]]) {
   await tap(P, '[data-openiti-row="1658"]'); await P.waitForSelector("[data-hadith-status-row]", { state: "attached" }); await settle(P, 500);
   const chips = await P.$$eval("[data-hadith-status-set]", (n) => n.map((x) => [x.dataset.hadithStatusSet, x.getAttribute("aria-pressed")]));
   check(`${tag} the card shows the four statuses, none pressed`, JSON.stringify(chips.map((c) => c[0])) === JSON.stringify(["mem", "rev", "need", "saved"]) && chips.every((c) => c[1] === "false"), JSON.stringify(chips));
+  { // a palette belongs to a surface: on the light card every glyph must read 4.5:1 (the pale night four measured 1.9-2.5)
+    const cr = await P.$$eval(".hadith-status-chip .hs-glyph", (g) => { const lum = (c) => { const v = c.match(/\d+/g).slice(0, 3).map(Number).map((x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+      const root = document.documentElement, was = root.getAttribute("data-card-look"); root.removeAttribute("data-card-look"); /* the suite runs in the night look; the light look is the attribute absent */ const night = root.getAttribute("data-card-look") === "night"; const out = { was, night, r: g.map((e) => { const l = lum(getComputedStyle(e).color), b = lum("rgb(255,255,255)"); return +((Math.max(l, b) + 0.05) / (Math.min(l, b) + 0.05)).toFixed(2); }) }; if (was) root.setAttribute("data-card-look", was); return out; });
+    check(`${tag} the four chip glyphs read 4.5:1 on the light card (positive control: the card is light and four were measured)`, !cr.night && cr.r.length === 4 && cr.r.every((x) => x >= 4.5), JSON.stringify(cr));
+  }
   await tap(P, '[data-hadith-status-set="mem"]'); await settle(P, 600);
   let w = await writes(P);
   const last = w[w.length - 1];
