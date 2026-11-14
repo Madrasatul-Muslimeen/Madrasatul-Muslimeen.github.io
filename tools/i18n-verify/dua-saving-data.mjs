@@ -40,9 +40,9 @@ function chainsToTarget(target) {
   return found;
 }
 check("POSITIVE CONTROL: the reachability walker finds a wired module (records.js)", () => assert.ok(chainsToTarget("records.js").length > 0));
-check("the ONE lazy door: dua-study.js opens the groups pop-up with a dynamic import() of dua-groups-page.js, and no page imports that statically", () => { assert.match(fs.readFileSync(path.join(appJs, "dua-study.js"), "utf8"), /import\("\.\/dua-groups-page\.js"\)/); assert.deepEqual(chainsToTarget("dua-groups-page.js"), []); });
+check("the ONE lazy door: dua-study.js opens the groups menu with a dynamic import() of dua-groups-menu.js, and no page imports that statically", () => { assert.match(fs.readFileSync(path.join(appJs, "dua-study.js"), "utf8"), /import\("\.\/dua-groups-menu\.js"\)/); assert.deepEqual(chainsToTarget("dua-groups-menu.js"), []); });
 check("dua-saving-data.js is reachable from NO page by a STATIC import chain (it loads only when the Dua groups button is pressed: I9)", () => assert.deepEqual(chainsToTarget("dua-saving-data.js"), []));
-check("its ONE importer is dua-groups-page.js (pinned: a new importer must be audited on purpose)", () => assert.deepEqual(fs.readdirSync(appJs).filter((f) => f.endsWith(".js") && localImportsOf(path.join(appJs, f)).includes("dua-saving-data.js")), ["dua-groups-page.js"]));
+check("its ONE importer is dua-groups-menu.js (pinned: a new importer must be audited on purpose)", () => assert.deepEqual(fs.readdirSync(appJs).filter((f) => f.endsWith(".js") && localImportsOf(path.join(appJs, f)).includes("dua-saving-data.js")), ["dua-groups-menu.js"]));
 
 // --- 2. BEHAVIOUR ---
 const store = new Map(), failures = [], reads = [], writeLog = [];
