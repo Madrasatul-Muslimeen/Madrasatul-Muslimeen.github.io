@@ -237,7 +237,10 @@ async function runAtWidth(width) {
 
   // --- Notes/bookmark/Studied are honestly not offered yet (issue #316 point 6). ---
   const soonSentence = await page.evaluate(() => document.querySelector(".openiti-study-soon")?.textContent ?? "");
-  check("a sentence says Notes/bookmark/Studied are not enabled here yet", soonSentence.length > 0);
+  // Updated in place 14 Nov 2026 (PCF MSA J106 S1, the Owner's tick 1B): the grey "not enabled here yet" sentence is GONE from the shelf.
+  // What it announced is still proven by the next check (no such control exists); the section being drawn is the positive control.
+  check("the OpenITI section is drawn (positive control)", await page.evaluate(() => !!document.querySelector("#openitiSection .openiti-body")));
+  check("the grey 'not enabled here yet' sentence is gone (the Owner, 14 Nov 2026)", soonSentence.length === 0);
   check("no bookmark/Studied/Note control exists anywhere under the OpenITI section",
     await page.evaluate(() => document.querySelectorAll("#openitiSection [data-hadeethenc-bookmark], #openitiSection [data-hadeethenc-studied], #openitiSection [data-hadeethenc-note-link]").length === 0));
 
