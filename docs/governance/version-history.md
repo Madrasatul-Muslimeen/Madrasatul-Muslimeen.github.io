@@ -1140,3 +1140,4 @@ total). Allocated by the MMSA Architect.
 14.35: Dua groups: Admin's groups / My groups pop-up, with the published Rules (#1695, #1696, #1698). Allocated by the MMSA Architect.
 14.36: Word Card words and Bangla kinds, Difficulty Level, Hadith Topics tab off, Learning Stories (#1699, #1701, #1702, #1703). Allocated by the MMSA Architect.
 14.37: Dua chapters on the Dua page (#1705). Allocated by the MMSA Architect.
+14.38: Hadith Study's one menu bar (J106 S1, #1709). Allocated by the MMSA Architect.
