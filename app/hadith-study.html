@@ -118,12 +118,17 @@
      Load cost: topic-study.js still reads the Hadith catalogue for the hidden list, exactly as before (no new read). */
   #app.hadith-tree-off #breadcrumbContainer, #app.hadith-tree-off #listContainer { display: none; }
   #app.hadith-tree-off #breadcrumbContainer[hidden], #app.hadith-tree-off #listContainer[hidden] { display: none; }
+  .page-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .page-title-row h1 { min-width: 0; }
   /* Audit part 2 (PCF J29): the Tenant / Person pickers are finger-sized. */
   #contextBar select { box-sizing: border-box; min-height: 40px; } /* audit2 hadith-pickers */
 </style>
 </head>
 <body class="admin-touch">
-  <h1>Hadith Study</h1>
+  <div class="page-title-row">
+    <h1>Hadith Study</h1>
+    <div id="hadithHeaderSearch"></div><!-- Search (the Owner, 14 Nov 2026): top right, level with the heading; filled by the Hadith browser -->
+  </div>
 
   <nav class="app-nav" id="topNav">
     <details class="nav-cat nav-cat-home">
@@ -235,13 +240,16 @@
       const duaQs = new URLSearchParams(location.search), duaPageParam = Number(duaQs.get("duaPage")), duaParam = Number(duaQs.get("dua"));
       // 9 Oct 2026: a dua's bookmark (?resume=dua:<n>, bookmarks.html) reopens that dua's card; the browser finds its page.
       const resumeDua = /^dua:(\d{1,5})$/.exec(resumeParam ?? "");
+      // Know Your Status (14 Nov 2026): a hadith status bookmark's own resume value ("openiti:<versionUri>:<n>") reopens that hadith.
+      const resumeOpeniti = /^openiti:([0-9A-Za-z.\-]+):(\d{1,7})$/.exec(resumeParam ?? "");
+      const initialOpenitiPassage = resumeOpeniti ? { versionUri: resumeOpeniti[1], n: Number(resumeOpeniti[2]) } : null;
       const initialDua = duaQs.get("view") === "dua" && Number.isInteger(duaPageParam) && duaPageParam > 0 ? { page: duaPageParam, dua: Number.isInteger(duaParam) ? duaParam : null }
         : resumeDua ? { page: 1, dua: Number(resumeDua[1]), findPage: true } : null;
       mountIntentionReminder(document.getElementById("intentionHost"));
       // J106 (14 Nov 2026, 7A): Dua is its own module now; an old Dua address is sent to dua-study.html.
       const duaTo = duaRedirectTarget(location.search);
       if (duaTo) location.replace(duaTo);
-      const corpus = duaTo ? null : mountHadithBrowser(document.getElementById("hadithCorpusRoot"), { mount: "hadith-module", initialHadeethEncId, initialDua });
+      const corpus = duaTo ? null : mountHadithBrowser(document.getElementById("hadithCorpusRoot"), { mount: "hadith-module", initialHadeethEncId, initialDua, initialOpenitiPassage });
       window.__hadithCorpus = corpus; // the same handle hadith-collections.html exposes (tests reach views through it)
       // The corpus's own study actions (Note/bookmark/Studied, issue #311)
       // read the signed-in session fresh on every render, but nothing tells

@@ -534,6 +534,14 @@ async function __updateDoc0(ref, data) {
       sessionStorage.setItem("__stubWrites", JSON.stringify(prior));
     } catch (e) {}
     __recordWriteData("update", ref, data);
+    // OPT-IN, like __stubApplyBatches (Know Your Status, 14 Nov 2026): a suite sets window.__stubApplyUpdates before the page runs so a
+    // later read of the same document sees what an update wrote, as real Firestore does (a second status change reads the first one back).
+    // Plain top-level fields only: a dotted path ("names.k") is left alone. Off by default, so every other suite keeps its never-mutated DATA.
+    if (typeof window !== "undefined" && window.__stubApplyUpdates && ref && ref.__col) {
+      var rows = DATA[ref.__col] || (DATA[ref.__col] = []);
+      var at = rows.findIndex(function (d) { return d._id === ref.__id; });
+      if (at >= 0) Object.keys(data).forEach(function (k) { if (k.indexOf(".") === -1) rows[at][k] = data[k]; });
+    }
   });
 }
 export async function getCountFromServer(q) {

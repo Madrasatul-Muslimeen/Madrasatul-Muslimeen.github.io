@@ -38,8 +38,9 @@ import { langText } from "./lang.js";
 import { getAppLang } from "./prefs.js";
 import { buildUnitKey } from "./unit-keys.js";
 import { writePlan } from "./hadith-names-model.js";
+import { STATUS_MODULE_ID, STATUS_SUBJECT_ID, statusMapFrom, findStatusBookmark, statusPosition } from "./hadith-status-model.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
-import { getBookmarks, saveBookmark, removeSavedBookmark, findSavedBookmark } from "./bookmarks.js";
+import { getBookmarks, saveBookmark, removeSavedBookmark, findSavedBookmark, updateSavedBookmarkFields } from "./bookmarks.js";
 import { notesForStudyUnit } from "./study-note-service.js";
 import { listEnrollmentsForPerson } from "./course-offers.js";
 
@@ -467,3 +468,56 @@ export async function saveHadithSubjects({ tenantId, subjects, subjectMeta = nul
   );
   return !!res?.ok;
 }
+
+// ---------------------------------------------------------------------------
+// Know Your Status (the Owner, 14 Nov 2026): a hadith's study status is carried on a bookmark the person owns -- one saved[]
+// entry { moduleId: "hadith", subjectId: "openiti", position: "openiti:<versionUri>:<n>", settings: { status } } in the SAME
+// bookmarks document the HadeethEnc star uses. No new collection, field or Rule (the bookmarks Rules let canRecordFor write
+// saved[]; `settings` is a free map). ONE read of that document serves every status on the page; what this page writes is
+// patched in memory (the harness stub never mutates its own data, and the standing rule is to trust the write).
+// ---------------------------------------------------------------------------
+
+let statusCache = null; // { key, doc, map }
+const statusKey = (session) => `${session.tenantId}__${session.personId}`;
+
+async function statusDoc(session) {
+  if (!statusCache || statusCache.key !== statusKey(session)) {
+    const doc0 = await getBookmarks(db, session.tenantId, session.personId);
+    const doc1 = { ...(doc0 ?? {}), saved: [...(doc0?.saved ?? [])] };
+    statusCache = { key: statusKey(session), doc: doc1, map: statusMapFrom(doc1) };
+  }
+  return statusCache;
+}
+
+/** Map(position -> status id) for this person: one read of their bookmarks document, then kept. */
+export async function getHadithStatusMap(session) {
+  return (await statusDoc(session)).map;
+}
+
+/**
+ * Sets (status = an id) or clears (status = null) the study status of one hadith. The first status makes the bookmark; after
+ * that the same entry is updated, and clearing keeps the bookmark and sets status null (nothing is deleted, I4). A failed
+ * write throws (I15) and the kept copy is left as it was. `name` is the bookmark's title in the Bookmark Manager.
+ */
+export async function setHadithStatus(session, { versionUri, n, name, status }) {
+  const cache = await statusDoc(session);
+  const position = statusPosition(versionUri, n);
+  const existing = findStatusBookmark(cache.doc, position);
+  if (existing) {
+    const settings = { ...(existing.settings ?? {}), status };
+    const ok = await updateSavedBookmarkFields(db, session.tenantId, session.personId, existing.id, { position: existing.position, settings });
+    if (!ok) throw new Error("The bookmarks document was not found.");
+    existing.settings = settings;
+  } else if (status) {
+    const saved = await saveBookmark(db, {
+      tenantId: session.tenantId, personId: session.personId, moduleId: STATUS_MODULE_ID, subjectId: STATUS_SUBJECT_ID,
+      name, position, settings: { status }, uid: session.uid,
+    });
+    cache.doc.saved.push(saved);
+  }
+  cache.map = statusMapFrom(cache.doc);
+  return cache.map;
+}
+
+/** Test hook: forget the kept bookmarks copy. */
+export function resetHadithStatusCache() { statusCache = null; }

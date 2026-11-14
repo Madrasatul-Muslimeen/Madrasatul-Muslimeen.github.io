@@ -405,7 +405,9 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 @media (max-width: 360px) { .hadith-menubar .hadith-tabs { gap: 0; } .hadith-menubar .hadith-tab { padding-left: 0.18rem; padding-right: 0.18rem; font-size: 0.8rem; } .hadith-menubar .hadith-menu-caret { margin-left: 0.05rem; } }
 .hadith-menu-cue { margin-left: 0.3rem; font-size: 0.78em; font-weight: 700; }
 /* On a phone the cue sits UNDER "Menu ▾" in small type, so the five buttons still share one row while a preview is on. */
-@media (max-width: 520px) { .hadith-menubar .hadith-menu-btn { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; }
+@media (max-width: 520px) { .hadith-menubar .hadith-menu-btn { display: inline-flex; flex-wrap: nowrap; align-items: center; justify-content: center; }
+  .hadith-menubar [data-hadith-tab="menu"].hadith-menu-btn { flex-wrap: wrap; } /* only Menu carries the Preview cue on a second line; Books and Subjects keep their caret beside the word (Know Your Status made 320px tight, and the caret dropped under the label) */
+  .hadith-menubar .hadith-tab[data-hadith-tab="status"] { line-height: 1.12; white-space: normal; }
   .hadith-menubar .hadith-menu-cue { flex-basis: 100%; margin: 0; font-size: 0.62rem; line-height: 1; text-align: center; } }
 .hadith-menu-cue[hidden], .hadith-menubar .hadith-menu-cue[hidden] { display: none; }
 .hadith-menu-heading { margin: 0.6rem 0.2rem 0.3rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -678,3 +680,82 @@ body.book-page-open { overflow: hidden; }
 .myindex-book .myindex-held { color: var(--card-text, var(--hadith-muted)); }
 .myindex-held { flex-basis: 100%; }
 .hadith-menu-holder[hidden] { display: none; }
+
+/* ---- Know Your Status (14 Nov 2026) ------------------------------------------------------------------------------ */
+/* Search, top right, level with the page heading. */
+.hadith-header-search { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--hadith-rule); background: #fff; color: var(--hadith-ink, #1d2a3a); font: inherit; font-size: 0.92rem; cursor: pointer; flex: none; }
+.hadith-header-search.active { border-color: var(--hadith-gold); box-shadow: inset 0 0 0 1px var(--hadith-gold); font-weight: 600; }
+.hadith-header-search:focus-visible { outline: 2px solid var(--hadith-gold); outline-offset: 2px; }
+[data-card-look="night"] .hadith-header-search { background: var(--card-bg); color: var(--card-text); border-color: var(--card-line); }
+@media (max-width: 360px) { .hadith-header-search { padding: 0 10px; } }
+
+/* The icon above a marked hadith's text in the list: ONE small icon, only when marked. In the grid row it sits in the text column, above the snippet. */
+.hadith-reader-row > .hadith-reader-no { grid-column: 1; grid-row: 1 / span 2; }
+.hadith-reader-row > .hadith-status-badge { grid-column: 2; grid-row: 1; display: flex; direction: rtl; margin: 0; }
+.hadith-reader-row > .hadith-reader-snippet { grid-column: 2; }
+.hadith-status-icon { font-style: normal; width: 22px; height: 22px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; border: 1.5px solid currentColor; background: rgba(120, 130, 150, 0.12); }
+.hs-mem { color: #46c486; } .hs-rev { color: #6aa7ff; } .hs-need { color: #f0a84a; } .hs-saved { color: #b4bdd0; }
+:root:not([data-card-look="night"]) .hadith-status-icon.hs-mem, :root:not([data-card-look="night"]) .hadith-status-icon.hs-rev, :root:not([data-card-look="night"]) .hadith-status-icon.hs-need, :root:not([data-card-look="night"]) .hadith-status-icon.hs-saved { filter: none; }
+
+/* The status buttons under a hadith's card. */
+.hadith-status-row { margin: 0.7rem 0 0.2rem; padding: 0.6rem; border: 1px solid var(--hadith-rule); border-radius: 10px; display: flex; flex-direction: column; gap: 0.5rem; }
+.hadith-status-title { font-weight: 600; font-size: 0.9rem; }
+.hadith-status-body { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+.hadith-status-chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.hadith-status-chip { min-height: 48px; padding: 4px 2px; border-radius: 9px; border: 1px solid var(--hadith-rule); background: #fff; color: var(--hadith-ink, #1d2a3a); font: inherit; font-size: 0.72rem; font-weight: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; cursor: pointer; min-width: 0; }
+.hadith-status-chip .hs-t { overflow-wrap: normal; word-break: normal; hyphens: none; line-height: 1.15; text-align: center; }
+.hs-glyph { font-weight: 700; display: inline-block; width: 1.1em; text-align: center; }
+.hadith-status-chip[aria-pressed="true"] { border-width: 2px; border-color: var(--hadith-gold); font-weight: 700; background: rgba(201, 162, 75, 0.12); }
+.hadith-status-chip:disabled { opacity: 0.6; cursor: default; }
+.hadith-status-chip:focus-visible, .hadith-status-wheel-link:focus-visible { outline: 2px solid var(--hadith-gold); outline-offset: 2px; }
+.hadith-status-wheel-link { min-height: 44px; border-radius: 10px; border: 1px solid var(--hadith-gold); background: transparent; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+.hadith-status-msg { margin: 0; min-height: 1.1em; }
+[data-card-look="night"] .hadith-status-chip { background: var(--card-bg); color: var(--card-text); border-color: var(--card-line); }
+[data-card-look="night"] .hadith-status-row { border-color: var(--card-line); }
+[data-card-look="night"] .hadith-status-title { color: var(--card-heading); }
+[data-card-look="night"] .hadith-status-wheel-link { color: var(--card-heading); border-color: var(--card-heading); }
+
+/* The wheel view. It sits on the same navy surface as the reader panes, so its own colours are chosen for that surface. */
+.hadith-status-wheel { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.hadith-status-h { margin: 0.2rem 0 0; font-size: 1.15rem; }
+.hadith-status-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.hadith-status-mode, .hadith-status-back { min-height: 44px; border-radius: 10px; border: 1px solid #3a4f78; background: #1c3157; color: #f1f4f8; font: inherit; font-size: 0.92rem; cursor: pointer; padding: 0 14px; }
+.hadith-status-mode[aria-pressed="true"] { color: #e8c466; border-color: #e8c466; font-weight: 600; }
+.hadith-status-trail { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 40px; font-size: 0.9rem; }
+.hadith-status-trail .hs-here { font-weight: 600; }
+.hadith-status-trail .hs-sub { color: var(--hadith-muted); }
+.hadith-status-pane { background: #1c3157; color: #f1f4f8; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.hadith-status-pane .hadith-note { color: #aeb9cf; }
+.hadith-status-wheel-box { display: flex; justify-content: center; }
+.hadith-status-svg { width: 100%; max-width: 340px; height: auto; display: block; }
+.hs-seg { cursor: pointer; outline: none; }
+.hs-seg.dim { opacity: 0.5; }
+.hs-ring { fill: none; stroke: #3a4f78; stroke-width: 1; }
+.hs-seg:focus-visible .hs-ring, .hs-seg.sel .hs-ring { stroke: #e8c466; stroke-width: 2.5; }
+.hs-hub { fill: #17294a; stroke: #3a4f78; }
+.hs-hub-big { fill: #f1f4f8; font: 700 24px system-ui, sans-serif; text-anchor: middle; }
+.hs-hub-small { fill: #aeb9cf; font: 500 10.5px system-ui, sans-serif; text-anchor: middle; }
+.hs-num { fill: #f1f4f8; font: 600 11px system-ui, sans-serif; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: #0b1428; stroke-width: 3px; stroke-linejoin: round; }
+.hadith-status-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; font-size: 0.8rem; color: #aeb9cf; }
+.hadith-status-legend li { display: flex; align-items: center; gap: 6px; }
+.hs-sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; }
+.hadith-status-done { border: 1px solid #3a4f78; border-radius: 10px; margin: 0; padding: 6px 10px 8px; display: flex; flex-wrap: wrap; gap: 2px 14px; min-width: 0; }
+.hadith-status-done legend { font-size: 0.78rem; color: #aeb9cf; padding: 0 4px; }
+.hadith-status-done label { display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 0.84rem; }
+.hadith-status-done input { width: 20px; height: 20px; accent-color: #e8c466; }
+.hadith-status-detail { border: 1px solid #3a4f78; border-radius: 10px; background: #17294a; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.hadith-status-detail h3 { margin: 0; font-size: 0.98rem; line-height: 1.35; overflow-wrap: anywhere; }
+.hs-ar { font-family: 'Amiri', 'Noto Naskh Arabic', serif; direction: rtl; font-size: 1.05rem; }
+.hs-counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 4px 10px; font-size: 0.82rem; color: #aeb9cf; }
+.hs-counts b { color: #f1f4f8; font-weight: 600; margin-inline-end: 3px; }
+.hadith-status-open { min-height: 44px; border-radius: 10px; border: 1px solid #e8c466; background: transparent; color: #e8c466; font: inherit; font-weight: 600; cursor: pointer; }
+.hadith-status-showall { align-self: flex-start; background: #1c3157; color: #f1f4f8; border-color: #3a4f78; }
+.hadith-status-rows { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.hadith-status-rows li > button { display: grid; grid-template-columns: 24px minmax(0, 1fr) 44px; gap: 8px; align-items: center; width: 100%; box-sizing: border-box; min-height: 48px; padding: 6px 4px; border: 0; border-bottom: 1px solid #3a4f78; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.hadith-status-rows li > button.sel { background: rgba(255, 255, 255, 0.07); }
+.hadith-status-rows li > button:focus-visible { outline: 2px solid #e8c466; outline-offset: -2px; }
+.hadith-status-rows .hs-n { color: #aeb9cf; font-size: 0.8rem; text-align: center; }
+.hadith-status-rows .hs-name { font-size: 0.85rem; line-height: 1.25; overflow-wrap: anywhere; min-width: 0; display: block; }
+.hadith-status-rows .hs-name .hs-ar { display: block; text-align: right; font-size: 0.98rem; }
+.hadith-status-rows .hs-bar { display: flex; height: 7px; border-radius: 4px; overflow: hidden; margin-top: 4px; background: #34486f; }
+.hadith-status-rows .hs-pc { font-size: 0.8rem; font-weight: 600; text-align: end; }
