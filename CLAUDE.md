@@ -453,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v14.42 on `main`** (14 Nov 2026 Sydney, shown as "v14.42-14.11.26". **One Hadith Lead PR, reviewed by measurement and merged pinned by the Architect 107L, plus one Architect fix.** #1720 (PCF J106 S3 part 1): the owner or a prime can rename the Hadith Subjects (English and an optional Bangla name), move them up and down, add a Subject and retire or restore one, stored per Subject in a `subjectMeta` map on the existing `hadithSubjects/{tenantId}` document (nothing deleted, I4; no Rules change). The Architect's fix: a shipped Subject renamed in one language keeps its shipped wording in the other. Checks: see the CHANGELOG entry.)
+**Current milestone: v15.00 on `main`** (14 Nov 2026 Sydney, shown as "v15.00-14.11.26". **The Owner's new layout, so a new line: v15.** One QR Lead PR, reviewed by measurement and merged pinned by the Architect 108L, plus the v14 archive and one Architect check fix. #1724 (QR Lead 47L): one bar above the wheel, gold Read | Take an Approach | Choose a Unit, navy Know Your Status | ⓘ Legend; the controls are moved into its panels, never copied, and the old row under the wheel is retired. `legacy-v14/` keeps v14.42 (bdd96952), linked beside v13 on every page. Checks: see the CHANGELOG entry.)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

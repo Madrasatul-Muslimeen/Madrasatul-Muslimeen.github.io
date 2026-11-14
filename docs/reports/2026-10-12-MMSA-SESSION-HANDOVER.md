@@ -3346,3 +3346,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v14.40** (2026-11-14): Hadith Study's four Subjects with Continue chips at the top (J106 S2, #1713).
 - **v14.41** (2026-11-14): Qur'anic duas in Dua groups, drag order (#1718).
 - **v14.42** (2026-11-14): editable Hadith Subjects (#1720).
+- **v15.00** (2026-11-14): the one wheel bar (#1724) and legacy-v14/.
