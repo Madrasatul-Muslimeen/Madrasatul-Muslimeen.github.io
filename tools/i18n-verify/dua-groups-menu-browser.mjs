@@ -265,7 +265,9 @@ for (const [id, label] of [["g-adminaa1", "Admin group"], ["g-mineaaa1", "My gro
   const { ctx, P } = await open(1280, "en", null, "/app/dua-study.html?g=prophets&open=1");
   await P.waitForSelector("[data-dua-quran]", { timeout: 25000 });
   await P.click("[data-dua-menu-toggle]");
-  await P.waitForSelector("[data-dua-keep-edit]", { state: "attached", timeout: 25000 });
+  const hasQEditor = await P.waitForSelector("[data-dua-keep-edit]", { state: "attached", timeout: 8000 }).then(() => true, () => false);
+  check("[quran] a Qur'anic dua card has the group editor on its Keep tab", hasQEditor);
+  if (!hasQEditor) { await ctx.close(); console.log(`\n${pass} passed, ${fail} failed`); process.exit(1); }
   await P.evaluate(() => { for (const b of document.querySelectorAll(".dua-menu-tab")) if (/keep/i.test(b.textContent)) b.click(); });
   await P.check('[data-dua-keep-groups="admin"] input[data-dua-group-id="g-adminaa2"]');
   await P.click('[data-dua-keep-save="groups"]');
