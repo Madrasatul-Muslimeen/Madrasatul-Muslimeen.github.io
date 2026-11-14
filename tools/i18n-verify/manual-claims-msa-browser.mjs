@@ -1268,6 +1268,7 @@ if (want("hadith")) {
       await hadithMenuOpen(page); // Encyclopedia is now a row of Menu (J106 S1, ticks 1B and 4A)
       const head = await page.evaluate(() => { const b = document.querySelector('.hadith-menu-panel [data-hadith-tab="collections"]'); return b ? { text: b.textContent.trim(), cur: b.getAttribute("aria-current") } : null; });
       check(`[${tag}] Hadith library: HadeethEnc: Modules ▾ → Hadith → Menu ▾ → "Encyclopedia"`, head?.text === "Encyclopedia" && head.cur === "page", JSON.stringify(head));
+      await page.keyboard.press("Escape"); await page.waitForSelector("#hadithMenu-menu", { state: "hidden", timeout: 5000 }); // close Menu again: an open panel covers the page below
       await openHE(page);
       const c = await page.evaluate(() => { const k = document.querySelector('[data-hadeethenc-card="4563"]'); return { ar: k.querySelector(".hadith-arabic")?.textContent, tr: k.querySelector(".hadith-translation-text")?.textContent, grade: k.querySelector(".hadith-attribution")?.textContent ?? "", sel: document.getElementById("hadithContentLang")?.value, ex: !!k.querySelector("[data-hadeethenc-explanation-toggle]") }; });
       check(`[${tag}] Hadith library: HadeethEnc: a hadith opens with its Arabic and English, its grade and an explanation (verbatim from the packaged record)`, c.ar === R.ar.hadeeth && c.tr === R.en.hadeeth && c.grade.includes(R.en.grade) && c.ex, JSON.stringify(c).slice(0, 200));
