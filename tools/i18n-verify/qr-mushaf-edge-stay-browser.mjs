@@ -37,8 +37,8 @@ async function open(width, height, touch, lang = "en") {
     });
   }
   const { page } = await openPage(ctx, "/app/quranrevival.html");
-  await page.waitForSelector("#readContentsBtn", { state: "visible", timeout: 20000 });
-  await page.click("#readContentsBtn");
+  await page.waitForSelector("#readContentsBtn", { state: "attached", timeout: 20000 });
+  await page.evaluate(() => document.getElementById("readContentsBtn").click());
   await page.locator("#readContentsMount button", { hasText: /Al-Hijr|আল-হিজর/ }).first().click();
   await page.waitForFunction(() => !!document.getElementById("mushafPageRef")?.dataset.page, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(1500);

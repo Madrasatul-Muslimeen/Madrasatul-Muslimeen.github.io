@@ -266,7 +266,8 @@ function readButtonLayout(page) {
     // landing page now scrolls on a phone, so #myStatusWideBtn is the one
     // "My Status" button at every width. Both ids are still looked up so the
     // check keeps finding whichever one is really displayed.
-    const btn = ["myStatusBtn", "myStatusWideBtn"].map((id) => document.getElementById(id))
+    // UPDATED IN PLACE, 14 Nov 2026 (v15.00): Know Your Status is the navy bar button #wbStatus above the wheel; #myStatusWideBtn is retired from sight.
+    const btn = ["wbStatus"].map((id) => document.getElementById(id))
       .find((el) => el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().width > 0);
     const rect = btn ? btn.getBoundingClientRect() : null;
     return {
@@ -319,13 +320,14 @@ async function runScenarios(lang) {
   // Updated in place again 28 Sep 2026: on a phone (this scenario is 390px)
   // "My Status" is the Mastery Wheel bar's #myStatusBtn once more; tablet/PC
   // show #myStatusWideBtn in the one-row band. Press whichever is displayed.
-  const statusBtnId = await page.evaluate(() => ["myStatusBtn", "myStatusWideBtn"]
+  const statusBtnId = await page.evaluate(() => ["wbStatus"]
     .find((id) => { const el = document.getElementById(id); return el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().width > 0; }));
   // UPDATED IN PLACE, 1 Oct 2026 (Owner decision 46): the heading's
   // #myStatusBtn is gone; Know Your Status is #myStatusWideBtn in the action
   // row under the wheel at every width, phone included.
-  check(`[${lang}] a "Know Your Status" button is displayed (#myStatusWideBtn at 390px, decision 46)`, statusBtnId === "myStatusWideBtn", String(statusBtnId));
+  check(`[${lang}] a "Know Your Status" button is displayed (#wbStatus in the wheel bar, v15.00)`, statusBtnId === "wbStatus", String(statusBtnId));
   await clickSafely(page, `#${statusBtnId}`);
+  await clickSafely(page, "#wbStatusCardBtn"); // the panel's "Open my full status"
   await page.waitForFunction(() => {
     const body = document.getElementById("myStatusBody");
     return !!body && body.querySelectorAll(".my-status-row-btn").length > 0;
@@ -553,7 +555,7 @@ async function runJuzSliceScenario(lang) {
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await waitForWheelReady(page);
 
-  await clickSafely(page, "#myStatusWideBtn"); // decision 46: the one Know Your Status button at every width
+  await page.evaluate(() => document.getElementById("wbStatusCardBtn").click()); // v15.00: the bar button, then the panel's "Open my full status"
   await page.waitForFunction(() => document.getElementById("myStatusBody")?.querySelectorAll(".my-status-row-btn").length > 0, null, { timeout: 10000 });
   await clickSafely(page, `[data-my-status-open="${YES_ID}"]`);
   await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 5000 });
@@ -592,7 +594,7 @@ async function runExploreAgreementScenario() {
   await waitForWheelReady(page);
   for (const kind of ["juz", "surah", "hizb"]) { // hizb added with #342: its row now opens Explore's Hizb view
     await clickSafely(page, "#tabApproachBtn"); // back from Explore after the first pass
-    await clickSafely(page, "#myStatusWideBtn");
+    await page.evaluate(() => document.getElementById("wbStatusCardBtn").click());
     await page.waitForFunction(() => document.getElementById("myStatusBody")?.querySelectorAll(".my-status-row-btn").length > 0, null, { timeout: 10000 });
     await clickSafely(page, `[data-my-status-open="${YES_ID}"]`);
     await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 5000 });
@@ -644,8 +646,8 @@ const K425_TOTALS = { juz: 30, surah: 114, hizb: 60, ruku: 556, page: 604, ayah:
 const K425_NO = { juz: 0, surah: 3, hizb: 0, ruku: 0, page: 0, ayah: 0 };
 
 async function openKys(page, width) {
-  const id = "myStatusWideBtn"; // decision 46: the one Know Your Status button at every width (was #myStatusBtn on a phone)
-  await clickSafely(page, `#${id}`);
+  const id = "wbStatus"; // v15.00: Know Your Status is the bar button #wbStatus, then the panel's "Open my full status" (#wbStatusCardBtn)
+  await page.evaluate(() => document.getElementById("wbStatusCardBtn").click());
   await page.waitForFunction(() => document.querySelectorAll("#myStatusBody .ms-tile").length > 0, null, { timeout: 15000 });
 }
 const tileNs = (page, id) => page.evaluate((tid) => Object.fromEntries([...document.querySelectorAll(`[data-my-status-open="${tid}"] .ms-tile`)].map((t) => [t.dataset.unit, Number(t.dataset.n)])), id);

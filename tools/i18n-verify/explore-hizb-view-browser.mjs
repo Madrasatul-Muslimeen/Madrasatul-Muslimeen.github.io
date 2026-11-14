@@ -309,9 +309,9 @@ async function runMyStatusScenario(lang) {
     return !!wheel && !!wheel.querySelector("svg");
   }, null, { timeout: 30000 });
 
-  const statusBtnId = await page.evaluate(() => ["myStatusBtn", "myStatusWideBtn"]
+  const statusBtnId = await page.evaluate(() => ["wbStatus"]
     .find((id) => { const el = document.getElementById(id); return el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().width > 0; }));
-  await clickSafely(page, `#${statusBtnId}`);
+  await clickSafely(page, `#${statusBtnId}`); await clickSafely(page, "#wbStatusCardBtn"); // v15.00: Know Your Status is the bar button #wbStatus, then the panel's "Open my full status" (#wbStatusCardBtn)
   await page.waitForFunction(() => document.getElementById("myStatusBody")?.querySelectorAll(".my-status-row-btn").length > 0, null, { timeout: 10000 });
   await clickSafely(page, `[data-my-status-open="${YES_ID}"]`);
   await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 5000 });

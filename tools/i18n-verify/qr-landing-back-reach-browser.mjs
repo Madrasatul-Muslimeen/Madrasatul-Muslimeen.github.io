@@ -39,8 +39,8 @@ for (const [w, h, lang] of VIEWS) {
     });
   }
   const { page } = await openPage(ctx, "/app/quranrevival.html");
-  await page.waitForSelector("#readContentsBtn", { state: "visible", timeout: 20000 });
-  await page.click("#readContentsBtn");
+  await page.waitForSelector("#readContentsBtn", { state: "attached", timeout: 20000 });
+  await page.evaluate(() => document.getElementById("readContentsBtn").click());
   await page.waitForSelector('#readContentsMount [data-rc-kind="surah"][data-rc-n="114"]', { state: "attached" });
   await page.evaluate(() => document.querySelector('#readContentsMount [data-rc-kind="surah"][data-rc-n="114"]').click());
   await page.waitForFunction(() => !!document.querySelector('[data-ayah-marker="114:1"]'), null, { timeout: 15000 });
@@ -71,7 +71,7 @@ for (const [w, h, lang] of VIEWS) {
         const bad = pts.filter(([fx, fy]) => { const x = r.left + r.width * fx, y = r.top + r.height * fy; if (y < 0 || y >= innerHeight) return false; const e = document.elementFromPoint(x, y); return !(e && (e === el || el.contains(e))); });
         return bad.length ? `covered by ${document.elementFromPoint(r.left + r.width * bad[0][0], r.top + r.height * bad[0][1])?.closest("[id],[class]")?.id || "?"}` : "ok";
       };
-      const controls = [...document.querySelectorAll("#tabRow button, #wheelDrawerRow button, #readContentsBtn")].filter((b) => b.getBoundingClientRect().width > 0);
+      const controls = [...document.querySelectorAll("#tabRow button, #wheelDrawerRow button, #wheelBar .wheel-bar-btn") /* v15.00: the bar replaces the Read capsule and the drawer buttons */].filter((b) => b.getBoundingClientRect().width > 0);
       const out = controls.map((b) => ({ name: (b.textContent || "").trim().slice(0, 12) || b.id, r: reach(b) }));
       const pr = pill.getBoundingClientRect();
       const overlap = controls.filter((b) => { const r = b.getBoundingClientRect(); return pr.left < r.right && pr.right > r.left && pr.top < r.bottom && pr.bottom > r.top; }).map((b) => (b.textContent || "").trim().slice(0, 12));
@@ -89,7 +89,7 @@ for (const [w, h, lang] of VIEWS) {
   // A window over the landing (Know Your Status, full screen): the way back floats ABOVE it, then docks again when it closes.
   if (w === 390 || w === 1024) {
     await page.evaluate(() => { document.scrollingElement.scrollTop = 0; });
-    await page.locator("#myStatusBtn, button:has-text('Know Your Status'), button:has-text('আপনার অবস্থা জানুন')").first().click();
+    await page.locator("#wbStatus").click(); await page.locator("#wbStatusCardBtn").click(); // v15.00: the bar button, then the panel's "Open my full status"
     await page.waitForFunction(() => { const m = document.getElementById("myStatusMount"); return m && !m.hidden && m.getBoundingClientRect().height > 100; }, null, { timeout: 8000 }).catch(() => {});
     await page.waitForTimeout(500);
     const o = await page.evaluate(() => {

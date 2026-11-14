@@ -48,7 +48,7 @@ for (const lang of ["en", "bn"]) {
     await flow(`${tag} back pill`, 90000, async () => {
       const { ctx, page } = await open(lang, width);
       await page.evaluate(() => document.querySelectorAll('[id*="splash"], .mm-splash-overlay').forEach((el) => el.remove()));
-      await page.click("#myStatusWideBtn, #myStatusBtn >> visible=true", { timeout: 8000 });
+      await page.click("#wbStatus", { timeout: 8000 }).then(() => page.click("#wbStatusCardBtn", { timeout: 8000 }));
       await page.waitForFunction(() => document.querySelectorAll(".my-status-row-btn").length > 0, null, { timeout: 15000 });
       await page.click(".my-status-row-btn", { timeout: 8000 });
       await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 8000 });

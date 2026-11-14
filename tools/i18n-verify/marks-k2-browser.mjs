@@ -143,7 +143,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   // (4) the Marks wheel
   await ev(page, () => document.getElementById("tabApproachBtn")?.click());
   await settle(page, 500);
-  if (width < 900) { await page.click('#wheelDrawerRow [data-wheel-drawer="wheel"]').catch(() => {}); await settle(page, 300); }
+  if (width < 900) { await page.click('#wbStatus').catch(() => {}); await settle(page, 300); }
   await ev(page, () => document.querySelector('[data-wheel-kind="marks"]')?.click());
   await page.waitForSelector("#wheelContainer svg[data-mk-wheel]", { timeout: 6000 }).catch(() => {});
   const wi = (page) => ev(page, () => { const gs = [...document.querySelectorAll("#wheelContainer .mk-piece")]; return { n: gs.length, bands: gs[0]?.querySelectorAll(".mk-band").length ?? 0, marks: gs.map((g) => g.dataset.mkMarks), centre: [...document.querySelectorAll("#wheelContainer svg text")].map((t) => t.textContent).join(" | "), views: [...document.querySelectorAll("[data-mk-view]")].map((b) => [b.dataset.mkView, b.getAttribute("aria-pressed")]) }; });

@@ -48,10 +48,11 @@ async function open({ role, lang = "bn", width = 412, height = 780, saved = null
 }
 
 const measure = (page) => page.evaluate(() => {
-  const row = document.getElementById("wheelDrawerRow"), dock = document.getElementById("dock"), wrap = document.getElementById("wheelResizeWrap");
+  // UPDATED IN PLACE, 14 Nov 2026 (v15.00): the drawer row is retired; its job -- "the controls stay reachable above the dock when the wheel is dragged" -- now belongs to the wheel bar, so the bar stands in for the row.
+  const row = document.getElementById("wheelBar"), dock = document.getElementById("dock"), wrap = document.getElementById("wheelResizeWrap");
   const r = row.getBoundingClientRect(), d = dock.getBoundingClientRect();
   // Every drawer button must be the thing at its own centre (not the dock, not anything else on top).
-  const hits = [...row.querySelectorAll("[data-wheel-drawer]")].map((b) => {
+  const hits = [...row.querySelectorAll("#wbStatus, #wbLegend, #wbUnit")].map((b) => {
     const br = b.getBoundingClientRect(); const el = document.elementFromPoint(br.x + br.width / 2, Math.min(br.y + br.height / 2, innerHeight - 1));
     return !!el && b.contains(el);
   });
@@ -63,8 +64,8 @@ for (const role of ["student", "owner"]) {
   const { ctx, page } = await open({ role, saved: 380 });
   const m = await measure(page);
   check(`${role}, dragged wheel: the saved size really applies (positive control)`, m.resized, JSON.stringify(m));
-  check(`${role}, dragged wheel: the drawer row is on screen (height > 0)`, m.rowH > 0, JSON.stringify(m));
-  check(`${role}, dragged wheel: the drawer row ends above the dock`, m.rowBottom <= m.dockTop + 0.5, `row bottom ${m.rowBottom} dock top ${m.dockTop}`);
+  check(`${role}, dragged wheel: the wheel bar is on screen (height > 0)`, m.rowH > 0, JSON.stringify(m));
+  check(`${role}, dragged wheel: the wheel bar ends above the dock`, m.rowBottom <= m.dockTop + 0.5, `row bottom ${m.rowBottom} dock top ${m.dockTop}`);
   check(`${role}, dragged wheel: Wheel, Legend and Unit are each the element at their own centre`, m.hits.length === 3 && m.hits.every(Boolean), JSON.stringify(m.hits));
   await ctx.close();
 }
@@ -73,7 +74,7 @@ for (const role of ["student", "owner"]) {
 { const { ctx, page } = await open({ role: "student" });
   const m = await measure(page);
   check("student, never dragged: no saved size (control)", !m.resized);
-  check("student, never dragged: the drawer row ends above the dock", m.rowBottom <= m.dockTop + 0.5, `row bottom ${m.rowBottom} dock top ${m.dockTop}`);
+  check("student, never dragged: the wheel bar ends above the dock", m.rowBottom <= m.dockTop + 0.5, `row bottom ${m.rowBottom} dock top ${m.dockTop}`);
   check("student, never dragged: Wheel, Legend and Unit each hittable", m.hits.every(Boolean), JSON.stringify(m.hits));
   await ctx.close(); }
 

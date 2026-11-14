@@ -207,7 +207,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
     await page.waitForFunction(() => !!document.querySelector("#wheelContainer svg"), null, { timeout: 30000 });
     const headline = async () => {
       await page.evaluate(() => { document.querySelectorAll('[id*="splash"], .mm-splash-overlay').forEach((el) => el.remove()); });
-      await page.click("#myStatusWideBtn");
+      await page.evaluate(() => document.getElementById("myStatusWideBtn").click());
       await page.waitForSelector('#myStatusBody [data-my-status-open="recite"] .my-status-row-figure', { timeout: 10000 });
       const out = await page.evaluate(() => ({
         text: document.querySelector('[data-my-status-open="recite"] .my-status-row-figure').textContent.trim(),

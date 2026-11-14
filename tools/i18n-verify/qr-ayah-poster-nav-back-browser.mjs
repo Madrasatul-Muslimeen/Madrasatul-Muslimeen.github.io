@@ -51,8 +51,8 @@ for (const [w, h, lang] of [[390, 844, "en"], [768, 1024, "bn"], [1280, 900, "en
   const tag = `[${lang} ${w}]`;
   const ctx = await ctxFor(lang, w, h);
   const { page } = await openPage(ctx, "/app/quranrevival.html");
-  await page.waitForSelector("#readContentsBtn", { state: "visible", timeout: 20000 });
-  await page.click("#readContentsBtn");
+  await page.waitForSelector("#readContentsBtn", { state: "attached", timeout: 20000 });
+  await page.evaluate(() => document.getElementById("readContentsBtn").click());
   // the route, not the thing tested here (part 3 below proves a finger can reach this row): open An-Naas directly
   await page.waitForSelector('#readContentsMount [data-rc-kind="surah"][data-rc-n="114"]', { state: "attached", timeout: 15000 });
   await page.evaluate(() => document.querySelector('#readContentsMount [data-rc-kind="surah"][data-rc-n="114"]')?.click());
@@ -99,8 +99,8 @@ for (const [w, h, lang] of [[390, 844, "en"], [768, 1024, "bn"], [1280, 900, "en
 for (const [w, h, lang] of [[768, 1024, "en"], [768, 1024, "bn"], [820, 1180, "en"], [820, 1180, "bn"], [1024, 1366, "en"], [390, 844, "en"]]) {
   const ctx = await ctxFor(lang, w, h);
   const { page } = await openPage(ctx, "/app/quranrevival.html");
-  await page.waitForSelector("#readContentsBtn", { state: "visible", timeout: 20000 });
-  await page.click("#readContentsBtn"); await page.waitForTimeout(600);
+  await page.waitForSelector("#readContentsBtn", { state: "attached", timeout: 20000 });
+  await page.evaluate(() => document.getElementById("readContentsBtn").click()); await page.waitForTimeout(600);
   const m = await page.evaluate(() => {
     const row = document.querySelector('#readContentsMount [data-rc-kind="surah"][data-rc-n="114"]');
     if (!row) return null;

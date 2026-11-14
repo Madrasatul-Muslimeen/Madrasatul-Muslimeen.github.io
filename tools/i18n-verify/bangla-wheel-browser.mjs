@@ -61,13 +61,13 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
   await page.waitForTimeout(1200);
-  if (width < 900) { await page.click('#wheelDrawerRow [data-wheel-drawer="wheel"]').catch(() => {}); await page.waitForTimeout(250); }
+  if (width < 900) { await page.click('#wbStatus').catch(() => {}); await page.waitForTimeout(250); }
   await page.evaluate(() => document.querySelector('[data-wheel-kind="vocab"]').click());
   if (width >= 900) { await page.waitForTimeout(300); await page.evaluate(() => document.getElementById("wheelPopupMaximizeBtn")?.click()); await page.waitForTimeout(600); }
   await page.waitForFunction(() => document.querySelector("#wheelContainer svg[data-vocab-wheel]"), null, { timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(300);
 
-  await page.evaluate(() => document.querySelector('#wheelDrawerRow [data-wheel-drawer="legend"]')?.click()); await page.waitForTimeout(250);
+  await page.evaluate(() => document.querySelector('#wbLegend')?.click()); await page.waitForTimeout(250);
   let w = await info(page);
   check(`${tag} (positive control) the Vocabulary Wheel drew its nine steps`, w.segs.filter((k) => k !== "vstep-bangla").length === 9, JSON.stringify(w.segs));
   check(`${tag} all three on: a tenth part`, w.segs.length === 10 && w.segs[9] === "vstep-bangla", JSON.stringify(w.segs));
@@ -97,10 +97,10 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
   // the whole list off: no display at all
   await page.evaluate(() => { const k = localStorage.getItem("mm_bangla_words.v2") ? "mm_bangla_words.v2" : "mm_bangla_words.v1"; const s = JSON.parse(localStorage.getItem(k)); s.on = false; localStorage.setItem(k, JSON.stringify(s)); });
   await page.reload(); await page.waitForTimeout(1500);
-  if (width < 900) { await page.click('#wheelDrawerRow [data-wheel-drawer="wheel"]').catch(() => {}); await page.waitForTimeout(250); }
+  if (width < 900) { await page.click('#wbStatus').catch(() => {}); await page.waitForTimeout(250); }
   await page.evaluate(() => document.querySelector('[data-wheel-kind="vocab"]').click());
   await page.waitForFunction(() => document.querySelector("#wheelContainer svg[data-vocab-wheel]"), null, { timeout: 30000 }).catch(() => {});
-  await page.evaluate(() => document.querySelector('#wheelDrawerRow [data-wheel-drawer="legend"]')?.click()); await page.waitForTimeout(250);
+  await page.evaluate(() => document.querySelector('#wbLegend')?.click()); await page.waitForTimeout(250);
   w = await info(page);
   check(`${tag} the whole list off: nine steps, no ring, no centre line`, w.segs.length === 9 && w.ring === 0 && !w.centre, JSON.stringify({ s: w.segs.length, ring: w.ring, c: w.centre }));
   await ctx.close();

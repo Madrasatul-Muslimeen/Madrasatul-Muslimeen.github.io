@@ -18,7 +18,7 @@ const CACHE_NAME = `mm-app-${APP_VERSION}`;
 // This worker's own registration scope is /app/ (registered from
 // /app/sw.js, and GitHub Pages sends no Service-Worker-Allowed header to
 // widen it), so it only ever controls pages under /app/ -- /legacy/,
-// /legacy-v07/, /legacy-v08/, /legacy-v09/, /legacy-v10/, /legacy-v11/, /legacy-v12/ and /legacy-v13/ are structurally outside its reach. But once a page it
+// /legacy-v07/, /legacy-v08/, /legacy-v09/, /legacy-v10/, /legacy-v11/, /legacy-v12/, /legacy-v13/ and /legacy-v14/ are structurally outside its reach. But once a page it
 // controls fetches something, the fetch handler below sees EVERY request
 // that page makes, wherever the URL points -- scope limits which pages are
 // controlled, not which of their requests can be seen. So the path check
@@ -50,7 +50,7 @@ function isCacheable(request) {
   if (request.method !== "GET") return false;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return false;
-  if (url.pathname.startsWith("/legacy/") || url.pathname.startsWith("/legacy-v07/") || url.pathname.startsWith("/legacy-v08/") || url.pathname.startsWith("/legacy-v09/") || url.pathname.startsWith("/legacy-v10/") || url.pathname.startsWith("/legacy-v11/") || url.pathname.startsWith("/legacy-v12/") || url.pathname.startsWith("/legacy-v13/")) return false;
+  if (url.pathname.startsWith("/legacy/") || url.pathname.startsWith("/legacy-v07/") || url.pathname.startsWith("/legacy-v08/") || url.pathname.startsWith("/legacy-v09/") || url.pathname.startsWith("/legacy-v10/") || url.pathname.startsWith("/legacy-v11/") || url.pathname.startsWith("/legacy-v12/") || url.pathname.startsWith("/legacy-v13/") || url.pathname.startsWith("/legacy-v14/")) return false;
   if (!CACHEABLE_PATH_PREFIXES.some((p) => url.pathname.startsWith(p))) return false;
   if (url.pathname.includes("/mushaf-printed/")) return false; // PRINTED-EXCLUDED: the 604 printed-page pictures (~100 MB) are only ever kept by the reader's own "keep in the app" choice (its own cache), never by this run-time cache
   // Firestore's OWN traffic -- every read, write and auth token exchange the

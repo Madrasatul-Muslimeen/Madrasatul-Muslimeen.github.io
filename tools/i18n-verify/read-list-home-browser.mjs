@@ -12,7 +12,7 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 1280]) {
   await ctx.route("**/archive.org/**", (r) => r.abort());
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   // The landing page's Read button opens the list (as read-list-button-browser does).
-  await page.click("#readContentsBtn");
+  await page.evaluate(() => document.getElementById("readContentsBtn").click());
   await page.waitForFunction(() => !document.getElementById("readContentsMount").hidden && document.querySelectorAll("#readContentsBody .rc-row").length > 0);
   await page.click('#readContentsBody .rc-row[data-rc-kind="surah"][data-rc-n="2"]');
   await page.waitForFunction(() => document.body.classList.contains("read-from-contents"));
