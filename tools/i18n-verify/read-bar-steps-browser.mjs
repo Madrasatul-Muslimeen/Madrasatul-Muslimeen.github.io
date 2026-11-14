@@ -5,6 +5,8 @@
 //   MUT=notiles ... mutation: the ⋮ menu never shows the four step tiles          -> "the ⋮ menu shows the four step tiles"
 //   MUT=nomap ...   mutation: the Next āyah tile presses nothing                  -> "each tile presses the bar button it stands for"
 //   MUT=always ...  mutation: the move happens with Read on OFF too               -> "with Read on off the four buttons stay on the bar"
+// UPDATED IN PLACE, 15 Nov 2026 (the Owner: "Add nav buttons"; Read on also moved to the right-hand group and a 📍 was added): on a phone in Read on ◂ ▸ now STAY on the bar and only
+// ⏮ ⏭ live in the ⋮ menu (two tiles, not four); the bar is still two lines from 360px, and at 320px it is three (now 197px: the pin and ◂ ▸ cost the first line more).
 // Rendered and measured at 320, 360, 390, 412, 599, 600, 768 and 1280, in English and Bangla (320 stays THREE lines: its first line is 21px too wide).
 import { chromium, newContext, openPage, goReadOn } from "./harness.mjs";
 import fs from "node:fs";
@@ -27,9 +29,9 @@ const restoreAll = () => { while (restores.length) restores.pop()(); };
 process.on("exit", restoreAll);
 for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { restoreAll(); process.exit(1); });
 const PAGE = "app/quranrevival.html";
-if (MUT === "nohide") mutate(PAGE, /body\.read-bar-steps-in-menu #readBar :is\(#prevUnitBtn, #prevAyahBtn, #nextAyahBtn, #nextUnitBtn\) \{ display: none !important; \}/g, "");
+if (MUT === "nohide") mutate(PAGE, /body\.read-bar-steps-in-menu #readBar :is\(#prevUnitBtn, #nextUnitBtn\) \{ display: none !important; \}/g, "");
 else if (MUT === "notiles") mutate(PAGE, /body\.read-bar-steps-in-menu \.qm-sheet \.qm-tile\.qm-step-tile \{ display: flex; \}/g, "");
-else if (MUT === "nomap") mutate(PAGE, /stepnextayah: "nextAyahBtn", /g, "");
+else if (MUT === "nomap") mutate(PAGE, /stepnextunit: "nextUnitBtn"/g, "stepnextunit_x: \"nextUnitBtn\"");
 else if (MUT === "always") mutate(PAGE, /setReadBarStepsWanted\(meaningOn && !isMushaf\);/g, "setReadBarStepsWanted(true);");
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -56,9 +58,10 @@ try {
     const bar = await page.evaluate((ids) => { const b = document.getElementById("readBar"), r = b.getBoundingClientRect(); return { h: Math.round(r.height), vis: ids.filter((i) => document.getElementById(i).getClientRects().length).length, cls: document.body.classList.contains("read-bar-steps-in-menu"), sideways: document.documentElement.scrollWidth - innerWidth }; }, IDS);
     if (phone && width >= 360) {
       check(`${tag} MUTATION TARGET (nohide): in Read on the bar is TWO lines (${bar.h}px, was 151px)`, bar.h <= 105, JSON.stringify(bar));
-      check(`${tag} MUTATION TARGET (nohide): the four step buttons are not on the bar`, bar.vis === 0 && bar.cls, JSON.stringify(bar));
+      const shown = await page.evaluate((ids) => ids.filter((i) => document.getElementById(i).getClientRects().length), IDS);
+      check(`${tag} MUTATION TARGET (nohide): ⏮ ⏭ are not on the bar, ◂ ▸ are (15 Nov 2026)`, JSON.stringify(shown) === '["prevAyahBtn","nextAyahBtn"]' && bar.cls, JSON.stringify([shown, bar]));
     } else if (phone) {
-      check(`${tag} at 320px the bar is still THREE lines (${bar.h}px): its first line is 21px too wide for two`, bar.h <= 152 && bar.vis === 0, JSON.stringify(bar));
+      check(`${tag} at 320px the bar is THREE lines (${bar.h}px; was 151px before the pin and ◂ ▸)`, bar.h <= 205 && bar.vis === 2, JSON.stringify(bar));
     } else {
       check(`${tag} from 600px the bar is unchanged: the four step buttons stay on it (${bar.vis} of 4), no step tiles`, bar.vis === 4 && !bar.cls, JSON.stringify(bar));
     }
@@ -68,12 +71,12 @@ try {
     await page.waitForTimeout(500);
     const tiles = await page.evaluate(() => { const sheet = document.querySelector("#readBar .qm-sheet"), sr = sheet?.getBoundingClientRect(); return [...document.querySelectorAll("#readBar .qm-step-tile")].filter((e) => e.getClientRects().length).map((e) => { const r = e.getBoundingClientRect(); return { label: e.getAttribute("aria-label"), w: Math.round(r.width), h: Math.round(r.height), inside: !!sr && r.left >= sr.left - 1 && r.right <= sr.right + 1 }; }); });
     if (phone) {
-      check(`${tag} MUTATION TARGET (notiles): the ⋮ menu shows the four step tiles, each 40px or more, inside the menu`, tiles.length === 4 && tiles.every((x) => x.w >= 40 && x.h >= 40 && x.inside), JSON.stringify(tiles));
+      check(`${tag} MUTATION TARGET (notiles): the ⋮ menu shows the two step tiles (⏮ ⏭), each 40px or more, inside the menu`, tiles.length === 2 && tiles.every((x) => x.w >= 40 && x.h >= 40 && x.inside), JSON.stringify(tiles));
       // each tile presses the bar button it stands for: count the clicks the real buttons receive
       const res = await page.evaluate((ids) => {
         const got = {}; ids.forEach((i) => { got[i] = 0; document.getElementById(i).addEventListener("click", () => { got[i]++; }, true); });
         const out = {};
-        for (const [act, id] of [["stepprevunit", "prevUnitBtn"], ["stepprevayah", "prevAyahBtn"], ["stepnextayah", "nextAyahBtn"], ["stepnextunit", "nextUnitBtn"]]) {
+        for (const [act, id] of [["stepprevunit", "prevUnitBtn"], ["stepnextunit", "nextUnitBtn"]]) {
           for (const k of ids) got[k] = 0;
           const t = document.querySelector(`#readBar [data-qm-act="${act}"]`); if (!t) { out[act] = "no tile"; continue; }
           if (t.disabled) { out[act] = "disabled"; continue; }
@@ -84,7 +87,7 @@ try {
       }, IDS);
       // the bar's own buttons are enabled (flow: both ◂ ▸ always on); ⏮ at the first unit may be disabled, and then its tile says so
       const bad = Object.entries(res).filter(([, v]) => v !== "ok" && v !== "disabled");
-      check(`${tag} MUTATION TARGET (nomap): each tile presses the bar button it stands for (${JSON.stringify(res)})`, bad.length === 0 && res.stepnextayah === "ok", JSON.stringify(res));
+      check(`${tag} MUTATION TARGET (nomap): each tile presses the bar button it stands for (${JSON.stringify(res)})`, bad.length === 0 && res.stepnextunit === "ok", JSON.stringify(res));
     } else {
       check(`${tag} from 600px the ⋮ menu has no step tiles`, tiles.length === 0, JSON.stringify(tiles));
     }

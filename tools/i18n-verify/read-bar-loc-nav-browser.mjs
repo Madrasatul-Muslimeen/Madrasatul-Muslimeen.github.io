@@ -24,7 +24,7 @@ const MUT = {
   readonleft: [".read-on-switch { position: relative; box-sizing: border-box; margin: 0; }", ".read-on-switch { position: relative; box-sizing: border-box; margin: 0 80px 0 0; }"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
-const CASES = [[360, "en"], [390, "en"], [390, "bn"], [820, "en"], [1280, "en"]].filter(([, l]) => !arg("lang") || l === arg("lang"));
+const CASES = [[360, "en"], [390, "en"], [400, "en"], [412, "en"], [390, "bn"], [820, "en"], [1280, "en"]].filter(([, l]) => !arg("lang") || l === arg("lang"));
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 try {
   for (const [width, lang] of CASES) for (const readOn of [false, true]) {

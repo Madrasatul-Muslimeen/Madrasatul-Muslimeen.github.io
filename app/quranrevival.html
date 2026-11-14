@@ -2675,7 +2675,7 @@
   .read-loc-wrap { flex: 0 0 auto; }
   /* a phone keeps the bar at TWO lines from 360px (the 13 Nov rule): the pin goes icon-only and the unit chip steps down to two short lines */
   @media (max-width: 899.98px) { .read-loc-page { display: none; } .read-loc-btn { padding: 0; width: 36px; min-width: 36px; } } /* tablet: the bar has ~43px to spare, so the pin is icon-only there too */
-  @media (max-width: 399.98px) {
+  @media (max-width: 429.98px) {
     body.read-bar-steps-in-menu #readBar :is(#prevAyahBtn, #nextAyahBtn) { width: 36px; min-width: 36px; padding-inline: 0; }
     #readBar .read-unit-chip { max-width: 3.6rem; padding: 0.3rem 0.25rem; }
     #readBar #readMeaningLayersSlot .ml-count { display: none; } /* Read on moved to the right group: the Show button gives up its count so row two still holds both */
@@ -2907,7 +2907,7 @@
      full-screen icon. */
   body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readMeaningLayersSlot):not(#readOnSwitch):not(#mushafPagePrevBtn):not(#mushafPageNextBtn) { display: none; }
   /* MSA · QR J132: the bare state keeps the bar's ⋮ too: Study (Take an Approach, Record, Status, the unit and sūrah pickers), Notes and the rest are in its sheet now that the bottom row is gone. */
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn):not(#readMushafBtn):not(#readBarBookmarkBtn):not(#readSearchBtn):not(#readQuickMenuSlot) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn):not(#readMushafBtn):not(#readBarBookmarkBtn):not(#readSearchBtn):not(#readQuickMenuSlot):not(#readOnSwitch) { display: none; } /* #readOnSwitch joined the group on 15 Nov 2026 and stays on the bare bar, as it was */
   /* 10 Oct 2026: 📖 Meaning stays in the bare full-screen state too (the Owner: "visible even in full screen Mushaf
      view"), beside ⤢. */
   #readMeaningBtn, #readMushafBtn {
@@ -4509,7 +4509,7 @@
   /* the Owner, 15 Nov 2026 ("make all titles look similar, elegant, tiny but noticeable"): Word Progress, Mark the Word, the Bangla marking
      title and Learn the Next Word share ONE title look: small capitals, spaced, in the card's muted heading colour, never bold-loud. */
   .quran-word-card .word-progress-heading-phone, .quran-word-card .we-row > .we-label, .quran-word-card .bnk-row > .we-label, .quran-word-card .word-card-learnnext-title {
-    display: block; margin: 0 0 0.25rem; font-size: 0.66rem; font-weight: 700; line-height: 1.3; letter-spacing: 0.09em; text-transform: uppercase;
+    margin: 0 0 0.25rem; font-size: 0.66rem; font-weight: 700; line-height: 1.3; letter-spacing: 0.09em; text-transform: uppercase;
     color: var(--card-text-muted); opacity: 1;
   }
   .quran-word-card .word-card-learnnext-title { display: inline-block; margin: 0; color: inherit; opacity: 0.85; }
@@ -6844,7 +6844,7 @@
           <button type="button" id="readUnitChip" class="read-unit-chip" hidden><span class="read-unit-chip-text"></span></button>
           <!-- The Owner, 15 Nov 2026 ("Add a location button, i.e. Page no, Sura, Ruku, Juz this Ayah / page belongs to"): 📍 and the page number on the
                bar; it drops a small list of where the āyah being read sits (Āyah, Ruku', Page, Hizb, Juz, Surah), each a way to that unit's card. -->
-          <span class="bar-palette-wrap read-loc-wrap" data-bar-palette-wrap="readLoc">
+          <span id="readLocWrap" class="bar-palette-wrap read-loc-wrap" data-bar-palette-wrap="readLoc">
             <button type="button" id="readLocBtn" class="read-loc-btn bar-palette-toggle" data-bar-palette-toggle="readLoc" aria-haspopup="true" aria-expanded="false" aria-label="Where this āyah is" title="Where this āyah is"><span aria-hidden="true">📍</span><span class="read-loc-page" data-read-loc-page></span></button>
             <div class="bar-palette read-loc-palette" data-bar-palette="readLoc"><p class="bar-palette-note read-loc-note" data-read-loc-title>Where this āyah is</p><div class="read-loc-list" data-read-loc-list></div></div>
           </span>
