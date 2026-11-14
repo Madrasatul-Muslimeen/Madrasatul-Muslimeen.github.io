@@ -3124,6 +3124,8 @@
   .ayah-stripe-chip.asma i { background: #f3e1e6; color: #6b1f33; border-color: #a64560; font-family: var(--arabic-font, inherit); }
   .ayah-stripe-chip:focus-visible { outline: 3px solid #B8862F; outline-offset: 1px; border-radius: 8px; }
   .ayah-quick-header { align-items: center; gap: 0.5rem; }
+  .ayah-quick-header > .ayah-stripe { margin-left: auto; }
+  .ayah-quick-header > .ayah-stripe + .ayah-num-badge { margin-left: 0; }
   .meaning-more { min-height: 44px; border: 1px dashed #c9b98f; border-radius: 0.6rem; background: #fdf8ea; color: #5e4418; font: inherit; font-weight: 600; cursor: pointer; }
   .meaning-more[disabled] { opacity: 0.5; cursor: default; }
   /* Owner, 2 Oct 2026 -- "☰ Surah list", the way back from a Read view opened
@@ -3254,6 +3256,7 @@
      0.3rem (4.8px) top margin left its top 3px outside the panel, where a tap reached #studyScreen: 0.5rem (8px) keeps
      the whole 40px inside. The row is 3.2px lower; nothing else moves. */
   .ayah-num-row { display: flex; justify-content: flex-end; margin: 0.5rem 0 0.1rem; }
+  .ayah-num-row > .ayah-stripe { margin-left: 0; margin-right: 0.15rem; align-items: center; }
   .read-loading { margin: 1rem 0; text-align: center; color: #555; font-weight: 600; } /* QR Lead: "Loading…" while a surah comes (loadSurah) */
   .ayah-num-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem; border-radius: 999px; background: #f0ead9; color: #8a6d1f; font-size: 0.78rem; font-weight: 700; border: 1px solid #d8c68a; }
   /* Issue #295 -- the badge is a real <button> (the Ayah Card's third entry
@@ -21935,6 +21938,38 @@
       return chips.length ? `<span class="ayah-stripe" role="group" aria-label="${escapeHtml(t("Āyah status"))}">${chips.join("")}</span>` : "";
     }
 
+    /** The Owner, 15 Nov 2026 (two phone screenshots: "this Ayah is attached to QCR / Asma ... it doesn't appear"): the QCR and Asma chips drew
+        only when something else had already loaded those two small tenant documents (the Āyah card did, the Reading View never did), and the
+        ONE Ayah View's header never drew the stripe at all. Now the first draw of a Read view fetches them ONCE per tenant, after the view is
+        painted, then fills the chips in place -- two reads on first use of Read, never at startup (I9). */
+    let stripeDataQueued = false;
+    function refreshAyahStripes() {
+      { // the ONE Ayah view's own number row
+        const row = ayahPanels.querySelector(".ayah-num-row");
+        if (row && !pageViewContainer.querySelector("[data-meaning-key], .page-flow-ayah")) {
+          const html = ayahStripeHtml(currentSurahNum, currentAyahNum), old = row.querySelector(":scope > .ayah-stripe");
+          if (old) old.remove();
+          if (html) row.insertAdjacentHTML("afterbegin", html);
+        }
+      }
+      for (const el of pageViewContainer.querySelectorAll(".page-flow-ayah[data-ayah], .meaning-ayah[data-meaning-key]")) {
+        const head = el.querySelector(".ayah-quick-header, .meaning-ayah-head");
+        if (!head) continue;
+        let surah = currentSurahNum, ayahNum = Number(el.dataset.ayah);
+        if (el.dataset.meaningKey) [surah, ayahNum] = el.dataset.meaningKey.split(":").map(Number);
+        const html = ayahStripeHtml(surah, ayahNum), old = head.querySelector(":scope > .ayah-stripe");
+        if (old && !html) old.remove();
+        else if (old) old.outerHTML = html;
+        else if (html) (head.querySelector(":scope > .ayah-num-badge") ?? head.firstElementChild)?.insertAdjacentHTML(head.querySelector(":scope > .ayah-num-badge") ? "beforebegin" : "afterend", html);
+      }
+    }
+    function scheduleStripeData() {
+      const ready = qcrCollections && qcrCollectionsTenantId === activeTenantId && asmaXCollections && asmaXDataTenantId === activeTenantId;
+      if (ready || stripeDataQueued) return;
+      stripeDataQueued = true;
+      Promise.all([ensureQcrDataLoaded(), ensureAsmaXDataLoaded()]).catch(() => null).finally(() => { stripeDataQueued = false; refreshAyahStripes(); });
+    }
+
     /** PCF MSA J110 C: the same ⋮ the ONE Ayah View carries on every āyah (Copy, Share, Play this āyah, Bookmark,
         Note & more…, QCR), without its Word by Word / Root / Derivatives rows: the Reading View has its own switches. */
     function meaningQuickMenuHtml(surahNum, ayahNum) {
@@ -22018,6 +22053,7 @@
         </div>`;
         wireMeaningFlow();
         attachAyahQuickMenus(pageViewContainer);
+        scheduleStripeData();
         const playingKey = (isPlaying() || isPaused()) ? `${currentSurahNum}:${currentAyahNum}` : null;
         const focus = meaningFocusKey ?? playingKey ?? (pageViewContainer.querySelector(".meaning-ayah:not(.out)")?.dataset.meaningKey ?? null);
         meaningFocusKey = null;
@@ -22373,7 +22409,7 @@
             wordCardInteractive: true,
             surahNumber: currentSurahNum,
           }));
-          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${beforeHtml}<div class="ayah-quick-header">${liftedFlow.badge}${renderQuickMenu(unitKey, {
+          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${beforeHtml}<div class="ayah-quick-header">${ayahStripeHtml(currentSurahNum, ayah.ayah)}${liftedFlow.badge}${renderQuickMenu(unitKey, {
             hasNote: ayahHasAnyNote(unitKey), isBookmarked,
             sheet: true, showWriting: true, showAsma: canAdminCatalogueClientSide(), unitBookmark: unitBookmarkOpt(),
             showTextTools: true,
@@ -22384,6 +22420,7 @@
       attachAyahQuickMenus(pageViewContainer);
       wireEndOfUnitPrompt(pageViewContainer);
       renderPersistentWordCard();
+      scheduleStripeData();
       // Fix round -- only mark an āyah as SOUNDING when something really is.
       // This used to run unconditionally, so a fresh flow always painted the
       // gold "now playing" band on currentAyahNum with nothing playing --
@@ -27308,6 +27345,9 @@
           wordCardInteractive: true,
           surahNumber: currentSurahNum,
         }, currentHalf());
+        // The Owner, 15 Nov 2026: the status stripe (Approaches, Notes, Words marked, QCR, Asma) sits beside the āyah number here too.
+        ayahPanels.querySelector(".ayah-num-row")?.insertAdjacentHTML("afterbegin", ayahStripeHtml(currentSurahNum, currentAyahNum));
+        scheduleStripeData();
         // Text-tools round -- what the ⋮ menu's Collapse item folds away.
         // #ayahPanels itself survives every re-render (only its innerHTML is
         // replaced), so the class has to be cleared here or a collapse left

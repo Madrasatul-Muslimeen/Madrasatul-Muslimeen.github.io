@@ -66,7 +66,9 @@ try {
       check(`${tag} āyah 1 shows an Approaches chip and a Notes chip`, a1?.chips.map((c) => c.kind).join() === "appr,note", JSON.stringify(a1?.chips));
       check(`${tag} the Approaches chip reads 1 of the tenant's Approaches (a "1/N" figure)`, /^1\/\d+$|^[০-৯]\/[০-৯]+$|^১\/[০-৯]+$/.test(a1?.chips[0]?.text ?? ""), a1?.chips[0]?.text);
       check(`${tag} āyah 2 shows the Approaches chip with 2 and no Notes chip`, a2?.chips.length === 1 && /^(2|২)\//.test(a2.chips[0].text), JSON.stringify(a2?.chips));
-      check(`${tag} āyah 3 has no stripe at all`, a3?.hasStripe === false, JSON.stringify(a3?.chips));
+      // UPDATED IN PLACE, 15 Nov 2026 (the Owner: the QCR / Asma chips must appear without opening another screen first): āyah 3 has no Approach or Note,
+      // and now that the Asma data loads on the first draw it may carry the Asma chip (a Name cites 1:3). What it must not carry is an Approaches or a Notes chip.
+      check(`${tag} āyah 3 has no Approaches or Notes chip`, !(a3?.chips ?? []).some((c) => c.kind === "appr" || c.kind === "note"), JSON.stringify(a3?.chips));
       const sizes = a1?.chips ?? [];
       check(`${tag} each chip is 22px to see and 40px or more to press`, sizes.length > 0 && sizes.every((c) => Math.abs(c.paint - 22) < 1 && c.box >= 40), JSON.stringify(sizes));
       check(`${tag} the stripe sits between the name and the number: no overlap, inside the row, no sideways scroll`, a1 && !a1.overlapRef && !a1.overlapBadge && a1.inside && a1.scroll <= 0, JSON.stringify({ r: a1?.overlapRef, b: a1?.overlapBadge, i: a1?.inside, s: a1?.scroll }));
