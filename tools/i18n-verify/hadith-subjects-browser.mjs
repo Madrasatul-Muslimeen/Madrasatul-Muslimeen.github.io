@@ -148,7 +148,8 @@ for (const [lang, width] of [["en", 1280], ["bn", 390]]) {
   check(`${tag} nothing is read before it is pressed (I9)`, (await subjectReads(P)) === 0, `${await subjectReads(P)} reads`);
   await openChoices(P, KEY1);
   const choices = await P.$$eval(`[data-hadith-subject-add="${KEY1}"] [data-hadith-subject-choice]`, (ns) => ns.map((n) => n.dataset.hadithSubjectChoice));
-  check(`${tag} pressed, it offers the three Subjects`, JSON.stringify(choices) === JSON.stringify(["akhlaq", "ghayb", "stories"]), JSON.stringify(choices));
+  // Updated in place 14 Nov 2026 (PCF MSA J106 S2): four Subjects now, in the Owner's order (Loving Rasulullah, the Shamayyl card, is the new second).
+  check(`${tag} pressed, it offers the four Subjects`, JSON.stringify(choices) === JSON.stringify(["akhlaq", "rasulullah", "ghayb", "stories"]), JSON.stringify(choices));
   check(`${tag} ...after ONE read of the madrasah's list`, (await subjectReads(P)) === 1, `${await subjectReads(P)} reads`);
   const hs = await heights(P, ".hadith-subject-btn");
   check(`${tag} every Subject button is at least 40px tall`, hs.length >= 4 && hs.every((h) => h >= 40), JSON.stringify(hs));

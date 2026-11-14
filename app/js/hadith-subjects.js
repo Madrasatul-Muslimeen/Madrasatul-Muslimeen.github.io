@@ -14,8 +14,8 @@
 import { t, num } from "./i18n.js";
 import { el, readFailedNote, loadHadithStudyActions } from "./hadith-shared-ui.js";
 
-/** The three Subjects' ids, in the Owner's order (HADITH_SUBJECTS in hadith-browser.js carries their names). */
-export const SUBJECT_IDS = ["akhlaq", "ghayb", "stories"];
+/** The four Subjects' ids, in the Owner's order (J106 S2 added rasulullah, the Shamayyl card) (HADITH_SUBJECTS in hadith-browser.js carries their names). */
+export const SUBJECT_IDS = ["akhlaq", "rasulullah", "ghayb", "stories"];
 
 const ENTRY_FIELDS = ["versionUri", "n", "number", "kind", "std", "book", "bookAr", "chapterId", "chapter", "title"];
 
