@@ -9,7 +9,7 @@ const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (f
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const openList = async (page) => {
   const vis = (id) => page.evaluate((i) => (document.getElementById(i)?.getBoundingClientRect().width ?? 0) > 0, id);
-  for (const id of ["readListBtn", "readContentsBtn"]) if (await vis(id)) { await page.click("#" + id); break; }
+  for (const id of ["readListBtn", "readContentsBtn"]) if (id === "readContentsBtn" || (await vis(id))) { await page.evaluate((i) => document.getElementById(i).click(), id); break; } // v15.00: the landing Read is retired from sight but wired
   await page.waitForSelector('#readContentsMount:not([hidden]) .rc-row[data-rc-kind="surah"]', { timeout: 8000 });
 };
 for (const lang of ["en", "bn"]) for (const width of [320, 390, 768, 1280]) {

@@ -327,7 +327,7 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
   // 11: quick buttons for plain readers (the Read contents route, full screen).
   await flow("quickbuttons", lang, width, null, async (t, page) => {
     const btn = await ev(page, () => ((document.getElementById("readHeadBtn")?.getBoundingClientRect().width ?? 0) > 0 ? "#readHeadBtn" : "#readContentsBtn"));
-    await page.click(btn);
+    await page.evaluate((s) => document.querySelector(s).click(), btn); // v15.00: the landing Read button is retired from sight but wired
     await page.waitForFunction(() => document.querySelectorAll("#readContentsBody .rc-row").length > 0, null, { timeout: 8000 });
     await page.click('#readContentsBody .rc-row[data-rc-kind="surah"][data-rc-n="112"]');
     await page.waitForFunction(() => document.body.classList.contains("immersive-read"), null, { timeout: 8000 });

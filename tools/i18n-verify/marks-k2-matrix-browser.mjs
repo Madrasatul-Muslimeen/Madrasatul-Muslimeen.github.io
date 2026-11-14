@@ -71,7 +71,7 @@ for (const [lang, width, pct] of QUICK ? cells.filter((c) => c[1] === 360 && c[2
   // Marks wheel
   await ev(page, () => document.getElementById("tabApproachBtn")?.click());
   await settle(page, 500);
-  if (width < 900) { await page.click('#wheelDrawerRow [data-wheel-drawer="wheel"]').catch(() => {}); await settle(page, 300); }
+  if (width < 900) { await page.click('#wbStatus').catch(() => {}); await settle(page, 300); }
   await ev(page, () => document.querySelector('[data-wheel-kind="marks"]')?.click());
   await page.waitForSelector("#wheelContainer svg[data-mk-wheel]", { timeout: 6000 }).catch(() => {});
   await ev(page, () => document.querySelector('[data-mk-view="all-words"]')?.click());

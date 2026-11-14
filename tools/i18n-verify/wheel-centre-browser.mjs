@@ -73,7 +73,12 @@ for (const vp of WIDTHS) {
   const a = await open("en", vp, { baseline: true });
   const b = await open("en", vp);
   const [na, nb] = [await wheelNumbers(a.page), await wheelNumbers(b.page)];
-  check(`[${vp[0]}] wheel svg, hub ring and slice extent identical to ${process.env.BASELINE_REF || "main"}`, JSON.stringify(na) === JSON.stringify(nb), `${JSON.stringify(na)} vs ${JSON.stringify(nb)}`);
+  // UPDATED IN PLACE, 14 Nov 2026 (v15.00, the Owner's one bar above the wheel): the wheel is fitted to the first screen, and the bar replaced the
+  // rows under it, so its size now CHANGES by design -- larger on a phone (the old three-button row and drawer row are gone from below it),
+  // and a little smaller in the computer window (the bar sits above it). What must still hold: the hub, ring and slices keep their exact
+  // proportions to each other, and the wheel is never smaller than 85% of what main drew.
+  const prop = (x) => [x.ringW / x.svgW, x.slicesW / x.svgW].map((v) => Math.round(v * 1000) / 1000).join("/");
+  check(`[${vp[0]}] wheel keeps its proportions (hub ring and slices to the svg) and is at least 85% of ${process.env.BASELINE_REF || "main"}'s size`, prop(na) === prop(nb) && na.svgW >= 0.85 * nb.svgW, `${JSON.stringify(na)} vs ${JSON.stringify(nb)}`);
   await a.ctx.close(); await b.ctx.close();
 }
 
@@ -283,7 +288,7 @@ for (const lang of ["en", "bn"]) for (const vp of [[320, 640], [390, 844], [1280
   const tag = `[Choose a Unit ${vp[0]} ${lang}]`;
   console.log(`\n=== ${tag} ===`);
   const { ctx, page, errors } = await open(lang, vp);
-  const open_ = async () => { if ((await page.getAttribute("#wheelUnitBtn", "aria-expanded")) !== "true") await page.click("#wheelUnitBtn"); await page.waitForTimeout(150); };
+  const open_ = async () => { if ((await page.getAttribute("#wbUnit", "aria-expanded")) !== "true") await page.click("#wbUnit"); await page.waitForTimeout(150); };
   await open_();
   const rows = () => page.evaluate(() => Object.fromEntries(["wheelUnitSurahRow", "wheelUnitAyahRow", "wheelUnitNumRow", "wheelUnitRangeRow"].map((id) => [id, getComputedStyle(document.getElementById(id)).display !== "none"])));
   let r = await rows();

@@ -101,7 +101,7 @@ for (const lang of ["en", "bn"]) {
   // Owner decision 51: Names (and the look buttons) now sit in the Wheel
   // drawer, closed on every load, so the drawer is opened before measuring or
   // clicking them. Updated in place; the assertions are unchanged.
-  await page.click('[data-wheel-drawer="wheel"]');
+  await page.click('#wbStatus');
   const sw = await page.evaluate(() => {
     const b = document.getElementById("wheelNamesBtn");
     const r = b.getBoundingClientRect();
@@ -119,7 +119,7 @@ for (const lang of ["en", "bn"]) {
   await waitWheel(page);
   const after = await page.evaluate(() => ({ pressed: document.getElementById("wheelNamesBtn").getAttribute("aria-pressed"), stored: localStorage.getItem("mm_wheel_names") }));
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((el) => el.remove()));
-  await page.click('[data-wheel-drawer="wheel"]'); // drawers start closed after a reload
+  await page.click('#wbStatus'); // drawers start closed after a reload
   check(`[${lang}] Off is remembered after a reload`, (await names(page)).length === 0 && after.pressed === "false" && after.stored === "off", JSON.stringify(after));
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((el) => el.remove()));
   await page.click('#wheelNamesBtn');
@@ -127,7 +127,7 @@ for (const lang of ["en", "bn"]) {
   check(`[${lang}] On shows them again`, (await names(page)).length === 10);
 
   // All-units rings wheel (the Unit drawer opens; opening it closes Wheel)
-  await page.click('[data-wheel-drawer="unit"]');
+  await page.click('#wbUnit');
   await page.click('[data-wheel-show="all"]');
   await page.waitForFunction(() => document.querySelectorAll("#wheelContainer .wheel-ring-seg").length > 0, null, { timeout: 20000 });
   check(`[${lang}] the All-units ring wheel prints the names too`, (await names(page)).length === 10, JSON.stringify(await names(page)));
@@ -141,8 +141,8 @@ for (const lang of ["en", "bn"]) {
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await waitWheel(page);
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((el) => el.remove()));
-  const id = await page.evaluate(() => ["myStatusBtn", "myStatusWideBtn"].find((i) => { const el = document.getElementById(i); return el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().width > 0; }));
-  await page.click(`#${id}`);
+  const id = await page.evaluate(() => ["wbStatus"].find((i) => { const el = document.getElementById(i); return el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().width > 0; }));
+  await page.click(`#${id}`); await page.click("#wbStatusCardBtn"); // v15.00: Know Your Status is the bar button #wbStatus, then the panel's "Open my full status" (#wbStatusCardBtn)
   await page.waitForFunction(() => document.querySelectorAll("#myStatusBody .wheel-seg").length > 0, null, { timeout: 10000 });
   const n = await page.evaluate(() => [...document.querySelectorAll("#myStatusBody .wheel-seg-name")].map((e) => e.textContent.trim()));
   check("My Status's wheel prints the 10 names", n.length === 10 && n.includes("Own Short") && n.includes("Hifz"), JSON.stringify(n));

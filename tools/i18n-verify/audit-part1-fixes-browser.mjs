@@ -80,9 +80,9 @@ for (const lang of ["en", "bn"]) {
       check(`${tag}: POSITIVE CONTROL -- the page is in ${lang}`, (await page.evaluate(() => document.documentElement.lang)) === "bn" ? lang === "bn" : lang === "en");
       // ---- landing (the Approach tab): shared controls, capsules, Unit drawer, popups
       needBox(`${tag} landing: head search, nav buttons, bottom tabs`, await rectsOf(page, ["#headSearchBtn", ".nav-cat > summary", "#tabApproachBtn", "#tabStudyBtn", "#tabExploreBtn", "#tabJourneyBtn"]), 40, 40);
-      needBox(`${tag} landing: Unit / Know Your Status / Read capsules`, await rectsOf(page, ["#wheelUnitBtn", "#myStatusWideBtn", "#readContentsBtn"]), 0, 40);
+      needBox(`${tag} landing: Choose a Unit / Know Your Status / Read bar buttons`, await rectsOf(page, ["#wbUnit", "#wbStatus", "#wbRead"]), 0, 40);
       if (width <= 720) {
-        await page.click("[data-wheel-drawer=unit]"); await page.waitForTimeout(400);
+        await page.click("#wbUnit"); await page.waitForTimeout(400);
         const pills = await rectsOf(page, ["#wheelShowSwitch .wheel-show-btn"]);
         needBox(`${tag} Unit drawer pills`, pills, 40, 40);
         const rest = pills.slice(1).map((p) => p.w);

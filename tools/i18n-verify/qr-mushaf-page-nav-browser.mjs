@@ -44,7 +44,7 @@ async function start(width, height) {
     });
   }
   const { page } = await openPage(ctx, "/app/quranrevival.html");
-  await page.waitForSelector("#readContentsBtn", { state: "visible", timeout: 20000 });
+  await page.waitForSelector("#readContentsBtn", { state: "attached", timeout: 20000 });
   return { ctx, page };
 }
 const pageNow = (page) => page.evaluate(() => Number(document.getElementById("mushafPageRef")?.dataset.page || 0));
@@ -64,7 +64,7 @@ for (const [width, height] of [[1520, 1000], [1280, 800], [390, 844]]) {
   const tag = `[${width}]`;
   console.log(`\n=== ${tag} ===`);
   const { ctx, page } = await start(width, height);
-  await page.click("#readContentsBtn");
+  await page.evaluate(() => document.getElementById("readContentsBtn").click());
   await page.locator("#readContentsMount button", { hasText: "An-Nahl" }).first().click();
   await page.waitForFunction(() => !!document.getElementById("mushafPageRef")?.dataset.page, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(1500);

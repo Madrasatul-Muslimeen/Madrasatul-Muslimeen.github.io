@@ -133,7 +133,7 @@ for (const lang of ["en", "bn"]) {
   // ---- Show toggle: size, wrap, no sideways scroll ----------------------
   // Owner decision 51: the Show buttons live in the Unit drawer, closed until
   // opened (updated in place; assertions unchanged).
-  await page.click('[data-wheel-drawer="unit"]');
+  await page.click('#wbUnit');
   const toggle = await page.evaluate(() => {
     const btns = [...document.querySelectorAll("#wheelShowSwitch [data-wheel-show]")];
     return { n: btns.length, minH: Math.min(...btns.map((b) => b.getBoundingClientRect().height)), overflow: document.documentElement.scrollWidth - innerWidth, pressed: btns.filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.dataset.wheelShow) };
@@ -201,7 +201,7 @@ for (const lang of ["en", "bn"]) {
   await page.reload();
   await page.waitForSelector("#wheelContainer svg", { timeout: 20000 });
   await clearSplash(page);
-  await page.click('[data-wheel-drawer="unit"]'); // drawers start closed after a reload
+  await page.click('#wbUnit'); // drawers start closed after a reload
   const afterReload =await page.evaluate(() => document.querySelector('#wheelShowSwitch [data-wheel-show="all"]').getAttribute("aria-pressed"));
   check(`[${lang}] after a reload All units is still chosen`, afterReload === "true", afterReload);
 
@@ -314,7 +314,7 @@ for (const w of [768, 1100]) {
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await page.waitForSelector("#wheelContainer svg", { timeout: 20000 });
   await clearSplash(page);
-  await page.click('[data-wheel-drawer="unit"]');
+  await page.click('#wbUnit');
   await page.click('[data-wheel-show="all"]');
   await page.waitForSelector("#wheelRingDetail", { timeout: 20000 });
   const reach = (detailSel, listSel, wheelSel) => page.evaluate(([d, l, wh]) => {

@@ -104,7 +104,7 @@ async function start({ lang, width, height }) {
 }
 const readBtnSel = (page) => page.evaluate(() => ((document.getElementById("readHeadBtn")?.getBoundingClientRect().width ?? 0) > 0 ? "#readHeadBtn" : "#readContentsBtn"));
 async function pickSurah1(page) {
-  await page.click(await readBtnSel(page));
+  await page.evaluate((s) => document.querySelector(s).click(), await readBtnSel(page)); // v15.00: the landing Read button is retired from sight but wired (the bar's Read goes to the Mushaf)
   await page.waitForFunction(() => document.querySelectorAll("#readContentsBody .rc-row").length > 0);
   await page.click('#readContentsBody .rc-row[data-rc-kind="surah"][data-rc-n="1"]');
   await page.waitForFunction(() => document.body.classList.contains("immersive-read"));

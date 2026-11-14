@@ -48,7 +48,7 @@ async function start(lang, width, countOn = true) {
   return { ctx, page };
 }
 async function openKys(page) {
-  await page.click("#myStatusWideBtn");
+  await page.evaluate(() => document.getElementById("myStatusWideBtn").click());
   await page.waitForFunction(() => document.querySelectorAll("#myStatusBody .my-status-row-btn").length > 0, null, { timeout: 10000 });
   await page.waitForTimeout(300);
 }

@@ -1,3 +1,4 @@
+// UPDATED IN PLACE, 14 Nov 2026 (v15.00): "the palette" is now the bar's Choose a Unit panel (#wbPanelUnit) and its opener is #wbUnit; the Read / Play pair is unchanged.
 // Decision 64 (4 Oct 2026) -- Choose a Unit carries Read and Play: the next
 // step after choosing. RENDERED, in a real browser, at 320/360/390/600/768/1280,
 // English and Bangla.
@@ -52,11 +53,11 @@ async function open(lang, [w, h]) {
   return { ctx, page, errors };
 }
 const setUnit = (page, unit) => page.evaluate((u) => { const s = document.getElementById("wheelUnitTypeSelect"); s.value = u; s.dispatchEvent(new Event("change")); }, unit);
-const openPalette = async (page) => { if ((await page.getAttribute("#wheelUnitBtn", "aria-expanded")) !== "true") await page.click("#wheelUnitBtn"); await page.waitForTimeout(150); };
+const openPalette = async (page) => { if ((await page.getAttribute("#wbUnit", "aria-expanded")) !== "true") await page.click("#wbUnit"); await page.waitForTimeout(150); };
 const readViewShown = (page) => page.evaluate(() => { const r = document.getElementById("readView"); const b = r.getBoundingClientRect(); return !r.hidden && getComputedStyle(r).display !== "none" && b.width > 0 && b.height > 0; });
 const paletteState = (page) => page.evaluate(() => {
-  const p = document.querySelector(".wheel-unit-palette"), b = p.getBoundingClientRect();
-  return { shown: getComputedStyle(p).display !== "none" && getComputedStyle(p).visibility !== "hidden" && b.width > 0, expanded: document.getElementById("wheelUnitBtn").getAttribute("aria-expanded") };
+  const p = document.querySelector("#wbPanelUnit"), b = p.getBoundingClientRect();
+  return { shown: getComputedStyle(p).display !== "none" && getComputedStyle(p).visibility !== "hidden" && b.width > 0, expanded: document.getElementById("wbUnit").getAttribute("aria-expanded") };
 });
 
 for (const lang of ["en", "bn"]) for (const vp of WIDTHS) {
@@ -65,7 +66,7 @@ for (const lang of ["en", "bn"]) for (const vp of WIDTHS) {
   let { ctx, page, errors } = await open(lang, vp);
   await openPalette(page);
   const g = await page.evaluate(() => {
-    const pal = document.querySelector(".wheel-unit-palette").getBoundingClientRect();
+    const pal = document.querySelector("#wbPanelUnit").getBoundingClientRect();
     const out = {};
     for (const id of ["wheelUnitReadBtn", "wheelUnitPlayBtn"]) {
       const e = document.getElementById(id);

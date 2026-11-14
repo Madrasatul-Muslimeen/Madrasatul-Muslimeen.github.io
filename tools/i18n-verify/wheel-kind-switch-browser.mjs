@@ -34,14 +34,14 @@ for (const lang of arg("lang") ? [arg("lang")] : ["en", "bn"]) for (const [w, h,
     return { parent: r.parentElement?.id || r.parentElement?.getAttribute("data-wheel-drawer-panel"), shown: q.width > 0, btns, rowL: Math.round(q.left), rowR: Math.round(q.right), scroll: document.documentElement.scrollWidth - innerWidth };
   });
   const first = await probe();
-  check(`${tag} the switch is in the ${where === "title" ? "Wheel window's title bar" : "Wheel drawer"}`, !!first && (where === "title" ? first.parent === "wheelKindTitleSlot" && first.shown : first.parent === "wheel" && !first.shown), JSON.stringify(first && { parent: first.parent, shown: first.shown }));
-  if (where === "drawer") {
-    check(`${tag} a "Wheel ▴" button under the wheel is on screen and at least 40px tall`, await P.evaluate(() => { const b = document.querySelector('[data-wheel-drawer="wheel"]'); const q = b?.getBoundingClientRect(); return !!q && q.width > 0 && q.height >= 40 && q.bottom <= innerHeight + 1; }));
-    await P.evaluate(() => document.querySelector('[data-wheel-drawer="wheel"]')?.click());
+  check(`${tag} the switch is in the wheel bar's Know Your Status panel, closed until opened (v15.00: one place at every width; it was the title bar from 900px and the Wheel drawer below)`, !!first && first.parent === "wbPanelStatus" && !first.shown, JSON.stringify(first && { parent: first.parent, shown: first.shown }));
+  {
+    check(`${tag} the "Know Your Status" bar button is on screen and at least 40px tall`, await P.evaluate(() => { const b = document.querySelector('#wbStatus'); const q = b?.getBoundingClientRect(); return !!q && q.width > 0 && q.height >= 40 && q.top >= 0 && q.bottom <= innerHeight + 1; }));
+    await P.evaluate(() => document.querySelector('#wbStatus')?.click());
     await P.waitForTimeout(500);
   }
   const s = await probe();
-  check(`${tag} the switch is on screen${where === "drawer" ? " once the Wheel drawer is opened" : ""}`, !!s && s.shown, JSON.stringify(s));
+  check(`${tag} the switch is on screenonce Know Your Status is opened`, !!s && s.shown, JSON.stringify(s));
   if (s?.shown) {
     const want = lang === "en" ? NAMES.en : null;
     check(`${tag} MUTATION TARGET (oldname): the three buttons read ${lang === "en" ? want.join(" | ") : "Approaches | Vocabulary | Difficulty Level (Bangla)"}; the third is the difficulty level, not "Marks"`, s.btns.map((b) => b.kind).join() === "approaches,vocab,marks" && (lang === "en" ? s.btns.map((b) => b.text).join("|") === want.join("|") : s.btns[2].text.includes("কঠিনতার") && !/^চিহ্ন$/.test(s.btns[2].text) ), JSON.stringify(s.btns.map((b) => b.text)));

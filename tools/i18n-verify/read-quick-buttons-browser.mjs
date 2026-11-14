@@ -53,7 +53,7 @@ async function start({ lang = "en", width = 390, height = 844, look = "night" } 
 }
 const readBtnSel = (page) => page.evaluate(() => ((document.getElementById("readHeadBtn")?.getBoundingClientRect().width ?? 0) > 0 ? "#readHeadBtn" : "#readContentsBtn"));
 const pick = async (page, tab, n) => {
-  await page.click(await readBtnSel(page));
+  await page.evaluate((s) => document.querySelector(s).click(), await readBtnSel(page)); // v15.00: the landing Read button is retired from sight but wired (the bar's Read goes to the Mushaf)
   await page.waitForFunction(() => document.querySelectorAll("#readContentsBody .rc-row").length > 0);
   if (tab !== "surah") await page.click(`[data-rc-tab="${tab}"]`);
   await page.waitForFunction((t) => document.querySelector(`#readContentsBody .rc-row[data-rc-kind="${t}"]`), tab);
