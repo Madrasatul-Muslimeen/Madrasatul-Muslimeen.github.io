@@ -26,10 +26,10 @@ const MUT = {
   dropretired: ["js/hadith-subjects.js", "  return (subjects?.[id] ?? []).filter((e) => e.status !== \"retired\");", "  return (subjects?.[id] ?? []);"],
   noguard: ["js/hadith-subjects.js", "    if (!session || !session.canManage) {", "    if (!session) {"],
   nofailmsg: ["js/hadith-subjects.js", "ok ? t(\"Added to {name}.\", { name: subjectName(id) }) : t(\"It could not be added. Check the connection and try again.\")", "t(\"Added to {name}.\", { name: subjectName(id) })"],
-  noback: ["js/hadith-browser.js", "    trail: [{ label: t(\"← Back to {ref}\", { ref: t(sub.name) }), toDua: () => {", "    trailX: [{ label: t(\"← Back to {ref}\", { ref: t(sub.name) }), toDua: () => {"],
+  noback: ["js/hadith-browser.js", "    trail: [{ label: t(\"← Back to {ref}\", { ref: subjectLabel(sub, getAppLang()) }), toDua: () => {", "    trailX: [{ label: t(\"← Back to {ref}\", { ref: subjectLabel(sub, getAppLang()) }), toDua: () => {"],
   nofocus: ["js/hadith-browser.js", "showAllChapters: false, focusPassage: Number(e.n), scrollTo: true,", "showAllChapters: false, scrollTo: true,"],
   eagerread: ["js/hadith-subjects.js", "  box.append(open, panel);\n", "  box.append(open, panel);\n  loadShared().catch(() => {});\n"],
-  alwayscreate: ["js/hadith-study-actions.js", "    () => (docExists\n", "    () => (false\n"],
+  alwayscreate: ["js/hadith-study-actions.js", "      if (!docExists) return createDocument(", "      if (true) return createDocument("],
   // Two edits at once: the page's shared net (admin-touch.css: every button at least 40px) would otherwise keep the
   // buttons tall by itself, and a break of this round's own rule alone went uncaught for exactly that reason.
   smallbtn: [["css/hadith.css", ".hadith-subject-btn { min-height: 40px;", ".hadith-subject-btn { min-height: 0; height: 24px; padding: 0;"],

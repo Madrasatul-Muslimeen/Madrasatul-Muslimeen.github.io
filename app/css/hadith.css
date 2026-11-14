@@ -433,6 +433,19 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .hadith-subject-choices .hadith-note { flex: 1 1 100%; margin: 0; }
 .hadith-subject-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.6rem; }
 .hadith-subject-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; }
+/* S3: the Subject editor. Names take the line (a name field is never squeezed: it wraps below 14rem), the buttons share a tidy line of their own. */
+.hadith-subject-editor { margin: 0.8rem 0 0.2rem; }
+.hadith-subject-edit-panel { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.7rem; }
+.hadith-subject-edit-panel[hidden] { display: none; }
+.hadith-subject-edit-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding-bottom: 0.7rem; border-bottom: 1px solid var(--hadith-rule); }
+.hadith-subject-edit-row.retired { opacity: 0.7; }
+.hadith-subject-edit-name { flex: 1 1 14rem; min-width: 0; box-sizing: border-box; min-height: 40px; padding: 0.35rem 0.6rem; border: 1px solid var(--hadith-rule); border-radius: 0.5rem; font: inherit; background: #fff; color: var(--hadith-ink, #1d2a3a); }
+.hadith-subject-edit-actions { display: grid; grid-template-columns: minmax(0, 1fr) 40px 40px minmax(0, 1fr); gap: 0.5rem; flex: 1 1 100%; }
+.hadith-subject-edit-actions .hadith-subject-btn { padding-inline: 0.5rem; min-width: 0; }
+@media (min-width: 700px) { .hadith-subject-edit-actions { flex: 0 0 auto; grid-template-columns: auto 40px 40px auto; } .hadith-subject-edit-actions .hadith-subject-btn { padding-inline: 0.9rem; } }
+.hadith-subject-edit-actions .hadith-subject-move { padding-inline: 0; }
+.hadith-subject-edit-panel .hadith-subject-msg { margin: 0; }
+[data-card-look="night"] .hadith-subject-edit-name { background: var(--card-bg); color: var(--card-text); border-color: var(--card-line); }
 .hadith-subject-open { display: flex; flex-direction: column; align-items: stretch; text-align: start; min-width: 0; width: 100%; }
 .hadith-subject-open > span { overflow-wrap: anywhere; }
 .hadith-subject-title { font-size: 1.05rem; }

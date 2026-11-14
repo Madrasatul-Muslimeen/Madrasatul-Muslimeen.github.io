@@ -122,6 +122,28 @@ test("candidate hadithSubjects Rules: isolated allow/deny cases", async () => {
       await assertFails(updateDoc(doc(writer, "hadithSubjects", T), { "subjects.ghayb": [entry(3)], updatedAt: "z" }));
     }
 
+    // --- 3b. S3 (14 Nov 2026): the Subjects' own edits live in `subjectMeta` on this same document. No Rules change:
+    // the existing owner/prime update rule already covers it. Proven here so the claim is a measured one, each denial
+    // paired with an allow that differs in ONE fact (the actor), and the identity pins still hold alongside it.
+    const meta = (id, over = {}) => ({ name: { en: "Learning Good Character", bn: "" }, order: 10, status: "active", updatedAt: "2026-11-14T00:00:00.000Z", updatedBy: "pO", ...over });
+    await assertSucceeds(updateDoc(doc(owner, "hadithSubjects", T), { "subjectMeta.akhlaq": meta("akhlaq"), subjects: subjectsDoc(T).subjects, updatedAt: "m1" }));   // rename
+    await assertSucceeds(updateDoc(doc(prime, "hadithSubjects", T), { "subjectMeta.rasulullah": meta("rasulullah", { order: 5 }), "subjectMeta.akhlaq": meta("akhlaq", { order: 20 }), subjects: subjectsDoc(T).subjects, updatedAt: "m2" }));   // move: two Subjects' orders
+    await assertSucceeds(updateDoc(doc(owner, "hadithSubjects", T), { "subjectMeta.s-0a1b2c3d": meta("s-0a1b2c3d", { name: { en: "Learning Patience", bn: "" }, order: 50 }), "subjects.s-0a1b2c3d": [], updatedAt: "m3" }));   // add a Subject
+    await assertSucceeds(updateDoc(doc(prime, "hadithSubjects", T), { "subjectMeta.ghayb": meta("ghayb", { status: "retired" }), updatedAt: "m4" }));   // retire
+    await assertSucceeds(updateDoc(doc(owner, "hadithSubjects", T), { "subjectMeta.ghayb": meta("ghayb", { status: "active" }), updatedAt: "m5" }));   // restore
+    // PAIRED DENIALS: the same retire by a teacher, a student, a guardian, another tenant's prime.
+    for (const writer of [teacher, student, guardian, other]) {
+      await assertFails(updateDoc(doc(writer, "hadithSubjects", T), { "subjectMeta.ghayb": meta("ghayb", { status: "retired" }), updatedAt: "m6" }));
+    }
+    // The same owner, the same document: an edit that also tries to move the identity is still refused (the pins hold with subjectMeta in play).
+    await assertFails(updateDoc(doc(owner, "hadithSubjects", T), { "subjectMeta.ghayb": meta("ghayb"), tenantId: T2 }));
+    await assertFails(updateDoc(doc(owner, "hadithSubjects", T), { "subjectMeta.ghayb": meta("ghayb"), createdBy: "uid-prime" }));
+    // A create that carries subjectMeta (the first write of a madrasah whose first act is renaming a Subject).
+    await env.withSecurityRulesDisabled(async (ctx) => { await ctx.firestore().doc(`hadithSubjects/${T}`).delete(); });
+    await assertFails(setDoc(doc(teacher, "hadithSubjects", T), subjectsDoc(T, { createdBy: "uid-teacher", subjectMeta: { akhlaq: meta("akhlaq") } })));
+    await assertSucceeds(setDoc(doc(owner, "hadithSubjects", T), subjectsDoc(T, { subjectMeta: { akhlaq: meta("akhlaq") } })));
+    // No delete of the meta either: the document cannot be deleted (checked in 5), and the field is retired, never removed (client law, tested in the browser suite).
+
     // --- 4. Identity is write-once (the tightening over asmaCollections) --
     await assertFails(updateDoc(doc(owner, "hadithSubjects", T), { tenantId: T2 }));
     await assertFails(updateDoc(doc(owner, "hadithSubjects", T), { createdBy: "uid-prime" }));

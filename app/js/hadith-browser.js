@@ -35,7 +35,7 @@ import { HADITH_COLOURS, getHadithColours, setHadithColours } from "./hadith-col
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 import { settingsHost, addPreviewCue } from "./hadith-menu-settings.js";
 import { mountContinueStrip, parkContinueStrip } from "./hadith-continue-mount.js";
-import { subjectAddRow, renderSubjectList } from "./hadith-subjects.js";
+import { subjectAddRow, renderSubjectList, renderSubjectEditor, registerBuiltinSubjects, knownSubjects, loadSubjectChoices, subjectLabel } from "./hadith-subjects.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
 
@@ -299,6 +299,8 @@ export const HADITH_SUBJECTS = [
   { id: "stories", name: "Learning Stories from Hadith", about: "The events of the life of Rasulullah Sallallahu A'laihi Wa Sallam and his Companions, as the hadith tell them." },
 ];
 
+registerBuiltinSubjects(HADITH_SUBJECTS);
+
 /**
  * A menu-bar button that opens a small list under it (Hadith Books, Subjects). The list closes on a choice, on a
  * second tap of the button, on a tap anywhere else and on Escape (which returns focus to the button). Its items are
@@ -433,15 +435,23 @@ function fillBooksMenu(panel, close, state, render) {
 }
 
 function fillSubjectsMenu(panel, close, state, render) {
-  for (const sub of HADITH_SUBJECTS) {
-    const row = el("button", "hadith-row hadith-menu-item");
-    row.type = "button";
-    row.dataset.hadithSubjectPick = sub.id;
-    row.appendChild(el("span", "hadith-row-name", t(sub.name)));
-    row.appendChild(el("span", "hadith-row-meta", t(sub.about)));
-    row.addEventListener("click", () => { close(); state.view = "subjects"; state.subjectId = sub.id; render(); });
-    panel.appendChild(row);
-  }
+  const draw = () => {
+    panel.textContent = "";
+    for (const sub of knownSubjects({ includeRetired: false })) {
+      const row = el("button", "hadith-row hadith-menu-item");
+      row.type = "button";
+      row.dataset.hadithSubjectPick = sub.id;
+      row.appendChild(el("span", "hadith-row-name", subjectLabel(sub, getAppLang())));
+      if (sub.about) row.appendChild(el("span", "hadith-row-meta", t(sub.about)));
+      row.addEventListener("click", () => { close(); state.view = "subjects"; state.subjectId = sub.id; render(); });
+      panel.appendChild(row);
+    }
+  };
+  draw();
+  // S3: the madrasah's edits (names, order, retired and added Subjects) arrive after the first press, never at startup (I9).
+  const shown = () => JSON.stringify(knownSubjects({ includeRetired: false }).map((s) => [s.id, subjectLabel(s, getAppLang())]));
+  const before = shown();
+  loadSubjectChoices().then(() => { if (!panel.hidden && shown() !== before) draw(); }).catch(() => {});
 }
 
 /** Hadith Books: every book in the library, each opening on its chapters (PCF MSA J106). */
@@ -451,27 +461,33 @@ function renderBooks(body, state, render) {
 
 /** A Subject: its list of hadith, each Book · Chapter · Hadith No. · Title, opening the original (PCF MSA J106). */
 function renderSubjects(body, state, render) {
-  const sub = HADITH_SUBJECTS.find((x) => x.id === state.subjectId) ?? HADITH_SUBJECTS[0];
+  const active = knownSubjects({ includeRetired: false });
+  const sub = active.find((x) => x.id === state.subjectId) ?? active[0];
   state.subjectId = sub.id;
   const box = el("section", "hadith-subject");
   box.dataset.hadithSubject = sub.id;
   // The Continue chips (the Owner, tick 6A) sit at the top of Subjects: the shared strip, mounted unchanged.
   mountContinueStrip(box);
-  box.appendChild(el("h2", null, t(sub.name)));
-  box.appendChild(el("p", "hadith-note", t(sub.about)));
+  box.appendChild(el("h2", null, subjectLabel(sub, getAppLang())));
+  if (sub.about) box.appendChild(el("p", "hadith-note", t(sub.about)));
   body.appendChild(box);
+  // S3: the madrasah's edits to the Subjects (names, order, added, retired) arrive after the first paint; redraw once when they differ.
+  const shape = () => JSON.stringify(knownSubjects({ includeRetired: false }).map((s) => [s.id, subjectLabel(s, getAppLang())]));
+  const painted = shape();
+  loadSubjectChoices().then(() => { if (state.view === "subjects" && state.subjectId === sub.id && box.isConnected && shape() !== painted) render(); }).catch(() => {});
   // Round 2 (the Owner's answer A on question 5): the madrasah's shared list, read on first use.
   renderSubjectList(box, sub.id, subjectNameOf, (e) => openSubjectEntry(state, sub, e));
+  renderSubjectEditor(box, () => render());
 }
 
-const subjectNameOf = (id) => t(HADITH_SUBJECTS.find((x) => x.id === id)?.name ?? id);
+const subjectNameOf = (id) => { const s = knownSubjects().find((x) => x.id === id); return s ? subjectLabel(s, getAppLang()) : id; };
 
 /** Opens a Subject's hadith in Hadith Books, highlighted, with "← Back to <Subject>" (the way-back law, decision 86). */
 function openSubjectEntry(state, sub, e) {
   state.view = "books";
   state.editionId = null;
   state.oi = { bookUri: e.versionUri, chapterId: null, books: state.oi?.books ?? null, showAllChapters: false, focusPassage: Number(e.n), scrollTo: true,
-    trail: [{ label: t("← Back to {ref}", { ref: t(sub.name) }), toDua: () => {
+    trail: [{ label: t("← Back to {ref}", { ref: subjectLabel(sub, getAppLang()) }), toDua: () => {
       state.view = "subjects";
       state.subjectId = sub.id;
       state.oi = { bookUri: null, chapterId: null, books: state.oi?.books ?? null, showAllChapters: false };

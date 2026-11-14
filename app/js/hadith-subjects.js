@@ -13,6 +13,7 @@
  */
 import { t, num } from "./i18n.js";
 import { el, readFailedNote, loadHadithStudyActions } from "./hadith-shared-ui.js";
+import { subjectMetaFrom, effectiveSubjects, overrideName, renameSubject, moveSubject, addSubject, setSubjectRetired, isSubjectId, CUSTOM_ID } from "./hadith-subject-meta.js";
 
 /** The four Subjects' ids, in the Owner's order (J106 S2 added rasulullah, the Shamayyl card) (HADITH_SUBJECTS in hadith-browser.js carries their names). */
 export const SUBJECT_IDS = ["akhlaq", "rasulullah", "ghayb", "stories"];
@@ -21,11 +22,16 @@ const ENTRY_FIELDS = ["versionUri", "n", "number", "kind", "std", "book", "bookA
 
 export const entryKey = (e) => `${e.versionUri}:${e.n}`;
 
-/** The document's lists, always with all three ids present (an empty list for one the document lacks). */
+/** The shipped Subjects ([{ id, name, about }]), handed over by hadith-browser.js at load (it owns their names). */
+let builtins = SUBJECT_IDS.map((id) => ({ id, name: id, about: "" }));
+export function registerBuiltinSubjects(list) { builtins = list; }
+
+/** The document's lists: every shipped id present (an empty list for one the document lacks), plus any Subject the madrasah added. */
 export function subjectsFrom(docData) {
   const src = docData?.subjects ?? {};
   const out = {};
-  for (const id of SUBJECT_IDS) out[id] = Array.isArray(src[id]) ? src[id].filter((e) => e && e.versionUri && Number.isFinite(Number(e.n))) : [];
+  const ids = [...SUBJECT_IDS, ...Object.keys(src).filter((id) => CUSTOM_ID.test(id))];
+  for (const id of ids) out[id] = Array.isArray(src[id]) ? src[id].filter((e) => e && e.versionUri && Number.isFinite(Number(e.n))) : [];
   return out;
 }
 
@@ -35,7 +41,7 @@ export function activeEntries(subjects, id) {
 
 /** The Subjects a narration is on now (active entries only). */
 export function subjectsHolding(subjects, key) {
-  return SUBJECT_IDS.filter((id) => activeEntries(subjects, id).some((e) => entryKey(e) === key));
+  return Object.keys(subjects ?? {}).filter((id) => activeEntries(subjects, id).some((e) => entryKey(e) === key));
 }
 
 /**
@@ -43,7 +49,7 @@ export function subjectsHolding(subjects, key) {
  * the same entry is made active again rather than a second one added, so a list never holds one narration twice.
  */
 export function addEntry(subjects, id, ref, { by, at }) {
-  if (!SUBJECT_IDS.includes(id)) throw new Error(`addEntry: unknown subject ${id}`);
+  if (!SUBJECT_IDS.includes(id) && !CUSTOM_ID.test(id)) throw new Error(`addEntry: unknown subject ${id}`);
   const key = entryKey(ref);
   const list = subjects[id] ?? [];
   const i = list.findIndex((e) => entryKey(e) === key);
@@ -69,7 +75,7 @@ export function retireEntry(subjects, id, key, { by, at }) {
 // stub never mutates its own data, and re-reading after a write would show stale data there).
 // ---------------------------------------------------------------------------
 
-let cache = null; // { tenantId, subjects, docExists }
+let cache = null; // { tenantId, subjects, meta, docExists }
 
 async function loadShared() {
   const actions = await loadHadithStudyActions();
@@ -77,16 +83,42 @@ async function loadShared() {
   if (!session) return { session: null, actions, data: null };
   if (!cache || cache.tenantId !== session.tenantId) {
     const docData = await actions.getHadithSubjectsDoc(session.tenantId);
-    cache = { tenantId: session.tenantId, subjects: subjectsFrom(docData), docExists: !!docData };
+    cache = { tenantId: session.tenantId, subjects: subjectsFrom(docData), meta: subjectMetaFrom(docData, builtins), docExists: !!docData };
   }
   return { session, actions, data: cache };
 }
 
-/** Writes `next` and, only when it was saved, keeps it. Returns true on success (I15: a failure is shown). */
+/** Writes `next` (the lists) and, only when it was saved, keeps it. Returns true on success (I15: a failure is shown). */
 async function saveShared(session, actions, next) {
   const ok = await actions.saveHadithSubjects({ tenantId: session.tenantId, subjects: next, docExists: cache.docExists, uid: session.uid });
   if (ok) { cache.subjects = next; cache.docExists = true; }
   return ok;
+}
+
+/** Writes an edit to the Subjects themselves (`nextMeta`; `ids` are the ones that changed), keeping it only when saved. */
+async function saveMeta(session, actions, nextMeta, ids) {
+  // Lists that exist only for a Subject the madrasah just added get their (empty) list written with it.
+  const subjects = { ...cache.subjects };
+  for (const id of ids) if (!subjects[id]) subjects[id] = [];
+  const ok = await actions.saveHadithSubjects({ tenantId: session.tenantId, subjects, subjectMeta: nextMeta, metaIds: ids, docExists: cache.docExists, uid: session.uid });
+  if (ok) { cache.subjects = subjects; cache.meta = nextMeta; cache.docExists = true; }
+  return ok;
+}
+
+/** The Subjects the reader sees now: the shipped four with the madrasah's edits. Read once, then patched in memory. */
+export async function loadSubjectChoices({ includeRetired = false } = {}) {
+  const shared = await loadShared();
+  knownMeta = shared.data?.meta ?? knownMeta;
+  return { ...shared, subjects: effectiveSubjects(builtins, shared.data?.meta ?? {}, { includeRetired }) };
+}
+
+let knownMeta = {};
+/** The Subjects as last read, for the places that need a name now and cannot wait for a read (retired ones included, so a name still resolves). */
+export function knownSubjects({ includeRetired = true } = {}) { return effectiveSubjects(builtins, knownMeta, { includeRetired }); }
+
+/** A Subject's name in the reader's language: the madrasah's own wording when it has set one, else the shipped name through t(). */
+export function subjectLabel(subject, lang) {
+  return overrideName(subject, lang) ?? t(subject.name);
 }
 
 const WHY_OFF = {
@@ -119,13 +151,13 @@ export function subjectAddRow(ref, subjectName) {
     panel.textContent = "";
     panel.appendChild(el("p", "hadith-note", t("Loading…")));
     let shared;
-    try { shared = await loadShared(); } catch (err) {
+    try { shared = await loadSubjectChoices(); } catch (err) {
       panel.textContent = "";
       panel.appendChild(readFailedNote(err, fill));
       return;
     }
     panel.textContent = "";
-    const { session, actions, data } = shared;
+    const { session, actions, data, subjects: choices } = shared;
     if (!session || !session.canManage) {
       const why = el("p", "hadith-note hadith-subject-why", t(session ? WHY_OFF.notAdmin : WHY_OFF.signedOut));
       why.dataset.hadithSubjectWhy = session ? "notAdmin" : "signedOut";
@@ -136,7 +168,7 @@ export function subjectAddRow(ref, subjectName) {
     msg.setAttribute("role", "status");
     msg.dataset.hadithSubjectMsg = "";
     const holding = new Set(subjectsHolding(data.subjects, entryKey(ref)));
-    for (const id of SUBJECT_IDS) {
+    for (const { id } of choices) {
       const on = holding.has(id);
       const b = button("hadith-subject-btn hadith-subject-choice", on ? `✓ ${subjectName(id)}` : subjectName(id));
       b.dataset.hadithSubjectChoice = id;
@@ -246,5 +278,108 @@ export function renderSubjectList(box, id, subjectName, openEntry) {
   draw();
 }
 
+/**
+ * "Edit Subjects" (owner or prime): rename, move up/down, retire/restore, and add a Subject. Nothing is read until the
+ * button is pressed (I9). Every change is saved on its own; a failure is shown where the button was (I15) and the list
+ * stays as it was. `onChange()` runs after a saved change so the page and its menu redraw from the new list.
+ */
+let editorOpen = false; // an edit redraws the page: the panel the owner was working in stays open
+export function renderSubjectEditor(box, onChange) {
+  const wrap = el("div", "hadith-subject-editor");
+  wrap.dataset.hadithSubjectEditor = "";
+  const open = button("hadith-subject-btn hadith-subject-edit-open", t("Edit Subjects"));
+  open.dataset.hadithSubjectEditOpen = "";
+  open.setAttribute("aria-expanded", "false");
+  const panel = el("div", "hadith-subject-edit-panel");
+  panel.hidden = true;
+  wrap.append(open, panel);
+  box.appendChild(wrap);
+  const by = (session) => session.myPersonId ?? session.uid;
+  const ctxOf = (session) => ({ by: by(session), at: new Date().toISOString() });
+  const newId = () => `s-${[...crypto.getRandomValues(new Uint8Array(4))].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
+
+  async function draw(note = null) {
+    panel.textContent = "";
+    panel.appendChild(el("p", "hadith-note", t("Loading…")));
+    let shared;
+    try { shared = await loadSubjectChoices({ includeRetired: true }); } catch (err) {
+      panel.textContent = "";
+      panel.appendChild(readFailedNote(err, draw));
+      return;
+    }
+    panel.textContent = "";
+    const { session, actions, data, subjects } = shared;
+    if (!session || !session.canManage) {
+      const why = el("p", "hadith-note hadith-subject-why", t(session ? "Only the madrasah's owner or a prime can edit the Subjects." : "Sign in to edit the Subjects."));
+      why.dataset.hadithSubjectWhy = session ? "notAdmin" : "signedOut";
+      panel.appendChild(why);
+      return;
+    }
+    const msg = el("p", "hadith-note hadith-subject-msg", note?.text ?? "");
+    msg.setAttribute("role", "status");
+    msg.dataset.hadithSubjectMsg = "";
+    if (note?.failed) msg.dataset.hadithSubjectFailed = "";
+    const apply = async (fn, doneText, failText) => {
+      const res = fn();
+      if (res.error === "empty") { await draw({ text: t("Give the Subject a name."), failed: true }); return; }
+      if (res.error === "last") { await draw({ text: t("At least one Subject has to stay."), failed: true }); return; }
+      if (!res.changed) { await draw(); return; }
+      const ids = Object.keys(res.meta).filter((id) => JSON.stringify(res.meta[id]) !== JSON.stringify(data.meta[id]));
+      const ok = await saveMeta(session, actions, res.meta, ids);
+      if (ok) { onChange?.(); await draw({ text: doneText }); } else await draw({ text: failText, failed: true });
+    };
+    const visible = subjects.filter((s) => !s.retired);
+    for (const sub of subjects) {
+      const row = el("div", `hadith-subject-edit-row${sub.retired ? " retired" : ""}`);
+      row.dataset.hadithSubjectEditRow = sub.id;
+      const en = el("input", "hadith-subject-edit-name");
+      en.type = "text"; en.maxLength = 120; en.value = sub.nameOverride?.en || (sub.custom ? "" : sub.name); en.dataset.hadithSubjectEditEn = sub.id;
+      en.setAttribute("aria-label", t("English name"));
+      const bn = el("input", "hadith-subject-edit-name");
+      bn.type = "text"; bn.maxLength = 120; bn.value = sub.nameOverride?.bn || ""; bn.dataset.hadithSubjectEditBn = sub.id;
+      bn.placeholder = t("Bangla name (optional)"); bn.setAttribute("aria-label", t("Bangla name"));
+      const save = button("hadith-subject-btn", t("Save name"));
+      save.dataset.hadithSubjectEditSave = sub.id;
+      save.addEventListener("click", () => { save.disabled = true; apply(() => renameSubject(builtins, data.meta, sub.id, { en: en.value, bn: bn.value }, ctxOf(session)), t("Name saved."), t("The name could not be saved. Check the connection and try again.")); });
+      const up = button("hadith-subject-btn hadith-subject-move", "▲");
+      up.dataset.hadithSubjectMove = `${sub.id}:up`; up.setAttribute("aria-label", t("Move up"));
+      const down = button("hadith-subject-btn hadith-subject-move", "▼");
+      down.dataset.hadithSubjectMove = `${sub.id}:down`; down.setAttribute("aria-label", t("Move down"));
+      const vi = visible.findIndex((x) => x.id === sub.id);
+      up.disabled = sub.retired || vi <= 0;
+      down.disabled = sub.retired || vi < 0 || vi >= visible.length - 1;
+      up.addEventListener("click", () => { up.disabled = down.disabled = true; apply(() => moveSubject(builtins, data.meta, sub.id, -1, ctxOf(session)), t("Order saved."), t("The order could not be saved. Check the connection and try again.")); });
+      down.addEventListener("click", () => { up.disabled = down.disabled = true; apply(() => moveSubject(builtins, data.meta, sub.id, 1, ctxOf(session)), t("Order saved."), t("The order could not be saved. Check the connection and try again.")); });
+      const ret = button("hadith-subject-btn", sub.retired ? t("Restore") : t("Retire"));
+      ret.dataset.hadithSubjectRetire = sub.id;
+      ret.title = sub.retired ? t("Show this Subject again") : t("Hide this Subject. Its hadith are kept.");
+      ret.addEventListener("click", () => { ret.disabled = true; apply(() => setSubjectRetired(builtins, data.meta, sub.id, !sub.retired, ctxOf(session)), sub.retired ? t("Subject restored.") : t("Subject retired. Its hadith are kept."), t("It could not be saved. Check the connection and try again.")); });
+      const actions = el("div", "hadith-subject-edit-actions");
+      actions.append(save, up, down, ret);
+      row.append(en, bn, actions);
+      panel.appendChild(row);
+    }
+    const addRow = el("div", "hadith-subject-edit-row hadith-subject-edit-add");
+    const aen = el("input", "hadith-subject-edit-name");
+    aen.type = "text"; aen.maxLength = 120; aen.dataset.hadithSubjectNewEn = ""; aen.placeholder = t("New Subject, in English"); aen.setAttribute("aria-label", t("New Subject, in English"));
+    const abn = el("input", "hadith-subject-edit-name");
+    abn.type = "text"; abn.maxLength = 120; abn.dataset.hadithSubjectNewBn = ""; abn.placeholder = t("Bangla name (optional)"); abn.setAttribute("aria-label", t("Bangla name"));
+    const add = button("hadith-subject-btn", t("Add a Subject"));
+    add.dataset.hadithSubjectNew = "go";
+    add.addEventListener("click", () => { add.disabled = true; apply(() => addSubject(builtins, data.meta, { en: aen.value, bn: abn.value }, newId(), ctxOf(session)), t("Subject added."), t("The Subject could not be added. Check the connection and try again.")); });
+    addRow.append(aen, abn, add);
+    panel.append(addRow, msg);
+  }
+
+  const set = (show) => {
+    editorOpen = show;
+    panel.hidden = !show;
+    open.setAttribute("aria-expanded", show ? "true" : "false");
+    if (show) draw();
+  };
+  open.addEventListener("click", () => set(panel.hidden));
+  if (editorOpen) set(true);
+}
+
 /** Test hook: forget the cached lists (a new sign-in, or a suite starting fresh). */
-export function resetHadithSubjectsCache() { cache = null; }
+export function resetHadithSubjectsCache() { cache = null; editorOpen = false; }
