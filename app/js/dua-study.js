@@ -158,6 +158,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
   let cg = null;
   const getCg = () => (cg ??= import("./dua-groups-menu.js").then((m) => m.createCustomGroups()));
   const applyCustom = (c) => { c.apply(data); customNames.clear(); for (const [id, nm] of c.names) customNames.set(id, nm); };
+  let groupNote = false; // an address named a group that could not be found or loaded: the list says so, once, in words
   let bgStarted = false;
   function backgroundCustom() {
     if (bgStarted) return;
@@ -201,7 +202,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
         data = d;
         if (CUSTOM_ID.test(where.g)) {
           try { const c = await getCg(); await c.ensure({ wait: true }); applyCustom(c); } catch { /* falls back below */ }
-          if (!data.groups.has(where.g)) Object.assign(where, { g: "rasul", part: null, open: null });
+          if (!data.groups.has(where.g)) { Object.assign(where, { g: "rasul", part: null, open: null }); groupNote = true; }
         }
         settle(); render(); backgroundCustom();
       }).catch((err) => duaLoadFailed(body, render, err));
@@ -275,7 +276,7 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     b.addEventListener("click", () => { closePull(); go(); });
     return b;
   }
-  function go(next) { Object.assign(where, { part: null, lp: 1, open: null, tie: null, books: false, book: null }, next); render(); root.scrollIntoView({ block: "start" }); }
+  function go(next) { groupNote = false; Object.assign(where, { part: null, lp: 1, open: null, tie: null, books: false, book: null }, next); render(); root.scrollIntoView({ block: "start" }); }
   function pdButton(small, big, kind) {
     const b = el("button", "dua-pd");
     b.type = "button";
@@ -391,6 +392,11 @@ export function mountDuaStudy(root, { search = location.search } = {}) {
     const g = data.groups.get(where.g);
     const cur = g.parts?.find((p) => p.id === where.part);
     body.appendChild(el("h2", "dua-study-h", cur ? partName(cur) : groupName(where.g)));
+    if (groupNote) { // stays until the reader chooses another place (go())
+      const gn = el("p", "hadith-note dua-group-missing", t("That group could not be found, so the main Dua list is shown."));
+      gn.setAttribute("role", "status");
+      body.appendChild(gn);
+    }
     if (!list) {
       // A group with parts and none chosen yet: its parts, each a button.
       const tiles = el("div", "dua-tiles");

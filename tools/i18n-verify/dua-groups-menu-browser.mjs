@@ -17,18 +17,30 @@ const MUT = {
   anyone: ["app/js/dua-groups-menu.js", "const canAdmin = () => !!S.session?.canCheck;", "const canAdmin = () => true;"],
   nolist: ["app/js/dua-groups-menu.js", "data.groups.set(n.id, { id: n.id, custom: \"admin\", items });", "data.groups.set(n.id, { id: n.id, custom: \"admin\", items: [] });"],
   noadded: ["app/js/dua-groups-menu.js", "placements: groupId ? [{ group: groupId, order }] : [], added });", "placements: groupId ? [{ group: groupId, order }] : [], added: undefined });"],
+  stale: ["app/js/dua-groups-menu.js", "if (r.ok) S[which] = r.nodes;", ""],
+  nosavetree: ["app/js/dua-groups-menu.js", "const r = await saveTree(which, next);", "const r = { ok: true };"],
+  nowayback: ["app/js/dua-study.js", '    u.searchParams.set("g", where.g);', '    u.searchParams.set("g", CUSTOM_ID.test(where.g) ? "rasul" : where.g);'],
+  silentkeep: ["app/js/dua-groups-menu.js", 'status.textContent = ok ? t("Saved.") : t("Could not save. Nothing was changed.");', 'status.textContent = t("Saved.");'],
+  early: ["app/js/dua-study.js", "        settle(); render(); backgroundCustom();", "        await (await getCg()).ensure({ wait: true }); settle(); render(); backgroundCustom();"],
   hideit: ["app/js/dua-groups-menu.js", "const r = await saveDuaEdit(S.db, S.ctx, { duaKey: key, placements: [...keep, ...add] });", "const r = await saveDuaEdit(S.db, S.ctx, { duaKey: key, placements: [...keep, ...add], hidden: !ticks.admin.size });"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const SEED = `
 DATA.duaGroups = [{ _id: TENANT_ID + "__admin", tenantId: TENANT_ID, ownerKey: "admin", schemaVersion: 1, nodes: [
   { id: "g-adminaa1", name: { en: "Madrasah morning", bn: "সকালের দুআ" }, kids: [{ id: "g-adminaa2", name: { en: "Waking" }, kids: [] }] }] }];
+DATA.duaGroups.push({ _id: TENANT_ID + "__p1", tenantId: TENANT_ID, ownerKey: "p1", schemaVersion: 1, nodes: [
+  { id: "g-mineaaa1", name: { en: "My list" }, kids: [], duas: ["2"] }, { id: "g-mineaaa2", name: { en: "Second list" }, kids: [], duas: [] }] });
 DATA.duaEdits = [{ _id: TENANT_ID + "__2", tenantId: TENANT_ID, duaKey: "2", title: {}, placements: [{ group: "g-adminaa1", order: 1 }], hidden: false, schemaVersion: 1 }];`;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+async function applyMut(ctx) {
+  if (!MUTATE) return;
+  const [f, a, b] = MUT[MUTATE];
+  await ctx.route(`**/${f}*`, async (r) => { const s = fs.readFileSync(f, "utf8"); if (!s.includes(a)) throw new Error(`mutation anchor missing in ${f}`); await r.fulfill({ status: 200, contentType: "text/javascript", body: s.replace(a, b) }); });
+}
 async function open(width, lang, role, url = "/app/dua-study.html?g=rasul") {
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 }, extraSeedJs: SEED });
   await ctx.route("**/archive.org/**", (r) => r.abort());
-  if (MUTATE) { const [f, a, b] = MUT[MUTATE]; await ctx.route(`**/${f}*`, async (r) => { const s = fs.readFileSync(f, "utf8"); if (!s.includes(a)) throw new Error(`mutation anchor missing in ${f}`); await r.fulfill({ status: 200, contentType: "text/javascript", body: s.replace(a, b) }); }); }
+  await applyMut(ctx);
   const { page: P } = await openPage(ctx, url);
   await P.waitForSelector('[data-dua-pd="groups"]', { timeout: 20000 });
   if (role) { await P.evaluate((r) => { const c = JSON.parse(localStorage.getItem("qr.sessionContext") || "null"); if (c) { c.viewAsRole = r; localStorage.setItem("qr.sessionContext", JSON.stringify(c)); } }, role); await P.reload(); await P.waitForSelector('[data-dua-pd="groups"]', { timeout: 20000 }); }
@@ -52,10 +64,10 @@ for (const [width, lang] of [[1280, "en"], [390, "bn"]]) {
   check(`${tag} the built-in groups are still in the same menu`, (await P.$$("[data-dua-group]")).length === 7);
   // add a group of my own
   await P.click('[data-dua-pull-section="mine"] .dua-pull-add');
-  await P.waitForFunction(() => document.querySelectorAll('[data-dua-pull-section="mine"] .dua-gt-name').length === 1);
+  await P.waitForFunction(() => document.querySelectorAll('[data-dua-pull-section="mine"] .dua-gt-name').length === 3);
   await P.waitForFunction(() => (window.__stubWriteData || []).some((w) => w.col === "duaGroups"));
   const w1 = (await writes(P)).filter((w) => w.col === "duaGroups");
-  check(`${tag} a new group of my own is saved under MY document, not the admin's`, w1.length >= 1 && w1.every((w) => !/__admin$/.test(w.id)) && w1.at(-1).data?.nodes?.[0]?.name?.en === "Evening", JSON.stringify(w1.map((w) => w.id)));
+  check(`${tag} a new group of my own is saved under MY document, not the admin's`, w1.length >= 1 && w1.every((w) => !/__admin$/.test(w.id)) && w1.at(-1).data?.nodes?.some((n) => n.name?.en === "Evening"), JSON.stringify(w1.map((w) => w.id)));
   // open an admin group: it lists like a built-in group
   await P.click('[data-dua-pull-section="admin"] .dua-gt-name');
   await P.waitForSelector("[data-dua-open-btn], .dua-row, .hadith-row, [data-dua-row]", { timeout: 20000 }).catch(() => {});
@@ -146,6 +158,98 @@ for (const [width, lang] of [[1280, "en"], [390, "bn"]]) {
   await P.waitForSelector("#duaBody .dua-row", { timeout: 25000 });
   await P.waitForTimeout(500);
   check("[student preview] no Add a new Dua button", (await P.$$("[data-dua-add-open]")).length === 0);
+  await ctx.close();
+}
+
+// (carried over from the retired pop-up suite, Architect 105L) deleting a saved group: the tree is saved WITHOUT it, no document is deleted (I4)
+{
+  const { ctx, P } = await open(1280, "en");
+  await openMenu(P);
+  await P.click('[data-dua-pull-section="admin"] .dua-gt-more');
+  await P.click('[data-dua-pull-section="admin"] .dua-gt-danger');
+  await P.waitForFunction(() => (window.__stubWriteData || []).some((w) => w.col === "duaGroups" && /__admin$/.test(w.id)));
+  const wd = (await writes(P)).filter((w) => w.col === "duaGroups" && /__admin$/.test(w.id)).at(-1);
+  check("[delete] deleting a saved group saves the madrasah's tree WITHOUT it, and deletes no document (I4)", Array.isArray(wd.data?.nodes) && wd.data.nodes.length === 0 && wd.kind !== "delete", JSON.stringify({ k: wd.kind, n: wd.data?.nodes }));
+  await ctx.close();
+}
+// a rename after a Dua was added through the Keep tab keeps that Dua list (the drawn tree and the saved tree agree)
+{
+  const { ctx, P } = await open(1280, "en", null, "/app/dua-study.html?g=g-adminaa1&open=1");
+  await P.waitForSelector("[data-dua-menu-toggle]", { timeout: 25000 });
+  await P.click("[data-dua-menu-toggle]");
+  await P.waitForSelector("[data-dua-keep-edit]", { state: "attached", timeout: 25000 });
+  await P.evaluate(() => { for (const b of document.querySelectorAll(".dua-menu-tab")) if (/keep/i.test(b.textContent)) b.click(); });
+  await P.check('[data-dua-keep-groups="mine"] input[data-dua-group-id="g-mineaaa2"]');
+  await P.click('[data-dua-keep-save="groups"]');
+  await P.waitForFunction(() => (window.__stubWriteData || []).some((w) => w.col === "duaGroups" && /__p1$/.test(w.id)));
+  await P.evaluate(() => { for (const b of document.querySelectorAll("[data-dua-menu-toggle]")) b.click(); });
+  await openMenu(P);
+  const before = (await writes(P)).length;
+  await P.click('[data-dua-pull-section="mine"] .dua-gt-row >> nth=1 >> .dua-gt-more');
+  await P.click('[data-dua-pull-section="mine"] .dua-gt-row >> nth=1 >> .dua-gt-menu button:nth-child(2)');
+  await P.waitForFunction((n) => (window.__stubWriteData || []).length > n, before);
+  const wr = (await writes(P)).filter((w) => w.col === "duaGroups" && /__p1$/.test(w.id)).at(-1);
+  const second = wr.data.nodes.find((n) => n.id === "g-mineaaa2");
+  check("[rename] a rename after adding a Dua keeps that group's Dua list (drawn tree = saved tree)", second?.name?.en === "Evening" && JSON.stringify(second.duas) === '["2"]', JSON.stringify(second));
+  await ctx.close();
+}
+// WAY BACK (decision 86): a Dua opened from an Admin group and from My group, a link out, Back: the same group and the same card
+for (const [id, label] of [["g-adminaa1", "Admin group"], ["g-mineaaa1", "My group"]]) {
+  const { ctx, P } = await open(1280, "en", null, `/app/dua-study.html?g=${id}&open=1`);
+  await P.waitForSelector("[data-dua-menu-toggle]", { timeout: 25000 });
+  const here = P.url();
+  await P.goto(new URL("/app/hadith-collections.html?back=1", P.url()).href);
+  await P.goBack();
+  await P.waitForSelector("[data-dua-menu-toggle]", { timeout: 25000 });
+  const u = new URL(P.url());
+  check(`[way back] ${label}: after a link out and Back, the same group (?g=) and the same card`, u.searchParams.get("g") === id && u.searchParams.get("open") === "1" && P.url() === here, `${here} -> ${P.url()}`);
+  const stillCard = (await P.$$("[data-dua-card]")).length > 0 && (await P.$$("[data-dua-card-back]")).length > 0;
+  check(`[way back] ${label}: the card and its ← Back to the group are on screen again`, stillCard);
+  await ctx.close();
+}
+// I15: a refused write reaches the reader in words, on the groups menu, the Keep tab and the title
+{
+  const { ctx, P } = await open(1280, "en", null, "/app/dua-study.html?g=g-adminaa1&open=1");
+  await P.waitForSelector("[data-dua-menu-toggle]", { timeout: 25000 });
+  await P.click("[data-dua-menu-toggle]");
+  await P.waitForSelector("[data-dua-keep-edit]", { state: "attached", timeout: 25000 });
+  await P.evaluate(() => { for (const b of document.querySelectorAll(".dua-menu-tab")) if (/keep/i.test(b.textContent)) b.click(); window.__stubFailWrites = true; });
+  const SAID = "Could not save. Nothing was changed.";
+  await P.click('[data-dua-keep-save="groups"]');
+  await P.waitForFunction((m) => [...document.querySelectorAll("[data-dua-keep-edit] .hadith-note")].some((x) => x.textContent === m), SAID);
+  check("[I15] the Keep tab says in words that the groups were not saved", true);
+  await P.fill('[data-dua-title="en"]', "x");
+  await P.click('[data-dua-keep-save="title"]');
+  await P.waitForFunction((m) => [...document.querySelectorAll("[data-dua-keep-edit] .hadith-note")].filter((x) => x.textContent === m).length >= 2, SAID);
+  check("[I15] the title says in words that it was not saved", true);
+  await P.evaluate(() => { for (const b of document.querySelectorAll("[data-dua-menu-toggle]")) b.click(); });
+  await openMenu(P);
+  await P.click('[data-dua-pull-section="mine"] .dua-pull-add');
+  await P.waitForFunction((m) => document.querySelector(".dua-pull-status")?.textContent === m, SAID);
+  const kept = await P.$$eval('[data-dua-pull-section="mine"] .dua-gt-name', (b) => b.length);
+  check("[I15] the groups menu says so too, and the group that could not be saved is not left in the list", kept === 2, String(kept));
+  await ctx.close();
+}
+// I9 (updated in place): nothing reads the madrasah's Dua edits or the groups BEFORE the first paint; the read comes after
+{
+  const ctx = await newContext(browser, { appLang: "en", banner: false, viewport: { width: 1280, height: 900 }, extraSeedJs: SEED });
+  await applyMut(ctx);
+  await ctx.addInitScript(() => {
+    const count = () => (window.__fsLog || []).filter((r) => r.col === "duaEdits" || r.col === "duaGroups").length;
+    new MutationObserver((_, o) => { if (document.querySelector("#duaBody .dua-row")) { window.__readsAtFirstPaint = count(); o.disconnect(); } }).observe(document, { childList: true, subtree: true });
+  });
+  const { page: P } = await openPage(ctx, "/app/dua-study.html?g=rasul");
+  await P.waitForSelector("#duaBody .dua-row", { timeout: 25000 });
+  check("[I9] nothing reads the madrasah's Dua edits or groups before the first paint", (await P.evaluate(() => window.__readsAtFirstPaint)) === 0);
+  await P.waitForFunction(() => (window.__fsLog || []).some((r) => r.col === "duaEdits"), null, { timeout: 25000 });
+  check("[I9] the read comes after it (one list read of the edits, in the background)", (await P.evaluate(() => (window.__fsLog || []).filter((r) => r.col === "duaEdits").length)) === 1);
+  await ctx.close();
+}
+// an address that names a group that cannot be found says so in words
+{
+  const { ctx, P } = await open(1280, "en", null, "/app/dua-study.html?g=g-zzzzzzzz");
+  await P.waitForSelector(".dua-group-missing", { timeout: 25000 });
+  check("[missing group] the list says in words that the group could not be found", true);
   await ctx.close();
 }
 

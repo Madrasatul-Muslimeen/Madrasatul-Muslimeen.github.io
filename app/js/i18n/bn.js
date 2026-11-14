@@ -3429,6 +3429,7 @@ export const BN = {
   "Reciter": "ক্বারী",
   "Speed": "গতি",
   "Autoplay next": "পরেরটি নিজে চলবে",
+  "That group could not be found, so the main Dua list is shown.": "সেই গ্রুপটি পাওয়া যায়নি, তাই মূল দুআর তালিকা দেখানো হচ্ছে।",
   "Add a new Dua": "নতুন দুআ যোগ করুন",
   "Arabic text": "আরবি পাঠ",
   "English meaning (optional)": "ইংরেজি অর্থ (ঐচ্ছিক)",

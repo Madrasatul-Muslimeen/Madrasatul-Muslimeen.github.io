@@ -137,10 +137,15 @@ export function createCustomGroups(opts = {}) {
           if (!name) return;
           const r = addGroup(S[which], null, { en: name });
           if (!r.ok) { status.textContent = t("That move is not possible here."); return; }
+          const before = S[which];
           S[which] = r.tree;
           mounted.render(r.tree);
           tree.querySelector(".hadith-note")?.remove();
-          saveTree(which, r.tree).then((x) => { status.textContent = x.ok ? t("Saved.") : t("Could not save. Nothing was changed."); onChange?.(); });
+          saveTree(which, r.tree).then((x) => {
+            status.textContent = x.ok ? t("Saved.") : t("Could not save. Nothing was changed.");
+            if (!x.ok) { S[which] = before; mounted.render(before); } // what could not be saved is not left in the list
+            onChange?.();
+          });
         });
         wrap.appendChild(add);
       }
