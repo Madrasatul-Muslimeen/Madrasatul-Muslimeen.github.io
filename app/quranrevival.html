@@ -20977,7 +20977,7 @@
     }
     function lnLevel() { return learnNextLevelsAvailable().includes(learnNextLevel) ? learnNextLevel : "wbw"; }
     // The Owner, 15 Nov 2026 (PCF MSA J138 n138b): at the WbW level the STEPS (First 10, First 25 ...) leave out every word ticked as known in the Already known groups; a ticked word leaves the
-    // steps and counts in "Already known", an unticked one comes back, a word learned through the steps stays in them. Everything that counts words known (the badge's words and share, "You already
+    // steps and counts in "Already known", an unticked one comes back. The test is the same known test for every word of a group, so a group word that becomes known another way (learned in a step) also leaves the steps. Everything that counts words known (the badge's words and share, "You already
     // know", the review schedule, the Bangla share) still reads ALL rows (learnNextCtx.data.rows); only the step lists, tiles, decks and "steps passed" read these.
     let stepRowsCache = { base: null, sig: "", rows: null };
     function stepRowsNow() {

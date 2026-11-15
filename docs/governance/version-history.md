@@ -1154,3 +1154,4 @@ total). Allocated by the MMSA Architect.
 15.06: offline reads calm, Taṣrīf Arabic 80%, Tafsīr era switches (J139) and Learn next steps leave out Already known words (J138 part 2). Allocated by the MMSA Architect.
 15.07: the title goes home and the new version label (J141), bookmark captions, Read opens the Surah list, Mushaf bar Home and Location. Allocated by the MMSA Architect.
 15.08: J140 pop-ups parts 1 and 2 (collapse to top left, full screen, drag and resize). Allocated by the MMSA Architect.
+15.09: the Monitor's own-language note (QR Lead 47L, #1757). Allocated by the MMSA Architect.

@@ -47,6 +47,7 @@ const MUT = {
   nogold: [HTML, "if (wordFrac && trackable.id === WBW_TRACKABLE_ID) {", "if (false) {"],
   phonerow: [HTML, "else if (drawer.firstElementChild !== wheelKindRowEl) drawer.prepend(wheelKindRowEl);", "else document.getElementById(\"wheelStageWrap\").before(wheelKindRowEl);"],
   titlebar: [HTML, "if (wheelKindRowEl.parentElement !== slot) slot.appendChild(wheelKindRowEl);", "void slot;"],
+  nonote: ["app/monitor.html", "<p class=\"muted\" data-vt-note>", "<p class=\"muted\" hidden data-vt-noteX>"],
   monitorauto: ["app/monitor.html", "    let vocabShown = false;", "    let vocabShown = true; setTimeout(() => refreshVocabTable(), 0);"],
   monitorcount: ["app/js/vocab-known.js", "if (lemmaProgressFor({ tenantId, personId, lemmaId, confirmationRequired }).countsAsKnown) return true;", ""],
   bnleak: [BN, '  "of the Qur\'an\'s words": "কুরআনের শব্দের",\n', ""],
@@ -296,6 +297,9 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
       head: t ? [...t.querySelectorAll("thead th")].map((h) => h.textContent).join(" | ") : "",
     };
   });
+  // 47L, 15 Nov 2026: the Monitor says plainly that a student's own-language list (device-local) is not in these counts.
+  const note = await page.evaluate(() => { const n = document.querySelector("[data-vt-note]"); const r = n?.getBoundingClientRect(); return n && r.width > 0 ? n.textContent.trim() : null; });
+  check(`${tag} the table says the student's own-language list is not counted`, !!note && /own-language|নিজের ভাষা/.test(note), String(note));
   const me = m.rows.find((r) => r.id === "p1");
   check(`${tag} one row per student in the picker (${m.roster}), six columns`, m.heads === 6 && m.rows.length === m.roster && m.roster > 0, JSON.stringify(m));
   check(`${tag} the student's row counts the same ${words} words as their own badge`, Number(me?.words) === words, JSON.stringify(me));
