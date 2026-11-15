@@ -49,10 +49,21 @@ const HELPERS = [
 assert.equal(HELPERS.length, 22);
 const head = "service cloud.firestore {\n  match /databases/{database}/documents {";
 assert.ok(candidate.includes(head), "the candidate no longer opens with the expected service/match header");
-const rules = candidate.replace(head, head + "\n" + HELPERS.join("\n") + "\n");
+// J143 (Architect 114L, 16 Nov 2026): FULL_RULES_FILE=docs/proposals/bangla-words.DEPLOYMENT-candidate.rules runs the same cases
+// against the WHOLE file the Owner pastes (as dua-groups.rules.test.mjs does), after proving it is today's firestore.rules with ONLY the
+// candidate's banglaWords block added at the end.
+const rules = process.env.FULL_RULES_FILE
+  ? fs.readFileSync(path.resolve(root, process.env.FULL_RULES_FILE), "utf8")
+  : candidate.replace(head, head + "\n" + HELPERS.join("\n") + "\n");
 const matchBlocks = [...new Set([...candidate.matchAll(/match \/(\w+)\//g)].map((m) => m[1]))].filter((n) => n !== "databases");
 if (process.env.DUMP_RULES) fs.writeFileSync(process.env.DUMP_RULES, rules);
 assert.deepEqual(matchBlocks, ["banglaWords"], `the candidate must govern exactly banglaWords, saw: ${matchBlocks.join(",")}`);
+if (process.env.FULL_RULES_FILE) {
+  const i = production.lastIndexOf("  }\n}");
+  assert.ok(rules.startsWith(production.slice(0, i).trimEnd()), "the deployment file's head is not the live firestore.rules unchanged");
+  const block = candidate.slice(candidate.indexOf("    // ====="), candidate.lastIndexOf("  }\n}"));
+  assert.ok(block.length > 1000 && rules.includes(block), "the deployment file does not carry the candidate's banglaWords block byte for byte");
+}
 
 const T = "t1", T2 = "t2";
 const ts = new Date("2026-11-08T00:00:00.000Z");
