@@ -138,6 +138,15 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
   .folder-picker-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; }
   .folder-picker { background: #fff; color: #222; border-radius: 0.6rem; width: min(30rem, 94vw); max-height: 82vh; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.8rem; box-sizing: border-box; outline: none; }
   .folder-picker-title { margin: 0; font-size: 1.05rem; }
+  /* J140 part 4: the picker's top bar (title + ✕); minimise.js adds – and ⛶ beside the ✕ and the drag / eight handles. */
+  .fp-bar { display: flex; align-items: center; gap: 0.3rem; flex: 0 0 auto; }
+  .fp-bar .folder-picker-title { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+  .fp-close { flex: 0 0 auto; min-width: 40px; min-height: 40px; margin-inline-start: auto; border: 0; background: none; color: inherit; font: inherit; font-size: 1.3rem; font-weight: 700; cursor: pointer; border-radius: 0.5rem; }
+  .fp-close:hover { background: rgba(0, 0, 0, 0.08); }
+  .folder-picker > .mm-h[data-h="e"], .folder-picker > .mm-h[data-h="ne"], .folder-picker > .mm-h[data-h="se"] { right: 0; }
+  .folder-picker > .mm-h[data-h="w"], .folder-picker > .mm-h[data-h="nw"], .folder-picker > .mm-h[data-h="sw"] { left: 0; }
+  .folder-picker > .mm-h[data-h="n"], .folder-picker > .mm-h[data-h="ne"], .folder-picker > .mm-h[data-h="nw"] { top: 0; }
+  .folder-picker > .mm-h[data-h="s"], .folder-picker > .mm-h[data-h="se"], .folder-picker > .mm-h[data-h="sw"] { bottom: 0; }
   /* The toolbar's .folder-search-input is `flex: 1 1 12rem` for a ROW; in this
      column it became a 12rem-TALL box (seen at 390px, 1 Oct 2026). */
   .folder-picker .folder-search-input { flex: 0 0 auto; min-height: 40px; text-overflow: ellipsis; } /* v13.10 (audit 145 D4): at 200% on a phone its placeholder is cut; the cut now shows "…" */
@@ -3077,6 +3086,24 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
      * the picker instead of closing it. Full screen on a phone (CSS), and a
      * fixed overlay above everything this document draws (§5.3).
      */
+    /** J140 part 4: a top bar with the dialog's title and a ✕ (the same as its Cancel), so minimise.js can give the picker –, ⛶,
+        a drag by this bar and the eight resize handles. The ✕ presses the dialog's own cancel, so no close path is new. */
+    function addPickerHead(overlay) {
+      const panel = overlay.querySelector(".folder-picker");
+      const title = panel?.querySelector(".folder-picker-title");
+      if (!panel || !title || panel.querySelector(".fp-bar")) return;
+      const head = document.createElement("div");
+      head.className = "fp-bar";
+      const x = document.createElement("button");
+      x.type = "button";
+      x.className = "fp-close";
+      x.textContent = "✕";
+      x.setAttribute("aria-label", t("Close"));
+      x.title = t("Close");
+      x.addEventListener("click", () => overlay.querySelector("[data-picker-cancel], [data-dialog-cancel]")?.click());
+      title.before(head);
+      head.append(title, x);
+    }
     function openFolderPicker({ title, allowTop = false, includeSystem = true, refuse = () => null }) {
       return new Promise((resolve) => {
         document.getElementById("folderPicker")?.remove();
@@ -3090,6 +3117,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
           <ul class="folder-picker-list" data-picker-list></ul>
           <div class="folder-picker-actions"><button type="button" class="secondary" data-picker-cancel>${escapeHtml(t("Cancel"))}</button></div>
         </div>`;
+        addPickerHead(overlay);
         document.body.appendChild(overlay);
         const msgEl = overlay.querySelector("[data-picker-msg]");
         const listEl = overlay.querySelector("[data-picker-list]");
@@ -3288,12 +3316,13 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
           ${withTags && mode === "ticks" ? '<div class="fp-tags" data-fp-tags></div>' : ""}
           <div class="folder-picker-actions">${staged ? `<button type="button" class="secondary" data-picker-cancel>${escapeHtml(t("Cancel"))}</button> <button type="button" data-picker-ok>${escapeHtml(t("Use these folders"))}</button>` : `<button type="button" class="secondary" data-picker-cancel>${escapeHtml(mode === "move" ? t("Cancel") : t("Done"))}</button>`}</div>
         </div>`;
+        addPickerHead(overlay);
         document.body.appendChild(overlay);
         const panel = overlay.querySelector(".folder-picker");
         // Beside the Note (a popover, 1200px and up); level with it, but always wholly on screen: pulled up when the anchor sits low on the page. Re-run after every repaint, as the list's height changes.
         const anchorRect = wide ? ((anchor?.isConnected ? anchor : null) ?? (paneView.noteId !== null ? notePaneEl : folderNotesEl)).getBoundingClientRect() : null;
         function place() {
-          if (!anchorRect) return;
+          if (!anchorRect || panel.dataset.mmFloat) return; // once the window is floated (dragged, resized) it keeps its place
           const r = anchorRect, w = 26 * 16;
           panel.style.left = `${r.left - w - 8 >= 8 ? r.left - w - 8 : Math.max(8, Math.min(r.right - w - 8, innerWidth - w - 8))}px`;
           panel.style.top = `${Math.max(8, Math.min(r.top, innerHeight - panel.getBoundingClientRect().height - 8))}px`;
@@ -3702,6 +3731,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
         ${bodyHtml}
         <div class="folder-picker-actions"><button type="button" class="secondary" data-dialog-cancel>${escapeHtml(t("Cancel"))}</button></div>
       </div>`;
+      addPickerHead(overlay);
       document.body.appendChild(overlay);
       const onKey = (e) => { if (e.key === "Escape") close(); };
       function close() { document.removeEventListener("keydown", onKey); overlay.remove(); }
