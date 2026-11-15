@@ -133,15 +133,30 @@ function failureReference(entry) {
  * Records a write failure: logs it (still, in addition, not instead of),
  * saves it to the session buffer, and surfaces it to the user.
  */
+/**
+ * The Owner, 15 Nov 2026 (phone screenshots, the app used offline): a READ that fails only because the device is offline
+ * is not a failure to shout about -- no red "could not be loaded" banner. The page says it calmly where the data would
+ * be ("You are offline: your progress shows when you are back online"). A read that fails for any other reason
+ * (permission-denied, not-found, ...) is still shown, and WRITES still always report (I15).
+ */
+export function isOfflineRead(error, context = {}) {
+  if (!isReadFailure(context)) return false;
+  const code = error?.code ?? "";
+  return code === "unavailable" || (typeof navigator !== "undefined" && navigator.onLine === false && (code === "" || code === "unknown" || code === "failed-precondition"));
+}
+
 export function reportWriteFailure(error, context = {}) {
+  const offlineRead = isOfflineRead(error, context);
   const entry = {
     at: new Date().toISOString(),
     context,
     code: error?.code ?? "unknown",
     message: plainMessageFor(error, context),
     technicalMessage: error?.message ?? String(error),
+    ...(offlineRead ? { offlineRead: true } : {}),
   };
   sessionErrorBuffer.push(entry);
+  if (offlineRead) { console.warn("[offline read]", context, error); return entry; } // calm: no banner, the page says so in place
   console.error("[write failure]", context, error);
   if (typeof window !== "undefined") surfaceToUser(entry);
   return entry;

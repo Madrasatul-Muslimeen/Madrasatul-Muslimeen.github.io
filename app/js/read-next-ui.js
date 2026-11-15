@@ -106,6 +106,14 @@ a.rn-scholar { color: inherit; font-weight: 700; text-decoration: underline; tex
 a.read-next-item:hover, a.read-next-go:hover { background: #eef2fa; }
 .read-next-group > summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-weight: 700; color: inherit; }
 .read-next-group > div { display: grid; gap: 0.4rem; }
+/* PCF MSA J139: a century heading in the Tafsīr tab is an ON/OFF switch (the same drawing as the Word Card's section switches). */
+.read-next-era { display: grid; gap: 0.5rem; }
+.read-next-era > summary.read-next-sub { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; min-height: 44px; margin: 0.25rem 0 0; }
+.read-next-era > summary.read-next-sub::-webkit-details-marker { display: none; }
+.read-next-era > summary.read-next-sub::after { content: ""; flex: 0 0 auto; box-sizing: border-box; width: 40px; height: 24px; border-radius: 12px; border: 1px solid #6b7280;
+  background: radial-gradient(circle at 11px 50%, #fff 0 7px, #6b7280 7.5px 8.5px, transparent 9px), #c9d0dc; }
+.read-next-era[open] > summary.read-next-sub::after { border-color: #1f8a7e; background: radial-gradient(circle at 27px 50%, #fff 0 8px, transparent 8.5px), #1f8a7e; }
+.read-next-era > summary.read-next-sub:focus-visible { outline: 2px solid #1d6b4a; outline-offset: 2px; }
 /* The night look (audit part 146): no near-white tab, box or button inside the dark page; the card's own night palette. */
 [data-card-look="night"] .read-next-tabs > button { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }
 [data-card-look="night"] .read-next-tabs > button[aria-pressed="true"] { background: var(--card-bg); color: var(--card-heading); border-color: var(--card-heading); }
@@ -358,10 +366,20 @@ async function tafsirPanel(panel, ctx) {
   const [data, links] = await Promise.all([loadTafsirScholars(), loadTafsirLinks().catch(() => null)]);
   const lang = getAppLang();
   if (links && ayat.length) panel.appendChild(note(t("Each link opens that book at the āyah, on a free website, in a new tab.")));
+  const eraOff = eraSwitchOff();
   for (const g of whereToReadByCentury(data)) {
-  const head = el("p", "read-next-sub", g.century == null ? t("Century not known") : t("Authors who died in century {n} AH", { n: num(g.century) }));
+  // The Owner, 15 Nov 2026 (PCF MSA J139 ask 3): each century heading is an ON/OFF switch (the Word Card's section switch look); off hides that
+  // era's books. All on at first; the reader's choice is kept on this device. A <details>, so the keyboard works and ON again shows the books.
+  const eraKey = String(g.century);
+  const group = el("details", "read-next-era");
+  group.dataset.readNextEra = eraKey;
+  group.open = !eraOff.has(eraKey);
+  const head = el("summary", "read-next-sub", g.century == null ? t("Century not known") : t("Authors who died in century {n} AH", { n: num(g.century) }));
   head.dataset.readNextCentury = String(g.century);
-  panel.appendChild(head);
+  head.setAttribute("role", "button");
+  group.appendChild(head);
+  group.addEventListener("toggle", () => { saveEraSwitch(eraKey, group.open); });
+  panel.appendChild(group);
   for (const { title, scholar } of g.books) {
     const item = el("div", "read-next-item");
     item.dataset.readNextTafsir = scholar.id;
@@ -390,9 +408,22 @@ async function tafsirPanel(panel, ctx) {
       const site = el("span", "rn-small", `${links.sites[link.site]?.name ?? link.site}${link.partial ? ` · ${t("only some āyāt")}` : ""}`);
       item.appendChild(site);
     }
-    panel.appendChild(item);
+    group.appendChild(item);
   }
   }
+}
+
+// PCF MSA J139: the Tafsīr tab's century switches, kept on this device (a per-reader convenience; no account data).
+const ERA_SWITCH_KEY = "mm_tafsir_eras_off.v1";
+function eraSwitchOff() {
+  try { const v = JSON.parse(globalThis.localStorage?.getItem(ERA_SWITCH_KEY) ?? "[]"); return new Set(Array.isArray(v) ? v.map(String) : []); } catch { return new Set(); }
+}
+function saveEraSwitch(key, on) {
+  try {
+    const off = eraSwitchOff();
+    if (on) off.delete(key); else off.add(key);
+    globalThis.localStorage?.setItem(ERA_SWITCH_KEY, JSON.stringify([...off]));
+  } catch { /* the choice just is not kept */ }
 }
 
 // PCF MSA J115 round 2: the Eras tab. Who in each era (Ṣaḥābah, Tābiʿūn, Tābiʿ al-Tābiʿīn) held which view on this āyah,
