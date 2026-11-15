@@ -25,7 +25,8 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  "own-row": ["if (head && before) head.insertBefore(back, before); else content.prepend(back);", "content.prepend(back);"],
+  // 15 Nov 2026: the anchor moved with the way back (it now sits before ×); same mutation, same meaning.
+  "own-row": ["if (head && closeBtn) head.insertBefore(back, closeBtn); else if (head && before) head.insertBefore(back, before); else content.prepend(back);", "content.prepend(back);"],
   "tight-row": ["@container wordcard (max-width: 22rem) {\n    .quran-word-card header:has(> .word-card-app-back) { column-gap: 0.1rem; }", "@container wordcard (max-width: 0.1rem) {\n    .quran-word-card header:has(> .word-card-app-back) { column-gap: 0.1rem; }"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
