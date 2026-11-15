@@ -368,7 +368,8 @@ console.log("\n=== 6. Bengali numerals available, and never applied to identifie
   // UPDATED IN PLACE (J108, v13.01): the badge now SHOWS the release date too ("v13.01-31.10.26"), on the Owner's word;
   // the shape takes the optional "-dd.mm.yy" and still refuses any Bengali digit.
   check("6 the version badge is NOT mangled into Bengali digits",
-        /^v?\d+\.\d+(?:-\d\d\.\d\d\.\d\d)?$/.test(r.version || "") && !/[০-৯]/.test(r.version || ""), r.version);
+        // J141: the label is now "v15.05 - 15.Nov.2026" (English month in every language).
+        /^v?\d+\.\d+(?: - \d{1,2}\.[A-Z][a-z]{2}\.\d{4})?$/.test(r.version || "") && !/[০-৯]/.test(r.version || ""), r.version);
   await page.close();
   await ctx.close();
 }
