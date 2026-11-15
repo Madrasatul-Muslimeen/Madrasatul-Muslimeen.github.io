@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "15.09",
+    "version": "15.10",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7313,8 +7313,20 @@
     {
       "version": "15.09",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Monitor's Vocabulary table says its counts leave out the device-local own-language list; per-student storage is put to the Owner as J143 (#1757).",
+      "integration": {
+        "authorizedOn": "2026-11-15",
+        "integratedOn": "2026-11-15",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "15.10",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "J140 part 3: Hadith, Dua, word pop-out, Vocabulary and word-form pop-ups join the shared pop-up mechanism; the Dua groups note is readable (#1761, #1764).",
       "integration": {
         "authorizedOn": "2026-11-15",
         "integratedOn": "2026-11-15",
@@ -7323,8 +7335,9 @@
       }
     }
   ],
-  "nextUnallocated": "15.10",
+  "nextUnallocated": "15.11",
   "nextUnallocatedNote": [
+    "v15.10 was allocated to J140 pop-ups part 3 + the Dua groups note (#1761, #1764), 2026-11-15.",
     "v15.09 was allocated to the Monitor's own-language note (QR Lead 47L, #1757), 2026-11-15.",
     "v15.08 was allocated to J140 pop-ups parts 1 and 2 (collapse to top left, full screen, drag and resize), 2026-11-15.",
     "v15.07 was allocated to the title goes home and the new version label (J141), bookmark captions, Read opens the Surah list, Mushaf bar Home and Location, 2026-11-15.",

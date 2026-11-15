@@ -4479,6 +4479,7 @@
   .vocab-sheet[hidden] { display: none; }
   /* PCF MSA J73: on a computer Learn next and Vocabulary are pop-ups at the home size (home-window.js placeAtHome) */
   .learn-next-sheet.at-home, .vocab-sheet.at-home { inset: auto; border: 1px solid #c9a24b; border-radius: 0.6rem; overflow: hidden; box-shadow: 0 12px 40px rgba(20, 10, 50, 0.35); }
+  .vo-close { flex: 0 0 auto; min-width: 44px; min-height: 44px; margin-inline-start: auto; border: 1px solid #a98bdc; border-radius: 0.5rem; background: #f1e9fb; color: #4b2a85; font: inherit; font-size: 1.3rem; font-weight: 700; cursor: pointer; }
   .vo-head { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid #d6ddd9; flex: 0 0 auto; }
   .vo-back { min-height: 44px; min-width: 44px; padding: 0 0.8rem; border-radius: 0.5rem; border: 1px solid #a98bdc; background: #f1e9fb; color: #4b2a85; font: inherit; font-weight: 700; cursor: pointer; }
   .vo-title { margin: 0; font-size: 1.15rem; }
@@ -21583,7 +21584,7 @@
       if (!v) return;
       const rows = learnNextCtx.data.rows, deck = v.step ? vocabDeck() : [];
       const g = (n) => num(Number(n).toLocaleString("en-US"));
-      const head = (title, back = "close") => `<div class="vo-head"><button type="button" class="vo-back" data-vo="${back}">← ${escapeHtml(t("Back"))}</button><h2 class="vo-title">${escapeHtml(title)}</h2></div>`;
+      const head = (title, back = "close") => `<div class="vo-head"><button type="button" class="vo-back" data-vo="${back}">← ${escapeHtml(t("Back"))}</button><h2 class="vo-title">${escapeHtml(title)}</h2><button type="button" class="vo-close" data-vo="close" aria-label="${escapeHtml(t("Close"))}" title="${escapeHtml(t("Close"))}">✕</button></div>`;
       const stepName = v.step ? (v.onlyNew ? t("words {a}–{b}", { a: g(stepRange(v.step, true).from), b: g(v.step) }) : t("the first {n} words", { n: g(v.step) })) : "";
       let body = "";
       if ((v.mode === "play" || v.mode === "word") && !v.questions[v.i]) {
