@@ -744,7 +744,10 @@ body.book-page-open { overflow: hidden; }
 .hs-seg { cursor: pointer; outline: none; }
 .hs-seg.dim { opacity: 0.5; }
 .hs-ring { fill: none; stroke: #3a4f78; stroke-width: 1; }
-.hs-seg:focus-visible .hs-ring, .hs-seg.sel .hs-ring { stroke: #e8c466; stroke-width: 2.5; }
+.hs-seg.sel .hs-ring { stroke: #e8c466; stroke-width: 2.5; }
+.hs-focus-halo, .hs-focus-ring { fill: none; pointer-events: none; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.hs-focus-halo { stroke: #0b1428; stroke-width: 6px; }
+.hs-focus-ring { stroke: #e8c466; stroke-width: 3px; }
 .hs-hub { fill: #17294a; stroke: #3a4f78; }
 .hs-hub-big { fill: #f1f4f8; font: 700 24px system-ui, sans-serif; text-anchor: middle; }
 .hs-hub-small { fill: #aeb9cf; font: 500 10.5px system-ui, sans-serif; text-anchor: middle; }
