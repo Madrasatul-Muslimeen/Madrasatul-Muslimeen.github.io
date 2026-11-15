@@ -2953,7 +2953,6 @@ export const BN = {
   "Holds": "যতদিন থাকে",
   "Only on āyah": "কেবল যে আয়াতে",
   "Domain": "ডোমেইন",
-  "Where": "কোথায়",
   "Sent": "পাঠানো হয়েছে",
   "Wording": "শব্দচয়ন",
   "yes": "হ্যাঁ",
@@ -3534,6 +3533,8 @@ export const BN = {
   "Counts for each āyah inside": "প্রতিটি আয়াতের জন্য গণনা হয় কিনা", // ?
   "Counts for each āyah inside: when Yes, claiming a Surah, Juz, Ruku', Hizb, page or Range for this Approach counts for every āyah inside it too, in Explore and in Know Your Status. When No, only an āyah's own claim counts for that āyah — a claim on the whole unit is kept and shown separately as \"studied as a whole\".":
     "প্রতিটি আয়াতের জন্য গণনা হয়: হ্যাঁ হলে, এই অ্যাপ্রোচের জন্য কোনো সূরা, জুয, রুকু', হিজব, পৃষ্ঠা বা রেঞ্জ দাবি করলে তা ভেতরের প্রতিটি আয়াতের জন্যও গণনা হয়, এক্সপ্লোর এবং মাই স্ট্যাটাস উভয় জায়গায়। না হলে, শুধু আয়াতের নিজস্ব দাবিই সেই আয়াতের জন্য গণনা হয় — পুরো ইউনিটের দাবি রাখা থাকে এবং আলাদাভাবে \"সম্পূর্ণভাবে অধ্যয়ন করা হয়েছে\" হিসেবে দেখানো হয়।", // ?
+  "Where this āyah is": "এই আয়াত কোথায় আছে",
+  "Where": "কোথায়",
   "Wheel actions": "হুইলের কাজ",
   "Open my full status": "আমার পূর্ণ অবস্থা খুলুন",
   "Know Your Status": "আপনার অবস্থা জানুন", // ? (was "My Status", renamed by the Owner 30 Sep 2026)
@@ -5237,4 +5238,21 @@ export const BN = {
   "Signing in needs the internet. Connect, then tap Sign in again.": "সাইন ইন করতে ইন্টারনেট লাগে। সংযোগ দিয়ে আবার সাইন ইন চাপুন।",
   "Outside websites need the internet. This link will open when you are online.": "বাইরের ওয়েবসাইটের জন্য ইন্টারনেট লাগে। অনলাইনে থাকলে এই লিংক খুলবে।",
   "Back online. {n} Note(s) written offline will be saved when you open Notes or Mapping My Journey.": "আবার অনলাইনে। ইন্টারনেট ছাড়া লেখা {n}টি নোট সংরক্ষিত হবে যখন আপনি নোট বা আমার যাত্রার মানচিত্র খুলবেন।",
+  "Already known": "আগে থেকেই জানা",
+  "Allah's Names": "আল্লাহর নামসমূহ",
+  "From the Asma groups": "আসমা-গ্রুপ থেকে",
+  "Words in Your Own Language": "আপনার নিজের ভাষার শব্দ",
+  "(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)": "(বাংলাদেশি মুসলিমদের জন্য বাংলা, পাকিস্তানি মুসলিমদের জন্য উর্দু, ইত্যাদি।)",
+  "Known through its Family or your language list": "এর পরিবার বা আপনার ভাষার তালিকার মাধ্যমে জানা",
+  "counted above": "উপরে গণনা করা হয়েছে",
+  "These groups could not be loaded. Close Learn next and open it again.": "গ্রুপগুলো লোড করা যায়নি। পরের শেখা বন্ধ করে আবার খুলুন।",
+  "You know {k} of these {n} words, together {p} of the Qur'an's words.": "এই {n}টি শব্দের মধ্যে আপনি {k}টি জানেন, যা কুরআনের শব্দের {p}।",
+  "Tick the words you already know before learning anything. Each tick is your real status: it is the same mark as on the Word card.": "কিছু শেখার আগেই যে শব্দগুলো আপনি জানেন সেগুলোতে টিক দিন। প্রতিটি টিক আপনার আসল অবস্থা: এটি শব্দ কার্ডের চিহ্নেরই সমান।",
+  "The Names are shown in the Asma groups. A Name ticked here is the Qur'an word that Name is written as; a Name with no tick box appears in the Qur'an in another form.": "নামগুলো আসমা-গ্রুপ অনুযায়ী দেখানো হয়েছে। এখানে টিক দেওয়া নাম হলো কুরআনে যে শব্দে নামটি লেখা আছে; যে নামে টিক বক্স নেই সেটি কুরআনে অন্য রূপে আছে।",
+  "Appears in the Qur'an in another form": "কুরআনে অন্য রূপে আছে",
+  "These are the words you (or your admin) marked as words in your own language on the Word card. Unticking one takes it out of that list. To add more, mark a word on its Word card.": "এগুলো সেই শব্দ যা আপনি (বা আপনার অ্যাডমিন) শব্দ কার্ডে নিজের ভাষার শব্দ হিসেবে চিহ্নিত করেছেন। টিক তুলে দিলে শব্দটি সেই তালিকা থেকে বাদ যায়। আরও যোগ করতে শব্দ কার্ডে শব্দটি চিহ্নিত করুন।",
+  "No words here yet.": "এখানে এখনও কোনো শব্দ নেই।",
+  "Tick all": "সব টিক দিন",
+  "{k} of {n} known": "{n}টির মধ্যে {k}টি জানা",
+  "Saving {n} words…": "{n}টি শব্দ সংরক্ষণ হচ্ছে…",
 };

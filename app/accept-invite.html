@@ -87,7 +87,7 @@
     let invite = null; // full resolution -- only readable once signed in as the invited email
 
     signInBtn.addEventListener("click", () => {
-      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+      signInWithPopup(auth, new GoogleAuthProvider().setCustomParameters({ prompt: "select_account" })).catch((err) => {
         boxEl.className = "fail";
         boxEl.textContent = t("Sign-in failed: {message}", { message: err.message });
       });

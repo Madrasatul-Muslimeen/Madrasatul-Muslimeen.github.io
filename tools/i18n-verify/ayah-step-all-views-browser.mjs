@@ -38,7 +38,8 @@ for (const width of [360, 600, 768, 1280]) {
   if (inMenu) {
     await page.click("#readBar .ayah-quick-btn"); await page.waitForTimeout(300);
     const tl = await page.evaluate(() => ["stepprevayah", "stepnextayah"].map((a) => { const e = document.querySelector(`#readBar [data-qm-act="${a}"]`); const r = e?.getBoundingClientRect(); return e && r.width > 0 ? { w: Math.round(r.width), h: Math.round(r.height) } : null; }));
-    check(`${tag} Reading View: ◂ ▸ are not on the bar and are two tiles of the ⋮ menu, ≥ 40px`, !!nb && !!pb && nb.w === 0 && pb.w === 0 && tl.every((x) => x && x.w >= 40 && x.h >= 40), JSON.stringify({ nb, pb, tl }));
+    // UPDATED IN PLACE, 15 Nov 2026 (the Owner: "Add nav buttons"): on a phone in the Reading View ◂ ▸ STAY on the bar (36px+ wide, 40px tall) and are no longer tiles of the ⋮ menu (only ⏮ ⏭ are).
+    check(`${tag} Reading View: ◂ ▸ are on the bar (36px+ x 40px, reachable) and are not tiles of the ⋮ menu`, !!nb && !!pb && nb.w >= 35.5 && pb.w >= 35.5 && nb.h >= 39.5 && nb.hit && pb.hit && tl.every((x) => x === null), JSON.stringify({ nb, pb, tl }));
     await page.click("#readBar .ayah-quick-btn"); await page.waitForTimeout(300);
   } else check(`${tag} Reading View: ◂ ▸ are on the bar, ≥ 36px, on screen and really under the finger`, !!nb && !!pb && !nb.hidden && !pb.hidden && nb.w >= 36 && pb.w >= 36 && nb.inView && pb.inView && nb.hit && pb.hit, JSON.stringify({ nb, pb }));
   const topKey = () => page.evaluate(() => { const items = [...document.querySelectorAll("#pageViewContainer .meaning-ayah")]; const root = document.getElementById("readScroll"); const t = root.getBoundingClientRect().top; return ([...items].reverse().find((e) => e.getBoundingClientRect().top <= t + 120) ?? items[0])?.dataset.meaningKey; });

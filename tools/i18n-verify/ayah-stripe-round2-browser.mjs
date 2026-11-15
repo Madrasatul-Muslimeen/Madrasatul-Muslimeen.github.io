@@ -53,7 +53,10 @@ try {
       await page.waitForTimeout(600);
       const chips = (k) => page.evaluate((key) => [...document.querySelectorAll(`.meaning-ayah[data-meaning-key="${key}"] .ayah-stripe-chip`)].map((c) => ({ kind: c.dataset.ayahStripe, text: c.textContent.trim(), label: c.getAttribute("aria-label"), h: c.getBoundingClientRect().height, paint: c.querySelector("i").getBoundingClientRect().height })), k);
       const before = await chips("1:1");
-      check(`${tag} before anything is loaded, no new read is made for the stripe: no Words/QCR/Asma chip yet`, !before.some((c) => ["wmark", "qcr", "asma"].includes(c.kind)), JSON.stringify(before));
+      // UPDATED IN PLACE, 15 Nov 2026 (the Owner: "this Ayah is attached to QCR / Asma ... it doesn't appear"): the first draw of a Read view now loads the QCR and Asma
+      // documents once (first use, after the view is painted -- never at startup, I9) and fills their chips in, so the chips no longer wait for the Āyah card to be opened.
+      // What still holds: Words marked waits for the surah's own marks.
+      check(`${tag} the first draw needs no Āyah card first: the Words-marked chip still waits for its own marks`, !before.some((c) => c.kind === "wmark"), JSON.stringify(before));
       // load the data the way a reader does: open the Āyah card once, close it, draw the view again
       await page.evaluate(() => (document.querySelector('.meaning-ayah[data-meaning-key="1:1"] [data-ayah-stripe]') || document.querySelector('.meaning-ayah[data-meaning-key="1:1"] .ayah-num-badge'))?.click());
       await page.waitForTimeout(1800);

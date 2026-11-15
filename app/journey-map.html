@@ -881,7 +881,7 @@ if(localStorage.getItem('mm_app_lang')==='bn'){add('js/i18n/bn.js');add('js/i18n
     }
 
     signInBtn.addEventListener("click", () => {
-      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+      signInWithPopup(auth, new GoogleAuthProvider().setCustomParameters({ prompt: "select_account" })).catch((err) => {
         whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
       });
     });

@@ -581,6 +581,8 @@ function notApplicableHtml(progress, authority, text) {
 let markLearnRowHtml = "";
 // The Owner, 13 Nov 2026: the third marking ("Quranic/ Arabic word in Bangla Language:"), drawn by the page, sits right below Mark the Word.
 let banglaMarkHtml = "";
+// The Owner, 15 Nov 2026: the "How hard was it, in this sūrah" table sits BELOW the Bangla marking (it used to be inside Mark the Word).
+let effortDetailsHtml = "";
 function markLearnRow(word, context, text) {
   // MSA · QR J135: the row is the three marks only (Difficult · Learn · Learned); the old "Learn" practise button is gone.
   if (!context.marksHtml) return "";
@@ -636,6 +638,7 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
     ${wbw.notApplicable ? notApplicableHtml(progress, authority, text) : `<div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("practising")}${stateButton("achieved")}</div>`}
     ${markLearnRowHtml}
     ${banglaMarkHtml}
+    ${effortDetailsHtml}
     ${learnNextBarHtml(wbw.learnNext, text, formatNumber)}
     ${progress.ask ? `<div class="word-progress-ask" data-word-progress-question role="group" aria-label="${escapeHtml(progress.ask.message)}"><p class="word-progress-state">${escapeHtml(progress.ask.message)}</p>${progress.ask.lines.length ? `<ul>${progress.ask.lines.map((l) => `<li>${escapeHtml(l)}</li>`).join("")}</ul>` : ""}<div class="word-progress-ask-buttons"><button type="button" data-word-progress-ask="change">${escapeHtml(progress.ask.change)}</button><button type="button" data-word-progress-ask="cancel">${escapeHtml(progress.ask.cancel)}</button></div></div>` : ""}
     ${progress.saving ? `<p class="word-progress-state" data-word-progress-saving role="status">${escapeHtml(text.saving ?? "Saving…")}</p>` : ""}
@@ -1791,8 +1794,9 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   // or none at this level) the row still shows, at the top of the panel, so the marks are never missing.
   markLearnRowHtml = markLearnRow(word, context, text);
   banglaMarkHtml = context.banglaMarkHtml ?? "";
+  effortDetailsHtml = context.effortDetailsHtml ?? "";
   let panelWithMarks = levelPanel(state.level, word, layers, context, text, formatNumber);
-  if (markLearnRowHtml && !panelWithMarks.includes("data-word-card-marks")) panelWithMarks = markLearnRowHtml + banglaMarkHtml + panelWithMarks;
+  if (markLearnRowHtml && !panelWithMarks.includes("data-word-card-marks")) panelWithMarks = markLearnRowHtml + banglaMarkHtml + effortDetailsHtml + panelWithMarks;
   // PCF MSA J127 (the Owner, 11 Nov 2026: "J127:A"): the two navigation buttons, ‹ ›, sit TOGETHER at the start of the header row.
   return `<section class="quran-word-card" role="region" aria-label="${escapeHtml(text.cardRegion)}" data-occurrence-id="${escapeHtml(occurrenceId)}"${showSegmentColour ? " data-stem-mark" : ""}>
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>

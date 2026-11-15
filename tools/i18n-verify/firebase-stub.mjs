@@ -278,6 +278,8 @@ function snapDoc(d) {
 export function initializeApp() { return { name: "stub" }; }
 export function getAuth() { return { currentUser: { uid: UID, email: "smahk9@gmail.com", displayName: "Owner" } }; }
 export function GoogleAuthProvider() {}
+// The real SDK's setCustomParameters returns the provider (v15.02: every page asks Google for the account picker).
+GoogleAuthProvider.prototype.setCustomParameters = function (params) { this.customParameters = params; return this; };
 export function signInWithPopup() { return Promise.resolve(); }
 export function signOut() { return Promise.resolve(); }
 export function onAuthStateChanged(auth, cb) { setTimeout(() => cb({ uid: UID, email: "smahk9@gmail.com", displayName: "Owner" }), 0); return () => {}; }

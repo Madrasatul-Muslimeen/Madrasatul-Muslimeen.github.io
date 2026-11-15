@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "15.01",
+    "version": "15.04",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7217,7 +7217,7 @@
     {
       "version": "15.01",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v15.01: Hadith Lead 14L's hadithNames writer + UI (#1726), switched off until the Owner publishes its Rules.",
       "integration": {
         "authorizedOn": "2026-11-14",
@@ -7225,10 +7225,49 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "15.02",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Hadith names Rules published; firestore.rules synced, HADITH_NAMES_PUBLISHED true (#1731)",
+      "integration": {
+        "authorizedOn": "2026-11-14",
+        "integratedOn": "2026-11-14",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "15.03",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "The Owner's 15 Nov Read bar, Word Card and āyah-stripe asks, built by the QR Lead 47L (#1732).",
+      "integration": {
+        "authorizedOn": "2026-11-14",
+        "integratedOn": "2026-11-14",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "15.04",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Learn next's new first step 'Already known' with six tick groups (QR Lead 47L, #1735), released by the Architect 111L.",
+      "integration": {
+        "authorizedOn": "2026-11-15",
+        "integratedOn": "2026-11-15",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "15.02",
+  "nextUnallocated": "15.05",
   "nextUnallocatedNote": [
+    "v15.04 was allocated to Learn next: Already known, six tick groups (#1735), 2026-11-15.",
+    "v15.03 was allocated to the Read bar, Word Card marking and āyah stripe (#1732), 2026-11-14.",
+    "v15.02 was allocated to the Hadith book and chapter names switched on (Rules published), 2026-11-14.",
     "v15.01 was allocated to the Hadith book and chapter names writer, switched off (#1726), 2026-11-14.",
     "v15.00 was allocated to the one wheel bar (#1724) and legacy-v14/, 2026-11-14.",
     "v14.42 was allocated to editable Hadith Subjects (#1720), 2026-11-14.",
