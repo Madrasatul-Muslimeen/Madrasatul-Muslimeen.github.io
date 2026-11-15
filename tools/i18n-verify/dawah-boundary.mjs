@@ -461,6 +461,10 @@ const PUBLISHED_DEPLOYMENTS = [
   // Added 14 Nov 2026 (Architect 103L): the Owner published the Dua groups Rules (PCF MSA J104 line 26, "Rules published" to the Dua
   // Lead at 21:00Z 13 Nov), and firestore.rules was made this file byte for byte; the dawahPages-block half is unchanged.
   "docs/proposals/dua-groups.DEPLOYMENT-candidate.rules",
+  // Added 15 Nov 2026 (Architect 110L, found by QR Lead 47L's sweep): the Owner published the Hadith names Rules ("Rules done" to the
+  // Hadith Lead 14L, 8:54 am 15 Nov, v15.02), and firestore.rules was made this file byte for byte; red on main since v15.02 for the
+  // same reason as the entries above; the dawahPages-block half is unchanged.
+  "docs/proposals/hadith-names.DEPLOYMENT-candidate.rules",
 ];
 function dawahBlock(text) {
   const start = text.indexOf("match /dawahPages/");
