@@ -22,7 +22,7 @@ if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => { if (ok && typeof ok.then === "function") throw new Error(`promise: ${n}`); return ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`)); };
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
-for (const width of [360, 390, 768, 1280]) {
+for (const width of (process.env.WIDTHS ? process.env.WIDTHS.split(",").map(Number) : [320, 360, 390, 412, 768, 1280])) {
   console.log(`\n=== Surah list, Home, Location [${width}] ===`);
   const ctx = await newContext(browser, { banner: false, viewport: { width, height: width >= 768 ? 900 : 844 } });
   await ctx.route("**/archive.org/**", (r) => r.abort());
