@@ -125,7 +125,8 @@ try {
         if (width >= 360) check(`${tag} (3) the bar is ONE row (${m.barH}px): at ${width}px ☰ ${m.wordShown ? "keeps" : "drops"} its word only as far as needed`, m.barH <= 41, JSON.stringify({ barH: m.barH, wordShown: m.wordShown }));
         else check(`${tag} (3) at ${width}px nothing more can be dropped (the word is already gone): ☰ is the 40px icon`, !m.wordShown && m.list && m.list.w <= 41, JSON.stringify({ wordShown: m.wordShown, list: m.list }));
         if (lang === "en" && width === 360) check(`${tag} (3) the word "Surah" was dropped here because it cost a row (☰ alone is ${m.list ? Math.round(m.list.w) : "?"}px wide)`, !m.wordShown && m.list && m.list.w <= 41, JSON.stringify({ wordShown: m.wordShown, list: m.list }));
-        if (width >= 390) check(`${tag} (3) with room to spare the word stays: ☰ Surah`, m.wordShown, JSON.stringify(m.list));
+        // UPDATED IN PLACE 15 Nov 2026 (47L): 🏠 Home and 📍 (the Owner, 15 Nov) take room on the Mushaf bar, so at en 412 the row no longer holds the word: it is dropped, as far as needed, to keep ONE row. The check now reads: the word stays, or it was dropped and the bar is still one row.
+        if (width >= 390) check(`${tag} (3) with room to spare the word stays (or is dropped only to keep ONE row): ☰ Surah`, m.wordShown || m.barH <= 41, JSON.stringify({ list: m.list, barH: m.barH, wordShown: m.wordShown }));
         // press it
         await page.evaluate(() => { document.body.classList.remove("immersive-read", "fs-hide-banner", "fs-hide-topnav", "fs-hide-dock", "fs-hide-readbar", "fs-hide-transport"); }); await page.waitForTimeout(500);
         await page.evaluate(() => document.getElementById("readSearchBtn")?.click()); await page.waitForTimeout(800);

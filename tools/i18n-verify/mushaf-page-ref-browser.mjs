@@ -201,7 +201,7 @@ for (const [width, height] of [[320, 640], [360, 740], [390, 844], [412, 915], [
 // ===========================================================================
 console.log(`\n=== Mushaf page ref: swipe updates the text; visible in full screen's BARE state ===`);
 {
-  const ctx = await newContext(browser, { appLang: "en", viewport: { width: 390, height: 844 } });
+  const ctx = await newContext(browser, { appLang: "en", viewport: { width: 768, height: 1000 } }); // UPDATED IN PLACE 15 Nov 2026 (47L): below 600px the Mushaf bar's surah-name button gives way to 🏠 Home and 📍 (the Owner, 15 Nov), so this tap-the-reference section runs at 768, where the name stays
   await installSyntheticMushafFixture(ctx);
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await enterReadView(page);

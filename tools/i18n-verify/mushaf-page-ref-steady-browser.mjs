@@ -63,9 +63,9 @@ for (const lang of ["en", "bn"]) {
     await page.evaluate(() => { const t = document.getElementById("mushafToggle"); if (!t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); } });
     await page.waitForFunction(() => document.querySelectorAll(".hifz-page[data-mushaf-page]").length >= 1, null, { timeout: 20000 });
     // 1. From the first page: within 1.5s of it appearing the reference must be shown.
-    const early = await page.waitForFunction(() => { const r = document.getElementById("mushafPageRef"); return !r.hidden && r.getBoundingClientRect().width > 0; }, null, { timeout: 1500 }).then(() => true, () => false);
+    const early = await page.waitForFunction(() => { const r = document.getElementById("mushafPageRef"); /* UPDATED IN PLACE 15 Nov 2026 (47L): below 600px the reference is drawn but hidden on purpose (🏠 and 📍 take its place), so it counts as there when it is not hidden by the page */ return !r.hidden && (r.getBoundingClientRect().width > 0 || innerWidth < 600); }, null, { timeout: 1500 }).then(() => true, () => false);
     const s1 = await state(page);
-    check(`${tag} the reference is shown from the first page drawn`, early && s1.shown, JSON.stringify(s1));
+    check(`${tag} the reference is shown from the first page drawn`, early && (s1.shown || s1.vw < 600), JSON.stringify(s1));
     check(`${tag} positive control: it names the page in view (first page)`, s1.page !== null && s1.page === s1.inView && s1.text.length > 0, JSON.stringify(s1));
     // let the whole surah draw
     await page.waitForFunction(() => document.querySelectorAll(".hifz-page[data-mushaf-page]").length > 10, null, { timeout: 25000 }).catch(() => {});
@@ -75,7 +75,7 @@ for (const lang of ["en", "bn"]) {
     await page.evaluate(() => document.querySelector('.hifz-page[data-mushaf-page="4"]')?.scrollIntoView({ block: "start", inline: "start", behavior: "instant" }));
     await page.waitForTimeout(900);
     const s4 = await state(page);
-    check(`${tag} positive control: after scrolling it names the page in view (not page 2)`, s4.page === s4.inView && s4.inView !== "2" && s4.shown, JSON.stringify(s4));
+    check(`${tag} positive control: after scrolling it names the page in view (not page 2)`, s4.page === s4.inView && s4.inView !== "2" && (s4.shown || s4.vw < 600), JSON.stringify(s4));
     // 3. Save a bookmark; the bar must not change height.
     const before = s4.barH;
     await page.click("#readBarBookmarkBtn");
