@@ -1,6 +1,6 @@
-// PCF MSA J106 S1 (the Owner, 14 Nov 2026, demo ticks 1B 4A 7A): Hadith Study's ONE bar -- Menu, Books, Subjects, Explore, Search.
+// PCF MSA J106 S1 (the Owner, 14 Nov 2026, demo ticks 1B 4A 7A): Hadith Study's ONE bar -- Menu, Books, Subjects, Explore, Know Your Status (the Owner, 14 Nov 2026: Search moved to the top right of the page title row, level with "Hadith Study").
 // Rendered checks, en and bn:
-//   - the bar is those five, in that order, on ONE row at 320/360/390/820/1280, nothing runs off the screen, Search is last;
+//   - the bar is those five, in that order, on ONE row at 320/360/390/820/1280, nothing runs off the screen, Know Your Status is last, and Search is NOT on the bar (it is in the header, #hadithHeaderSearch);
 //   - Encyclopedia, Classical Explanations, Dua, Topics are NOT on the bar; the Menu panel starts hidden (COMPUTED display);
 //   - Menu holds Encyclopedia, Classical Explanations, a Dua link (dua-study.html?back=1) and Settings (Text language, Card colours);
 //   - "Menu · Preview" shows while a "View as" preview is on and is gone when it is off; the "Previewing as" note and the Tenant/Person
@@ -19,7 +19,7 @@ const MUT = {
   nocue: ["js/hadith-menu-settings.js", "if (c.hidden === on) c.hidden = !on;", "if (c.hidden === false) c.hidden = true; /* never shows the cue (writes only on a change, so no observer loop) */"],
   cuestay: ["js/hadith-menu-settings.js", "if (c.hidden === on) c.hidden = !on;", "c.hidden = false;"],
   notehome: ["js/hadith-menu-settings.js", "previewSlot.appendChild(fresh[fresh.length - 1]);", "/* left at the top */"],
-  tabback: ["js/hadith-browser.js", "    [\"explore\", t(\"Explore\")],\n    [\"search\", t(\"Search\")],", "    [\"collections\", t(\"Encyclopedia\")],\n    [\"explore\", t(\"Explore\")],\n    [\"search\", t(\"Search\")],"],
+  tabback: ["js/hadith-browser.js", "    [\"explore\", t(\"Explore\")],\n    [\"status\", t(\"Know Your Status\")],", "    [\"collections\", t(\"Encyclopedia\")],\n    [\"explore\", t(\"Explore\")],\n    [\"status\", t(\"Know Your Status\")],"],
   nohold: ["js/hadith-menu-settings.js", "holder.appendChild(host);", "void 0;"],
   nodualredirect: ["js/hadith-dua-redirect.js", "  if (q.get(\"view\") === \"dua\") {", "  if (false) {"],
 };
@@ -67,6 +67,7 @@ const barState = (P) => P.evaluate(() => {
   const rects = kids.map((k) => k.getBoundingClientRect());
   return { tabs: kids.map((k) => k.dataset.hadithTab), tops: rects.map((r) => Math.round(r.top)), h: rects.map((r) => Math.round(r.height)), right: Math.max(...rects.map((r) => r.right)),
     lastRight: rects[rects.length - 1].right, vw: document.documentElement.clientWidth, over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    searchOnBar: document.querySelectorAll('.hadith-menubar [data-hadith-tab="search"]').length,
     clipped: kids.filter((k) => k.scrollWidth > k.clientWidth + 1).map((k) => k.dataset.hadithTab),
     onBar: ["collections", "commentary", "dua", "topic"].filter((v) => document.querySelector(`.hadith-menubar [data-hadith-tab="${v}"]`)),
     panel: getComputedStyle(document.getElementById("hadithMenu-menu")).display, cue: (() => { const c = document.querySelector("[data-hadith-menu-cue]"); const r = c.getBoundingClientRect(); return { disp: getComputedStyle(c).display, w: Math.round(r.width) }; })(),
@@ -87,10 +88,10 @@ for (const lang of ["en", "bn"]) for (const width of [320, 360, 390, 820, 1280])
   const tag = `[${lang} ${width}px]`;
   const { ctx, page: P, errors } = await open(lang, width);
   const s = await barState(P);
-  check(`${tag} the bar is Menu, Books, Subjects, Explore, Search, in that order`, s.tabs.join() === "menu,books,subjects,explore,search", s.tabs.join());
+  check(`${tag} the bar is Menu, Books, Subjects, Explore, Know Your Status, in that order`, s.tabs.join() === "menu,books,subjects,explore,status", s.tabs.join());
   check(`${tag} all five are on ONE row`, Math.max(...s.tops) - Math.min(...s.tops) <= 2, JSON.stringify(s.tops)); // 2px: a stacked cue makes the Menu button 1px taller, a wrapped row is 30px+
   check(`${tag} nothing runs off the screen, the page does not scroll sideways`, s.over <= 0 && s.right <= s.vw, `over ${s.over} right ${s.right} vw ${s.vw}`);
-  check(`${tag} Search is the last, at the right edge of the row`, s.lastRight === s.right);
+  check(`${tag} Know Your Status is the last, at the right edge of the row, and Search is not on the bar`, s.lastRight === s.right && s.searchOnBar === 0, String(s.searchOnBar));
   check(`${tag} no label is clipped, every button is at least 36px tall`, s.clipped.length === 0 && Math.min(...s.h) >= 36, `${s.clipped} ${s.h}`);
   check(`${tag} Encyclopedia, Classical Explanations, Dua and Topics are NOT on the bar`, s.onBar.length === 0, s.onBar.join());
   check(`${tag} the Menu panel starts hidden (COMPUTED display)`, s.panel === "none", s.panel);

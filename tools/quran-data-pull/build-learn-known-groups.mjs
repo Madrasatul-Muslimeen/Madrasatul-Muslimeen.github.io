@@ -4,7 +4,7 @@
 // word of learn-next.json. "Words in Your Own Language" has no list here: it is the reader's own Bangla-words list, live.
 //   node tools/quran-data-pull/build-learn-known-groups.mjs
 import fs from "node:fs";
-import { DEFAULT_EXTRA_ASMA_NAMES } from "../../app/js/asma-collections-data.js";
+import { DEFAULT_EXTRA_ASMA_NAMES, DEFAULT_ASMA_COLLECTIONS } from "../../app/js/asma-collections-data.js";
 
 const out = "tools/quran-data-pull/output/learn-known-groups.json";
 const LN = JSON.parse(fs.readFileSync("tools/quran-data-pull/output/learn-next.json", "utf8"));
@@ -23,10 +23,13 @@ const groups = seed.groups.filter((g) => TITLES[g.k]).map((g) => ({ k: g.k, ...T
 const names = {};
 for (const n of seed.names) if (n.lemma) names[n.no] = n.lemma;
 for (const n of DEFAULT_EXTRA_ASMA_NAMES) {
-  const m = n.number === 100 ? "إِلَٰه" : idx.get(norm(n.arabic));
+  // 100 (الإله) and 132 (الله) are the words إِلَٰه and ٱللَّه themselves: dropping the leading "ال" would leave "له", so these two are named, not matched
+  const m = n.number === 100 ? seed.groups.find((g) => g.k === "allah").lemmas[2] : n.number === 132 ? seed.groups.find((g) => g.k === "allah").lemmas[0] : idx.get(norm(n.arabic));
   if (m) names[n.number] = m;
 }
 for (const g of groups) for (const l of g.lemmas) if (!known.has(l)) throw new Error(`group ${g.k}: lemma not in learn-next.json: ${l}`);
 for (const [no, l] of Object.entries(names)) if (!known.has(l)) throw new Error(`name ${no}: lemma not in learn-next.json: ${l}`);
-fs.writeFileSync(out, JSON.stringify({ contract: "learn-known-groups:v1", groups, names }) + "\n");
+// the Allah's Names group as plain lemma ids (the Asma groups' Names that have a Qur'an word, once each, in group order): the Monitor and the steps need the list without the Asma page code
+const allahLemmas = [...new Set(DEFAULT_ASMA_COLLECTIONS.flatMap((c) => c.items).map((k) => names[Number(String(k).slice(5))]).filter(Boolean))];
+fs.writeFileSync(out, JSON.stringify({ contract: "learn-known-groups:v1", groups, names, allahLemmas }) + "\n");
 console.log(`wrote ${out}: ${groups.map((g) => `${g.k} ${g.lemmas.length}`).join(", ")}; ${Object.keys(names).length} Names with a Qur'an word`);

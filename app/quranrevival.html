@@ -4368,7 +4368,7 @@
   /* J55: nine steps -- one row of nine on a wide screen, 5 + 4 on a tablet, three rows of three on a phone. */
   .ln-tiles { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 0.4rem; margin: 0 0 0.6rem; }
   @media (max-width: 1000px) { .ln-tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
-  @media (max-width: 600px) { .ln-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .ln-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ln-tiles > .ln-tile-known { grid-column: 1 / -1; flex-direction: row; gap: 0.6rem; min-height: 48px; } } /* J138: "Already known" takes its own row, so the nine steps sit 3+3+3 (not 3+3+3+1) */
   .ln-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 52px; padding: 0.35rem 0.2rem; border-radius: 0.5rem; border: 1px solid #c9b3e6; background: #f1e9fb; color: #4b2a85; text-align: center; min-width: 0; font: inherit; cursor: pointer; }
   .ln-tile[aria-pressed="true"] { background: #4b2a85; color: #fff; border-color: #4b2a85; }
   .ln-showing { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; margin: 0 0 0.5rem; padding: 0.4rem 0.6rem; border: 1px dashed #a98bdc; border-radius: 0.5rem; color: #4b2a85; font-size: 0.85rem; }
@@ -4542,6 +4542,19 @@
   /* the Owner, 13 Nov 2026: the Arabic in the "Learn the Next Word" bar is 30% less than it was (than the Word Card's other small Arabic) */
   /* the Owner, 15 Nov 2026: the Arabic in the "Learn the Next Word" bar is 20% smaller again (0.7 -> 0.56 of the Word Card's other small Arabic) */
   .quran-word-card .word-card-learnnext .word-card-learnnext-ar { font-size: calc(var(--wc-small-ar) * 0.56); }
+  /* the Owner, 15 Nov 2026 (offline phone screenshots, word ربحت 2:16:7; PCF MSA J139 ask 2): the Arabic is 20% smaller in two places, like "Learn the Next Word":
+     (a) Taṣrīf: the "Basic form: فَعَلَ" pill and the "Form I of ر ب ح" / basic-form rule lines (the root letters printed huge and broke the line);
+     (b) Depth > Morphology (Ṣarf): Pieces, Form, Tense, Who and Voice. 0.8 of the Word Card's other small Arabic. */
+  /* (a) is 80% of the Taṣrīf block's OWN size (its Arabic is 0.9 of the head word, --wc-tasrif-ar); (b) is 0.8 of the Word Card's small Arabic. A NOUN's lines (its Taṣrīf box) keep their 90% (J61). */
+  .quran-word-card { --wc-ar-80: calc(var(--wc-small-ar) * 0.8); --wc-tasrif-ar-80: calc(var(--wc-head-ar) * 0.9 * 0.8); }
+  .quran-word-card .word-card-acc[data-word-card-sec="conj"] .word-card-basic-btn [lang="ar"],
+  .quran-word-card .word-card-basic-row .word-card-basic-btn [lang="ar"],
+  .quran-word-card .word-card-acc[data-word-card-sec="conj"] .word-card-dline[data-word-card-dline="rule"] .word-card-ar,
+  .quran-word-card .word-card-acc[data-word-card-sec="conj"] .word-card-form-only .word-card-ar { font-size: var(--wc-tasrif-ar-80); }
+  /* the root's letters (ر ب ح) stay together: when the line is full the whole root goes to the next line, never one letter alone */
+  .quran-word-card .word-card-acc[data-word-card-sec="conj"] .word-card-dline[data-word-card-dline="rule"] .word-card-ar,
+  .quran-word-card .word-card-acc[data-word-card-sec="conj"] .word-card-form-only .word-card-ar { white-space: nowrap; }
+  .quran-word-card .word-card-morph .word-card-ar { font-size: var(--wc-ar-80); }
   /* the Owner, 15 Nov 2026 ("make all titles look similar, elegant, tiny but noticeable"): Word Progress, Mark the Word, the Bangla marking
      title and Learn the Next Word share ONE title look: small capitals, spaced, in the card's muted heading colour, never bold-loud. */
   .quran-word-card .word-progress-heading-phone, .quran-word-card .we-row > .we-label, .quran-word-card .bnk-row > .we-label, .quran-word-card .word-card-learnnext-title {
@@ -8058,6 +8071,8 @@
     import { langText, setLangText } from "./js/lang.js";
     import { roleListLabel, roleLabel } from "./js/labels.js";
     import { safeWrite, reportWriteFailure } from "./js/errors.js";
+    // The Owner, 15 Nov 2026: offline, a progress READ shows one calm line where the data would be, never the red banner.
+    const progressNotLoadedText = () => (typeof navigator !== "undefined" && navigator.onLine === false ? t("You are offline: your progress shows when you are back online") : t("Progress not loaded yet"));
     import { getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections, sectionsFromTenantDoc, approachListTitleFromTenantDoc } from "./js/catalogue.js";
     import { groupApproachesBySection } from "./js/approach-sections.js";
@@ -8137,7 +8152,7 @@
     import { loadLemmaMeaningGroups, sameMeaningLemmas, meaningGroupOf } from "./js/lemma-meaning-groups.js";
     import { loadLearnNext, loadLearnNextLevels, rowsForLevel, unitOfLevel, LEARN_NEXT_LEVELS, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, stepRange, wordShare, formatShare, LEARN_NEXT_PAGE, vocabBadgeFigures, vocabStepFill } from "./js/learn-next.js";
     // The Owner, 15 Nov 2026 (Learn next demo): "Words you already know", the sheet's first step -- every group ticked by the reader.
-    import { loadKnownGroups, asmaGroupsOfNames, lemmasOfAsmaGroups, knownGroupFigures, KNOWN_LANGUAGE_GROUP } from "./js/known-groups.js";
+    import { loadKnownGroups, asmaGroupsOfNames, lemmasOfAsmaGroups, knownGroupFigures, KNOWN_LANGUAGE_GROUP, knownGroupLemmas, excludedFromSteps, stepRowsExcluding } from "./js/known-groups.js";
     import { DEFAULT_ASMA_COLLECTIONS, DEFAULT_EXTRA_ASMA_NAMES } from "./js/asma-collections-data.js";
     // J53: a lemma is a KEY (Buckwalter marks like ^ kept as Latin); lemmaText() is how a reader sees it.
     import { lemmaText } from "./js/lemma-text.js";
@@ -11760,7 +11775,7 @@
         return;
       }
       const c = learnNextCtx, mode = vocabFillMode();
-      const b = vocabBadgeFigures(c.data.rows, c.data.total, learnNextIsKnown);
+      const b = vocabBadgeFigures(stepRowsNow(), c.data.total, learnNextIsKnown, c.data.rows);
       const grouped = (n) => num(Number(n).toLocaleString("en-US"));
       // PCF MSA J119 (n119c = F, G, H): the Bangla words on the Wheel, each of the three displays on or off.
       const bnFig = banglaFigures(c.data.rows, c.data.total, activeBanglaSet(banglaState));
@@ -14688,7 +14703,7 @@
         figure = compute();
       } catch (error) {
         reportWriteFailure(error, { what: "read Arabic word coverage", surah: requestedSurah }); // I15
-        el.innerHTML = `<span class="eac-unavailable">${escapeHtml(t("Progress not loaded yet"))}</span>`;
+        el.innerHTML = `<span class="eac-unavailable">${escapeHtml(progressNotLoadedText())}</span>`;
         return;
       }
       // A slow read must not paint over a scope the reader has since left.
@@ -16031,7 +16046,7 @@
         });
       } catch (error) {
         reportWriteFailure(error, { what: "read Word by Word coverage", surah: surahNum }); // I15
-        wbwWheelContainer.innerHTML = `<p style="color:#8fa0c2;">${t("Progress not loaded yet")}</p>`;
+        wbwWheelContainer.innerHTML = `<p style="color:#8fa0c2;">${escapeHtml(progressNotLoadedText())}</p>`;
         return;
       }
 
@@ -19302,7 +19317,7 @@
         confirm: t("Confirm"),
         sendBack: t("Send back"),
         progressLoading: t("Loading progress…"),
-        progressUnknown: t("Progress not loaded yet"),
+        progressUnknown: progressNotLoadedText(),
         progressNotAllowed: t("You are not able to record Arabic progress for this person."),
         coverage: t("{known} of {total} words known in this ayah"),
         coverageIncomplete: t("{unknown} not loaded yet"),
@@ -20935,7 +20950,21 @@
       return LEARN_NEXT_LEVELS.filter((l) => l !== "tasrif" || isTasrifLevelPersistenceReady());
     }
     function lnLevel() { return learnNextLevelsAvailable().includes(learnNextLevel) ? learnNextLevel : "wbw"; }
-    function lnRows() { return rowsForLevel(lnLevel(), learnNextCtx?.data, learnNextLevelsData); }
+    // The Owner, 15 Nov 2026 (PCF MSA J138 n138b): at the WbW level the STEPS (First 10, First 25 ...) leave out every word ticked as known in the Already known groups; a ticked word leaves the
+    // steps and counts in "Already known", an unticked one comes back, a word learned through the steps stays in them. Everything that counts words known (the badge's words and share, "You already
+    // know", the review schedule, the Bangla share) still reads ALL rows (learnNextCtx.data.rows); only the step lists, tiles, decks and "steps passed" read these.
+    let stepRowsCache = { base: null, sig: "", rows: null };
+    function stepRowsNow() {
+      const c = learnNextCtx;
+      if (!c) return [];
+      if (!knownGroupsData) return c.data.rows;
+      const ex = excludedFromSteps(knownGroupLemmas(knownGroupsData, [...activeBanglaSet(banglaState)]), (l) => learnNextIsKnown({ l }));
+      if (ex.size === 0) return c.data.rows;
+      const sig = [...ex].sort().join("|");
+      if (stepRowsCache.base !== c.data.rows || stepRowsCache.sig !== sig) stepRowsCache = { base: c.data.rows, sig, rows: stepRowsExcluding(c.data.rows, ex, c.data.total) };
+      return stepRowsCache.rows;
+    }
+    function lnRows() { const level = lnLevel(); return level === "wbw" ? stepRowsNow() : rowsForLevel(level, learnNextCtx?.data, learnNextLevelsData); }
     function lnIsKnown(row) {
       const level = lnLevel();
       if (level === "wbw") return learnNextIsKnown(row);
@@ -21288,7 +21317,8 @@
       const c = learnNextCtx;
       return lemmaProgressFor({ tenantId: c.tenantId, personId: c.personId, level: "wbw", lemmaId: lemma, confirmationRequired: c.confirmationRequired }).state ?? "not_started";
     }
-    function vocabDeck() { return deckRows(learnNextCtx.data.rows, vocab.step, vocab.onlyNew); }
+    // J138: a step's deck is picked from the STEP rows, then mapped back to the ORIGINAL rows so every rank the rounds use is the one in learn-next.json.
+    function vocabDeck() { return deckRows(stepRowsNow(), vocab.step, vocab.onlyNew).map((sr) => (sr.r0 ? learnNextCtx.data.rows[sr.r0 - 1] : sr)); }
     /** Writes `state` for each item through the Word card's own mark. A failure is reported in words by safeWrite (I15). */
     async function vocabWrite(items) {
       let done = 0;
@@ -21353,7 +21383,7 @@
     function vocabBadgeHtml() {
       const c = learnNextCtx;
       if (!c) return "";
-      const b = vocabBadgeFigures(c.data.rows, c.data.total, learnNextIsKnown);
+      const b = vocabBadgeFigures(stepRowsNow(), c.data.total, learnNextIsKnown, c.data.rows);
       const grouped = (n) => num(Number(n).toLocaleString("en-US"));
       const chips = b.steps.map((s) => `<span class="vb-step${s.passed ? " vb-done" : ""}" data-vb-step="${s.n}"${s.passed ? " data-vb-passed" : ""}>${escapeHtml(`${s.passed ? "✓ " : ""}${t("First {n}", { n: grouped(s.n) })}`)}</span>`).join("");
       const sum = b.next
