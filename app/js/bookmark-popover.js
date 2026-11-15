@@ -78,6 +78,8 @@ import { trapModal } from "./modal-focus.js";
 const isRangeUnit = (u) => u?.kind === "range";
 /** A range's own default Name: "Al-Baqarah 255–257" (or "2:255–257" without a surah name). */
 function rangeDefaultName(u, from, to) {
+  // QR Lead, 15 Nov 2026: a caller may supply its own caption (QR writes "Al-Hadid - 57:1-6 - 12.Oct.26"); every other caller is unchanged.
+  if (typeof u.captionOf === "function") { const c = u.captionOf(from, to); if (c) return c; }
   const span = from === to ? num(from) : `${num(from)}–${num(to)}`;
   return u.surahName ? `${u.surahName} ${span}` : `${num(u.surah)}:${span}`;
 }
