@@ -24071,3 +24071,13 @@ Built by the Builder (#1741 → PR #1747, then round #1749 pushed onto the same 
 - Also on main since v15.07 and carried here: the QR Lead 47L's test-only #1755 (two Mushaf suites re-aimed at the ⋮ bookmark tile).
 
 Checks (113L, on #1747 df06468 merged with main a64e842, then main de08c5c): behaviour.mjs ALONE 970/5, the same five as main (14a 30i 30j 30l 31a); popup-collapse 156/0 (mutations nofull, nodbl per the Builder; nodrag fails 4 and noresize fails 36 by name, run by the Architect); minimise-windows 48/0; note-window-a11y 940/0; hadith-menu-bar 188/0; journey-tray-panes 56/0; read-note-pane-window 112/0; learn-next 204/0; read-bar-tools 90/0 (the v15.07 title link does not disturb the collapse taps); elementFromPoint on ⛶, – and ✕ at 1280/768/390/320 in English and Bangla (inside popup-collapse); mushaf-page-ref-steady 54/0 and mushaf-bookmark-stay-qcr-add 152/0 (#1755); qr-verify run-all 30/30 on the QR build.
+
+## v15.09 — 15 Nov 2026 (Sydney) — The Monitor says its word counts leave out the own-language list (QR Lead 47L, #1757)
+
+Built by the QR Lead 47L (#1757); reviewed and released by the Architect 113L.
+
+- **Monitor > Vocabulary:** one muted line under the table: "These counts leave out a student's own-language list (Bangla and so on): that list is kept on the student's own device, so it cannot be read here." English and Bangla (the Bangla marked `// ?` for the Owner's wording).
+- **Why not count it:** the own-language list is ONE list per device (`localStorage` `mm_bangla_words.v2`), not per student; applying it in the Monitor would credit a teacher's device list to every student. Storing it per student needs a Firestore field under Rules and a permanent key: an Owner Control Gate, put to the Owner as PCF MSA J143. Nothing of it is built.
+- **Comment only:** `quranrevival.html`'s note on Learn next's step exclusion (J138, #1742) now says a group word that becomes known another way also leaves the steps, as the code does.
+
+Checks (113L, on #1757 merged with main e4a70ad): behaviour.mjs ALONE 970/5, the same five as main (14a 30i 30j 30l 31a); vocab-wheel 118/0, mutation `nonote` fails 4 by name; audit-part57-records-monitor 468/0; monitor-export-print 32/0; QR build ok, strip-comments-check 34/0; apps-build-check 58/0.
