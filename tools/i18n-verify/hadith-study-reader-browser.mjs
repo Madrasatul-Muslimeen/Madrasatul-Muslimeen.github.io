@@ -157,8 +157,10 @@ for (const [lang, width, look] of [["en", 1280, "light"], ["bn", 820, "night"]])
   await acheck(`${tag} from Topics, Hadith Books goes straight to the shelf, with no list`, async () =>
     (await P.$$eval("[data-openiti-book]", (r) => r.length)) === books && await P.$eval('[data-hadith-menu="books"]', (m) => m.hidden));
   await tap(P, '[data-hadith-tab="subjects"]');
-  await acheck(`${tag} Subjects lists the three: akhlaq, ghayb, stories`, () =>
-    P.$$eval("[data-hadith-subject-pick]", (r) => r.map((x) => x.dataset.hadithSubjectPick).join() === "akhlaq,ghayb,stories" || r.map((x) => x.dataset.hadithSubjectPick).join()));
+  // Updated in place 14 Nov 2026 (Hadith Lead 14L, on 109L's finding): J106 S2 added "Loving Rasulullah" as the second Subject, so the menu
+  // lists FOUR (akhlaq, rasulullah, ghayb, stories). This check was written for three and had been failing on main ever since.
+  await acheck(`${tag} Subjects lists the four: akhlaq, rasulullah, ghayb, stories`, () =>
+    P.$$eval("[data-hadith-subject-pick]", (r) => r.map((x) => x.dataset.hadithSubjectPick).join() === "akhlaq,rasulullah,ghayb,stories" || r.map((x) => x.dataset.hadithSubjectPick).join()));
   await tap(P, '[data-hadith-subject-pick="stories"]');
   await settle(P);
   check(`${tag} choosing a Subject opens it`, await shown(P, '[data-hadith-subject="stories"]'));
