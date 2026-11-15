@@ -4285,6 +4285,18 @@
     .quran-word-card [role="tab"] { flex: 1 1 0; min-height: 52px; }
     .word-card-tab-sub { display: block; }
   }
+  /* The Owner's colour combination "Soft Meadow" (16 Nov 2026), one colour per Word Card level in order: WbW Tea Green,
+     Root Sea Foam, Family Thistle, Taṣrīf Moccasin, Depth Silver. A tab wears its colour while it is not the open one;
+     the open tab keeps the pressed look and shows its colour as a bar along its foot, so the pairing stays visible. The
+     tab text stays the card's dark heading colour (measured >= 4.5:1 on all five). */
+  .quran-word-card { --wc-lvl-wbw: #D0F0C0; --wc-lvl-intermediate: #A8D5CE; --wc-lvl-basic: #D8BFD8; --wc-lvl-tasrif: #FFE4B5; --wc-lvl-depth: #C0C0C0; }
+  .quran-word-card [role="tab"][data-word-card-level="wbw"] { --wc-lvl: var(--wc-lvl-wbw); }
+  .quran-word-card [role="tab"][data-word-card-level="intermediate"] { --wc-lvl: var(--wc-lvl-intermediate); }
+  .quran-word-card [role="tab"][data-word-card-level="basic"] { --wc-lvl: var(--wc-lvl-basic); }
+  .quran-word-card [role="tab"][data-word-card-level="tasrif"] { --wc-lvl: var(--wc-lvl-tasrif); }
+  .quran-word-card [role="tab"][data-word-card-level="depth"] { --wc-lvl: var(--wc-lvl-depth); }
+  .quran-word-card [role="tab"][data-word-card-level]:not([aria-selected="true"]) { background: var(--wc-lvl); color: #1b2a41; }
+  .quran-word-card [role="tab"][data-word-card-level][aria-selected="true"] { box-shadow: inset 0 -5px 0 var(--wc-lvl); }
   /* The new purple parts. One token set per card look; every pair is measured at >= 4.5:1 by
      tools/i18n-verify/word-card-five-levels-browser.mjs. The "what it does" line sits on the card's always-light
      surface, so it carries the light pair in both looks. */
