@@ -8,9 +8,28 @@
 //   nofull     ⛶ does nothing                                        -> "⛶ fills the viewport"
 //   nodrag     the shared drag does nothing                          -> "a drag by the top bar moves it"
 //   noresize   the handles do nothing                                -> "handle ... changes the size"
+//   part 4 (J140, #1762), each -> "<pop-up> has – ⛶ ✕":
+//   nodword (Dua word pop-up entry), nomapx (journey-map.html dialog loses its ✕), nomapent (dialog entry),
+//   noexpx (Take an Approach loses its ✕), noexpent (Take an Approach entry)
 //   nocollapse a module bar no longer collapses pop-ups              -> "a click on a module bar collapses it"
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
+
+// Mapping My Journey fixture: five folders, three Notes (the same shape journey-folder-picker-browser.mjs seeds).
+const JOURNEY_SEED = `
+(function () {
+  window.__stubApplyBatches = true; window.__stubRecordTxData = true;
+  window.__DATA = DATA;
+  var own = { tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid", schemaVersion: 1 };
+  function ts(d) { return { toDate: function () { return new Date(d || "2026-09-01T10:00:00Z"); }, toMillis: function () { return new Date(d || "2026-09-01T10:00:00Z").getTime(); } }; }
+  DATA.noteFolders = []; DATA.notes = []; DATA.notePlacements = []; DATA.noteRevisions = []; DATA.noteSections = []; DATA.noteTags = []; DATA.noteTagLinks = [];
+  function F(id, name, parent, order) { DATA.noteFolders.push(Object.assign({ _id: "t1__" + id, folderId: id, name: name, parentFolderId: parent, semanticRole: "user", order: order, status: "active", updatedAt: ts() }, own)); }
+  function N(id, title, body, day) { DATA.notes.push(Object.assign({ _id: "t1__" + id, noteId: id, title: title, bodyHtml: body, currentRevisionId: "rev-" + id, status: "active", createdAt: ts("2026-08-0" + day + "T09:00:00Z"), updatedAt: ts("2026-09-0" + day + "T10:00:00Z") }, own)); }
+  function P(id, note, folder, order) { DATA.notePlacements.push(Object.assign({ _id: "t1__" + id, placementId: id, noteId: note, folderId: folder, order: order, status: "active" }, own)); }
+  F("fA", "Alpha", null, 0); F("fB", "Beta", null, 1); F("fC", "Gamma", null, 2); F("fK", "Kid", "fB", 0); F("fE", "Empty", null, 4);
+  N("n1", "Note One", "<p>One.</p>", 1); N("n2", "Note Two", "<p>Two.</p>", 2); N("n3", "Note Three", "<p>Three.</p>", 3);
+  P("p1", "n1", "fA", 0); P("p1b", "n1", "fB", 0); P("p2", "n2", "fA", 1); P("p3", "n3", "fC", 0);
+})();`;
 
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MIN = "app/js/minimise.js";
@@ -21,6 +40,12 @@ const MUT = {
   nodrag: [[MIN, [['startDrag(e, "move", ctx());', ""]]]],
   noresize: [[MIN, [["e.stopPropagation(); startDrag(e, h, ctx());", "e.stopPropagation();"]]]],
   nocollapse: [[MIN, [["#topNav summary, ", ""], ["#hadithCorpusRoot [role='tablist'] button, #hadithCorpusRoot nav button, ", ""], ["#duaRoot [role='tablist'] button, #duaRoot nav button, ", ""], ["#tabRow button, ", ""], ["#wheelBar button, ", ""]]]],
+  // part 4
+  nodword: [[MIN, [['close: ".dua-word-panel-close", title', 'close: ".dua-word-panel-closeX", title']]]],   // -> "Dua word pop-up has – ⛶ ✕"
+  nomapx: [["app/journey-map.html", [["head.append(title, x);", "head.append(title);"]]]],                   // the dialog loses its ✕ -> "Folder dialog has – ⛶ ✕"
+  nomapent: [[MIN, [['close: ".fp-close"', 'close: ".fp-closeX"']]]],                                         // -> "Folder dialog has – ⛶ ✕"
+  noexpx: [["app/quranrevival.html", [['class="aa-x" data-aa-close', 'class="aa-xq" data-aa-close']]]],       // -> "Take an Approach has – ⛶ ✕"
+  noexpent: [[MIN, [['close: ".aa-x"', 'close: ".aa-xX"']]]],                                                   // -> "Take an Approach has – ⛶ ✕"
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 
@@ -28,15 +53,18 @@ let pass = 0, fail = 0;
 const check = (n, ok, d = "") => { if (typeof ok?.then === "function") throw new Error(`check "${n}" was given a promise`); ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`)); };
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
-async function context(lang, width, height) {
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height } });
+async function context(lang, width, height, extraSeedJs = undefined) {
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height }, ...(extraSeedJs ? { extraSeedJs } : {}) });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     for (const [file, pairs] of MUT[MUTATE]) {
       await ctx.route(`**/${file}*`, async (r) => {
-        let src = fs.readFileSync(file, "utf8");
+        // a page is fetched as the server (and the harness) serve it; a script is read from disk
+        const page = file.endsWith(".html");
+        const res = page ? await r.fetch() : null;
+        let src = page ? await res.text() : fs.readFileSync(file, "utf8");
         for (const [a, b] of pairs) { if (!src.includes(a)) throw new Error(`mutation anchor missing: ${MUTATE}`); src = src.split(a).join(b); }
-        await r.fulfill({ status: 200, contentType: "text/javascript", body: src });
+        if (page) await r.fulfill({ response: res, body: src }); else await r.fulfill({ status: 200, contentType: "text/javascript", body: src });
       });
     }
   }
@@ -58,6 +86,7 @@ async function exercise(page, tag, root, x, { handles = true } = {}) {
   // the buttons are added on the next animation frame
   if (!has) await page.waitForFunction((root) => { const r = document.querySelector(root); return !!r && !!r.querySelector(".mm-min-btn") && !!r.querySelector(".mm-full-btn"); }, root, { timeout: 4000 }).catch(() => {});
   check(`${tag} has – ⛶ ✕`, await page.evaluate(([root, x]) => { const r = document.querySelector(root); return !!r && !!r.querySelector(".mm-min-btn") && !!r.querySelector(".mm-full-btn") && !!r.querySelector(x); }, [root, x]));
+  if (!(await page.evaluate(([root, x]) => { const r = document.querySelector(root); return !!r && !!r.querySelector(".mm-min-btn") && !!r.querySelector(".mm-full-btn") && !!r.querySelector(x); }, [root, x]))) return; // nothing further can be measured
   for (const [name, sel] of [["✕", x], ["⛶", ".mm-full-btn"], ["–", ".mm-min-btn"]]) {
     check(`${tag} ${name} is the topmost thing at its centre`, (await topAtCentre(page, root, sel)) === true);
   }
@@ -100,6 +129,8 @@ async function exercise(page, tag, root, x, { handles = true } = {}) {
     const p = await page.evaluate(([root, h]) => { const e = document.querySelector(`${root} > .mm-h[data-h="${h}"], ${root} .mm-h[data-h="${h}"]`); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, [root, h]);
     if (!p) { check(`${tag} handle ${h} changes the size`, false, "no handle"); continue; }
     if (p.x < 0 || p.y < 0 || p.x > vp.width || p.y > vp.height) { console.log(`  SKIP  ${tag} handle ${h}: the window runs past the screen edge, its handle is off screen`); continue; }
+    // the window has been grown down to the page's bottom strip (the Zab bar, drawn above a pop-up): its corner is under that bar
+    if (await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)?.closest("#zabBar"), [p.x, p.y])) { console.log(`  SKIP  ${tag} handle ${h}: the page's Zab bar covers it (the window was grown down to the bottom strip)`); continue; }
     // grow where there is room, shrink where the window already touches the screen's edge
     const roomE = vp.width - (r.x + r.w) > 40, roomW = r.x > 40, roomS = vp.height - (r.y + r.h) > 40, roomN = r.y > 40;
     const dx = h.includes("e") ? (roomE ? 30 : -30) : h.includes("w") ? (roomW ? -30 : 30) : 0;
@@ -163,6 +194,62 @@ for (const [lang, width, height] of [["en", 1280, 900], ["bn", 1280, 900], ["en"
     await page.waitForSelector("#noteOpener:not([hidden])", { timeout: 8000 }).catch(() => {});
     check(`${tagB} Notes: the Note opener is open (positive control)`, !!(await rectOf(page, "#noteOpener")));
     await exercise(page, `${tagB} Note opener`, "#noteOpener", ".no-close", { handles: false });
+    await ctx.close();
+  }
+  // ---- Dua (part 4): a tapped word's card, the Dua word pop-up
+  {
+    const ctx = await context(lang, width, height);
+    const { page } = await openPage(ctx, "/app/hadith-collections.html?back=1");
+    await hadithGo(page, "dua");
+    const W = '[data-dua-card="1"] [data-dua-word="1"]';
+    await page.waitForSelector(W, { timeout: 25000 }).catch(() => {});
+    await page.evaluate((w) => document.querySelector(w)?.scrollIntoView({ block: "center" }), W);
+    await page.click(W).catch(() => {});
+    await page.waitForSelector(".dua-word-pop > .dua-word-panel .dua-word-panel-close", { timeout: 8000 }).catch(() => {});
+    check(`${tagB} Dua word: the pop-up is open (positive control)`, !!(await rectOf(page, ".dua-word-pop > .dua-word-panel")));
+    await exercise(page, `${tagB} Dua word pop-up`, ".dua-word-pop > .dua-word-panel", ".dua-word-panel-close");
+    await ctx.close();
+  }
+  // ---- Mapping My Journey (part 4): the folder dialogs (the Note's Folders… picker)
+  {
+    const ctx = await context(lang, width, height, JOURNEY_SEED);
+    await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fB"])); } catch {} });
+    const { page } = await openPage(ctx, "/app/journey-map.html#folders");
+    await page.waitForFunction(() => document.querySelectorAll("[data-folder-tree] .folder-row[data-folder-id]").length >= 3, null, { timeout: 20000 }).catch(() => {});
+    await page.click('.folder-row[data-folder-id="fA"] [data-folder-name]').catch(() => {});
+    await page.waitForSelector("#folderNotes [data-fn-title]", { state: "visible", timeout: 8000 }).catch(() => {});
+    await page.click('#folderNotes [data-note-id="n1"] [data-note-open]').catch(() => {});
+    await page.waitForSelector("[data-pane-title]", { state: "visible", timeout: 8000 }).catch(() => {});
+    await page.click("[data-pane-menu-btn]:visible").catch(() => {});
+    await page.click("[data-pane-menu] [data-pane-copy]").catch(() => {});
+    await page.waitForSelector("#folderPicker .folder-picker", { state: "visible", timeout: 8000 }).catch(() => {});
+    check(`${tagB} Mapping My Journey: the folder dialog is open (positive control)`, !!(await rectOf(page, "#folderPicker .folder-picker")));
+    await exercise(page, `${tagB} Folder dialog`, "#folderPicker .folder-picker", ".fp-close");
+    // ✕ closes it by the dialog's own Cancel / Done
+    await page.click("#folderPicker .folder-picker .fp-close").catch(() => {});
+    await page.waitForTimeout(200);
+    check(`${tagB} Folder dialog: ✕ closes it`, (await page.locator("#folderPicker").count()) === 0);
+    await ctx.close();
+  }
+  // ---- Quran Study (part 4, frozen: an entry and a ✕): Explore's Take an Approach
+  {
+    const ctx = await context(lang, width, height);
+    const { page } = await openPage(ctx, "/app/quranrevival.html");
+    await page.click("#tabExploreBtn").catch(() => {});
+    await page.waitForFunction(() => !!document.querySelector("#exploreWheelContainer svg"), null, { timeout: 15000 }).catch(() => {});
+    await page.evaluate(() => document.querySelectorAll('[id*="splash"], .mm-splash-overlay').forEach((el) => el.remove()));
+    await page.evaluate(() => { const s = [...document.querySelectorAll("#exploreWheelContainer .wheel-seg")].find((x) => x.dataset.key === "81" && (!x.dataset.ringKind || x.dataset.ringKind === "surah")); s?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    await page.waitForFunction(() => !!document.querySelector(".aa-wheel, #exploreModeRow button"), null, { timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(300);
+    await page.click('.aa-hit[data-key="2"]').catch(() => {});
+    await page.waitForTimeout(350);
+    await page.click('[data-aa-row="act"] .aa-take').catch(() => {});
+    await page.waitForSelector(".aa-sheet[data-aa-sheet]", { timeout: 8000 }).catch(() => {});
+    check(`${tagB} Quran Study: Take an Approach is open (positive control)`, !!(await rectOf(page, ".aa-sheet[data-aa-sheet]")));
+    await exercise(page, `${tagB} Take an Approach`, ".aa-sheet[data-aa-sheet]", ".aa-x");
+    await page.click(".aa-sheet .aa-x").catch(() => {});
+    await page.waitForTimeout(200);
+    check(`${tagB} Take an Approach: ✕ closes it`, (await page.locator(".aa-sheet").count()) === 0);
     await ctx.close();
   }
   // ---- Quran Study: the Learn next sheet (entered in part 2) and a click on a module bar
