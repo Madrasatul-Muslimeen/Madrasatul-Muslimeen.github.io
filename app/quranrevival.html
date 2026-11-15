@@ -4367,7 +4367,7 @@
   /* J55: nine steps -- one row of nine on a wide screen, 5 + 4 on a tablet, three rows of three on a phone. */
   .ln-tiles { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 0.4rem; margin: 0 0 0.6rem; }
   @media (max-width: 1000px) { .ln-tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
-  @media (max-width: 600px) { .ln-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .ln-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ln-tiles > .ln-tile-known { grid-column: 1 / -1; flex-direction: row; gap: 0.6rem; min-height: 48px; } } /* J138: "Already known" takes its own row, so the nine steps sit 3+3+3 (not 3+3+3+1) */
   .ln-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 52px; padding: 0.35rem 0.2rem; border-radius: 0.5rem; border: 1px solid #c9b3e6; background: #f1e9fb; color: #4b2a85; text-align: center; min-width: 0; font: inherit; cursor: pointer; }
   .ln-tile[aria-pressed="true"] { background: #4b2a85; color: #fff; border-color: #4b2a85; }
   .ln-showing { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; margin: 0 0 0.5rem; padding: 0.4rem 0.6rem; border: 1px dashed #a98bdc; border-radius: 0.5rem; color: #4b2a85; font-size: 0.85rem; }
@@ -8148,7 +8148,7 @@
     import { loadLemmaMeaningGroups, sameMeaningLemmas, meaningGroupOf } from "./js/lemma-meaning-groups.js";
     import { loadLearnNext, loadLearnNextLevels, rowsForLevel, unitOfLevel, LEARN_NEXT_LEVELS, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, stepRange, wordShare, formatShare, LEARN_NEXT_PAGE, vocabBadgeFigures, vocabStepFill } from "./js/learn-next.js";
     // The Owner, 15 Nov 2026 (Learn next demo): "Words you already know", the sheet's first step -- every group ticked by the reader.
-    import { loadKnownGroups, asmaGroupsOfNames, lemmasOfAsmaGroups, knownGroupFigures, KNOWN_LANGUAGE_GROUP } from "./js/known-groups.js";
+    import { loadKnownGroups, asmaGroupsOfNames, lemmasOfAsmaGroups, knownGroupFigures, KNOWN_LANGUAGE_GROUP, knownGroupLemmas, excludedFromSteps, stepRowsExcluding } from "./js/known-groups.js";
     import { DEFAULT_ASMA_COLLECTIONS, DEFAULT_EXTRA_ASMA_NAMES } from "./js/asma-collections-data.js";
     // J53: a lemma is a KEY (Buckwalter marks like ^ kept as Latin); lemmaText() is how a reader sees it.
     import { lemmaText } from "./js/lemma-text.js";
@@ -11771,7 +11771,7 @@
         return;
       }
       const c = learnNextCtx, mode = vocabFillMode();
-      const b = vocabBadgeFigures(c.data.rows, c.data.total, learnNextIsKnown);
+      const b = vocabBadgeFigures(stepRowsNow(), c.data.total, learnNextIsKnown, c.data.rows);
       const grouped = (n) => num(Number(n).toLocaleString("en-US"));
       // PCF MSA J119 (n119c = F, G, H): the Bangla words on the Wheel, each of the three displays on or off.
       const bnFig = banglaFigures(c.data.rows, c.data.total, activeBanglaSet(banglaState));
@@ -20946,7 +20946,21 @@
       return LEARN_NEXT_LEVELS.filter((l) => l !== "tasrif" || isTasrifLevelPersistenceReady());
     }
     function lnLevel() { return learnNextLevelsAvailable().includes(learnNextLevel) ? learnNextLevel : "wbw"; }
-    function lnRows() { return rowsForLevel(lnLevel(), learnNextCtx?.data, learnNextLevelsData); }
+    // The Owner, 15 Nov 2026 (PCF MSA J138 n138b): at the WbW level the STEPS (First 10, First 25 ...) leave out every word ticked as known in the Already known groups; a ticked word leaves the
+    // steps and counts in "Already known", an unticked one comes back, a word learned through the steps stays in them. Everything that counts words known (the badge's words and share, "You already
+    // know", the review schedule, the Bangla share) still reads ALL rows (learnNextCtx.data.rows); only the step lists, tiles, decks and "steps passed" read these.
+    let stepRowsCache = { base: null, sig: "", rows: null };
+    function stepRowsNow() {
+      const c = learnNextCtx;
+      if (!c) return [];
+      if (!knownGroupsData) return c.data.rows;
+      const ex = excludedFromSteps(knownGroupLemmas(knownGroupsData, [...activeBanglaSet(banglaState)]), (l) => learnNextIsKnown({ l }));
+      if (ex.size === 0) return c.data.rows;
+      const sig = [...ex].sort().join("|");
+      if (stepRowsCache.base !== c.data.rows || stepRowsCache.sig !== sig) stepRowsCache = { base: c.data.rows, sig, rows: stepRowsExcluding(c.data.rows, ex, c.data.total) };
+      return stepRowsCache.rows;
+    }
+    function lnRows() { const level = lnLevel(); return level === "wbw" ? stepRowsNow() : rowsForLevel(level, learnNextCtx?.data, learnNextLevelsData); }
     function lnIsKnown(row) {
       const level = lnLevel();
       if (level === "wbw") return learnNextIsKnown(row);
@@ -21299,7 +21313,8 @@
       const c = learnNextCtx;
       return lemmaProgressFor({ tenantId: c.tenantId, personId: c.personId, level: "wbw", lemmaId: lemma, confirmationRequired: c.confirmationRequired }).state ?? "not_started";
     }
-    function vocabDeck() { return deckRows(learnNextCtx.data.rows, vocab.step, vocab.onlyNew); }
+    // J138: a step's deck is picked from the STEP rows, then mapped back to the ORIGINAL rows so every rank the rounds use is the one in learn-next.json.
+    function vocabDeck() { return deckRows(stepRowsNow(), vocab.step, vocab.onlyNew).map((sr) => (sr.r0 ? learnNextCtx.data.rows[sr.r0 - 1] : sr)); }
     /** Writes `state` for each item through the Word card's own mark. A failure is reported in words by safeWrite (I15). */
     async function vocabWrite(items) {
       let done = 0;
@@ -21364,7 +21379,7 @@
     function vocabBadgeHtml() {
       const c = learnNextCtx;
       if (!c) return "";
-      const b = vocabBadgeFigures(c.data.rows, c.data.total, learnNextIsKnown);
+      const b = vocabBadgeFigures(stepRowsNow(), c.data.total, learnNextIsKnown, c.data.rows);
       const grouped = (n) => num(Number(n).toLocaleString("en-US"));
       const chips = b.steps.map((s) => `<span class="vb-step${s.passed ? " vb-done" : ""}" data-vb-step="${s.n}"${s.passed ? " data-vb-passed" : ""}>${escapeHtml(`${s.passed ? "✓ " : ""}${t("First {n}", { n: grouped(s.n) })}`)}</span>`).join("");
       const sum = b.next

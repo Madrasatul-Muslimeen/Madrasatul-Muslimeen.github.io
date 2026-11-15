@@ -267,7 +267,7 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
     await sleep(page, 400);
     const greens = await page.evaluate(() => document.querySelectorAll("#learnNextSheet .ln-row.ln-known").length);
     const bg = await page.evaluate(() => { const k = document.querySelector("#learnNextSheet .ln-row.ln-known"); return k ? [getComputedStyle(k).backgroundColor, getComputedStyle(k).borderInlineStartColor] : null; });
-    check(`${tag} Learn next shows the 10 in the J47 green (known = #d7efdf with a #2e7d55 edge)`, greens >= 10 && bg && bg[0] === "rgb(215, 239, 223)" && bg[1] === "rgb(46, 125, 85)", JSON.stringify({ greens, bg }));
+    check(`${tag} Learn next shows the 10 in the J47 green (known = #d7efdf with a #2e7d55 edge)`, greens >= 9 /* UPDATED IN PLACE 15 Nov 2026 (PCF MSA J138): Allah (rank 2) is ticked known in the Already known groups, so it left the steps: the First 10 are ranks 1, 3-11 and 9 of them are known */ && bg && bg[0] === "rgb(215, 239, 223)" && bg[1] === "rgb(46, 125, 85)", JSON.stringify({ greens, bg }));
     // J53 (the Owner's screenshot, 20 Oct 2026: "Fix the sign", شَا^ءَ and أُولَٰ^ئِك circled): a lemma is a KEY spelt
     // with the corpus's Latin marks; every word the reader SEES goes through lemmaText (^ -> U+0653 maddah above).
     await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-tile="100"]')?.click());
@@ -275,7 +275,7 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
     await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-new="1"]')?.click());
     await sleep(page, 300);
     const marks = await page.evaluate(() => { const ar = [...document.querySelectorAll("#learnNextSheet .ln-ar")].map((e) => e.textContent); return { n: ar.length, latin: ar.filter((t) => /[\^#@\[]/.test(t)), r51: ar[0] }; });
-    check(`${tag} Learn next words 51–100 show no Latin mark (no "^"): word 51 reads ${marks.r51}`, marks.n >= 40 && marks.latin.length === 0 && marks.r51 === lemmaText(rows[50].l) && rows[50].l.includes("^"), JSON.stringify(marks));
+    check(`${tag} Learn next words 51–100 show no Latin mark (no "^"): word 51 reads ${marks.r51}`, marks.n >= 40 && marks.latin.length === 0 && marks.r51 === lemmaText(rows[51].l) && rows[51].l.includes("^") /* UPDATED IN PLACE 15 Nov 2026 (J138): with Allah out of the steps, step word 51 is rank 52 */, JSON.stringify(marks));
     await vo2(page, "#learnNextSheet", "[data-ln-vocab=learn]");
     await page.waitForSelector("#vocabSheet .vo-lw-ar", { timeout: 8000 }).catch(() => {});
     const vmarks = await page.evaluate(() => [...document.querySelectorAll("#vocabSheet .vo-lw-ar")].map((e) => e.textContent).filter((t) => /[\^#@\[]/.test(t)));

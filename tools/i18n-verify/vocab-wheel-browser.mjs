@@ -60,18 +60,33 @@ if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const data = JSON.parse(fs.readFileSync("tools/quran-data-pull/output/learn-next.json", "utf8"));
 const rows = data.rows;
 const STEPS = [10, 25, 50, 100, 300, 500, 1000, 1500, 2020];
-const knownRank = (r) => r <= 10 || (r >= 12 && r <= 50) || (r <= 300 && r % 4 === 0);
+// UPDATED IN PLACE 15 Nov 2026 (the Owner, PCF MSA J138 n138b): the steps leave out every word ticked known in the Already known groups. The fixture keeps its shape IN STEP POSITIONS (First 10 known,
+// word 11 not, 12-50 known, every 4th to 300) and also knows Allah (rank 2, an Already known group word): Allah is out of the steps, so the step positions are the ranks without it.
 const nfc = (s) => String(s).normalize("NFC");
-const knownLemmas = new Set(rows.filter((r) => knownRank(r.r)).map((r) => nfc(r.l)));
-const SEED = `\nDATA.quranLemmaProgress = ${JSON.stringify(rows.filter((r) => knownRank(r.r)).map((r, i) => ({
+const kgDoc = JSON.parse(fs.readFileSync("tools/quran-data-pull/output/learn-known-groups.json", "utf8"));
+const groupSet = new Set([...(kgDoc.allahLemmas ?? []), ...kgDoc.groups.flatMap((g) => g.lemmas)].map(nfc));
+const knownPos = (i) => i <= 10 || (i >= 12 && i <= 50) || (i <= 300 && i % 4 === 0);
+// the known words are chosen by STEP POSITION on the rows that are left once the known GROUP words are out: a fixed point, found by iterating (Allah, Rabb, Rasul and Kitab are group words in the top 50)
+let G = new Set(), knownLemmas = new Set();
+for (let iter = 0; iter < 30; iter++) {
+  const sm = rows.filter((r) => !G.has(nfc(r.l)));
+  const K = sm.filter((r, i) => knownPos(i + 1));
+  const G2 = new Set(K.filter((r) => groupSet.has(nfc(r.l))).map((r) => nfc(r.l)));
+  for (const g of G) G2.add(g); // never un-exclude: keeps the iteration monotone
+  const same = G2.size === G.size;
+  G = G2; knownLemmas = new Set([...G, ...K.map((r) => nfc(r.l))]);
+  if (same) break;
+}
+const knownRow = (r) => knownLemmas.has(nfc(r.l));
+const SEED = `\nDATA.quranLemmaProgress = ${JSON.stringify(rows.filter(knownRow).map((r, i) => ({
   _id: `__T__p1__wbw__${i}`, personId: "p1", level: "wbw", lemmaId: r.l, lane: "learner", state: "achieved", at: "2026-10-20T10:00:00.000Z", byPersonId: "p1",
 })))}.map((d) => ({ ...d, _id: d._id.replace("__T__", TENANT_ID + "__"), tenantId: TENANT_ID }));\nDATA.quranLemmaApprovals = [];\n`;
-const words = rows.filter((r) => knownRank(r.r)).length;
-const share = (100 * rows.filter((r) => knownRank(r.r)).reduce((n, r) => n + r.n, 0)) / data.total;
+const words = rows.filter(knownRow).length;
+const share = (100 * rows.filter(knownRow).reduce((n, r) => n + r.n, 0)) / data.total;
 let prev = 0;
 const steps = STEPS.map((n) => {
   let all = 0, fresh = 0;
-  for (let r = 1; r <= n; r++) if (knownRank(r)) { all++; if (r > prev) fresh++; }
+  for (let r = 1; r <= n; r++) if (knownPos(r)) { all++; if (r > prev) fresh++; }
   const s = { n, newKnown: fresh, newSize: n - prev, allKnown: all, passed: all === n };
   prev = n;
   return s;
