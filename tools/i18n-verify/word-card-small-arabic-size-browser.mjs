@@ -4,9 +4,16 @@
 // "who", every Arabic word in Depth (Morphology, iʿrāb, the book entries) and the Arabic words inside the Form sentence.
 // And a sweep: no Arabic text anywhere on the five levels is under 70% of the big word (the one-letter section icons
 // excepted). Real data, at 1:5:2 نَعْبُدُ. Run from the repository root with serve.js on :8080 (or QR_BASE=...).
+// UPDATED 15 Nov 2026 (47L), in place, nothing deleted: the file still said "90% of the big word" for every small Arabic,
+// but the Owner (12 Nov 2026) made the Word Card's Arabic twice its size (--wc-small-ar = head x 1.8; the facts line and
+// part names stay at 0.9, Learn next is small-ar x 0.56) and J139 (15 Nov) set the Depth Morphology words to 80% of
+// that. So each target now has its own EXPECTED multiple of the big word (EXPECT below), and the 70% sweep skips the
+// section-title line's tiny Arabic (.tl-ar, the Owner's "tiny titles", a deliberate caption). The mutation anchors
+// were re-pointed at the current CSS for the same reason.
 // Every mutation (--mutate=NAME) must make the suite exit 1:
 //   notoken   the card's --wc-small-ar token is gone                 -> the 90% checks fail
 //   nosize    the size rule is gone (the old 45-65% sizes)            -> the 90% checks and the sweep fail
+//   wrongmul  the token is 1.5x instead of 1.8x                     -> the 1.8x checks fail
 //   noar      the Depth words (.word-card-ar) keep their old 1.12rem   -> the Depth checks and the sweep fail
 //   nowrap    the Form sentence's Arabic is not wrapped               -> the Form sentence check and the sweep fail
 //   textchg   the wrapping changes the sentence's text                -> "the sentence's text is unchanged" fails
@@ -16,9 +23,10 @@ import fs from "fs";
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const HTML = "app/quranrevival.html", DJS = "app/js/word-card-depth.js";
 const MUT = {
-  notoken: [HTML, "  .quran-word-card { --wc-small-ar: calc(var(--wc-head-ar) * 0.9); }\n", ""],
+  notoken: [HTML, "  .quran-word-card { --wc-small-ar: calc(var(--wc-head-ar) * 1.8); }", ""],
   nosize: [HTML, "  .quran-word-card .word-card-ar, .word-card-ar-chip b { font-size: var(--wc-small-ar); }", "  .zz-none { font-size: 1px; }"],
   noar: [HTML, "  .quran-word-card .word-card-ar, .word-card-ar-chip b { font-size: var(--wc-small-ar); }", "  .word-card-ar-chip b { font-size: var(--wc-small-ar); }"],
+  wrongmul: [HTML, "--wc-small-ar: calc(var(--wc-head-ar) * 1.8);", "--wc-small-ar: calc(var(--wc-head-ar) * 1.5);"],
   nowrap: [DJS, "${escWithAr(f[lang] ?? f.en)}", "${esc(f[lang] ?? f.en)}"],
   textchg: [DJS, "esc(text).replace(AR_RUN, (run) => AR(run));", "esc(text).replace(AR_RUN, (run) => AR(run + \" \"));"],
 };
@@ -49,14 +57,16 @@ const measure = (page, targets) => page.evaluate((targets) => {
   const sz = {};
   for (const [k, s] of Object.entries(targets)) sz[k] = [...new Set(shown(s).map((x) => parseFloat(getComputedStyle(x).fontSize)))];
   // the sweep: every element whose OWN text holds Arabic letters, except the one-letter section icons
-  const small = shown("*").filter((el) => !el.classList.contains("word-card-acc-ico") && [...el.childNodes].some((n) => n.nodeType === 3 && /[؀-ۿ]/.test(n.textContent)))
+  const small = shown("*").filter((el) => !el.classList.contains("word-card-acc-ico") && !el.classList.contains("tl-ar") && [...el.childNodes].some((n) => n.nodeType === 3 && /[؀-ۿ]/.test(n.textContent)))
     .filter((el) => parseFloat(getComputedStyle(el).fontSize) < head * 0.7 - 0.05)
     .map((el) => `${el.className || el.tagName}:${Math.round(parseFloat(getComputedStyle(el).fontSize))}px "${el.textContent.trim().slice(0, 16)}"`);
   const sentence = m.querySelector("[data-word-card-form-sentence]")?.textContent ?? null;
   const outOfCard = shown(".quran-word-card *").filter((x) => { const r = x.getBoundingClientRect(); return r.left < card.left - 0.5 || r.right > card.right + 0.5; }).map((x) => x.className).slice(0, 3);
   return { head, sz, small, sentence, outOfCard, over: document.documentElement.scrollWidth - innerWidth };
 }, targets);
-const near = (arr, v) => arr.length > 0 && arr.every((x) => Math.abs(x - v) < 0.2);
+const near = (arr, vs) => arr.length > 0 && arr.every((x) => vs.some((v) => Math.abs(x - v) < 0.2));
+// the multiple of the big word each target must be (every size found must be one of these)
+const EXPECT = { facts: [0.9, 1.8], partNames: [0.9], learnNext: [1.008], familyWho: [1.8], depthWords: [1.44, 1.8], irab: [1.8], bookText: [1.8], formSentence: [1.8] };
 
 const LEVEL_TARGETS = { wbw: ["facts", "partNames", "learnNext"], basic: ["familyWho"], depth: ["depthWords", "irab", "bookText", "formSentence"] };
 const runs = [["en", 1280], ["en", 768], ["en", 390], ["en", 320], ["bn", 1280], ["bn", 390]];
@@ -85,7 +95,6 @@ for (const [lang, width] of runs) {
   await page.waitForFunction(() => document.querySelector("#quranWordCardMount .quran-word-card"), null, { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(800);
   const wantHead = width <= 340 ? 20.8 : width <= 520 ? 24.8 : 32;
-  const want = wantHead * 0.9;
   for (const lvl of ["wbw", "intermediate", "basic", "tasrif", "depth"]) {
     await page.click(`#quranWordCardMount [data-word-card-level="${lvl}"]`).catch(() => {});
     await page.waitForTimeout(1500);
@@ -95,7 +104,7 @@ for (const [lang, width] of runs) {
     const s = await measure(page, want_);
     const t = `${tag} ${lvl}:`;
     check(`${t} the big word at the top is ${wantHead}px`, Math.abs(s.head - wantHead) < 0.2, String(s.head));
-    for (const k of LEVEL_TARGETS[lvl] || []) check(`${t} ${k} Arabic is 90% of it (${want.toFixed(2)}px)`, near(s.sz[k], want), JSON.stringify(s.sz[k]));
+    for (const k of LEVEL_TARGETS[lvl] || []) check(`${t} ${k} Arabic is ${EXPECT[k].join(" / ")} x the big word (${EXPECT[k].map((m) => (m * wantHead).toFixed(2)).join(" / ")}px)`, near(s.sz[k], EXPECT[k].map((m) => m * wantHead)), JSON.stringify(s.sz[k]));
     check(`${t} no Arabic text on this level is under 70% of the big word`, s.small.length === 0, s.small.slice(0, 4).join(" | "));
     check(`${t} nothing leaves the card, no sideways scroll`, s.outOfCard.length === 0 && s.over <= 0, JSON.stringify({ c: s.outOfCard, o: s.over }));
     if (lvl === "depth") {
