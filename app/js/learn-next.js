@@ -87,9 +87,10 @@ export function vocabStepFill(step, mode = "new") {
 }
 
 /** The badge's figures: words known, the share of the Qur'an's words they cover (percent), steps passed, next step. */
-export function vocabBadgeFigures(rows, total, isKnown) {
+export function vocabBadgeFigures(rows, total, isKnown, allRows = rows) {
+  // J138: `rows` are the STEP rows (the Already known words left out); the words-known figure still counts every word, so it reads `allRows`.
   let words = 0, occurrences = 0;
-  for (const row of rows ?? []) if (isKnown(row)) { words++; occurrences += Number(row.n) || 0; }
+  for (const row of allRows ?? []) if (isKnown(row)) { words++; occurrences += Number(row.n) || 0; }
   const steps = vocabStepFigures(rows, isKnown);
   const next = steps.find((s) => !s.passed) ?? null;
   return { words, share: total > 0 ? (100 * occurrences) / total : 0, steps, passed: steps.filter((s) => s.passed).length, next: next ? next.n : null };

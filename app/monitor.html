@@ -195,6 +195,7 @@
     import { weekKeyFor } from "./js/activity.js";
     import { listAllRecordsForPerson, getSubjectConfirmationOverride, computeConfirmationRequired } from "./js/records.js";
     import { loadLearnNext, vocabBadgeFigures } from "./js/learn-next.js";
+    import { loadKnownGroups, knownGroupLemmas, excludedFromSteps, stepRowsExcluding } from "./js/known-groups.js"; // J138: the steps leave out the words the student ticked in the Already known groups
     import { primeVocabKnown, vocabKnownFor } from "./js/vocab-known.js";
     import { loadVocabReview } from "./js/vocab-review-data.js";
     import { dayOf, reviewDeck } from "./js/vocab-review.js";
@@ -548,6 +549,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // ---------------------------------------------------------------------
     const vocabBody = document.getElementById("vocabBody");
     let vocabShown = false;
+    let kgData = null; // J138: learn-known-groups.json, read once when the Vocabulary table first opens
     async function vocabRowFor(person, data, override, today) {
       const name = escapeHtml(langText(person.name, getAppLang(), person.id));
       try {
@@ -556,7 +558,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           primeVocabKnown(db, { tenantId: activeTenantId, personId: person.id }),
           loadVocabReview(db, { tenantId: activeTenantId, personId: person.id }),
         ]);
-        const b = vocabBadgeFigures(data.rows, data.total, vocabKnownFor({ tenantId: activeTenantId, personId: person.id, confirmationRequired }));
+        const known = vocabKnownFor({ tenantId: activeTenantId, personId: person.id, confirmationRequired });
+        // J138 (the Owner, 15 Nov 2026): the steps count only the words NOT ticked in the Already known groups (the student's own-language list lives on their device and is not read here).
+        const ex = kgData ? excludedFromSteps(knownGroupLemmas(kgData, []), (l) => known({ l })) : new Set();
+        const b = vocabBadgeFigures(stepRowsExcluding(data.rows, ex, data.total), data.total, known, data.rows);
         const due = reviewDeck(data.rows, review.words, today, Infinity).length;
         const last = Object.values(review.words).reduce((m, e) => (typeof e?.at === "string" && e.at > m ? e.at : m), "");
         const lastText = last ? num(new Date(last).toLocaleDateString(dateLocale(), { day: "numeric", month: "short", year: "numeric" })) : "—";
@@ -575,6 +580,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       vocabBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         const [data, override] = await Promise.all([loadLearnNext(), getSubjectConfirmationOverride(db, activeTenantId, "quran")]);
+        if (!kgData) { try { kgData = await loadKnownGroups(); } catch (error) { console.warn("Already-known groups unavailable", error); } }
         const today = dayOf(new Date());
         const rows = await Promise.all(people.map((p) => vocabRowFor(p, data, override, today)));
         vocabBody.innerHTML = `<div class="vocab-table-wrap"><table data-vocab-table><thead><tr><th>${t("Student")}</th><th>${t("Words known")}</th><th>${t("Share of the Qur'an")}</th><th>${t("Steps passed")}</th><th>${t("Due for review today")}</th><th>${t("Last practised")}</th></tr></thead>

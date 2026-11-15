@@ -65,3 +65,40 @@ export function knownGroupFigures(groups, { rowOf, isKnown, total }) {
   });
   return { groups: out, knownWords, knownN, percent: total > 0 ? (100 * knownN) / total : 0 };
 }
+
+// ---- The Owner, 15 Nov 2026 (PCF MSA J138 n138b, answered 3:17 pm: "yes, only new words, not those which are already counted in the 'Already Known' list. But until user ticks they can be in other
+// list. As soon as user ticks known words, they move."): the Learn next STEPS (First 10, First 25 ...) leave out every word the reader has ticked as known in the Already known groups. A group
+// word not ticked stays in its step; ticked, it leaves the steps and counts in "Already known"; unticked, it comes back. Words learned through the steps themselves stay in the steps.
+
+/** Every lemma of the Already known groups (Allah's Names, the fixed groups and, when given, the reader's own-language list). */
+export function knownGroupLemmas(kg, languageLemmas = []) {
+  const out = new Set(kg?.allahLemmas ?? []);
+  for (const g of kg?.groups ?? []) for (const l of g.lemmas) out.add(l);
+  for (const l of languageLemmas) out.add(l);
+  return out;
+}
+
+/** The group lemmas the reader has ticked as known (isKnown(lemma) is the same test the tick boxes show). */
+export function excludedFromSteps(groupLemmas, isKnown) {
+  const out = new Set();
+  for (const l of groupLemmas) if (isKnown(l)) out.add(l);
+  return out;
+}
+
+/**
+ * The rows the steps count: `rows` without the excluded lemmas, renumbered 1.. (r), the original rank kept as r0, and the running % recomputed:
+ * the Qur'an's words covered once the reader also knows everything up to this row PLUS the excluded words (they count in "Already known").
+ * With nothing excluded it returns `rows` itself, untouched.
+ */
+export function stepRowsExcluding(rows, excluded, total) {
+  if (!excluded || excluded.size === 0) return rows;
+  let cum = 0;
+  for (const r of rows) if (excluded.has(r.l)) cum += Number(r.n) || 0;
+  const out = [];
+  for (const r of rows) {
+    if (excluded.has(r.l)) continue;
+    cum += Number(r.n) || 0;
+    out.push({ ...r, r: out.length + 1, r0: r.r, p: total > 0 ? Math.round((1000 * cum) / total) / 10 : 0 });
+  }
+  return out;
+}

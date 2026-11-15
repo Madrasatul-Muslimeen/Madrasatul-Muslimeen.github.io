@@ -337,8 +337,13 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     await page.evaluate(() => document.getElementById("tabVocabularyBtn")?.click());
     await page.waitForFunction(() => { const s = document.getElementById("learnNextSheet"); return s && !s.hidden && s.querySelectorAll(".ln-row").length > 0; }, null, { timeout: 12000 }).catch(() => {});
     sh = await sheetInfo(page);
-    const wantKnown = rows.filter(isKnown).length;
-    const wantIn100 = rows.slice(0, 100).filter(isKnown).length;
+    // UPDATED IN PLACE 15 Nov 2026 (the Owner, PCF MSA J138 n138b): a word ticked as known in the Already known groups (a group word whose WbW/Family mark counts as known:
+    // here Allah and Ilah through their Family group) LEAVES the steps, and the rows are renumbered. This suite's model of the list is the same.
+    const kgDoc = JSON.parse(fs.readFileSync(OUT + "learn-known-groups.json", "utf8"));
+    const groupSet = new Set([...(kgDoc.allahLemmas ?? []), ...kgDoc.groups.flatMap((g) => g.lemmas)].map(nfc));
+    const stepRows = rows.filter((r) => !(groupSet.has(nfc(r.l)) && isKnown(r))).map((r, i) => ({ ...r, r: i + 1 }));
+    const wantKnown = stepRows.filter(isKnown).length;
+    const wantIn100 = stepRows.slice(0, 100).filter(isKnown).length;
     const digits = (s) => s.replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d));
     check(`${tag} known rows are marked "✓ known" (${wantIn100} of the first 100) and the label counts ${wantKnown}`, sh.known === wantIn100 && sh.ticks === wantIn100 && digits(sh.hideLabel).includes(`(${wantKnown}`), JSON.stringify({ k: sh.known, t: sh.ticks, l: sh.hideLabel, wantIn100, wantKnown }));
     // J47 (the Owner: known words in a DISTINCT colour): the RENDERED colours, a known row against a word still to learn.
@@ -352,7 +357,7 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     await page.waitForTimeout(300);
     const hid = await sheetInfo(page);
     const shownRanks = await page.evaluate(() => [...document.querySelectorAll("#learnNextSheet .ln-row")].map((r) => Number(r.dataset.lnRow)));
-    const wantRanks = rows.filter((r) => !isKnown(r)).slice(0, 100).map((r) => r.r);
+    const wantRanks = stepRows.filter((r) => !isKnown(r)).slice(0, 100).map((r) => r.r);
     check(`${tag} "Hide words I know" hides exactly the known rows (the next 100 unknown ranks are drawn, no ✓)`, hid.ticks === 0 && JSON.stringify(shownRanks) === JSON.stringify(wantRanks) && hid.checked, `${hid.ticks} ${shownRanks.slice(0, 6)} vs ${wantRanks.slice(0, 6)}`);
     await page.evaluate(() => { const c = document.querySelector("#learnNextSheet [data-ln-hide]"); c.checked = false; c.dispatchEvent(new Event("change", { bubbles: true })); });
     await page.waitForTimeout(300);
@@ -365,7 +370,7 @@ for (const [lang, width, height] of [["en", 320, 640], ["en", 390, 844], ["en", 
     await page.evaluate(() => { document.querySelector("#learnNextSheet [data-ln-scroll]").scrollTop = 1200; });
     await page.waitForTimeout(200);
     const before = (await sheetInfo(page)).scrollTop;
-    const target = rows[149];
+    const target = stepRows[149]; // the sheet's row 150 is the 150th STEP row (J138)
     const chromeBefore = await page.evaluate(() => ({ immersive: document.body.classList.contains("immersive-read"), topnav: document.body.classList.contains("fs-hide-topnav") }));
     await page.evaluate(() => document.querySelector('#learnNextSheet [data-ln-row="150"]').click());
     await page.waitForFunction((o) => { const id = document.querySelector("#quranWordCardMount .quran-word-card"); return !!id; }, target.o, { timeout: 12000 }).catch(() => {});
