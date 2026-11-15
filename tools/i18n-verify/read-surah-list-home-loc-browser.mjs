@@ -41,24 +41,30 @@ for (const width of [360, 390, 768, 1280]) {
   await page.click("#readContentsBackBtn"); await page.waitForTimeout(300);
   check(`${width}: ← Back closes the list and stays on the landing page`, !(await listOpen()) && await page.evaluate(() => document.body.classList.contains("landing-view")));
   await page.click("#wbRead"); await page.waitForTimeout(700);
-  await page.click('[data-rc-kind="surah"][data-rc-n="64"]'); await page.waitForTimeout(1800);
+  await page.click('[data-rc-kind="surah"][data-rc-n="36"]'); await page.waitForTimeout(1800);
   const m = await page.evaluate(() => ({ mushaf: document.getElementById("mushafToggle").checked, list: !document.getElementById("readContentsMount").hidden, landing: document.body.classList.contains("landing-view"), refShown: !document.getElementById("mushafPageRef").hidden, page: document.getElementById("mushafPageRef").dataset.page }));
   check(`${width}: a surah chosen in the list opens the Mushaf view`, m.mushaf && !m.list && !m.landing && m.refShown, JSON.stringify(m));
+  // move the cursor to 36:30 (mid-page): the pin must still name the page ON SCREEN (its first āyah), not the cursor
+  await page.evaluate(() => { const s = document.getElementById("ayahSelect"); if (s) { s.value = "30"; s.dispatchEvent(new Event("change", { bubbles: true })); } });
+  await page.waitForTimeout(1500);
   const bar = await page.evaluate(() => {
     const vis = (s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(), cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" ? { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.left), y: Math.round(r.top) } : null; };
-    return { home: vis("#readHomeBtn"), loc: vis("#readLocBtn"), name: vis("#mushafPageRef"), list: vis("#readListBtn"), scrollW: document.documentElement.scrollWidth - innerWidth };
+    return { home: vis("#readHomeBtn"), loc: vis("#readLocBtn"), name: vis("#mushafPageRef"), list: vis("#readListBtn"), scrollW: document.documentElement.scrollWidth - innerWidth, barH: Math.round(document.getElementById("readBar").getBoundingClientRect().height), bare: ["immersive-read", "fs-hide-readbar", "fs-hide-transport"].every((c) => document.body.classList.contains(c)), locAt: (() => { const r = document.getElementById("readLocBtn").getBoundingClientRect(); const h = r.width ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null; return !!h && document.getElementById("readLocBtn").contains(h); })() };
   });
-  check(`${width}: 🏠 Home is on the Mushaf bar, a finger-size tile`, !!bar.home && bar.home.w >= 36 && bar.home.h >= 36, JSON.stringify(bar));
+  check(`${width}: 🏠 Home is on the Mushaf bar, a finger-size tile`, !!bar.home && bar.home.w >= 34 && bar.home.h >= 36, JSON.stringify(bar));
   check(`${width}: the pin is on the Mushaf bar${width < 600 ? " on a phone" : ""}`, !!bar.loc, JSON.stringify(bar));
   if (width < 600) check(`${width}: the surah name is replaced (hidden) on a phone`, bar.name === null, JSON.stringify(bar.name));
   else check(`${width}: the surah name stays on a wide screen`, !!bar.name, JSON.stringify(bar));
+  if (width < 600) check(`${width}: the bare Mushaf bar stays ONE line (≤ 44px) with the two new tiles`, bar.bare && bar.barH <= 44, JSON.stringify({ h: bar.barH, bare: bar.bare }));
+  check(`${width}: the pin can be tapped (nothing covers it)`, bar.locAt, JSON.stringify(bar));
   check(`${width}: no sideways scroll`, bar.scrollW <= 0, String(bar.scrollW));
   if (process.argv.includes("--shot")) await page.screenshot({ path: `/tmp/shots/mushaf-${width}.png` });
   // the pin names the page on screen: its first āyah
   const want = await page.evaluate(async () => { const { mushafPageAyahGroups } = await import("/app/js/hifz-renderer.js"); const g = mushafPageAyahGroups(Number(document.getElementById("mushafPageRef").dataset.page))[0]; return g ? `${g.surah}:${g.firstAyah}` : null; });
+  check(`${width}: precondition: the page's first āyah is not the cursor's (36:30)`, !!want && want !== "36:30", String(want));
   await page.evaluate(() => document.getElementById("readLocBtn").click()); await page.waitForTimeout(900);
   const card = await page.evaluate(() => ({ text: document.querySelector("[data-read-loc-list]")?.textContent ?? "", page: document.querySelector("[data-read-loc-page]")?.textContent ?? "" }));
-  check(`${width}: the pin names the page's first āyah (${want})`, !!want && card.text.includes(want.split(":")[0] === "64" ? ` ${want}` : want) || card.text.includes(want.replace(":", ":")), JSON.stringify(card).slice(0, 200));
+  check(`${width}: the pin names the page's first āyah (${want})`, !!want && card.text.includes(want) || card.text.includes(want.replace(":", ":")), JSON.stringify(card).slice(0, 200));
   await page.evaluate(() => document.getElementById("readHomeBtn").click()); await page.waitForTimeout(700);
   check(`${width}: 🏠 Home takes the reader to the landing page`, await page.evaluate(() => document.body.classList.contains("landing-view")));
   check(`${width}: no page errors`, errors.filter((e) => !/ERR_CERT|archive\.org|net::|api\.quran/.test(e)).length === 0, errors.slice(0, 2).join(" | "));

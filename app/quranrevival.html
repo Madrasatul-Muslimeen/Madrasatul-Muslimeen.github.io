@@ -2695,7 +2695,11 @@
     #readBar:has(#mushafPageRef:not([hidden])) .read-home-btn { margin-right: 0; order: -1; }
     #readBar:has(#mushafPageRef:not([hidden])) .read-loc-wrap { display: block; order: -1; margin-right: auto; }
     #readBar:has(#mushafPageRef:not([hidden])) .read-loc-btn { display: inline-flex; }
+    /* the bar's nine tiles (☰ 🏠 📍 ‹ › 🔍 📄 ⤢ ⋮) stay ONE line in the bare full screen, as the old name-and-tiles line did: 36px tiles (9 x 36 = 324px) */
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPageRef:not([hidden])) { gap: 2px; }
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPageRef:not([hidden])) :is(#readListBtn, .read-home-btn, .read-loc-btn, #mushafPagePrevBtn, #mushafPageNextBtn, #readBarEnd > button, #readBarEnd #readQuickMenuSlot, #readBarEnd #readQuickMenuSlot .ayah-quick-btn) { width: 36px; min-width: 36px; padding-inline: 0; }
   }
+  @media (max-width: 379.98px) { body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPageRef:not([hidden])) :is(#readListBtn, .read-home-btn, .read-loc-btn, #mushafPagePrevBtn, #mushafPageNextBtn, #readBarEnd > button, #readBarEnd #readQuickMenuSlot, #readBarEnd #readQuickMenuSlot .ayah-quick-btn) { width: 34px; min-width: 34px; } } /* nine 34px tiles + gaps fit 328px */
   .read-loc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem; min-width: 40px; height: 40px; box-sizing: border-box; padding: 0 0.5rem; margin: 0; border: 1px solid #c9d1e0; border-radius: 10px; background: #fff; color: #1F3A6E; font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
   .read-loc-btn[aria-expanded="true"] { background: #1F3A6E; color: #fff; }
   .read-loc-btn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
