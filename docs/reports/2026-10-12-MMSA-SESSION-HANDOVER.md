@@ -3356,3 +3356,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v15.07** (2026-11-15): the title goes home and the new version label (J141), bookmark captions, Read opens the Surah list, Mushaf bar Home and Location.
 - **v15.08** (2026-11-15): J140 pop-ups parts 1 and 2 (collapse to top left, full screen, drag and resize).
 - **v15.09** (2026-11-15): the Monitor's own-language note (QR Lead 47L, #1757).
+- **v15.10** (2026-11-15): J140 pop-ups part 3 + the Dua groups note (#1761, #1764).

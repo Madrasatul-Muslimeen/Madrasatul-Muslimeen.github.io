@@ -24,12 +24,24 @@ const WINDOWS = [
   { id: "notes", own: true, root: "#readNotePane", close: ".rnp-close", title: ".rnp-title" },
   { id: "newnote", own: true, root: "#noteOpener", close: ".no-close", title: ".no-title" }, // J108: the shared Note opener (note-opener.js)
   { id: "note", own: true, root: ".note-win", close: "[data-win-close]", title: ".nw-title" },
-  { id: "ayah", noButton: true, root: "#ayahActionSheetOverlay.open [data-ayah-sheet], #ayahActionSheetOverlay.open [data-unit-card]", hide: "#ayahActionSheetOverlay", close: ".ayah-sheet-close", title: ".ayah-sheet-ref" },
+  { id: "ayah", noButton: true, root: "#ayahActionSheetOverlay.open [data-ayah-sheet], #ayahActionSheetOverlay.open [data-unit-card], #ayahActionSheetOverlay.open [data-page-approach-card]", hide: "#ayahActionSheetOverlay", close: ".ayah-sheet-close", title: ".ayah-sheet-ref" },
   { id: "track", root: "#wayModalMount .way-modal", hide: "#wayModalMount", close: ".way-close-btn", title: ".way-modal-header h2, .way-modal-header h3, .way-modal-title" },
   { id: "read", own: true, noFull: true, root: "body.read-windowed #readView", close: "#readWinCloseBtn", title: "#readRef" },
   { id: "card", own: true, root: ".fc-floating", close: "[data-close], .close-btn, button[aria-label='Close'], button[title='Close']", title: "h2, h3, header" },
   // J140: Learn next (quranrevival.html) -- its header carries "← Back" and a ✕ (.ln-close) that closes it the same way.
   { id: "learnnext", root: "#learnNextSheet:not([hidden])", close: ".ln-close", title: ".ln-title", bar: ".ln-head" },
+  // J140 part 3: Quran Study (FROZEN in MSA: entries only, plus a missing ✕ on the Vocabulary sheet)
+  { id: "vocab", root: "#vocabSheet:not([hidden])", close: ".vo-close", title: ".vo-title", bar: ".vo-head" },
+  { id: "wordform", root: ".word-card-dpop-box", hide: ".word-card-dpop", close: ".word-card-dpop-close", title: ".word-card-dpop-title", bar: ".word-card-dpop-head" },
+  // J140 part 3: Hadith
+  { id: "hadithpane", own: true, root: ".hadith-pane-float", close: "[data-reader-dock]", title: ".hadith-pane-title" }, // a popped-out reader pane (hadith-reader.js drags and resizes it itself)
+  { id: "hadithword", root: ".hwc-sheet", hide: ".hwc-overlay", close: ".hwc-close", title: ".hwc-title", bar: ".hwc-head" }, // Hadith Word Card
+  { id: "bookpage", root: ".book-page-pane", hide: ".book-page-overlay", close: ".book-page-close", title: ".book-page-title", bar: ".book-page-head" }, // original book page
+  // J140 part 3: Notes / writing -- the word pop-out (it keeps its own ⛶, wp-full)
+  { id: "wordpopout", noFull: true, root: ".wp-win", hide: ".wp", close: "[data-wp='close']", title: "[data-wp-mode][aria-pressed='true']" },
+  // J140 part 3: Dua
+  { id: "duagroup", own: true, root: ".dua-gw", close: ".dua-gw-close", title: ".dua-gw-head b" }, // a Dua group's window (dua-group-ui.js drags and resizes it itself)
+  { id: "duapop", root: ".dua-popcard", hide: ".dua-pop", close: ".dua-pop-close", title: ".dua-pophead h3", bar: ".dua-pophead" }, // a Dua Card block opened as a pop-up
 ];
 // J140: a collapsed pop-up is a bar at the top left, as wide as the left pane of Mapping My Journey's three-pane layout
 // (journey-map.html SPLIT_DEFAULT.three[0] = 4/13 of the width); on a phone (<= 640px) the full width.

@@ -24081,3 +24081,16 @@ Built by the QR Lead 47L (#1757); reviewed and released by the Architect 113L.
 - **Comment only:** `quranrevival.html`'s note on Learn next's step exclusion (J138, #1742) now says a group word that becomes known another way also leaves the steps, as the code does.
 
 Checks (113L, on #1757 merged with main e4a70ad): behaviour.mjs ALONE 970/5, the same five as main (14a 30i 30j 30l 31a); vocab-wheel 118/0, mutation `nonote` fails 4 by name; audit-part57-records-monitor 468/0; monitor-export-print 32/0; QR build ok, strip-comments-check 34/0; apps-build-check 58/0.
+
+## v15.10 — 16 Nov 2026 (Sydney) — More pop-ups get ⛶, –, drag and eight-side resize (J140 part 3); the Dua groups note is readable (#1764)
+
+Built by the Builder (#1756 → PR #1761) and the Dua Lead 11L (#1764); reviewed by measurement and released together by the Architect 113L.
+
+- **Into the shared pop-up mechanism (`minimise.js` `WINDOWS`, entries only):** the Hadith Word Card, the original book page, a popped-out Hadith reader pane (it drags itself), a Dua Card block pop-up, a Dua group's window (it drags itself), the word pop-out (keeps its own ⛶), the Vocabulary sheet and the Word Card's word-form pop-up. Each gets ⛶ full screen and – (fold to the top left); those without their own get the shared drag by the top bar and eight-side resize.
+- **Hadith Word Card:** a ✕ beside ← Back; its body now scrolls inside the sheet (`.hwc-scroll`), so the resize handles stay on its edges.
+- **Vocabulary sheet (frozen Quran Study, safety-grade):** a ✕ in its head.
+- **Mapping the Āyah card's Page Approach card** into the existing Āyah entry (fold only; the Āyah card stays as it is, Owner J131).
+- **Dua groups menu (#1764):** the "No groups yet" note was #5f6470 on #13192a (2.95:1) on the night look; it now uses the card's muted text colour.
+- **Not done yet, part 4 (#1762):** the Dua word pop-up, filing, Mapping My Journey's three folder pickers, Explore's Take-an-Approach and the other Quran Study dialogs, the Zab bar. Left out on purpose: the writing paper (full screen, decision 83), the bookmark popover (an anchored quick menu), the Read contents list.
+
+Checks (113L, on #1761 + #1764 merged with main de7cd1b): behaviour.mjs ALONE 970/5, the same five as main (14a 30i 30j 30l 31a); popup-windows-all 268/0 (new; mutations nohwcx, nodpop, nofull, nodrag, noresize, nocollapse each fail by name, per the Builder); popup-collapse 156/0; minimise-windows 48/0; note-window-a11y 940/0; hadith-menu-bar 188/0; journey-tray-panes 56/0; read-note-pane-window 112/0; learn-next 204/0; read-bar-tools 90/0; hadith-word-card 158/0; hadith-book-pages 109/0; hadith-key-marks 52/0; dua-card-r2 168/0; dua-groups-menu 52/0; hadith-dua-a11y --page=dua 1423/0; qr-verify run-all 30/30 on the QR build. (hadith-dua-a11y --page=hadith fails on main at its first click, a stale test; the Hadith Lead's #1763 re-aims it.)
