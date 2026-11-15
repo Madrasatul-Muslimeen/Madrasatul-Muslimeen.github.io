@@ -228,12 +228,37 @@ const NORING_CSS = "*,*:focus,*:focus-visible{outline:none!important;box-shadow:
 const wait = (P, sel, ms = 25000) => P.waitForSelector(sel, { timeout: ms });
 
 // ---- Hadith views ----
-const hTab = (P, v) => P.click(`[data-hadith-tab="${v}"]`);
+// 15 Nov 2026 (Hadith Lead 15L, test-only, the stale-test pattern of #1740): since PCF MSA J106 S1 (v14.38) the bar is Menu / Books /
+// Subjects / Explore / Know Your Status (+ Search at the header). Encyclopedia ("collections") and Classical Explanations
+// ("commentary") are ROWS inside the Menu panel, which starts hidden, so a direct click on them times out while the element still resolves.
+// Open Menu first, as a reader does; the positive control (the view opened) is kept.
+const MENU_ROWS = new Set(["collections", "commentary"]);
+const hTab = async (P, v) => {
+  if (!MENU_ROWS.has(v)) return P.click(`[data-hadith-tab="${v}"]`);
+  await P.click('.hadith-menubar [data-hadith-tab="menu"]');
+  await wait(P, `[data-hadith-menu="menu"]:not([hidden]) [data-hadith-tab="${v}"]`, 10000);
+  return P.click(`[data-hadith-menu="menu"] [data-hadith-tab="${v}"]`);
+};
 const hShelf = (P) => wait(P, `[data-openiti-book="${BUKHARI}"]`);
 const hOpenBukhari = async (P) => { await hShelf(P); await P.click(`[data-openiti-book="${BUKHARI}"]`); await wait(P, "[data-openiti-goto-input]", 15000); };
 const hGoto = async (P) => { await hOpenBukhari(P); await P.fill("[data-openiti-goto-input]", "6306"); await P.click("[data-openiti-goto-btn]"); await wait(P, '[data-openiti-passage="6578"]', 20000); };
 const hHadeeth = async (P) => { await hTab(P, "collections"); await wait(P, '[data-hadeethenc-category="3"]', 20000); await P.click('[data-hadeethenc-category="3"]'); await wait(P, '[data-hadeethenc-hadith="4563"]', 15000); await P.click('[data-hadeethenc-hadith="4563"]'); await wait(P, '[data-hadeethenc-card="4563"]', 15000); await P.waitForTimeout(800); };
 const hDua = async (P) => { await hTab(P, "dua"); await wait(P, "[data-dua-card]", 20000); await P.waitForTimeout(600); };
+// RETIRED from the Hadith page 15 Nov 2026 (Hadith Lead 15L, test-only): Dua left the Hadith pages in v14.38 (PCF MSA J106 tick 4A/7A).
+// hadith-study.html?view=dua is redirected to dua-study.html by hadith-dua-redirect.js, so these Hadith-page drivers can never find
+// their controls. The Dua page's own cards, pop-ups and Check panel are audited by DUA_VIEWS / DUA_SURFACES below. Kept here, not deleted.
+const RETIRED_HADITH_DUA = [
+  // The Topics tab (data-hadith-tab="topic") left the bar in v14.38; Subjects and Explore replaced it. Know Your Status (v15.05) is NOT yet audited here:
+  // a first run on it found 2 real findings (wheel segments g[data-i] have no focus ring; the "on" checkbox values read as 1.63:1 text), reported to the Architect.
+  { id: "topic", label: "Topics", go: async (P) => { await hTab(P, "topic"); await P.waitForTimeout(1500); } },
+  { id: "dua-cards", label: "Dua: the Duas list", go: hDua },
+  { id: "dua-word", label: "Dua: a card with a word card open", go: async (P) => { await hDua(P); await P.click('[data-dua-card="4"] [data-dua-word="1"]'); await wait(P, '[data-dua-word-panel="4"]', 10000).catch(() => {}); await P.waitForTimeout(600); } },
+  { id: "dua-check", label: "Dua: the ✓ Check this dua panel", go: async (P) => { await hDua(P); await P.click('[data-dua-card="2"] [data-dua-check-open]'); await wait(P, '[data-dua-check-panel="2"] [data-dua-check-member]', 15000); await P.waitForTimeout(600); } },
+  { id: "dua-chapters", label: "Dua: Dua chapters, the books", go: async (P) => { await hDua(P); await P.click('[data-dua-mode="chapters"]'); await wait(P, "[data-dua-book]", 15000); } },
+  { id: "dua-chapter-list", label: "Dua: a book's Dua chapters", go: async (P) => { await hDua(P); await P.click('[data-dua-mode="chapters"]'); await wait(P, `[data-dua-book="${BUKHARI}"]`, 15000); await P.click(`[data-dua-book="${BUKHARI}"]`); await wait(P, "[data-dua-chapter]", 15000); } },
+  { id: "dua-word-panel", setup: hDua, opener: '[data-dua-card="4"] [data-dua-word="1"]', surface: '[data-dua-word-panel="4"]' },
+  { id: "dua-check-panel", setup: hDua, opener: '[data-dua-card="2"] [data-dua-check-open]', surface: '[data-dua-check-panel="2"]' },
+];
 const HADITH_VIEWS = [
   { id: "opens", label: "The page as it opens (Hadith Books shelf)", go: hShelf },
   { id: "books-menu", label: "Hadith Books: the quick list of books open", go: async (P) => { await hShelf(P); await hTab(P, "books"); await wait(P, '[data-hadith-menu="books"]:not([hidden]) [data-hadith-book-pick]', 15000); } },
@@ -244,23 +269,16 @@ const HADITH_VIEWS = [
   { id: "encyclopedia", label: "Encyclopedia: the category list", go: async (P) => { await hTab(P, "collections"); await wait(P, '[data-hadeethenc-category="3"]', 20000); } },
   { id: "hadeethenc-card", label: "Encyclopedia: a hadith card", go: hHadeeth },
   { id: "hadeethenc-assign", label: "Encyclopedia: card with the 👥 list open", go: async (P) => { await hHadeeth(P); await P.click('[data-hadeethenc-card="4563"] [data-assign-trigger]').catch(() => {}); await P.waitForTimeout(500); } },
-  { id: "topic", label: "Topics", go: async (P) => { await hTab(P, "topic"); await P.waitForTimeout(1500); } },
   { id: "search", label: "Search", go: async (P) => { await hTab(P, "search"); await P.waitForTimeout(1500); } },
+  { id: "dua-redirect", label: "Dua links on the Hadith page land on Dua Study (retired Hadith-page Dua tab)", go: async (P) => { await P.goto(new URL("hadith-study.html?view=dua", P.url()).href, { waitUntil: "networkidle" }); await P.waitForURL(/dua-study\.html/, { timeout: 20000 }); await wait(P, ".dua-row, [data-dua-empty], .dua-tile", 25000); await P.waitForTimeout(500); await P.evaluate(() => document.querySelectorAll('[id*="splash"], .mm-splash-overlay').forEach((e) => e.remove())); } },
   { id: "explore", label: "Explore", go: async (P) => { await hTab(P, "explore"); await P.waitForTimeout(1500); } },
   { id: "commentary", label: "Commentary", go: async (P) => { await hTab(P, "commentary"); await P.waitForTimeout(1500); } },
-  { id: "dua-cards", label: "Dua: the Duas list", go: hDua },
-  { id: "dua-word", label: "Dua: a card with a word card open", go: async (P) => { await hDua(P); await P.click('[data-dua-card="4"] [data-dua-word="1"]'); await wait(P, '[data-dua-word-panel="4"]', 10000).catch(() => {}); await P.waitForTimeout(600); } },
-  { id: "dua-check", label: "Dua: the ✓ Check this dua panel", go: async (P) => { await hDua(P); await P.click('[data-dua-card="2"] [data-dua-check-open]'); await wait(P, '[data-dua-check-panel="2"] [data-dua-check-member]', 15000); await P.waitForTimeout(600); } },
-  { id: "dua-chapters", label: "Dua: Dua chapters, the books", go: async (P) => { await hDua(P); await P.click('[data-dua-mode="chapters"]'); await wait(P, "[data-dua-book]", 15000); } },
-  { id: "dua-chapter-list", label: "Dua: a book's Dua chapters", go: async (P) => { await hDua(P); await P.click('[data-dua-mode="chapters"]'); await wait(P, `[data-dua-book="${BUKHARI}"]`, 15000); await P.click(`[data-dua-book="${BUKHARI}"]`); await wait(P, "[data-dua-chapter]", 15000); } },
 ];
 // surfaces: opener -> what appears. `setup` brings the page to the state where the opener is visible.
 const HADITH_SURFACES = [
   { id: "books-list", setup: hShelf, opener: '[data-hadith-tab="books"]', surface: '[data-hadith-menu="books"]:not([hidden])' },
   { id: "subjects-list", setup: hShelf, opener: '[data-hadith-tab="subjects"]', surface: '[data-hadith-menu="subjects"]:not([hidden])' },
   { id: "assign-list", setup: hHadeeth, opener: '[data-hadeethenc-card="4563"] [data-assign-trigger]', surface: '[data-hadeethenc-card="4563"] [data-assign-popover]' },
-  { id: "dua-word-panel", setup: hDua, opener: '[data-dua-card="4"] [data-dua-word="1"]', surface: '[data-dua-word-panel="4"]' },
-  { id: "dua-check-panel", setup: hDua, opener: '[data-dua-card="2"] [data-dua-check-open]', surface: '[data-dua-check-panel="2"]' },
 ];
 
 // ---- Dua views ----
