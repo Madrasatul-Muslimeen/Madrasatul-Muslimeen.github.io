@@ -142,7 +142,8 @@ const sheetInfo = (page) => page.evaluate(() => {
   const back = s.querySelector("[data-ln-back]").getBoundingClientRect();
   const rowEls = [...s.querySelectorAll(".ln-row")];
   const wide = rowEls.filter((r) => r.scrollWidth > r.clientWidth + 1 || r.getBoundingClientRect().right > innerWidth + 1).length;
-  const tiles = [...s.querySelectorAll(".ln-tile")].map((t) => ({ w: t.scrollWidth <= t.clientWidth + 1, p: t.querySelector(".ln-tile-p").textContent }));
+  // UPDATED IN PLACE 15 Nov 2026 (the Owner, "Words you already know"): a tenth tile, "Already known", now comes FIRST (data-ln-known-tile); these checks are about the nine STEP tiles, so they read [data-ln-tile]. The new tile is proved by learn-known-groups-browser.mjs.
+  const tiles = [...s.querySelectorAll(".ln-tile[data-ln-tile]")].map((t) => ({ w: t.scrollWidth <= t.clientWidth + 1, p: t.querySelector(".ln-tile-p").textContent }));
   return {
     rows: rowEls.length, known: s.querySelectorAll(".ln-row.ln-known").length, ticks: s.querySelectorAll(".ln-tick").length,
     scrollTop: sc.scrollTop, over: sc.scrollWidth - sc.clientWidth, pageOver: document.documentElement.scrollWidth - innerWidth,

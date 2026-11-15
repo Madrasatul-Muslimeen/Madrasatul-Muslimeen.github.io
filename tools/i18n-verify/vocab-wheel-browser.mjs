@@ -212,7 +212,8 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1440, 900], [39
     return {
       tile: s.querySelector('[data-ln-tile][aria-pressed="true"]')?.dataset.lnTile ?? null,
       onlyNew: s.querySelector('[data-ln-new="1"]')?.getAttribute("aria-pressed"),
-      badgeFirst: !!badge && body.firstElementChild === badge,
+      // UPDATED IN PLACE 15 Nov 2026: since J133 the level switch (WbW | Root | Family | Taṣrīf | Depth) is the first child; the badge is the first thing after it (red on main for the same reason).
+      badgeFirst: !!badge && [...body.children].find((e) => !e.matches("[data-ln-levels]")) === badge,
       words: badge?.dataset.vbWords, big: badge?.querySelector(".vb-big")?.textContent, sum: badge?.querySelector("[data-vb-sum]")?.textContent,
       passed: badge ? [...badge.querySelectorAll("[data-vb-passed]")].map((e) => e.dataset.vbStep).join() : null,
     };
