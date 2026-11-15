@@ -6,7 +6,7 @@
 //   nobnk       the page hands the card no Bangla marking                          -> the marking checks fail
 //   oldmark     the menu's "Also in Bangla" button is drawn again                  -> the "gone from the menu" check fails
 //   noknown     the bar never says how many words are known                        -> the known-count checks fail
-//   bigarabic   the bar's Arabic is back at the Word Card's other small Arabic     -> the 30%-less check fails
+//   bigarabic   the bar's Arabic is back at the Word Card's other small Arabic     -> the 44%-less check fails (UPDATED IN PLACE 15 Nov 2026: 30% less became 44% less when the Owner took another 20% off)
 //   oldorder    the Learn next bar is back inside the totals box                   -> the "after the Bangla marking" check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -22,7 +22,7 @@ const MUT = {
   nobnk: [PAGE, "banglaMarkHtml: banglaMarkHtmlFor(word), menuOpen: wordCardMenuOpen,", "banglaMarkHtml: \"\", menuOpen: wordCardMenuOpen,"],
   oldmark: [UI, '  return `<div class="bnw" data-bangla-block>\n', '  return `<div class="bnw" data-bangla-block>\n    <button type="button" class="bnw-mark" data-bangla-word="${esc(lemma)}">Also in Bangla</button>\n'],
   noknown: [PAGE, "return row ? { word: row.l, meaning: learnNextMeaning(row), count: row.n, rank: row.r, known } : null;", "return row ? { word: row.l, meaning: learnNextMeaning(row), count: row.n, rank: row.r } : null;"],
-  bigarabic: [PAGE, "  .quran-word-card .word-card-learnnext .word-card-learnnext-ar { font-size: calc(var(--wc-small-ar) * 0.7); }", ""],
+  bigarabic: [PAGE, "  .quran-word-card .word-card-learnnext .word-card-learnnext-ar { font-size: calc(var(--wc-small-ar) * 0.56); }", ""],
   oldorder: [CARD, "    ${markLearnRowHtml}\n    ${banglaMarkHtml}\n    ${learnNextBarHtml(wbw.learnNext, text, formatNumber)}\n", "    ${markLearnRowHtml}\n    ${learnNextBarHtml(wbw.learnNext, text, formatNumber)}\n    ${banglaMarkHtml}\n"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -82,7 +82,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const small = parseFloat(getComputedStyle(probe.querySelector("[lang=ar]")).fontSize); probe.remove();
     return { bar: a ? parseFloat(getComputedStyle(a).fontSize) : 0, small };
   });
-  check(`${tag} MUTATION TARGET (bigarabic): the bar's Arabic is 30% less than the Word Card's other small Arabic (${ar.bar}px of ${ar.small}px)`, ar.small > 0 && Math.abs(ar.bar / ar.small - 0.7) < 0.02, JSON.stringify(ar));
+  check(`${tag} MUTATION TARGET (bigarabic): the bar's Arabic is 44% less than the Word Card's other small Arabic -- the 13 Nov 30% less, then 20% smaller again on 15 Nov (0.7 x 0.8 = 0.56) (${ar.bar}px of ${ar.small}px)`, ar.small > 0 && Math.abs(ar.bar / ar.small - 0.56) < 0.02, JSON.stringify(ar));
 
   // ---- the chips save, one, two or all three, and a word with none leaves the list
   const saved = () => ev(() => { try { return JSON.parse(localStorage.getItem("mm_bangla_words.v2")); } catch { return null; } });
