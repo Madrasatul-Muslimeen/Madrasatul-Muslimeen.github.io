@@ -81,9 +81,11 @@ export function openHadithWordCard({ tok, tokens, wordsMeanings, hadithLabel, ha
   const xBtn = el("button", "hwc-close", "✕"); xBtn.type = "button"; xBtn.setAttribute("aria-label", t("Close")); xBtn.title = t("Close"); xBtn.dataset.hwcClose = "true"; // J140 part 3
   head.appendChild(xBtn);
   sheet.appendChild(head);
-  const big = el("p", "hwc-big", tok.written); big.lang = "ar"; big.dir = "rtl"; sheet.appendChild(big);
-  sheet.appendChild(el("p", "hwc-draft", t("Draft: not yet checked by a scholar.")));
-  if (hadithLabel) { const lab = el("p", "hwc-label", hadithLabel); lab.dir = "auto"; sheet.appendChild(lab); }
+  // J140 part 3: the sheet itself no longer scrolls (the eight resize handles sit on its edges and must stay there); the body does.
+  const scroll = el("div", "hwc-scroll"); sheet.appendChild(scroll);
+  const big = el("p", "hwc-big", tok.written); big.lang = "ar"; big.dir = "rtl"; scroll.appendChild(big);
+  scroll.appendChild(el("p", "hwc-draft", t("Draft: not yet checked by a scholar.")));
+  if (hadithLabel) { const lab = el("p", "hwc-label", hadithLabel); lab.dir = "auto"; scroll.appendChild(lab); }
   const wm = meaningFor(wordsMeanings, tok.norm);
   const ctx = { tok, tokens, wm };
   const tabs = el("div", "hwc-tabs"); tabs.setAttribute("role", "tablist");
@@ -94,8 +96,8 @@ export function openHadithWordCard({ tok, tokens, wordsMeanings, hadithLabel, ha
     b.append(el("span", null, t(name)), el("small", null, t(sub)));
     b.addEventListener("click", () => show(i)); tabs.appendChild(b);
   });
-  sheet.append(tabs, host); show(0);
-  if (hadithId != null) sheet.appendChild(hadithMarksRow({ number: hadithId, position: tok.pos })); // Part B: one word's marks
+  scroll.append(tabs, host); show(0);
+  if (hadithId != null) scroll.appendChild(hadithMarksRow({ number: hadithId, position: tok.pos })); // Part B: one word's marks
   overlay.appendChild(sheet); document.body.appendChild(overlay);
   const close = () => { document.removeEventListener("keydown", onKey); overlay.remove(); onClose?.(); };
   function onKey(e) { if (e.key === "Escape") close(); }
