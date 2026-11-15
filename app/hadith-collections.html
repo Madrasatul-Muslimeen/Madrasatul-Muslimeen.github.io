@@ -27,6 +27,8 @@
   /* Audit part 155, defect 4 (the way-back law, decision 86): a link that lands on a passage scrolls the page, so
      ← Back stays pinned at the top of the screen instead of scrolling away with the page header. */
   .hadith-back-btn { position: sticky; top: 0.5rem; z-index: 25; /* above the menu bar (z 20): the one-row bar is short enough to sit under the pinned Back after a jump (J106 S1) */ box-shadow: 0 2px 8px rgb(15 30 60 / 0.25); }
+  .page-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .page-title-row h1 { min-width: 0; }
 </style>
 </head>
 <body>
@@ -41,7 +43,10 @@
 
   <!-- The way-back law (decision 86): opened from somewhere else in the app with back=1, this page offers ← Back. -->
   <button type="button" id="hadithBackBtn" class="hadith-back-btn" hidden></button>
-  <h1 id="hadithPageTitle"></h1>
+  <div class="page-title-row">
+    <h1 id="hadithPageTitle"></h1>
+    <div id="hadithHeaderSearch"></div><!-- Search, top right (the Owner, 14 Nov 2026), as on Hadith Study: the bar now carries Know Your Status, so six buttons do not fit a phone -->
+  </div>
   <p class="hadith-note" id="hadithPilotNote"></p>
 
   <!-- Issue #311 -- a minimal session, just enough for the HadeethEnc card's
