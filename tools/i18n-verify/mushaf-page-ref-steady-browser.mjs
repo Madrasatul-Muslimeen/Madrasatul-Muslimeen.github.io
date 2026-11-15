@@ -14,6 +14,7 @@
 // Run from the repository root with serve.js running. Mutations (--mutate=NAME); the checks named must FAIL:
 //   nofirst   the first-page callback does nothing (the old behaviour)  -> "shown from the first page", "bar steady"
 //   pagewrong the reference always names the first page                 -> "names the page in view" after scrolling
+//   nosave    (47L, 15 Nov 2026) the save is not shown on the ⋮ tile    -> "the save really happened"
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -25,6 +26,7 @@ const check = (n, ok, d = "") => {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   nofirst: ["onFirstPage: () => wireMushafPageRefScroll(),", "onFirstPage: () => {},"],
+  nosave: ["bookmarksDoc = patchSelectedDoc(bookmarksDoc, outcome, selectedPersonId);\n      // The Owner, 12 Oct 2026", "// nosave\n      // The Owner, 12 Oct 2026"],
   pagewrong: ["let best = pages[0];\n      if (pages.length > 1) {", "let best = pages[0];\n      if (false) {"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -78,15 +80,19 @@ for (const lang of ["en", "bn"]) {
     check(`${tag} positive control: after scrolling it names the page in view (not page 2)`, s4.page === s4.inView && s4.inView !== "2" && (s4.shown || s4.vw < 600), JSON.stringify(s4));
     // 3. Save a bookmark; the bar must not change height.
     const before = s4.barH;
-    await page.click("#readBarBookmarkBtn");
+    // UPDATED IN PLACE 15 Nov 2026 (47L): the Mushaf bar's own 🔖 is hidden since J114 (one ⋮); the bookmark is the ⋮ sheet's ONE bookmark tile.
+    await page.click("#readQuickMenuSlot .ayah-quick-btn"); await page.waitForTimeout(300);
+    await page.click("#readQuickMenuSlot .quick-menu [data-qm-unit-bookmark], #readQuickMenuSlot .quick-menu [data-qm-bookmark]");
     if (await page.waitForSelector(".bm-popover", { timeout: 2500 }).catch(() => null)) await page.click("[data-bm-pop-save]");
     await page.waitForTimeout(500);
     await page.waitForFunction(() => document.querySelectorAll(".hifz-page[data-mushaf-page]").length > 10, null, { timeout: 25000 }).catch(() => {});
     await page.waitForTimeout(2500);
     const after = await state(page);
+    const saved = await page.evaluate(() => (document.querySelector("#readQuickMenuSlot [data-qm-unit-bookmark], #readQuickMenuSlot [data-qm-bookmark]")?.textContent.trim() ?? "").startsWith("★"));
+    check(`${tag} POSITIVE CONTROL: the save really happened (the ⋮ bookmark tile turned ★)`, saved, "tile not ★");
     check(`${tag} the Read bar is the same height before and after a save`, Math.abs(after.barH - before) < 0.5, `before ${before} after ${after.barH}`);
     check(`${tag} the bar height at first paint equals the settled height`, Math.abs(s1.barH - settled.barH) < 0.5, `first ${s1.barH} settled ${settled.barH}`);
-    check(`${tag} the reference is still shown after the save`, after.shown, JSON.stringify(after));
+    check(`${tag} the reference is still shown after the save (below 600px it is replaced on purpose by 🏠 and 📍)`, after.shown || after.vw < 600, JSON.stringify(after));
     check(`${tag} the bar and reference stay inside the viewport`, after.barScrollOver <= 0 && after.refRight <= after.vw, JSON.stringify(after));
     check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource|quran\.foundation/i.test(e)).length === 0, errors.join(" | "));
     await ctx.close();
