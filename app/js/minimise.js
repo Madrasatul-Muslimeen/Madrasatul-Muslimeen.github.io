@@ -38,12 +38,14 @@ const CONTROLS = "#topNav summary, #topNav a, #topNav button, #tabRow button, #t
 const ATTR = "data-mm-min";
 const CSS = `
 [${ATTR}] { display: none !important; }
-.mm-min-btn { flex: 0 0 auto; margin-inline-start: auto; min-width: 40px; min-height: 40px; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: 1.5rem; font-weight: 700; line-height: 1; cursor: pointer; border-radius: 0.5rem; }
+.mm-full-btn + .mm-min-btn { margin-inline-start: 0; }
+.mm-full-btn[aria-pressed="true"] { background: rgba(201, 162, 75, 0.35); }
+.mm-min-btn, .mm-full-btn { flex: 0 0 auto; margin-inline-start: auto; min-width: 40px; min-height: 40px; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: 1.5rem; font-weight: 700; line-height: 1; cursor: pointer; border-radius: 0.5rem; }
 ${handleCss("mm-h")}
 body.jt-dragging { user-select: none; }
 [data-mm-full] > .mm-h { display: none; }
-.mm-min-btn:hover { background: rgba(255, 255, 255, 0.12); }
-.mm-min-btn:focus-visible { outline: 3px solid #c9a24b; outline-offset: 1px; }
+.mm-min-btn:hover, .mm-full-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.mm-min-btn:focus-visible, .mm-full-btn:focus-visible { outline: 3px solid #c9a24b; outline-offset: 1px; }
 /* The chips wait at the bottom right: inside the Zab bar's strip when it is on (its pockets are on the left), else
    just above the bottom edge, clear of the 🧰 corner. */
 #mmMinDock { position: fixed; right: 72px; bottom: 12px; z-index: 995; display: flex; flex-wrap: wrap-reverse; justify-content: flex-end; gap: 0.4rem; max-width: calc(100vw - 96px); pointer-events: none; }
@@ -145,6 +147,7 @@ async function relabel() {
   await new Promise((r) => requestAnimationFrame(r)); // ...and the windows repaint their titles first
   if (dock) dock.setAttribute("aria-label", t("Minimised windows"));
   document.querySelectorAll(".mm-min-btn").forEach((b) => { b.setAttribute("aria-label", t("Minimise")); b.title = t("Minimise"); });
+  document.querySelectorAll(".mm-full-btn").forEach((b) => { b.setAttribute("aria-label", t("Full screen")); b.title = t("Full screen"); });
   for (const { chip, spec, root } of minimised.values()) {
     const name = titleOf(spec, root);
     chip.setAttribute("aria-label", t("Bring back {name}", { name }));
@@ -218,7 +221,7 @@ function enhance(root, spec, close) {
   if (!spec.noFull && !root.querySelector(".mm-full-btn")) { // read-window.js has its own full-screen button
     const f = document.createElement("button");
     f.type = "button";
-    f.className = "mm-min-btn mm-full-btn";
+    f.className = "mm-full-btn";
     f.dataset.mmFullBtn = spec.id;
     f.textContent = "⛶";
     f.setAttribute("aria-label", t("Full screen"));
@@ -227,7 +230,7 @@ function enhance(root, spec, close) {
     f.addEventListener("pointerdown", (e) => e.stopPropagation());
     f.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); toggleFull(root); });
     f.style.order = getComputedStyle(close).order;
-    (close.previousElementSibling?.matches?.(".mm-min-btn") ? close.previousElementSibling : close).before(f);
+    (close.previousElementSibling?.matches?.(".mm-min-btn") ? close.previousElementSibling : close).before(f); // ⛶ – ✕
   }
   if (spec.own || root.querySelector(":scope > .mm-h")) return;
   // The shared drag / resize (float-window.js): eight handles with their gold brackets, the top bar moves the window.
