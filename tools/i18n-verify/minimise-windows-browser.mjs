@@ -20,7 +20,7 @@ function check(name, ok, detail = "") {
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
   nobtn: ["app/js/minimise.js", "**/app/js/minimise.js*", "      close.before(btn);", "      void btn;"],
-  nodock: ["app/js/minimise.js", "**/app/js/minimise.js*", "    minimiseAll({ except: keep });", "    void keep;"],
+  nodock: ["app/js/minimise.js", "**/app/js/minimise.js*", "    collapseAll({ except: keep, inside: b });", "    void keep;"],
   noayahrestore: ["app/quranrevival.html", "**/app/quranrevival.html*", " restoreWindow(ayahActionSheetOverlayEl); // J81: a card opened while minimised is shown", "", 4],
   norestore: ["app/js/journey-tray.js", "**/app/js/journey-tray.js*", "  restoreWindow(tray); // PCF MSA J81: opening it again brings a minimised tray back\n", ""],
 };
@@ -47,7 +47,9 @@ const state = (P) => P.evaluate(() => {
   const onTop = (e) => { if (!vis(e)) return false; const b = e.getBoundingClientRect(); const x = document.elementFromPoint(b.left + b.width / 2, b.top + Math.min(b.height / 2, 20)); return !!x && (x === e || e.contains(x)); };
   const tray = document.getElementById("journeyTray"), min = tray?.querySelector(".mm-min-btn"), close = tray?.querySelector(".jt-close");
   const mb = min?.getBoundingClientRect(), cb = close?.getBoundingClientRect();
-  const chip = document.querySelector('[data-mm-min-chip="journey"]');
+  // UPDATED IN PLACE 15 Nov 2026 (J140): a bottom-row press now COLLAPSES the window to a bar at the top left (data-mm-col-bar)
+  // instead of leaving a chip; the – button still leaves a chip. Either is "the window waits".
+  const chip = document.querySelector('[data-mm-min-chip="journey"], [data-mm-col-bar="journey"]');
   const explore = document.getElementById("exploreView"), study = document.getElementById("studyPillarMenu");
   return { tray: vis(tray), min: vis(min), minBeside: !!min && min.nextElementSibling === close && !!cb && cb.left - mb.right >= -1 && cb.left - mb.right <= 8, minW: mb ? Math.round(mb.width) : 0, minH: mb ? Math.round(mb.height) : 0, minTop: onTop(min),
     chip: vis(chip), chipTop: onTop(chip), explore: vis(explore) && onTop(explore), study: onTop(study) };
@@ -68,7 +70,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1708, 1049], [3
   s = await state(P);
   check(`${tag}: Explore pressed with the window open: the window steps aside and Explore is seen`, !s.tray && s.explore, JSON.stringify(s));
   check(`${tag}: ...the window waits as a chip, on top`, s.chip && s.chipTop, JSON.stringify(s));
-  await P.evaluate(() => document.querySelector('[data-mm-min-chip="journey"]')?.click()); await P.waitForTimeout(400); // a missing chip fails the next check by name
+  await P.evaluate(() => (document.querySelector('[data-mm-col-bar="journey"] [data-mm-open]') ?? document.querySelector('[data-mm-min-chip="journey"]'))?.click()); await P.waitForTimeout(400); // a missing chip fails the next check by name
   s = await state(P);
   check(`${tag}: one tap on the chip brings the window back, and the chip goes`, s.tray && !s.chip, JSON.stringify(s));
   await P.evaluate(() => document.getElementById("tabStudyBtn").click());
@@ -102,7 +104,7 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[1708, 1049], [3
     await P.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
     await P.evaluate(() => document.querySelector('[data-ayah-num-badge="22:3"]')?.click()); await P.waitForTimeout(900);
     const card = () => P.evaluate(() => { const o = document.getElementById("ayahActionSheetOverlay"), sh = o?.querySelector("[data-ayah-sheet]"); const m = sh?.querySelector(".mm-min-btn"), c = sh?.querySelector(".ayah-sheet-close"); const mb = m?.getBoundingClientRect(), cb = c?.getBoundingClientRect();
-      return { shown: !!sh && getComputedStyle(o).display !== "none" && sh.getClientRects().length > 0, ref: sh?.querySelector(".ayah-sheet-ref")?.textContent ?? "", min: !!mb && mb.width >= 40 && mb.height >= 40, beside: !!mb && !!cb && cb.left - mb.right >= -1 && cb.left - mb.right <= 12, chip: !!document.querySelector('[data-mm-min-chip="ayah"]') }; });
+      return { shown: !!sh && getComputedStyle(o).display !== "none" && sh.getClientRects().length > 0, ref: sh?.querySelector(".ayah-sheet-ref")?.textContent ?? "", min: !!mb && mb.width >= 40 && mb.height >= 40, beside: !!mb && !!cb && cb.left - mb.right >= -1 && cb.left - mb.right <= 12, chip: !!document.querySelector('[data-mm-min-chip="ayah"], [data-mm-col-bar="ayah"]') }; });
     let c = await card();
     check(`${tag}: POSITIVE CONTROL the Āyah card opens`, c.shown, JSON.stringify(c));
     check(`${tag}: the Āyah card has NO – (the Owner took it out, J131, 9 Nov 2026; ← sits beside × instead)`, !c.min, JSON.stringify(c));
