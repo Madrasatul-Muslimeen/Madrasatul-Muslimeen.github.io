@@ -9,7 +9,7 @@
 //   --prove           run every mutation in turn and report which were caught (exits 1 if any was not)
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithMenuRow } from "./harness.mjs";
 
 const MUT = {
   rawmsg: ["js/hadith-shared-ui.js", 'const msg = el("p", null, plainMessageFor(err, { read: true }));', 'const msg = el("p", null, String(err?.message ?? err));'],
@@ -79,7 +79,10 @@ async function open(lang, width, path, blocked = false) {
   const { page } = await openPage(ctx, path);
   return { ctx, page, net };
 }
-const tab = (p, name) => p.click(`[data-hadith-tab="${name}"]`, { timeout: 8000 }).catch(() => console.log(`  note: could not tap the ${name} tab`));
+// Encyclopedia ("collections") and Classical Explanations ("commentary") moved off the bar into the Menu panel (J106 S1, v14.38),
+// which starts hidden: a direct click on their button resolves and times out (the hidden-control trap). Choose them the way a
+// reader does, through the Menu, and keep the direct tap for a tab that is still on the bar.
+const tab = (p, name) => (name === "collections" || name === "commentary" ? hadithMenuRow(p, name) : p.click(`[data-hadith-tab="${name}"]`, { timeout: 8000 })).catch(() => console.log(`  note: could not tap the ${name} tab`));
 const waitFor = (p, sel, ms = 8000) => p.waitForSelector(sel, { state: "attached", timeout: ms }).then(() => true).catch(() => false);
 const bodyText = (p) => p.evaluate(() => (document.querySelector(".hadith-body") || document.body).innerText);
 // The note inside sel: its words, its button's rendered box, and whether that box is on screen.
