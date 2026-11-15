@@ -4550,6 +4550,9 @@
   .quran-word-card .word-card-basic-row .word-card-basic-btn [lang="ar"],
   .quran-word-card .word-card-acc[data-word-card-sec="conj"] .word-card-dline[data-word-card-dline="rule"] .word-card-ar,
   .quran-word-card .word-card-acc[data-word-card-sec="conj"] .word-card-form-only .word-card-ar { font-size: var(--wc-tasrif-ar-80); }
+  /* the root's letters (ر ب ح) stay together: when the line is full the whole root goes to the next line, never one letter alone */
+  .quran-word-card .word-card-acc[data-word-card-sec="conj"] .word-card-dline[data-word-card-dline="rule"] .word-card-ar,
+  .quran-word-card .word-card-acc[data-word-card-sec="conj"] .word-card-form-only .word-card-ar { white-space: nowrap; }
   .quran-word-card .word-card-morph .word-card-ar { font-size: var(--wc-ar-80); }
   /* the Owner, 15 Nov 2026 ("make all titles look similar, elegant, tiny but noticeable"): Word Progress, Mark the Word, the Bangla marking
      title and Learn the Next Word share ONE title look: small capitals, spaced, in the card's muted heading colour, never bold-loud. */

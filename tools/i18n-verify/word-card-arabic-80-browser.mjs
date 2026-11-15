@@ -2,10 +2,11 @@
 // like "Learn the Next Word": (a) Taṣrīf's "Basic form: فَعَلَ" pill and its "Form I of ر ب ح" line: 0.8 of the Taṣrīf block's OWN Arabic size (its words are 0.9 of the head word; J61 holds those at 90%),
 // (b) Depth > Morphology (Ṣarf): Pieces, Form, Tense, Who and Voice: 0.8 of the Word Card's small Arabic. The Form line must stay inside the card at 390 / 360 / 320 / a computer.
 // (Corrected after the Architect's review: the first version took 0.8 of the SMALL Arabic for (a) and made the line 1.6x the Taṣrīf block's words.)
-//   node tools/i18n-verify/word-card-arabic-80-browser.mjs [--mutate=basicbtn|morph|formline]
+//   node tools/i18n-verify/word-card-arabic-80-browser.mjs [--mutate=basicbtn|morph|formline|nowrap]
 //   --mutate=basicbtn  the pill's Arabic keeps its old size    -> "the Basic-form pill's Arabic is 0.8" FAILS
 //   --mutate=morph     Ṣarf's Arabic keeps its old size         -> "Morphology's Arabic ... 0.8" FAILS
 //   --mutate=formline  the "Form I of" line keeps its old size  -> "the Form line's Arabic is 0.8" FAILS
+//   --mutate=nowrap    the root's letters may split across lines -> same check FAILS (a root letter alone on a line)
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 let pass = 0, fail = 0;
@@ -18,6 +19,7 @@ const F = "app/quranrevival.html";
 const MUT = {
   basicbtn: [".quran-word-card .word-card-acc[data-word-card-sec=\"conj\"] .word-card-basic-btn [lang=\"ar\"],\n  .quran-word-card .word-card-basic-row", ".quran-word-card .word-card-acc[data-word-card-sec=\"conj\"] .word-card-basic-btn-X [lang=\"ar\"],\n  .quran-word-card .word-card-basic-row"],
   morph: [".quran-word-card .word-card-morph .word-card-ar { font-size: var(--wc-ar-80); }", ".quran-word-card .word-card-morph-X .word-card-ar { font-size: var(--wc-ar-80); }"],
+  nowrap: ["word-card-form-only .word-card-ar { white-space: nowrap; }", "word-card-form-only .word-card-ar { white-space: normal; }"],
   formline: ["  .quran-word-card .word-card-acc[data-word-card-sec=\"conj\"] .word-card-dline[data-word-card-dline=\"rule\"] .word-card-ar,\n  .quran-word-card .word-card-acc[data-word-card-sec=\"conj\"] .word-card-form-only .word-card-ar {", "  .quran-word-card .word-card-never-X .word-card-ar,\n  .quran-word-card .word-card-never-Y .word-card-ar {"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -53,9 +55,9 @@ for (const [w, h] of [[390, 844], [360, 740], [320, 640], [1280, 900]]) {
   const form = await page.evaluate((r) => {
     const l = document.querySelector("#quranWordCardMount .word-card-form-only") ?? document.querySelector("#quranWordCardMount .word-card-dline[data-word-card-dline='rule']");
     const a = l?.querySelector(".word-card-ar"), c = document.querySelector("#quranWordCardMount .quran-word-card").getBoundingClientRect(), lr = l?.getBoundingClientRect();
-    return l ? { ratio: +(parseFloat(getComputedStyle(a).fontSize) / r).toFixed(3), inside: lr.left >= c.left - 1 && lr.right <= c.right + 1, over: l.scrollWidth - l.clientWidth } : null;
+    return l ? { ratio: +(parseFloat(getComputedStyle(a).fontSize) / r).toFixed(3), oneLine: a.getClientRects().length === 1 && a.getBoundingClientRect().height < parseFloat(getComputedStyle(a).fontSize) * 2.2, inside: lr.left >= c.left - 1 && lr.right <= c.right + 1, over: l.scrollWidth - l.clientWidth } : null;
   }, refPx);
-  check(`${tag} the Form line's Arabic is 0.8 and the line stays inside the card with no sideways overflow (${JSON.stringify(form)})`, !!form && Math.abs(form.ratio - 0.8) < 0.03 && form.inside && form.over <= 1);
+  check(`${tag} the Form line's Arabic is 0.8 and the line stays inside the card with no sideways overflow (${JSON.stringify(form)})`, !!form && Math.abs(form.ratio - 0.8) < 0.03 && form.oneLine && form.inside && form.over <= 1);
   // (b) Depth > Morphology
   await level("depth");
   await page.evaluate(() => { const s = document.querySelector('[data-word-card-sec="morph"]'); const t = s?.querySelector("[data-word-card-acc-toggle], button, summary"); if (s && !s.querySelector(".word-card-morph")) t?.click(); });
