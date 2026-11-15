@@ -3351,3 +3351,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v15.02** (2026-11-14): the Hadith book and chapter names switched on (Rules published).
 - **v15.03** (2026-11-14): the Read bar, Word Card marking and āyah stripe (#1732).
 - **v15.04** (2026-11-15): Learn next: Already known, six tick groups (#1735).
+- **v15.05** (2026-11-15): Hadith: Know Your Status (#1738, #1740).

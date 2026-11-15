@@ -36,6 +36,7 @@ import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 import { settingsHost, addPreviewCue } from "./hadith-menu-settings.js";
 import { mountContinueStrip, parkContinueStrip } from "./hadith-continue-mount.js";
 import { nameLine, primeNames, renderNamesEditor } from "./hadith-names.js";
+import { primeStatuses, statusBadge, renderStatusRow, renderStatusWheel } from "./hadith-status.js";
 import { bookKey, groupKey } from "./hadith-names-model.js";
 import { subjectAddRow, renderSubjectList, renderSubjectEditor, registerBuiltinSubjects, knownSubjects, loadSubjectChoices, subjectLabel } from "./hadith-subjects.js";
 
@@ -115,6 +116,8 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
       topic: () => renderTopic(body, state, render),
       search: () => renderSearch(body, state, render),
       explore: () => renderExplore(body),
+      status: () => renderStatusWheel(body, state, render, state.statusBack
+        ? { label: state.statusBack.label, go: () => { state.view = "books"; state.statusBack = null; render(); } } : null),
       commentary: () => renderCommentary(body, state),
       dua: () => renderDua(body, state, render),
     })[state.view]();
@@ -216,7 +219,7 @@ function focusCollectionsLanding() {
  * hack -- the standard ARIA-tabs pattern of leaving focus on the tab list.
  */
 function focusActiveTab() {
-  const btn = document.querySelector(".hadith-tab.active");
+  const btn = document.querySelector(".hadith-tab.active, .hadith-header-search.active");
   if (btn) btn.focus({ preventScroll: true });
 }
 
@@ -224,7 +227,7 @@ function focusActiveTab() {
 // The notice that is never conditional
 // ---------------------------------------------------------------------------
 
-const REAL_DATA_VIEWS = new Set(["dua", "commentary", "books", "subjects"]);
+const REAL_DATA_VIEWS = new Set(["dua", "commentary", "books", "subjects", "status"]);
 
 function showsSyntheticAtTop(state) {
   if (REAL_DATA_VIEWS.has(state.view)) return false;
@@ -278,16 +281,36 @@ function controls(state, render) {
   tabs.appendChild(menuWrap);
   tabs.appendChild(menuButton(state, render, "books", t("Books|Hadith Study menu"), (list, close) => fillBooksMenu(list, close, state, render), toShelf));
   tabs.appendChild(menuButton(state, render, "subjects", t("Subjects|Hadith Study menu"), (list, close) => fillSubjectsMenu(list, close, state, render)));
+  // Know Your Status (the Owner, 14 Nov 2026) sits beside Explore. Search moved to the top right of the page, level with the
+  // heading, whenever the page gives it a place (#hadithHeaderSearch, on Hadith Study); a page with no such place keeps it in the bar.
+  const searchSlot = document.getElementById("hadithHeaderSearch");
   for (const [view, label] of [
     ["explore", t("Explore")],
-    ["search", t("Search")],
+    ["status", t("Know Your Status")],
+    ...(searchSlot ? [] : [["search", t("Search")]]),
   ]) {
     const b = el("button", `hadith-tab${state.view === view ? " active" : ""}`, label);
     b.type = "button";
     b.dataset.hadithTab = view;
     if (state.view === view) b.setAttribute("aria-current", "page");
-    b.addEventListener("click", () => { state.view = view; render(); focusActiveTab(); });
+    b.addEventListener("click", () => { if (view === "status") state.statusBack = null; state.view = view; render(); focusActiveTab(); });
     tabs.appendChild(b);
+  }
+  if (searchSlot) {
+    searchSlot.textContent = "";
+    const sb = el("button", `hadith-header-search${state.view === "search" ? " active" : ""}`);
+    sb.type = "button";
+    sb.dataset.hadithTab = "search";
+    if (state.view === "search") sb.setAttribute("aria-current", "page");
+    const NS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("width", "18"); svg.setAttribute("height", "18"); svg.setAttribute("aria-hidden", "true");
+    const c = document.createElementNS(NS, "circle"); c.setAttribute("cx", "10.5"); c.setAttribute("cy", "10.5"); c.setAttribute("r", "6.5"); c.setAttribute("fill", "none"); c.setAttribute("stroke", "currentColor"); c.setAttribute("stroke-width", "2.2");
+    const l = document.createElementNS(NS, "path"); l.setAttribute("d", "M15.5 15.5L21 21"); l.setAttribute("stroke", "currentColor"); l.setAttribute("stroke-width", "2.2"); l.setAttribute("stroke-linecap", "round");
+    svg.append(c, l);
+    sb.append(svg, el("span", "hadith-header-search-text", t("Search")));
+    sb.addEventListener("click", () => { state.view = "search"; render(); focusActiveTab(); });
+    searchSlot.appendChild(sb);
   }
   bar.appendChild(tabs);
   return bar;
@@ -1163,6 +1186,8 @@ function renderOpenitiSource(state) {
   function localRefresh() {
     body.textContent = "";
     body.appendChild(el("p", "hadith-note", t("Loading…")));
+    // Know Your Status: the card's link to the wheel, with a way back to this hadith (the way-back law). `oi` is replaced when the book changes, so it is set on every draw.
+    state.oi.openWheel = (no) => { state.view = "status"; state.statusBack = { label: `← ${t("Back to Hadith {n}", { n: num(no) })}` }; state.render(); };
     renderOpenitiBody(body, state.oi, localRefresh).catch((err) => {
       console.error(err);
       body.textContent = "";
@@ -1297,6 +1322,7 @@ function passageSnippet(text, words = 12) {
 }
 
 function renderReaderHadithList(pane, passages, oi, localRefresh, conc) {
+  primeStatuses(localRefresh); // one read of the person's own bookmarks, after the list is drawn; nothing if signed out
   if (!oi.chapterId) { pane.appendChild(el("p", "hadith-note hadith-pane-empty", t("Choose a chapter."))); return; }
   if (!passages.length) { pane.appendChild(el("p", "hadith-note hadith-pane-empty", t("Nothing here yet."))); return; }
   const list = el("div", "hadith-reader-list");
@@ -1310,6 +1336,9 @@ function renderReaderHadithList(pane, passages, oi, localRefresh, conc) {
     const cite = conc?.byN.get(h.n);
     const no = h.kind === "chapter-text" ? t("Chapter text") : h.kind === "editorial" ? t("Editor's note") : num(cite ?? h.number ?? "");
     row.appendChild(el("span", "hadith-reader-no", no));
+    // Know Your Status: ONE small icon above the text of a hadith that has a status; an unmarked hadith shows nothing.
+    const badge = h.kind === "hadith" || h.kind === "passage" ? statusBadge(oi.bookUri, h.n) : null;
+    if (badge) row.appendChild(badge);
     const snip = el("span", "hadith-reader-snippet", passageSnippet(h.text));
     snip.title = snip.textContent; // two lines with large text cut it (part 136 H4); the whole snippet stays readable
     snip.lang = "ar"; snip.dir = "rtl";
@@ -1338,6 +1367,12 @@ function renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks,
   if (jumped) { card.classList.add("hadith-card-focused"); card.dataset.openitiFocused = "true"; }
   pane.appendChild(card);
   const h = passages[i];
+  if (h.kind === "hadith" || h.kind === "passage") {
+    const bookEn = (oi.books ?? []).find(([u]) => u === versionUri)?.[1]?.titleEn ?? versionUri;
+    renderStatusRow(pane, { versionUri, n: h.n, name: `${bookEn} ${h.number ?? h.n}` }, {
+      openWheel: oi.openWheel ? () => oi.openWheel(h.number ?? h.n) : null,
+    });
+  }
   if (subjectRef && (h.kind === "hadith" || h.kind === "passage")) pane.appendChild(subjectAddRow(subjectRef(h), subjectNameOf));
 }
 

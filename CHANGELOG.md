@@ -24018,3 +24018,17 @@ Built by the QR Lead 47L (#1735, from the Owner's tick of 110L's demo https://cl
 - **Not built, waiting on the Owner's tick boxes in PCF MSA J138:** starting groups ticked (n138a; nothing is pre-ticked, matching the Owner's 11:56 am "so user can get his real status"), and recounting First-N over words now known (n138b). Also for that follow-up: on a phone the ten tiles sit 3+3+3+1.
 
 Checks (111L, PR head 8701dee, vs main 7073247, by failing-check name): behaviour.mjs 970/5, the same five that fail on main (14a 30i 30j 30l 31a); learn-known-groups-browser 46/0 (6 mutations by 47L); learn-next-browser 204/0 (updated in place: a tenth tile); vocab-wheel-browser 114/0 (red on main, updated in place by 47L); learn-next-levels 129/0; vocabulary 76/0; vocab-review 68/0; vocab-buttons-open 49/0; bangla-marks 108/0; qr-verify run-all 30/30 on the QR build of the PR (full QR clone); screenshots looked at 360px and 1280px.
+
+## v15.05 — 15 Nov 2026 (Sydney) — Hadith Study's "Know Your Status" (the Owner's ask of 14 Nov, PCF MSA J106)
+
+Built by the Hadith Lead 14L (#1738, and the test-only #1740); reviewed and released by the Architect 111L.
+
+- **Status icons in the lists:** a small icon over each hadith the reader has marked (memorised ✓, revising ↻, need to memorise ○, saved ★), so the status is read before a hadith is opened. Nothing shows on an unmarked hadith (the Owner's demo tick: icon only).
+- **A four-chip status row** under the hadith card; a failed save says so (I15).
+- **"Know Your Status"** beside Explore: a progress wheel By Book (Book → Chapters) and By Topic (Topic → Books), % of the whole and of marked, a "Counts as done" choice (Memorised + Revising by default, kept on the device), a detail strip and the way back home. It also opens from the card and from the menu.
+- **Search** moved to the top right, level with the heading, on Hadith Study and Hadith Collections (the bar now carries Know Your Status).
+- **No Rules change:** the status rides on the reader's own bookmark (`settings.status`; Clear = `status: null`, the bookmark stays, I4) through the existing `saveBookmark` / `updateSavedBookmarkFields`; the bookmarks Rules carry no field list. **I9:** one read of the reader's bookmarks document when a reader list is drawn, none at startup.
+- 40 new Bangla strings marked `// ?` for the Owner's wording review. Test stub: an opt-in `__stubApplyUpdates`, like `__stubApplyBatches`.
+- **#1740 (test only):** `hadith-read-failed-browser` was failing 36 checks on main because Encyclopedia moved into the Menu panel in v14.38 and the suite's click timed out on a hidden control; it now opens Encyclopedia through the Menu. No check weakened; 100/0, 6 of 6 mutations caught.
+
+Checks (111L, PR head 438915a vs main a8cfd61, by failing-check name): behaviour.mjs 970/5, the same five as main (14a 30i 30j 30l 31a); hadith-status 100/0, hadith-status-model 21/0, hadith-menu-bar 188/0, hadith-study-reader 116/0, hadith-key-marks 52/0, hadith-names 30/0, hadith-offline-cache 68/0, hadith-colours 118/0, hadith-search-announcement 16/0, bookmark-open 77/0, bookmark-sheet 176/0, stub-parity 4/0; hadith-read-failed 100/0 on #1740 (64/36 on main before it); apps-build-check 58/0; qr-verify run-all 30/30 on the QR build of #1738 (full QR clone); screens looked at 320 and 1280.

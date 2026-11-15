@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "15.04",
+    "version": "15.05",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7253,8 +7253,20 @@
     {
       "version": "15.04",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Learn next's new first step 'Already known' with six tick groups (QR Lead 47L, #1735), released by the Architect 111L.",
+      "integration": {
+        "authorizedOn": "2026-11-15",
+        "integratedOn": "2026-11-15",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "15.05",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Hadith Study's Know Your Status: status icons, card status row, progress wheel, Search top right (Hadith Lead 14L, #1738; test fix #1740), released by the Architect 111L.",
       "integration": {
         "authorizedOn": "2026-11-15",
         "integratedOn": "2026-11-15",
@@ -7263,8 +7275,9 @@
       }
     }
   ],
-  "nextUnallocated": "15.05",
+  "nextUnallocated": "15.06",
   "nextUnallocatedNote": [
+    "v15.05 was allocated to Hadith: Know Your Status (#1738, #1740), 2026-11-15.",
     "v15.04 was allocated to Learn next: Already known, six tick groups (#1735), 2026-11-15.",
     "v15.03 was allocated to the Read bar, Word Card marking and āyah stripe (#1732), 2026-11-14.",
     "v15.02 was allocated to the Hadith book and chapter names switched on (Rules published), 2026-11-14.",
