@@ -4650,7 +4650,7 @@
      conjugation tables need side by side. The window's first size is now up to 1120px (1101 at a 1280 screen); at 1024 the card
      (881px) keeps today's single column, so no layout loses anything. */
   @container wordcard (min-width: 62rem) {
-    [data-word-card-panel] { display: grid; grid-template-columns: minmax(0, 1fr) 19rem; gap: 0.9rem; align-items: start; margin-top: 0.4rem; }
+    [data-word-card-panel] { display: grid; grid-template-columns: minmax(0, 1fr) clamp(19rem, 28%, 26rem); gap: 0.9rem; align-items: start; margin-top: 0.4rem; }
     .word-card-main { display: block; min-width: 0; }
     [data-word-card-panel="depth"] .word-card-main { display: grid; gap: 0.6rem; }
     .word-card-side { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
@@ -5498,7 +5498,7 @@
     .quran-word-card header > [data-word-card-close] { order: 4; }
     /* QR Lead (23 Oct 2026): the card's way back, ← alone, sits beside ⓘ (the push to the right moves from ⓘ to it). */
     .quran-word-card header:has(> .word-card-app-back) button.word-card-legend-btn { margin-inline-end: 0; }
-    .quran-word-card header > button.word-card-app-back { width: 40px; flex: 0 0 auto; padding: 0; margin-inline-end: auto; }
+    .quran-word-card header > button.word-card-app-back { width: 40px; flex: 0 0 auto; padding: 0; margin-inline-end: auto; order: 4; } /* 15 Nov 2026: beside × */
     .quran-word-card header > button.word-card-app-back .word-card-app-back-text { display: none; }
   }
   /* ...and on the narrowest card (a 320px phone: the first row is 296 of 299px), it goes to the second row, before the
@@ -20519,7 +20519,10 @@
         // row's other controls keep their places. On a phone it is ← alone (its tip and words stay its name).
         const head = content.querySelector(".quran-word-card > header");
         const before = head?.querySelector(".word-card-head-word");
-        if (head && before) head.insertBefore(back, before); else content.prepend(back);
+        // The Owner, 15 Nov 2026 (a screenshot: "Move the back button to the right beside the cross button"): it now sits
+        // right before ×, so the right-hand group reads ⓘ ← × ☰.
+        const closeBtn = head?.querySelector("[data-word-card-close]");
+        if (head && closeBtn) head.insertBefore(back, closeBtn); else if (head && before) head.insertBefore(back, before); else content.prepend(back);
       }
       // J60: Family shows one measured row of places per meaning, then "+N more"; re-measured when the width changes.
       fitWordCardFamily(content);
