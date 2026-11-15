@@ -58,7 +58,10 @@ try {
     if (size === "100%") check(Math.abs(m.nameFs - m.h1Fs) < 0.5, `${tag} at ordinary text the name keeps its full size`, `${m.nameFs} vs ${m.h1Fs}`);
     if (width === 320 && size === "100%") {
       check(m.btn.t < m.name.b, `${tag} the Search button keeps the name's line`, `button top ${m.btn.t.toFixed(0)}, name bottom ${m.name.b.toFixed(0)}`);
-      check(m.h1.h <= 60, `${tag} the heading is at most 60px tall (it was 72)`, `${m.h1.h.toFixed(0)}px`);
+      // UPDATED IN PLACE (J141): 60 -> 70. The version label is now "v15.05 - 15.Nov.2026", too long to share the line with
+      // QR's name at 320, so it takes a line of its own (the design above): 66px en / 69px bn. 72 was the broken state
+      // (Search pushed to a second line), and "the Search button keeps the name's line" above still guards that.
+      check(m.h1.h <= 70, `${tag} the heading is at most 70px tall (it was 72)`,`${m.h1.h.toFixed(0)}px`);
     }
     await ctx.close();
   }

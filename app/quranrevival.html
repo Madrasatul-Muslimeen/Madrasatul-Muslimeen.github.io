@@ -107,9 +107,14 @@
      320px, MSA's 40px). --app-name-em is the short name's width in em (0.6em a letter), so the name is never wider
      than the screen (QR's ran 5px off a 320px screen at 200% text). MSA sets none of them: the defaults (0 1 auto,
      the flex default; normal; 2) change nothing at any width or text size. */
+  /* J141: the title is a link home -- same look, a focus ring, a finger-sized tap area. */
+  a.app-title-home { color: inherit; text-decoration: none; display: inline-flex; align-items: center; min-height: 40px; vertical-align: middle; }
+  a.app-title-home:focus-visible { outline: 3px solid #1f6feb; outline-offset: 2px; border-radius: 4px; }
   @media (max-width: 699px) {
     #appTitleText { flex: var(--app-title-flex, 0 1 auto); }
     #appTitleText .app-version { white-space: var(--app-version-wrap, normal); }
+    /* J141: the label is longer now ("v15.05 - 15.Nov.2026"); like the name, it only shrinks when it would not fit. */
+    #appTitleText .app-version { font-size: min(0.85rem, calc((100vw - 2rem) / 12)); }
     .app-name-short { font-size: min(1em, calc((100vw - 2rem) / var(--app-name-em, 2))); }
   }
   h1 .head-search-btn svg { flex: 0 0 auto; }
@@ -2685,6 +2690,21 @@
     #readBar .read-unit-chip { max-width: 3.6rem; padding: 0.3rem 0.25rem; }
     #readBar #readMeaningLayersSlot .ml-count { display: none; } /* Read on moved to the right group: the Show button gives up its count so row two still holds both */
   }
+  /* The Owner, 15 Nov 2026 (a phone photo of the Mushaf bar, the surah name circled): in the Mushaf view the surah name that does not fit gives way to
+     🏠 Home and 📍 Location, side by side at the bar's left; the page's own reference stays on the ⋮ / unit card. From 600px the name stays. */
+  .read-home-btn { display: none; min-width: 40px; height: 40px; box-sizing: border-box; padding: 0; }
+  #readBar:has(#mushafPageRef:not([hidden])) .read-home-btn { display: inline-flex; align-items: center; justify-content: center; }
+  @media (max-width: 599.98px) {
+    #readBar:has(#mushafPageRef:not([hidden])) #mushafPageRef { display: none; }
+    body #readBar:has(#mushafPageRef:not([hidden])) > #readListBtn { margin-right: 0; }
+    #readBar:has(#mushafPageRef:not([hidden])) .read-home-btn { margin-right: 0; order: -1; }
+    #readBar:has(#mushafPageRef:not([hidden])) .read-loc-wrap { display: block; order: -1; margin-right: auto; }
+    #readBar:has(#mushafPageRef:not([hidden])) .read-loc-btn { display: inline-flex; }
+    /* the bar's nine tiles (☰ 🏠 📍 ‹ › 🔍 📄 ⤢ ⋮) stay ONE line in the bare full screen, as the old name-and-tiles line did: 36px tiles (9 x 36 = 324px) */
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPageRef:not([hidden])) { gap: 2px; }
+    body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPageRef:not([hidden])) :is(#readListBtn, .read-home-btn, .read-loc-btn, #mushafPagePrevBtn, #mushafPageNextBtn, #readBarEnd > button, #readBarEnd #readQuickMenuSlot, #readBarEnd #readQuickMenuSlot .ayah-quick-btn) { width: 36px; min-width: 36px; padding-inline: 0; }
+  }
+  @media (max-width: 379.98px) { body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar:has(#mushafPageRef:not([hidden])) :is(#readListBtn, .read-home-btn, .read-loc-btn, #mushafPagePrevBtn, #mushafPageNextBtn, #readBarEnd > button, #readBarEnd #readQuickMenuSlot, #readBarEnd #readQuickMenuSlot .ayah-quick-btn) { width: 34px; min-width: 34px; } } /* nine 34px tiles + gaps fit 328px */
   .read-loc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem; min-width: 40px; height: 40px; box-sizing: border-box; padding: 0 0.5rem; margin: 0; border: 1px solid #c9d1e0; border-radius: 10px; background: #fff; color: #1F3A6E; font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
   .read-loc-btn[aria-expanded="true"] { background: #1F3A6E; color: #fff; }
   .read-loc-btn:focus-visible { outline: 3px solid #B8862F; outline-offset: 2px; }
@@ -2910,7 +2930,7 @@
      top-bar reference is to still say which Surah/āyāt this is in the BARE
      full-screen state, where the strip is otherwise empty apart from the
      full-screen icon. */
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readMeaningLayersSlot):not(#readOnSwitch):not(#mushafPagePrevBtn):not(#mushafPageNextBtn) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#readBarEnd):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn):not(#readHomeBtn):not(#readLocWrap):not(#readMeaningLayersSlot):not(#readOnSwitch):not(#mushafPagePrevBtn):not(#mushafPageNextBtn) { display: none; }
   /* MSA · QR J132: the bare state keeps the bar's ⋮ too: Study (Take an Approach, Record, Status, the unit and sūrah pickers), Notes and the rest are in its sheet now that the bottom row is gone. */
   body.immersive-read.fs-hide-readbar.fs-hide-transport #readBarEnd > *:not(#hideChromeBtn):not(#readMeaningBtn):not(#readMushafBtn):not(#readBarBookmarkBtn):not(#readSearchBtn):not(#readQuickMenuSlot):not(#readOnSwitch) { display: none; } /* #readOnSwitch joined the group on 15 Nov 2026 and stays on the bare bar, as it was */
   /* 10 Oct 2026: 📖 Meaning stays in the bare full-screen state too (the Owner: "visible even in full screen Mushaf
@@ -6289,7 +6309,7 @@
        relocatePreviewNotice() below. This span just gives the title text
        its own flex box so h1's own justify-content: space-between (below)
        has two things to split between, not one. -->
-  <h1><span id="appTitleText"><span class="app-name-full">Madrasah Study App (MSA)</span><span class="app-name-short"></span> <span id="appVersion" class="app-version"></span></span><button type="button" id="headSearchBtn" class="head-search-btn" aria-controls="panelStudyOptions"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="head-search-label">Search</span></button></h1>
+  <h1><span id="appTitleText"><a class="app-title-home" id="appTitleHome" href="./quranrevival.html"><span class="app-name-full">Madrasah Study App (MSA)</span><span class="app-name-short"></span></a> <span id="appVersion" class="app-version"></span></span><button type="button" id="headSearchBtn" class="head-search-btn" aria-controls="panelStudyOptions"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="head-search-label">Search</span></button></h1>
   <!-- Shell round 20 (17 Aug 2026) -- the moving tagline strip. It stands
        EXACTLY where the static tagline stood, which is the owner's own call
        and also the cheap one: measured at 17-19px against the <p>'s own
@@ -6867,6 +6887,8 @@
                back to the list this Read view was opened from, on the tab last
                used. Shown only on that route (body.read-from-contents). -->
           <button type="button" id="readListBtn" class="read-list-btn" aria-label="Surah list"><span aria-hidden="true">☰</span><span class="read-list-word">Surah list</span></button>
+          <!-- The Owner, 15 Nov 2026: 🏠 Home in the Mushaf view (to the landing page), beside the Surah list ☰. On a phone it and 📍 take the place of the surah name. -->
+          <button type="button" id="readHomeBtn" class="secondary qr-ico read-home-btn" aria-label="Home" title="Home" hidden>🏠</button>
           <button type="button" id="mushafPageRef" class="mushaf-page-ref" hidden></button>
           <!-- Issue #370 (Global Approach Card, Owner-approved 29 Sep 2026) --
                the "Choose an Approach" capsule. It takes the space
@@ -8228,6 +8250,7 @@
     import { restoreWindow } from "./js/minimise.js"; // PCF MSA J81: the – beside ✕ on every pop-up
     import { renderUnitLadderHtml } from "./js/unit-ladder.js";
     import { resolveUnitInfo, ladderRungsForAyah } from "./js/unit-resolve.js";
+    import { bookmarkCaption, captionForUnit } from "./js/bookmark-caption.js";
     import { unitBoundaryMarkersInWindow } from "./js/unit-markers.js";
     import { renderEndOfUnitPromptHtml, attachEndOfUnitPromptHandlers } from "./js/end-of-unit-prompt.js";
     import { renderAyahFolderPickerHtml, renderAyahFolderTreeHtml, renderAyahFolderNavHtml, folderScopeOrder, attachAyahFolderPickerHandlers } from "./js/ayah-folder-filing-renderer.js";
@@ -11642,7 +11665,8 @@
           requestAnimationFrame(() => { try { fitLandingFirstScreen(); layoutWheelHub(); } catch { /* not ready */ } });
         };
         panelBtns.forEach((b) => b.addEventListener("click", () => setPanel(b.getAttribute("aria-expanded") === "true" ? "" : b.dataset.wb)));
-        document.getElementById("wbRead")?.addEventListener("click", () => { setPanel(""); mushafToggle.checked = true; mushafToggle.dispatchEvent(new Event("change")); openReadingScreen(); });
+        // The Owner, 15 Nov 2026 (reversing v15.00's "straight to the Mushaf"): Read opens the Surah list; ← Back returns here; a Surah chosen there opens the Mushaf view.
+        document.getElementById("wbRead")?.addEventListener("click", (e) => { setPanel(""); openReadContents(e); });
         document.getElementById("wbApproach")?.addEventListener("click", () => {
           setPanel("");
           if (wheelKind !== "approaches") { wheelKind = "approaches"; renderWheel(); requestAnimationFrame(fitApproachWheelToWindow); } // taking an Approach means the Approaches wheel
@@ -14578,6 +14602,7 @@
 
     document.getElementById("readContentsBtn")?.addEventListener("click", openReadContents);
     document.getElementById("readListBtn")?.addEventListener("click", openReadContents);
+    document.getElementById("readHomeBtn")?.addEventListener("click", () => openApproachWheel()); // the Owner, 15 Nov 2026: Home from the Mushaf view
     // MSA · QR J123: the Surah list's "Last read" button lists the last 5 reads to choose from.
     const readContentsRecentEl = document.getElementById("readContentsRecent"), readContentsLastBtn = document.getElementById("readContentsLastBtn");
     function setRecentOpen(open) { readContentsRecentEl.hidden = !open; readContentsLastBtn.setAttribute("aria-expanded", String(open)); }
@@ -22865,6 +22890,7 @@
 
     function clearMushafPageRef() {
       mushafPageRef.hidden = true;
+      document.getElementById("readHomeBtn")?.setAttribute("hidden", "");
       mushafPageRef.innerHTML = "";
       mushafPageRef.removeAttribute("aria-label");
       delete mushafPageRef.dataset.page;
@@ -23012,6 +23038,7 @@
       const groups = mushafPageAyahGroups(pageNum);
       if (!groups.length) { clearMushafPageRef(); return; }
       mushafPageRef.hidden = false;
+      document.getElementById("readHomeBtn")?.removeAttribute("hidden");
       mushafPageRef.dataset.page = String(pageNum);
       // The Owner, 9 Oct 2026: "Range is chosen but the indication shows page. Fix." The chosen Study Unit wins:
       // unless it IS a page, the reference names that unit (e.g. "Al-Kahf · 1–15") and opens its card.
@@ -23025,6 +23052,7 @@
       mushafPageRef.title = refText;
       mushafPageRef.innerHTML = `<span class="mushaf-page-ref-text">${escapeHtml(refText)}</span><span class="mushaf-page-ref-caret" aria-hidden="true">▾</span>`;
       paintMushafPageNav(pageNum);
+      updateReadLocLabel();
       updateReadApproachCapsule();
     }
 
@@ -24513,10 +24541,18 @@
         whichever of the other two shared-mount cards is open first. */
     /** The Owner, 15 Nov 2026: the Read bar's 📍 -- the printed page number on the button, and (on a tap) where the āyah being read sits: Āyah, Ruku', Page,
         Hizb, Juz, Surah, the same ladder the Āyah card carries; each rung opens that unit's card (the card has its own way back). Read on first use (I9). */
+    /** The place 📍 speaks about. In the Mushaf view that is the printed PAGE on screen (its first āyah), not the āyah the unit cursor last sat on
+        (the Owner, 15 Nov 2026: "Location button will show the location card of the view"); anywhere else, the āyah being read, as before. */
+    function readLocAnchor() {
+      const pg = Number(mushafPageRef?.hidden === false ? mushafPageRef.dataset.page : NaN);
+      const first = Number.isFinite(pg) ? mushafPageAyahGroups(pg)[0] : null;
+      if (first) return { surah: first.surah, ayah: first.firstAyah, page: pg, mushaf: true };
+      return { surah: currentSurahNum, ayah: currentAyahNum, page: currentSurahData?.ayahs?.find((x) => x.ayah === currentAyahNum)?.page ?? null, mushaf: false };
+    }
     function updateReadLocLabel() {
       const el = document.querySelector("[data-read-loc-page]");
       if (!el) return;
-      const pg = currentSurahData?.ayahs?.find((x) => x.ayah === currentAyahNum)?.page ?? null;
+      const pg = readLocAnchor().page;
       el.textContent = pg ? num(pg) : "";
     }
     async function renderReadLocList() {
@@ -24524,11 +24560,12 @@
       if (!list) return;
       list.innerHTML = `<p class="bar-palette-note read-loc-wide">${escapeHtml(t("Loading…"))}</p>`;
       let rungs = [];
+      const at = readLocAnchor(), atHalf = at.mushaf ? null : currentHalf();
       try {
         const tables = await unitCardBoundaryTables();
-        rungs = ladderRungsForAyah(currentSurahNum, currentAyahNum, { ...tables, ayahRecordAyah: currentRecordAyah(), ayahLabel: ayahLabelFor(currentSurahNum, currentAyahNum, currentHalf()) });
+        rungs = ladderRungsForAyah(at.surah, at.ayah, { ...tables, ayahRecordAyah: at.mushaf ? at.ayah : currentRecordAyah(), ayahLabel: ayahLabelFor(at.surah, at.ayah, atHalf) });
       } catch (error) { reportWriteFailure(error, { what: "find where this āyah is" }); } // I15
-      const surahLine = `${surahName(currentSurahNum, surahIndex.find((x) => x.surahNumber === currentSurahNum)?.nameEnglish)} ${num(currentSurahNum)}:${ayahLabelFor(currentSurahNum, currentAyahNum, currentHalf())}`;
+      const surahLine = `${surahName(at.surah, surahIndex.find((x) => x.surahNumber === at.surah)?.nameEnglish)} ${num(at.surah)}:${ayahLabelFor(at.surah, at.ayah, atHalf)}`;
       list.innerHTML = rungs.map((r) => `<button type="button" class="${r.active ? "is-active " : ""}${r.unitType === "surah" || r.unitType === "ayah" ? "read-loc-wide" : ""}" data-read-loc-unit="${escapeHtml(r.unitKey)}">${escapeHtml(r.unitType === "ayah" ? surahLine : r.label)}</button>`).join("");
     }
     document.getElementById("readLocBtn")?.addEventListener("click", () => {
@@ -24542,8 +24579,9 @@
       if (!b) return;
       closeAllBarPalettes(null);
       const key = b.dataset.readLocUnit, { unitType } = parseUnitKey(key);
-      if (unitType === "ayah") openAyahActionSheet(`${currentSurahNum}:${currentAyahNum}`);
-      else openUnitCard(key, { surah: currentSurahNum, ayah: currentAyahNum });
+      const at = readLocAnchor();
+      if (unitType === "ayah") openAyahActionSheet(`${at.surah}:${at.ayah}`);
+      else openUnitCard(key, { surah: at.surah, ayah: at.ayah });
     });
     function openUnitCard(unitKey, openedFromAyah = null) {
       closeAyahActionSheet();
@@ -26461,13 +26499,27 @@
       // parseAyahUnitKey() would misread one of those, so the Note view
       // hands its own noteScopeUnitInfo().label straight in rather than
       // this function guessing at it.
-      const defaultName = defaultNameOverride ?? (() => {
+      // The Owner, 15 Nov 2026: Quran bookmarks are captioned "Al-Hadid - 57:1-6 - 12.Oct.26" (a page adds "Page 2" before the date).
+      const capTables = await unitCardBoundaryTables().catch(() => null);
+      const caption = (key, fallback, extra = "") => {
+        if (!capTables || !key || String(fallback ?? "").startsWith("✍")) return fallback;
+        let info = null; try { info = resolveUnitInfo(key, capTables); } catch { info = null; }
+        if (!info || !["ayah", "range", "surah", "ruku", "page"].includes(info.unitType)) return fallback;
+        if (info.fromSurah === 1 && fatihaCountApplies(1, fatihaOn())) return fallback; // Al-Fātiḥah's own count is kept as the card shows it
+        const x = info.unitType === "page" ? t("Page {n}", { n: num(Number(String(key).split(":").pop())) }) : info.unitType === "ruku" ? t("Ruku' {n}", { n: num(Number(String(key).split(":").pop())) }) : extra;
+        return captionForUnit(info, { nameOf: (n) => surahName(n, surahIndex.find((r) => r.surahNumber === n)?.nameEnglish), ayahCountOf: (n) => surahIndex.find((r) => r.surahNumber === n)?.ayahCount, extra: x }) ?? fallback;
+      };
+      unitChoices = unitChoices.map((u) => (u.kind === "range"
+        ? { ...u, captionOf: (from, to) => bookmarkCaption({ name: u.surahName, surah: u.surah, from, to }) }
+        : { ...u, defaultName: caption(u.position, u.defaultName) }));
+      const defaultName = (() => {
         if (unitKey.startsWith("opening:")) return `${t("Before Al-Fātiḥah")} — ${t("Aʿūdhu billāh")}`; // PCF J26
         const { surah, ayah: ayahNum, half } = parseAyahUnitKey(unitKey);
         return ayahRefLabel(surah, ayahNum, { half });
       })();
+      const defaultNameResolved = defaultNameOverride !== undefined ? caption(unitKey, defaultNameOverride) : caption(unitKey, defaultName);
       const choice = await openBookmarkNamePopover({
-        defaultName,
+        defaultName: defaultNameResolved,
         folders: flattenFolderTree(bookmarksDoc),
         // Fixes round 2 -- tag this bookmark with a person. Defaults to
         // whoever is selected right now (studying WITH a child is the
@@ -26481,8 +26533,8 @@
         roster: assignableRoster().map((a) => { const p = roster.find((r) => r.id === a.id); return { ...a, name: p ? () => langText(p.name, getAppLang(), p.id) : a.name }; }),
         selectedPersonId,
         // The Owner, 12 Oct 2026 -- "quick unit choice" (Read view only; empty everywhere else).
-        units: unitChoices.map(({ id, label, defaultName: dn, kind, surah, ayahCount, from, to, surahName: sn }) => (kind === "range"
-          ? { id, label, kind, surah, ayahCount, from, to, surahName: sn } // QR J03: MMSA's popover range kind (v11.14)
+        units: unitChoices.map(({ id, label, defaultName: dn, kind, surah, ayahCount, from, to, surahName: sn, captionOf }) => (kind === "range"
+          ? { id, label, kind, surah, ayahCount, from, to, surahName: sn, captionOf } // QR J03: MMSA's popover range kind (v11.14)
           : { id, label, defaultName: dn })),
       });
       if (!choice) return false; // cancelled -- no write, no re-render
@@ -26502,7 +26554,7 @@
         tenantId: activeTenantId, uid: auth.currentUser.uid, selectedPersonId, choice,
         bookmark: {
           moduleId: "quranrevival", subjectId: "quran",
-          name: choice.name || (picked?.defaultName ?? defaultName),
+          name: choice.name || (picked?.defaultName ?? defaultNameResolved),
           position: picked?.position ?? unitKey,
           settings: picked?.settings ?? settingsOverride ?? captureQuranBookmarkSettings(),
         },

@@ -3353,3 +3353,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v15.04** (2026-11-15): Learn next: Already known, six tick groups (#1735).
 - **v15.05** (2026-11-15): Hadith: Know Your Status (#1738, #1740).
 - **v15.06** (2026-11-15): offline reads calm, Taṣrīf Arabic 80%, Tafsīr era switches (J139) and Learn next steps leave out Already known words (J138 part 2).
+- **v15.07** (2026-11-15): the title goes home and the new version label (J141), bookmark captions, Read opens the Surah list, Mushaf bar Home and Location.

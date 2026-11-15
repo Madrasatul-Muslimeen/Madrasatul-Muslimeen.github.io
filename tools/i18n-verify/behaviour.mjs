@@ -368,7 +368,8 @@ console.log("\n=== 6. Bengali numerals available, and never applied to identifie
   // UPDATED IN PLACE (J108, v13.01): the badge now SHOWS the release date too ("v13.01-31.10.26"), on the Owner's word;
   // the shape takes the optional "-dd.mm.yy" and still refuses any Bengali digit.
   check("6 the version badge is NOT mangled into Bengali digits",
-        /^v?\d+\.\d+(?:-\d\d\.\d\d\.\d\d)?$/.test(r.version || "") && !/[০-৯]/.test(r.version || ""), r.version);
+        // J141: the label is now "v15.05 - 15.Nov.2026" (English month in every language).
+        /^v?\d+\.\d+(?: - \d{1,2}\.[A-Z][a-z]{2}\.\d{4})?$/.test(r.version || "") && !/[০-৯]/.test(r.version || ""), r.version);
   await page.close();
   await ctx.close();
 }
@@ -2612,7 +2613,8 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // v12.16 (J63, 21 Oct 2026: "Attach to QCR tile") -- #readAttachQcrBtn joined the tools after #readAttachAsmaBtn. Updated in place, reason recorded.
         // v12.26 (PCF MSA J82 parts 4-5) -- #mushafPagePrevBtn and #mushafPageNextBtn (‹ ›, one printed Mushaf page; hidden outside Mushaf) joined the row before ⏮. Updated in place, reason recorded.
         // PCF MSA J99 (the Owner, 25 Oct 2026: "put those 3 buttons inside the dots on the card"): at this phone width (412px) #readApproachBar is the last item of the ⋯ card (#readToolsMenu), after #readAttachQcrBtn; 📜 #readMushafBtn stays in the page, hidden (📖 is the one switch). Updated in place, reason recorded.
-        bar.ids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,readLocWrap,mushafPagePrevBtn,mushafPageNextBtn,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarEnd,readOnSwitch,readSearchBtn,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readToolsMenu,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readQuickMenuSlot,readCompleteMsg",
+// UPDATED IN PLACE, 15 Nov 2026 (v15.07, the Owner via the QR Lead 47L, #1752: 🏠 Home and 📍 on the Mushaf bar): #readHomeBtn joined the bar right after #readListBtn (hidden outside a phone Mushaf, still a child of the bar). Architect 112L.
+        bar.ids.join() === "readListBtn,readHomeBtn,mushafPageRef,readApproachBar,readUnitChip,readLocWrap,mushafPagePrevBtn,mushafPageNextBtn,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readBarEnd,readOnSwitch,readSearchBtn,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readToolsMenu,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readQuickMenuSlot,readCompleteMsg",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3383,7 +3385,8 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // v12.16 (J63, 21 Oct 2026: "Attach to QCR tile") -- #readAttachQcrBtn joined the tools after #readAttachAsmaBtn. Updated in place, reason recorded.
         // v12.26 (PCF MSA J82 parts 4-5) -- ‹ › (#mushafPagePrevBtn, #mushafPageNextBtn) joined the row before ⏮. Updated in place, reason recorded.
         // PCF MSA J99 (the Owner, 25 Oct 2026: "put those 3 buttons inside the dots on the card"): at this phone width (412px) #readApproachBar is the last item of the ⋯ card (#readToolsMenu), after #readAttachQcrBtn; 📜 #readMushafBtn stays in the page, hidden (📖 is the one switch). Updated in place, reason recorded.
-        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,readLocWrap,mushafPagePrevBtn,mushafPageNextBtn,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readOnSwitch,readSearchBtn,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
+// UPDATED IN PLACE, 15 Nov 2026 (v15.07, the Owner via the QR Lead 47L, #1752: 🏠 Home and 📍 on the Mushaf bar): #readHomeBtn joined the bar right after #readListBtn (hidden outside a phone Mushaf, still a child of the bar). Architect 112L.
+        m.barKids.join() === "readListBtn,readHomeBtn,mushafPageRef,readApproachBar,readUnitChip,readLocWrap,mushafPagePrevBtn,mushafPageNextBtn,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,readMeaningLayersSlot,readBackSlot,readOnSwitch,readSearchBtn,readBarBookmarkBtn,readMushafBtn,readMeaningBtn,hideChromeBtn,readWindowBtn,readToolsBtn,readTextSizeSlot,readBookmarkBtn,readNotesBtn,readCompleteBtn,readWritingBtn,readAttachAsmaBtn,readAttachQcrBtn,readQuickMenuSlot,readCompleteMsg", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how
