@@ -4,7 +4,8 @@
 // Unit drawers are gone from sight. This suite proves the order, the place, the size (>= 40px, one row, nothing cut), the colour groups,
 // that each button does its own job, that the three panels hold the ORIGINAL controls (moved, working), and that nothing is offered twice.
 //   --mutate=twice   the old bottom row (with a second "Choose a Unit") is shown again -> "offered once" fails by name
-//   --mutate=readlist  Read opens the contents list instead of the Mushaf          -> "Read goes straight to the Mushaf" fails by name
+//   --mutate=readlist  Read goes straight to the Mushaf instead of opening the Surah list -> "Read opens the Surah list" fails by name
+//   UPDATED IN PLACE 15 Nov 2026 (47L): the Owner reversed v15.00's "Read goes straight to the Mushaf": Read now opens the Surah list (← Back returns to the landing page; a surah chosen there opens the Mushaf). The check and its mutation were turned round, not deleted.
 // Run from the repository root with serve.js up:  node tools/i18n-verify/wheel-bar-browser.mjs [--lang=en|bn] [--mutate=twice|readlist]
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -24,7 +25,7 @@ for (const lang of arg("lang") ? [arg("lang")] : ["en", "bn"]) for (const [w, h]
   if (MUTATE) await ctx.route("**/app/quranrevival.html*", async (r) => {
     let src = fs.readFileSync(PAGE, "utf8");
     if (MUTATE === "twice") src = swap(src, '<div id="wheelIntroSettled" class="wheel-intro-settled" hidden>', '<div id="wheelIntroSettled" class="wheel-intro-settled">');
-    if (MUTATE === "readlist") src = swap(src, 'mushafToggle.checked = true; mushafToggle.dispatchEvent(new Event("change")); openReadingScreen(); });', 'openReadContents(); });');
+    if (MUTATE === "readlist") src = swap(src, 'setPanel(""); openReadContents(e); });', 'setPanel(""); mushafToggle.checked = true; mushafToggle.dispatchEvent(new Event("change")); openReadingScreen(); });');
     await r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src });
   });
   const { page: P, errors } = await openPage(ctx, "/app/quranrevival.html");
@@ -79,10 +80,10 @@ for (const lang of arg("lang") ? [arg("lang")] : ["en", "bn"]) for (const [w, h]
   // Take an Approach
   await open("wbApproach");
   check(`${tag} Take an Approach lifts the veil (the same as the wheel's own centre button) and returns to the Approaches wheel even from Vocabulary`, await P.evaluate(() => !document.getElementById("wheelStageWrap").classList.contains("wheel-veiled") && !document.getElementById("wheelStageWrap").classList.contains("wheel-vocab")));
-  // Read goes straight to the Mushaf
+  // Read opens the Surah list (the Owner, 15 Nov 2026)
   await open("wbRead");
   const rd = await P.evaluate(() => ({ mushaf: document.getElementById("mushafToggle").checked, list: (() => { const m = document.getElementById("readContentsMount"); return !!m && !m.hidden; })(), landing: document.body.classList.contains("landing-view") }));
-  check(`${tag} MUTATION TARGET (readlist): Read goes straight to the Mushaf (no contents list in between)`, rd.mushaf && !rd.list && !rd.landing, JSON.stringify(rd));
+  check(`${tag} MUTATION TARGET (readlist): Read opens the Surah list (the Mushaf waits for a surah to be chosen)`, !rd.mushaf && rd.list && rd.landing, JSON.stringify(rd));
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|archive\.org|net::|api\.quran/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
 }
