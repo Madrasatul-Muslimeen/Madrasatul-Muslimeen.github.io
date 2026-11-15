@@ -113,6 +113,8 @@
   @media (max-width: 699px) {
     #appTitleText { flex: var(--app-title-flex, 0 1 auto); }
     #appTitleText .app-version { white-space: var(--app-version-wrap, normal); }
+    /* J141: the label is longer now ("v15.05 - 15.Nov.2026"); like the name, it only shrinks when it would not fit. */
+    #appTitleText .app-version { font-size: min(0.85rem, calc((100vw - 2rem) / 12)); }
     .app-name-short { font-size: min(1em, calc((100vw - 2rem) / var(--app-name-em, 2))); }
   }
   h1 .head-search-btn svg { flex: 0 0 auto; }
