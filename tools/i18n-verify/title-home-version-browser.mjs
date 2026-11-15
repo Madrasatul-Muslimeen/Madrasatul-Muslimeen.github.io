@@ -15,7 +15,9 @@ const check = (ok, what, detail = "") => {
   console.log(`${ok ? "ok  " : "FAIL"} ${what}${!ok && detail ? ` ${detail}` : ""}`);
 };
 const LABEL = /^v\d\d\.\d\d - \d{1,2}\.[A-Z][a-z]{2}\.\d{4}$/;
-const PAGES = [
+// QR's build carries only some pages (its Hadith pages are not in it): TITLE_PAGES=quranrevival.html limits the run.
+const ONLY = (process.env.TITLE_PAGES || "").split(",").filter(Boolean);
+const ALL_PAGES = [
   { path: "/app/quranrevival.html", label: "#appVersion" },
   // hadith-collections.html: its "QuranRevival" shell title only shows when the page is mounted inside quranrevival.html
   // (hadith.css: #qrShell is display:none otherwise), so only its label is checked here; the link is checked in the DOM.
@@ -23,6 +25,7 @@ const PAGES = [
   { path: "/app/hadith-study.html", label: null },
   { path: "/app/notes.html", label: null },
 ];
+const PAGES = ONLY.length ? ALL_PAGES.filter((p) => ONLY.includes(p.path.split("/").pop())) : ALL_PAGES;
 
 const browser = await chromium.launch();
 try {
