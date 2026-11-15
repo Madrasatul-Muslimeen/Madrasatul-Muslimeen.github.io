@@ -12,30 +12,36 @@
 // Pure UI: no Firebase, no storage.
 import { t, ensureCatalogueReady } from "./i18n.js";
 import { onAppLangChange } from "./prefs.js";
+import { HANDLES, handleCss, startDrag } from "./float-window.js";
 
 // { root: the window on screen; hide: what minimising hides (an overlay around the window, or the window itself);
 //   close: its ✕; title: its name. } The root must be visible for the – to be added.
 const WINDOWS = [
-  { id: "journey", root: "#journeyTray", close: ".jt-close", title: ".jt-title" },
-  { id: "page", root: "#pageWindow", close: ".pgw-close", title: ".pgw-title" },
-  { id: "notes", root: "#readNotePane", close: ".rnp-close", title: ".rnp-title" },
-  { id: "newnote", root: "#noteOpener", close: ".no-close", title: ".no-title" }, // J108: the shared Note opener (note-opener.js)
-  { id: "note", root: ".note-win", close: "[data-win-close]", title: ".nw-title" },
+  // own: true = the window already drags and resizes by float-window.js itself (only ⛶ is added); the others get the
+  // shared drag and eight handles from enhance() below.
+  { id: "journey", own: true, root: "#journeyTray", close: ".jt-close", title: ".jt-title" },
+  { id: "page", own: true, root: "#pageWindow", close: ".pgw-close", title: ".pgw-title" },
+  { id: "notes", own: true, root: "#readNotePane", close: ".rnp-close", title: ".rnp-title" },
+  { id: "newnote", own: true, root: "#noteOpener", close: ".no-close", title: ".no-title" }, // J108: the shared Note opener (note-opener.js)
+  { id: "note", own: true, root: ".note-win", close: "[data-win-close]", title: ".nw-title" },
   { id: "ayah", noButton: true, root: "#ayahActionSheetOverlay.open [data-ayah-sheet], #ayahActionSheetOverlay.open [data-unit-card]", hide: "#ayahActionSheetOverlay", close: ".ayah-sheet-close", title: ".ayah-sheet-ref" },
   { id: "track", root: "#wayModalMount .way-modal", hide: "#wayModalMount", close: ".way-close-btn", title: ".way-modal-header h2, .way-modal-header h3, .way-modal-title" },
-  { id: "read", root: "body.read-windowed #readView", close: "#readWinCloseBtn", title: "#readRef" },
-  { id: "card", root: ".fc-floating", close: "[data-close], .close-btn, button[aria-label='Close'], button[title='Close']", title: "h2, h3, header" },
+  { id: "read", own: true, noFull: true, root: "body.read-windowed #readView", close: "#readWinCloseBtn", title: "#readRef" },
+  { id: "card", own: true, root: ".fc-floating", close: "[data-close], .close-btn, button[aria-label='Close'], button[title='Close']", title: "h2, h3, header" },
   // J140: Learn next (quranrevival.html) -- its header carries "← Back" and a ✕ (.ln-close) that closes it the same way.
   { id: "learnnext", root: "#learnNextSheet:not([hidden])", close: ".ln-close", title: ".ln-title", bar: ".ln-head" },
 ];
 // J140: a collapsed pop-up is a bar at the top left, as wide as the left pane of Mapping My Journey's three-pane layout
 // (journey-map.html SPLIT_DEFAULT.three[0] = 4/13 of the width); on a phone (<= 640px) the full width.
 export const COLLAPSED_PANE_FRACTION = 4 / 13;
-const CONTROLS = "#topNav summary, #topNav a, #topNav button, #tabRow button, #tabRow a, #hadithCorpusRoot [role='tablist'] button, #hadithCorpusRoot nav button, [data-collapse-popups]";
+const CONTROLS = "#topNav summary, #topNav a, #topNav button, #tabRow button, #tabRow a, #hadithCorpusRoot [role='tablist'] button, #hadithCorpusRoot nav button, #wheelBar button, #duaRoot [role='tablist'] button, #duaRoot nav button, [data-collapse-popups]";
 const ATTR = "data-mm-min";
 const CSS = `
 [${ATTR}] { display: none !important; }
 .mm-min-btn { flex: 0 0 auto; margin-inline-start: auto; min-width: 40px; min-height: 40px; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: 1.5rem; font-weight: 700; line-height: 1; cursor: pointer; border-radius: 0.5rem; }
+${handleCss("mm-h")}
+body.jt-dragging { user-select: none; }
+[data-mm-full] > .mm-h { display: none; }
 .mm-min-btn:hover { background: rgba(255, 255, 255, 0.12); }
 .mm-min-btn:focus-visible { outline: 3px solid #c9a24b; outline-offset: 1px; }
 /* The chips wait at the bottom right: inside the Zab bar's strip when it is on (its pockets are on the left), else
@@ -179,12 +185,79 @@ function ensureDock() {
   document.body.appendChild(dock);
 }
 
+// J140 part 2: every pop-up gets a ⛶ (full screen / restore) beside – and ✕; the windows without their own drag and
+// resize (spec.own is not set) also get the ONE shared mechanism of float-window.js: a drag by the top bar, eight handles.
+const FULL_ATTR = "data-mm-full";
+const fstate = new WeakMap(); // root -> { full, saved, rect }
+const LIMITS = { minW: 260, minH: 160, bar: 44 };
+function floatRoot(root) {
+  const r = root.getBoundingClientRect();
+  Object.assign(root.style, { position: "fixed", left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px", right: "auto", bottom: "auto", margin: "0", transform: "none", maxWidth: "none", maxHeight: "none" });
+  return { x: r.left, y: r.top, w: r.width, h: r.height };
+}
+function applyRect(root, r) {
+  Object.assign(root.style, { left: r.x + "px", top: r.y + "px", width: r.w + "px", height: r.h + "px" });
+}
+function toggleFull(root) {
+  let st = fstate.get(root);
+  if (!st) { st = { full: false, saved: null }; fstate.set(root, st); }
+  if (!st.full) {
+    st.saved = root.hasAttribute("style") ? root.getAttribute("style") : null;
+    st.rect = st.rect ?? null;
+    Object.assign(root.style, { position: "fixed", left: "0px", top: "0px", width: "100vw", height: "100vh", right: "auto", bottom: "auto", margin: "0", transform: "none", maxWidth: "none", maxHeight: "none" });
+    st.full = true;
+    root.setAttribute(FULL_ATTR, "");
+  } else {
+    if (st.saved === null) root.removeAttribute("style"); else root.setAttribute("style", st.saved);
+    st.full = false; st.saved = null;
+    root.removeAttribute(FULL_ATTR);
+  }
+  root.querySelectorAll(".mm-full-btn").forEach((b) => b.setAttribute("aria-pressed", String(st.full)));
+}
+function enhance(root, spec, close) {
+  if (!spec.noFull && !root.querySelector(".mm-full-btn")) { // read-window.js has its own full-screen button
+    const f = document.createElement("button");
+    f.type = "button";
+    f.className = "mm-min-btn mm-full-btn";
+    f.dataset.mmFullBtn = spec.id;
+    f.textContent = "⛶";
+    f.setAttribute("aria-label", t("Full screen"));
+    f.title = t("Full screen");
+    f.setAttribute("aria-pressed", String(!!fstate.get(root)?.full));
+    f.addEventListener("pointerdown", (e) => e.stopPropagation());
+    f.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); toggleFull(root); });
+    f.style.order = getComputedStyle(close).order;
+    (close.previousElementSibling?.matches?.(".mm-min-btn") ? close.previousElementSibling : close).before(f);
+  }
+  if (spec.own || root.querySelector(":scope > .mm-h")) return;
+  // The shared drag / resize (float-window.js): eight handles with their gold brackets, the top bar moves the window.
+  if (!fstate.has(root)) fstate.set(root, { full: false, saved: null });
+  const st = fstate.get(root);
+  if (!root.dataset.mmFloat) {
+    root.dataset.mmFloat = "1";
+    st.rect = floatRoot(root);
+    root.addEventListener("pointerdown", (e) => {
+      const bar = spec.bar ? root.querySelector(spec.bar) : [...root.querySelectorAll(spec.close)].find(shown)?.parentElement;
+      if (!bar || !bar.contains(e.target) || e.target.closest("button, a, input, select, textarea")) return;
+      startDrag(e, "move", ctx());
+    });
+  }
+  const ctx = () => ({ getRect: () => { const r = root.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; }, setRect: (r) => { st.rect = r; applyRect(root, r); }, locked: () => st.full, limits: LIMITS, onEnd() {}, dragClass: "jt-dragging" });
+  for (const h of HANDLES) {
+    const d = document.createElement("div");
+    d.className = "mm-h"; d.dataset.h = h; d.setAttribute("aria-hidden", "true");
+    d.addEventListener("pointerdown", (e) => { e.stopPropagation(); startDrag(e, h, ctx()); });
+    root.appendChild(d);
+  }
+}
+
 function addButtons() {
   for (const spec of WINDOWS) {
     document.querySelectorAll(spec.root).forEach((root) => {
       if (!shown(root) || spec.noButton) return;
       const close = [...root.querySelectorAll(spec.close)].find(shown);
-      if (!close || close.previousElementSibling?.matches?.(".mm-min-btn")) return;
+      if (!close) return;
+      if (close.previousElementSibling?.matches?.(".mm-min-btn")) { enhance(root, spec, close); return; }
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "mm-min-btn";
@@ -196,6 +269,7 @@ function addButtons() {
       btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); minimiseWindow(root, spec); });
       btn.style.order = getComputedStyle(close).order; // beside ✕ even in a bar that orders its items
       close.before(btn);
+      enhance(root, spec, close);
     });
   }
   // A window closed by its own code while minimised: its chip goes, and it opens normally next time.

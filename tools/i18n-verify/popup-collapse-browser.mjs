@@ -25,6 +25,9 @@ const MUT = {
   nonav: [[MIN, [["#topNav summary, ", ""]]]],
   notab: [[MIN, [["#tabRow button, ", ""]]]],
   inside: [[MIN, [["closest(CONTROLS) : null;\n    if (!b) return;", 'closest(CONTROLS + ", #learnNextSheet button, #learnNextSheet h2") : null;\n    if (!b) return;'], ["root !== inside && !root.contains(inside)", "true"]]]],
+  nofull: [[MIN, [["e.stopPropagation(); toggleFull(root); });", "e.stopPropagation(); });"]]]],      // -> "⛶ fills the viewport"
+  nodrag: [[MIN, [['startDrag(e, "move", ctx());', ""]]]],                                          // -> "a drag by the title bar moves the window"
+  noresize: [[MIN, [["e.stopPropagation(); startDrag(e, h, ctx());", "e.stopPropagation();"]]]],     // -> "the n/s/e/w/ne/nw/se/sw handle changes the size"
   menuback: [[CSS, [[".nav-cat[open] > .nav-cat-links { z-index: 1450; }", ".nav-cat[open] > .nav-cat-links { z-index: 100; }"]]]],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -84,6 +87,39 @@ for (const [lang, width, height] of [["en", 1280, 900], ["bn", 1280, 900], ["en"
   // scroll the list so a restore can be compared
   await page.evaluate(() => { const sc = document.querySelector("#learnNextSheet [data-ln-scroll]"); if (sc) sc.scrollTop = 240; });
   const before = await sheetState(page);
+
+  // J140 part 2: ⛶ full screen, drag, eight handles, reachability
+  await page.waitForTimeout(300);
+  const rectOf = () => page.evaluate(() => { const r = document.getElementById("learnNextSheet").getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+  const hit = await page.evaluate(() => ["mm-full-btn", "mm-min-btn:not(.mm-full-btn)", "ln-close"].map((c) => { const b = document.querySelector("#learnNextSheet ." + c); if (!b) return false; const r = b.getBoundingClientRect(); const h = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return h === b || b.contains(h); }));
+  check(`${tag} ⛶, – and ✕ are each reachable (elementFromPoint at the centre)`, hit.every(Boolean), JSON.stringify(hit));
+  const fb = await page.evaluate(() => { const b = document.querySelector("#learnNextSheet .mm-full-btn"); if (!b) return null; const r = b.getBoundingClientRect(); return { w: r.width, h: r.height, label: b.getAttribute("aria-label") }; });
+  check(`${tag} ⛶ is at least 40px with a translated label`, !!fb && fb.w >= 40 && fb.h >= 40 && (lang === "en" ? fb.label === "Full screen" : fb.label !== "Full screen"), JSON.stringify(fb));
+  const r0 = await rectOf();
+  await page.click("#learnNextSheet .mm-full-btn");
+  const rf = await rectOf();
+  check(`${tag} ⛶ fills the viewport`, near(rf.x, 0) && near(rf.y, 0) && near(rf.w, width) && near(rf.h, height), JSON.stringify(rf));
+  await page.click("#learnNextSheet .mm-full-btn");
+  const rr = await rectOf();
+  check(`${tag} pressing ⛶ again restores the same rect`, near(rr.x, r0.x) && near(rr.y, r0.y) && near(rr.w, r0.w) && near(rr.h, r0.h), JSON.stringify({ r0, rr }));
+  if (width > 640) {
+    await page.evaluate(() => { const s = document.getElementById("learnNextSheet"); Object.assign(s.style, { left: "300px", top: "120px", width: "500px", height: "400px" }); });
+    const hd = await page.$eval("#learnNextSheet .ln-title", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + Math.min(r.width / 2, 20), y: r.y + r.height / 2 }; });
+    const a = await rectOf();
+    await page.mouse.move(hd.x, hd.y); await page.mouse.down(); await page.mouse.move(hd.x - 60, hd.y + 40, { steps: 4 }); await page.mouse.up();
+    const b = await rectOf();
+    check(`${tag} a drag by the title bar moves the window`, Math.abs((b.x - a.x) + 60) < 3 && Math.abs((b.y - a.y) - 40) < 3, JSON.stringify({ a, b }));
+    for (const h of ["n", "s", "e", "w", "ne", "nw", "se", "sw"]) {
+      await page.evaluate(() => { const s = document.getElementById("learnNextSheet"); s.style.left = "200px"; s.style.top = "120px"; s.style.width = "500px"; s.style.height = "400px"; });
+      const a2 = await rectOf();
+      const p = await page.$eval(`#learnNextSheet > .mm-h[data-h="${h}"]`, (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+      const dx = h.includes("e") ? -30 : h.includes("w") ? 30 : 0, dy = h.includes("s") ? -30 : h.includes("n") ? 30 : 0;
+      await page.mouse.move(p.x, p.y); await page.mouse.down(); await page.mouse.move(p.x + dx, p.y + dy, { steps: 4 }); await page.mouse.up();
+      const b2 = await rectOf();
+      check(`${tag} the ${h} handle changes the size`, Math.abs((b2.w - a2.w) - (h.includes("e") ? dx : h.includes("w") ? -dx : 0)) < 3 && Math.abs((b2.h - a2.h) - (h.includes("s") ? dy : h.includes("n") ? -dy : 0)) < 3 && (b2.w !== a2.w || b2.h !== a2.h), JSON.stringify({ a2, b2 }));
+    }
+  }
+  await page.evaluate((r) => { const s = document.getElementById("learnNextSheet"); Object.assign(s.style, { left: r.x + "px", top: r.y + "px", width: r.w + "px", height: r.h + "px" }); }, r0);
 
   // 2. double-click on the top bar
   await dbl(page, "#learnNextSheet .ln-title");
