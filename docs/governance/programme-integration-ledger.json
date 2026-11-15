@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "15.06",
+    "version": "15.07",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7277,8 +7277,20 @@
     {
       "version": "15.06",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "QR Lead 47L's #1739 (J139) and #1742 (J138 part 2), released together by the Architect 112L",
+      "integration": {
+        "authorizedOn": "2026-11-15",
+        "integratedOn": "2026-11-15",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "15.07",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder #1751 (J141) and the QR Lead 47L's #1752, released together by the Architect 112L",
       "integration": {
         "authorizedOn": "2026-11-15",
         "integratedOn": "2026-11-15",
@@ -7287,8 +7299,9 @@
       }
     }
   ],
-  "nextUnallocated": "15.07",
+  "nextUnallocated": "15.08",
   "nextUnallocatedNote": [
+    "v15.07 was allocated to the title goes home and the new version label (J141), bookmark captions, Read opens the Surah list, Mushaf bar Home and Location, 2026-11-15.",
     "v15.06 was allocated to offline reads calm, Taṣrīf Arabic 80%, Tafsīr era switches (J139) and Learn next steps leave out Already known words (J138 part 2), 2026-11-15.",
     "v15.05 was allocated to Hadith: Know Your Status (#1738, #1740), 2026-11-15.",
     "v15.04 was allocated to Learn next: Already known, six tick groups (#1735), 2026-11-15.",
