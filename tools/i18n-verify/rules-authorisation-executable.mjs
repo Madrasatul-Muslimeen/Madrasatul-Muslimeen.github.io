@@ -1080,5 +1080,42 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   });
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// BANGLA WORDS (PCF MSA J143, the Owner ticked B; Architect 114L, 16 Nov 2026): docs/proposals/bangla-words.candidate.rules is the
+// QR Lead's tested extract; docs/proposals/bangla-words.DEPLOYMENT-candidate.rules is the file the Owner pastes (today's
+// firestore.rules + exactly the extract's banglaWords block, at the end). PENDING: until the Owner publishes, firestore.rules must
+// NOT carry the block and app/js/bangla-words-readiness.js must stay NOT ready, so no page reads or writes a banglaWords document
+// production would deny. The day the Owner publishes: firestore.rules becomes the deployment file byte for byte, the gate opens in
+// the same release, and the PENDING checks below are updated in place (as HADITH NAMES above).
+{
+  const cand = read("docs/proposals/bangla-words.candidate.rules");
+  const dep = read("docs/proposals/bangla-words.DEPLOYMENT-candidate.rules");
+  const live = read("firestore.rules");
+  const block = cand.slice(cand.indexOf("    // ====="), cand.lastIndexOf("  }\n}"));
+  const gate = read("app/js/bangla-words-readiness.js");
+  const readyVal = (gate.match(/BANGLA_WORDS_PERSISTENCE_DECLARATION = Object\.freeze\(\{\s*ready: (true|false),/) || [])[1];
+  check("BANGLA WORDS POSITIVE CONTROL: the extract's block and the readiness declaration are both found", () => {
+    assert.ok(block.length > 1000 && block.includes("match /banglaWords/{listKey}") && block.trimEnd().endsWith("}"), "the extract's banglaWords block was not found");
+    assert.ok(readyVal === "true" || readyVal === "false", "BANGLA_WORDS_PERSISTENCE_DECLARATION.ready not found in bangla-words-readiness.js");
+  });
+  check("BANGLA WORDS: the block has no delete and no list; reads are by document id; createdBy is the writer and write-once", () => {
+    const b = matchBlock(cand, "banglaWords/");
+    const code = b.split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
+    assert.ok(!/allow [^:]*\b(list|write|read)\b/.test(code), "banglaWords may only be got, created and updated");
+    assert.match(code, /allow delete: if false;/);
+    assert.match(code, /allow create: if banglaShapeOk\(\)\s*&& banglaMayWrite\(d\(\)\.tenantId, d\(\)\.scope\)\s*&& d\(\)\.createdBy == myUid\(\);/);
+    assert.match(code, /d\(\)\.createdBy == resource\.data\.createdBy;/);
+  });
+  check("BANGLA WORDS: the deployment file is today's firestore.rules + exactly the extract's block, OR (once published and synced) firestore.rules itself", () => {
+    if (live.includes("match /banglaWords/")) { assert.equal(live, dep, "firestore.rules carries banglaWords but is not the deployment file"); return; }
+    const i = live.lastIndexOf("  }\n}");
+    assert.equal(dep, live.slice(0, i).replace(/\n+$/, "") + "\n\n" + block + live.slice(i), "the deployment file is not firestore.rules + exactly the block (rebuild it after any Rules change)");
+  });
+  check("BANGLA WORDS PENDING: firestore.rules does not carry the block, and the readiness gate is NOT ready (never ready without the block)", () => {
+    assert.ok(!live.includes("match /banglaWords/"), "firestore.rules carries banglaWords: update these PENDING checks in place to the published state");
+    assert.equal(readyVal, "false", "bangla-words-readiness.js says ready while the banglaWords Rules are not in firestore.rules");
+  });
+}
+
 console.log(`\n==== Rules authorisation executable: ${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);
