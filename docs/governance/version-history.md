@@ -1150,3 +1150,4 @@ total). Allocated by the MMSA Architect.
 15.02: the Hadith book and chapter names switched on (Rules published). Allocated by the MMSA Architect.
 15.03: the Read bar, Word Card marking and āyah stripe (#1732). Allocated by the MMSA Architect.
 15.04: Learn next: Already known, six tick groups (#1735). Allocated by the MMSA Architect.
+15.05: Hadith: Know Your Status (#1738, #1740). Allocated by the MMSA Architect.
