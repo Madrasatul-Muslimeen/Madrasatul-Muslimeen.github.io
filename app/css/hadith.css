@@ -564,6 +564,8 @@ body.hadith-pane-dragging { user-select: none; }
 .hwc-overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(8, 12, 22, 0.55); padding: 0; }
 .hwc-sheet { box-sizing: border-box; width: min(100%, 560px); max-height: 92vh; overflow-y: auto; overflow-x: hidden; background: #1c2a46; color: #eef1f7; border-radius: 14px 14px 0 0; padding: 0 max(16px, env(safe-area-inset-left, 0px)) calc(5.5rem + env(safe-area-inset-bottom, 0px)); display: grid; gap: 0.7rem; align-content: start; } /* 5.5rem: the round Zab button must never cover the last tab */
 @media (min-width: 700px) { .hwc-overlay { align-items: center; } .hwc-sheet { border-radius: 14px; max-height: 86vh; } }
+.hwc-close { flex: 0 0 auto; min-width: 40px; min-height: 40px; margin-inline-start: auto; border: 0; background: none; color: inherit; font: inherit; font-size: 1.3rem; font-weight: 700; cursor: pointer; border-radius: 0.5rem; } /* J140 part 3 */
+.hwc-close:focus-visible { outline: 3px solid #e3c27a; outline-offset: 1px; }
 .hwc-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; position: sticky; top: 0; z-index: 1; background: #1c2a46; padding: 0.8rem 0 0.4rem; }
 .hwc-label { margin: 0; font-size: 0.85rem; color: #a9b3c8; overflow-wrap: anywhere; unicode-bidi: plaintext; }
 .hwc-back { min-height: 40px; padding: 0 0.8rem; border-radius: 20px; border: 1px solid #e3c27a; background: transparent; color: #e3c27a; font: inherit; font-weight: 600; cursor: pointer; }

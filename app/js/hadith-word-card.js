@@ -78,6 +78,8 @@ export function openHadithWordCard({ tok, tokens, wordsMeanings, hadithLabel, ha
   const back = el("button", "hwc-back", t("← Back to the hadith card")); back.type = "button"; back.dataset.hwcBack = "true";
   head.appendChild(back);
   head.appendChild(el("span", "hwc-title", t("Hadith Word Card")));
+  const xBtn = el("button", "hwc-close", "✕"); xBtn.type = "button"; xBtn.setAttribute("aria-label", t("Close")); xBtn.title = t("Close"); xBtn.dataset.hwcClose = "true"; // J140 part 3
+  head.appendChild(xBtn);
   sheet.appendChild(head);
   const big = el("p", "hwc-big", tok.written); big.lang = "ar"; big.dir = "rtl"; sheet.appendChild(big);
   sheet.appendChild(el("p", "hwc-draft", t("Draft: not yet checked by a scholar.")));
@@ -99,6 +101,7 @@ export function openHadithWordCard({ tok, tokens, wordsMeanings, hadithLabel, ha
   function onKey(e) { if (e.key === "Escape") close(); }
   document.addEventListener("keydown", onKey);
   back.addEventListener("click", close);
+  xBtn.addEventListener("click", close);
   back.focus();
   return close;
 }
