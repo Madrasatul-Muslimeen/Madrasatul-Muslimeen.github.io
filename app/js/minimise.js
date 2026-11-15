@@ -25,7 +25,13 @@ const WINDOWS = [
   { id: "track", root: "#wayModalMount .way-modal", hide: "#wayModalMount", close: ".way-close-btn", title: ".way-modal-header h2, .way-modal-header h3, .way-modal-title" },
   { id: "read", root: "body.read-windowed #readView", close: "#readWinCloseBtn", title: "#readRef" },
   { id: "card", root: ".fc-floating", close: "[data-close], .close-btn, button[aria-label='Close'], button[title='Close']", title: "h2, h3, header" },
+  // J140: Learn next (quranrevival.html) -- its header carries "← Back" and a ✕ (.ln-close) that closes it the same way.
+  { id: "learnnext", root: "#learnNextSheet:not([hidden])", close: ".ln-close", title: ".ln-title", bar: ".ln-head" },
 ];
+// J140: a collapsed pop-up is a bar at the top left, as wide as the left pane of Mapping My Journey's three-pane layout
+// (journey-map.html SPLIT_DEFAULT.three[0] = 4/13 of the width); on a phone (<= 640px) the full width.
+export const COLLAPSED_PANE_FRACTION = 4 / 13;
+const CONTROLS = "#topNav summary, #topNav a, #topNav button, #tabRow button, #tabRow a, #hadithCorpusRoot [role='tablist'] button, #hadithCorpusRoot nav button, [data-collapse-popups]";
 const ATTR = "data-mm-min";
 const CSS = `
 [${ATTR}] { display: none !important; }
@@ -40,6 +46,16 @@ body.zab-bar-on #mmMinDock { right: 12px; bottom: 4px; }
 .mm-min-chip { pointer-events: auto; display: inline-flex; align-items: center; gap: 0.45rem; min-height: 40px; max-width: 18rem; padding: 0 0.8rem; border: 1px solid #c9a24b; border-radius: 999px; background: #1F3A6E; color: #fff; font: inherit; font-size: 0.9rem; font-weight: 600; box-shadow: 0 4px 14px rgba(10, 20, 45, 0.35); cursor: pointer; }
 .mm-min-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mm-min-chip:focus-visible { outline: 3px solid #c9a24b; outline-offset: 2px; }
+/* J140: collapsed pop-ups -- bars stacked down from the top left, as wide as the 3-pane layout's left pane. Above the page,
+   below an open pop-up (1400) or menu (1450). */
+#mmColStack { position: fixed; top: 0; left: 0; z-index: 900; display: flex; flex-direction: column; gap: 2px; width: calc(100vw * ${COLLAPSED_PANE_FRACTION}); pointer-events: none; }
+@media (max-width: 640px) { #mmColStack { width: 100vw; } }
+#mmColStack:empty { display: none; }
+.mm-col-bar { pointer-events: auto; display: flex; align-items: center; gap: 0.3rem; min-height: 44px; box-sizing: border-box; padding: 0 0.3rem 0 0.7rem; background: #1F3A6E; color: #fff; border: 1px solid #c9a24b; box-shadow: 0 4px 14px rgba(10, 20, 45, 0.35); font-size: 0.9rem; font-weight: 600; }
+.mm-col-bar [data-mm-title] { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-col-bar button { flex: 0 0 auto; min-width: 40px; min-height: 40px; border: 0; background: none; color: inherit; font: inherit; font-size: 1.2rem; cursor: pointer; border-radius: 0.5rem; }
+.mm-col-bar button:hover { background: rgba(255, 255, 255, 0.12); }
+.mm-ln-close { flex: 0 0 auto; min-width: 44px; min-height: 44px; margin-inline-start: auto; border: 1px solid #a98bdc; border-radius: 0.5rem; background: #f1e9fb; color: #4b2a85; font: inherit; font-size: 1.3rem; font-weight: 700; cursor: pointer; }
 `;
 
 const minimised = new Map(); // hidden element -> { chip, spec }
@@ -67,14 +83,52 @@ export function minimiseWindow(root, spec = WINDOWS.find((s) => root.matches(s.r
   chip.dataset.mmMinChip = spec.id;
   chip.setAttribute("aria-label", t("Bring back {name}", { name }));
   chip.title = t("Bring back {name}", { name });
-  chip.innerHTML = `<span aria-hidden="true">▢</span><span></span>`;
-  chip.lastChild.textContent = name;
+  chip.innerHTML = `<span aria-hidden="true">▢</span><span data-mm-title></span>`;
+  chip.querySelector("[data-mm-title]").textContent = name;
   chip.addEventListener("click", () => restoreWindow(target));
   dock.appendChild(chip);
   // Window frames that live beside the window (the Āyah card's resize frame) hide with it.
   target.setAttribute(ATTR, "");
   document.querySelectorAll(".ayah-win-frame.on").forEach((f) => { if (spec.id === "ayah") f.setAttribute(ATTR, ""); });
   minimised.set(target, { chip, spec, root });
+}
+
+/** J140: collapse one window to a bar at the top left (hidden, not closed: size, position, scroll and content stay). The
+    bar's ⤢ (or a double-click on it) restores it; its ✕ closes the window by the window's own ✕. */
+export function collapseWindow(root, spec = WINDOWS.find((s) => root.matches(s.root))) {
+  if (!root || !spec) return;
+  const target = hideTarget(spec, root);
+  if (minimised.has(target)) return;
+  const name = titleOf(spec, root);
+  if (!colStack) { colStack = document.createElement("div"); colStack.id = "mmColStack"; document.body.appendChild(colStack); }
+  const bar = document.createElement("div");
+  bar.className = "mm-col-bar";
+  bar.dataset.mmColBar = spec.id;
+  bar.innerHTML = `<span data-mm-title></span><button type="button" data-mm-open>⤢</button><button type="button" data-mm-close>✕</button>`;
+  bar.querySelector("[data-mm-title]").textContent = name;
+  bar.querySelector("[data-mm-open]").setAttribute("aria-label", t("Open"));
+  bar.querySelector("[data-mm-close]").setAttribute("aria-label", t("Close"));
+  bar.title = name;
+  bar.addEventListener("dblclick", (e) => { if (!e.target.closest("button")) restoreWindow(target); });
+  bar.querySelector("[data-mm-open]").addEventListener("click", () => restoreWindow(target));
+  bar.querySelector("[data-mm-close]").addEventListener("click", () => {
+    const close = [...root.querySelectorAll(spec.close)].find((b) => !b.classList.contains("mm-min-btn"));
+    restoreWindow(target);
+    close?.click();
+  });
+  colStack.appendChild(bar);
+  target.setAttribute(ATTR, "");
+  if (spec.id === "ayah") document.querySelectorAll(".ayah-win-frame.on").forEach((f) => f.setAttribute(ATTR, ""));
+  minimised.set(target, { chip: bar, spec, root });
+}
+let colStack = null;
+
+/** Collapse every open window except the one (by id) kept. */
+export function collapseAll({ except = null, inside = null } = {}) {
+  for (const spec of WINDOWS) {
+    if (spec.id === except) continue;
+    document.querySelectorAll(spec.root).forEach((root) => { if (shown(root) && root !== inside && !root.contains(inside)) collapseWindow(root, spec); });
+  }
 }
 
 /** Audit part 47 (PCF MSA J29): quranrevival.html switches language IN PLACE, and the – buttons, the dock and the chips are
@@ -89,7 +143,9 @@ async function relabel() {
     const name = titleOf(spec, root);
     chip.setAttribute("aria-label", t("Bring back {name}", { name }));
     chip.title = t("Bring back {name}", { name });
-    chip.lastChild.textContent = name;
+    chip.querySelector("[data-mm-title]").textContent = name;
+    chip.querySelector("[data-mm-open]")?.setAttribute("aria-label", t("Open"));
+    chip.querySelector("[data-mm-close]")?.setAttribute("aria-label", t("Close"));
   }
 }
 onAppLangChange(relabel); // audit 47 langmin
@@ -163,14 +219,27 @@ function start() {
   // J81: the page's bottom buttons show what was pressed -- open windows step aside first; Mapping My Journey brings
   // its own window back (journey-tray.js reopens it and calls restoreWindow()).
   document.addEventListener("click", (e) => {
-    const b = e.target instanceof Element ? e.target.closest("#tabRow button, #tabRow a") : null;
-    if (!b) return;
-    // The window a button itself opens is kept (and brought back if minimised); every other one steps aside.
+    const b = e.target instanceof Element ? e.target.closest(CONTROLS) : null;
+    if (!b) return; // a click on a page area that is not a control never collapses anything
+    // J140: a click inside an open pop-up never collapses it (collapseAll skips the window holding the control).
+    // The window a button itself opens is kept (and brought back if collapsed); every other one collapses to the top left.
     const keep = b.matches("a[href*='journey-map.html']") || b.id === "tabJourneyBtn" ? "journey"
       : b.id === "tabReadBtn" ? "read" : b.id === "tabNoteBtn" ? "notes" : null;
-    minimiseAll({ except: keep });
+    collapseAll({ except: keep, inside: b });
     if (keep) for (const [target, { spec }] of [...minimised]) if (spec.id === keep) restoreWindow(target);
   }, true);
+  // J140: a double-click on a pop-up's top bar (outside its buttons) collapses it to the top left.
+  document.addEventListener("dblclick", (e) => {
+    const el = e.target instanceof Element ? e.target : null;
+    if (!el || el.closest("button, a, input, select, textarea, summary, label")) return;
+    for (const spec of WINDOWS) {
+      for (const root of document.querySelectorAll(spec.root)) {
+        if (!shown(root) || !root.contains(el)) continue;
+        const bar = spec.bar ? root.querySelector(spec.bar) : [...root.querySelectorAll(spec.close)].find(shown)?.parentElement;
+        if (bar && bar.contains(el)) { e.preventDefault(); collapseWindow(root, spec); return; }
+      }
+    }
+  });
 }
 
 if (typeof document !== "undefined" && !window.__mmMinimise) {

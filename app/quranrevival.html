@@ -4361,6 +4361,7 @@
   .ln-head { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid #d6ddd9; flex: 0 0 auto; }
   .ln-back { min-height: 44px; min-width: 44px; padding: 0 0.8rem; border-radius: 0.5rem; border: 1px solid #a98bdc; background: #f1e9fb; color: #4b2a85; font: inherit; font-weight: 700; cursor: pointer; }
   .ln-title { margin: 0; font-size: 1.15rem; }
+  .ln-close { flex: 0 0 auto; min-width: 44px; min-height: 44px; margin-inline-start: auto; border: 1px solid #a98bdc; border-radius: 0.5rem; background: #f1e9fb; color: #4b2a85; font: inherit; font-size: 1.3rem; font-weight: 700; cursor: pointer; }
   .ln-body { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 0.6rem 0.75rem 1.5rem; }
   .ln-note { margin: 0 0 0.6rem; padding: 0.45rem 0.65rem; border-radius: 0.5rem; background: #f1e9fb; color: #4b2a85; border: 1px solid #a98bdc; font-size: 0.86rem; line-height: 1.35; }
   /* J47: seven step tiles, each a toggle; four to a row on a phone. */
@@ -21157,7 +21158,7 @@
       }).join("");
       const more = view.total > view.rows.length ? `<button type="button" class="ln-more" data-ln-more>${escapeHtml(t("Show 100 more"))}</button>` : "";
       el.setAttribute("aria-label", t("Learn next"));
-      el.innerHTML = `<div class="ln-head"><button type="button" class="ln-back" data-ln-back>← ${escapeHtml(t("Back"))}</button><h2 class="ln-title">${escapeHtml(t("Learn next"))}</h2></div>
+      el.innerHTML = `<div class="ln-head"><button type="button" class="ln-back" data-ln-back>← ${escapeHtml(t("Back"))}</button><h2 class="ln-title">${escapeHtml(t("Learn next"))}</h2><button type="button" class="ln-close" data-ln-back aria-label="${escapeHtml(t("Close"))}" title="${escapeHtml(t("Close"))}">✕</button></div>
         <div class="ln-body" data-ln-scroll>
           ${levelSwitch}
           ${isWbw ? vocabBadgeHtml() : ""}
