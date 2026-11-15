@@ -4705,6 +4705,7 @@ export const BN = {
   "The Qur'an's words each student knows (the Word card's own marks), the Learn next steps passed, and the review schedule. Not scoped to the week/month above.": "প্রত্যেক ছাত্র কুরআনের কোন শব্দগুলো জানে (শব্দ কার্ডের নিজস্ব চিহ্ন), “এরপর শিখুন”-এর কোন ধাপ উত্তীর্ণ, এবং পুনরালোচনার সূচি। উপরের সপ্তাহ/মাসে সীমাবদ্ধ নয়।",
   "Share of the Qur'an": "কুরআনের অংশ",
   "Steps passed": "উত্তীর্ণ ধাপ",
+  "These counts leave out a student's own-language list (Bangla and so on): that list is kept on the student's own device, so it cannot be read here.": "এই গণনায় শিক্ষার্থীর নিজের ভাষার তালিকা (বাংলা ইত্যাদি) ধরা হয়নি: সেই তালিকা শিক্ষার্থীর নিজের ডিভাইসে থাকে, তাই এখানে পড়া যায় না।", // ?
   "Due for review today": "আজ পুনরালোচনার পালা",
   "Last practised": "শেষ অনুশীলন",
   "Couldn't load this student's vocabulary:": "এই ছাত্রের শব্দভান্ডার আনা যায়নি:",

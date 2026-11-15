@@ -584,7 +584,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         const today = dayOf(new Date());
         const rows = await Promise.all(people.map((p) => vocabRowFor(p, data, override, today)));
         vocabBody.innerHTML = `<div class="vocab-table-wrap"><table data-vocab-table><thead><tr><th>${t("Student")}</th><th>${t("Words known")}</th><th>${t("Share of the Qur'an")}</th><th>${t("Steps passed")}</th><th>${t("Due for review today")}</th><th>${t("Last practised")}</th></tr></thead>
-          <tbody>${rows.join("")}</tbody></table></div>`;
+          <tbody>${rows.join("")}</tbody></table></div>
+          <p class="muted" data-vt-note>${t("These counts leave out a student's own-language list (Bangla and so on): that list is kept on the student's own device, so it cannot be read here.")}</p>`;
       } catch (err) {
         vocabBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load the Vocabulary table:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
