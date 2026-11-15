@@ -99,7 +99,10 @@ for (const [lang, width, height] of [["en", 360, 740], ["en", 390, 844], ["bn", 
   check(`${tag} ...Escape closes the sheet and gives the ⋮ the focus back`, !(await sheetOpen(page)) && await page.evaluate(() => document.activeElement?.classList.contains("ayah-quick-btn")));
   await openSheet(page);
   // The tap lands on the page title: a neutral spot (a tap on the reading itself would open that āyah's card, which is the app doing its job, not the sheet staying open).
-  const out = await page.evaluate(() => { const r = document.querySelector("h1").getBoundingClientRect(); return { x: Math.round(r.left + Math.min(r.width / 2, 40)), y: Math.round(r.top + r.height / 2) }; });
+  // UPDATED IN PLACE (v15.07, J141 #1751, Architect 112L): the title is now a link HOME, so a tap on it leaves the Read view (the Owner's ask working).
+  // The neutral spot is now the version label beside it (#appVersion, plain text, not a link); a positive control asserts it is not inside a link.
+  const out = await page.evaluate(() => { const v = document.getElementById("appVersion"); const r = (v && v.getBoundingClientRect().width > 0 ? v : document.querySelector("h1")).getBoundingClientRect(); const x = Math.round(r.left + Math.min(r.width / 2, 40)), y = Math.round(r.top + r.height / 2); return { x, y, link: !!document.elementFromPoint(x, y)?.closest("a") }; });
+  check(`${tag} ...the neutral spot for the outside tap is not a link`, !out.link, JSON.stringify(out));
   await page.mouse.click(out.x, out.y); await page.waitForTimeout(250);
   check(`${tag} ...a tap outside closes the sheet`, !(await sheetOpen(page)));
 
