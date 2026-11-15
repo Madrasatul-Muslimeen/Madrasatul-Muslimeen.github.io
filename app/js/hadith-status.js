@@ -269,9 +269,20 @@ export function renderStatusWheel(body, state, rerender, back = null) {
       }
       const pick = () => { v.sel = v.sel === i ? null : i; rerender(); };
       g.addEventListener("click", pick);
-      g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+      // A keyboard pick redraws the whole wheel, which would drop focus to the page: remember the segment and give focus back below.
+      g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); v.focusI = i; pick(); } });
       svg.appendChild(g);
     });
+    // Keyboard focus ring (PCF MSA J106, 113L's findings 15 Nov 2026): the segments are drawn one over the next, so a ring painted as a
+    // segment's own stroke is half covered by its neighbour and looks like the "selected" outline. One ring path is drawn LAST (above every
+    // segment, never covered), a dark halo under a gold line of 3 screen pixels, and follows whichever segment has focus.
+    const focusHalo = mk("path", { class: "hs-focus-halo", d: "", "aria-hidden": "true" });
+    const focusRing = mk("path", { class: "hs-focus-ring", d: "", "aria-hidden": "true" });
+    focusRing.dataset.focusRing = "";
+    svg.append(focusHalo, focusRing);
+    const showRing = (d) => { focusHalo.setAttribute("d", d); focusRing.setAttribute("d", d); };
+    svg.addEventListener("focusin", (e) => { const seg = e.target.closest?.("[data-i]"); showRing(seg && e.target.matches(":focus-visible") ? geo[Number(seg.getAttribute("data-i"))].outline : ""); });
+    svg.addEventListener("focusout", () => showRing(""));
     const cd = selU ? doneOf(selU.counts, doneSet) : sumAll.d, ct = selU ? selU.total : sumAll.t;
     svg.appendChild(mk("circle", { class: "hs-hub", cx: "150", cy: "150", r: "46" }));
     const big = mk("text", { class: "hs-hub-big", x: "150", y: "155" }, `${num(percent(cd, ct))}%`); big.dataset.hadithStatusCentre = "pct";
@@ -282,6 +293,7 @@ export function renderStatusWheel(body, state, rerender, back = null) {
     const wb = el("div", "hadith-status-wheel-box");
     wb.appendChild(svg);
     card.appendChild(wb);
+    if (v.focusI != null) { const back = svg.querySelector(`[data-i="${v.focusI}"]`); v.focusI = null; back?.focus({ preventScroll: true }); }
 
     // legend + counts as done
     const legend = el("ul", "hadith-status-legend");
