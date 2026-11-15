@@ -29,7 +29,7 @@
 //   nopreview  no preview of the āyah before it is added             -> the preview checks
 //   countoff   "+ Add āyah" applies the count even when it is off    -> the count-off add checks
 import fs from "node:fs";
-import { chromium, newContext, openPage, clickReadTool } from "./harness.mjs";
+import { chromium, newContext, openPage } from "./harness.mjs";
 import { expandAyahsForDisplay, FATIHA_SEVEN_RECORD_AYAH } from "../../app/js/fatiha-count.js";
 
 let pass = 0, fail = 0;
@@ -101,7 +101,9 @@ const place = (page) => page.evaluate(() => {
   const best = els.reduce((a, b) => (area(b.getBoundingClientRect()) > area(a.getBoundingClientRect()) ? b : a));
   const r = best.getBoundingClientRect();
   return { id: Number(best.dataset.mushafPage ?? best.dataset.ayah), kind: pages.length ? "page" : "row", left: Math.round(r.left), pvL: Math.round(pv.scrollLeft), pvT: Math.round(pv.scrollTop), rsT: Math.round(rs.scrollTop), winY: Math.round(scrollY),
-    glyph: document.getElementById("readBarBookmarkBtn")?.textContent.trim() || document.getElementById("readBookmarkBtn")?.textContent.trim() };
+    // UPDATED IN PLACE 15 Nov 2026 (47L): the Mushaf bar's own 🔖 and the ⋯ menu's are gone (J114, one ⋮); the bookmark is ONE tile of the ⋮ sheet,
+    // whose first glyph turns 🔖 -> ★ once saved. Read off that tile (it is in the DOM while the sheet is closed).
+    glyph: ((pages.length ? document.querySelector("#readQuickMenuSlot [data-qm-unit-bookmark], #readQuickMenuSlot [data-qm-bookmark]") : best.querySelector("[data-qm-unit-bookmark], [data-qm-bookmark]"))?.textContent.trim() ?? "").slice(0, 2) };
 });
 const same = (a, b) => !!a && !!b && a.id === b.id && a.kind === b.kind && Math.abs(a.left - b.left) <= 2 && Math.abs(a.pvL - b.pvL) <= 2 && Math.abs(a.pvT - b.pvT) <= 2 && Math.abs(a.rsT - b.rsT) <= 2 && Math.abs(a.winY - b.winY) <= 2;
 
@@ -122,8 +124,18 @@ async function readView(page, { unit = "surah", mushaf = false, from, to } = {})
   }
 }
 /** Taps a 🔖 and, when it opens the name dialog, saves; a ★ now asks (issue #797) and "Remove my bookmark" removes it. */
-async function tapBookmark(page, sel) {
-  if (sel === "#readBarBookmarkBtn") await page.click(sel); else await clickReadTool(page, sel);
+async function tapBookmark(page) {
+  // UPDATED IN PLACE 15 Nov 2026 (47L): the old 🔖 buttons are hidden since J114 (one ⋮). A Mushaf page bookmarks through the bar's ⋮ sheet (its ONE bookmark tile);
+  // the scrolling flow (no Mushaf) has no bookmark tile on the bar's sheet, so it goes through the ⋮ of the row in view (that row's unit bookmark, else its āyah's).
+  const p = await place(page);
+  if (p?.kind === "row") {
+    const sel = `.page-flow-ayah[data-ayah="${p.id}"]`;
+    await page.click(`${sel} .ayah-quick-btn`); await page.waitForTimeout(300);
+    await page.click(`${sel} [data-qm-unit-bookmark], ${sel} [data-qm-bookmark]`);
+  } else {
+    await page.click("#readQuickMenuSlot .ayah-quick-btn"); await page.waitForTimeout(300);
+    await page.click("#readQuickMenuSlot .quick-menu [data-qm-unit-bookmark], #readQuickMenuSlot .quick-menu [data-qm-bookmark]");
+  }
   if (await page.waitForSelector(".bm-popover", { timeout: 2500 }).catch(() => null)) {
     if (await page.$("[data-bm-exists-remove]")) await page.click("[data-bm-exists-remove]");
     else await page.click("[data-bm-pop-save]");
@@ -152,13 +164,11 @@ for (const lang of ONLY === "qcr" ? [] : ["en", "bn"]) {
       const before = await place(page);
       // 390 shows one page (4); 1280 a two-page spread (3 and 4, the larger share counted). Either way, well past page 2.
       check(`${tag} Mushaf precondition: Whole Surah on page ${w < 900 ? 4 : "3–4"}, scrolled away from the surah's first page (2)`, before?.kind === "page" && (w < 900 ? before.id === 4 : before.id >= 3) && Math.abs(before.pvL) > 100, JSON.stringify(before));
-      const buttons = (await page.evaluate(() => (document.getElementById("readBookmarkBtn")?.getBoundingClientRect().width ?? 0) > 0 || (document.getElementById("readToolsBtn")?.getBoundingClientRect().width ?? 0) > 0))
-        ? ["#readBookmarkBtn", "#readBarBookmarkBtn"] : ["#readBarBookmarkBtn"];
-      // 1280: the ⋯ menu's 🔖 steps aside for the Mushaf bar's own (read-bar-bookmark-layers); a second tap removes.
-      const plan = buttons.length === 2 ? [["Read bar 🔖 save", buttons[0]], ["Mushaf bar 🔖 remove", buttons[1]]] : [["Mushaf bar 🔖 save", buttons[0]], ["Mushaf bar 🔖 remove", buttons[0]]];
+      // UPDATED IN PLACE 15 Nov 2026 (47L): save then remove, both through the ⋮ sheet's ONE bookmark tile (the Read-bar and Mushaf-bar 🔖 buttons are gone since J114).
+      const plan = [["⋮ bookmark tile save", null], ["⋮ bookmark tile remove", null]];
       for (const [what, sel] of plan) {
         const ref = await place(page);
-        await tapBookmark(page, sel);
+        await tapBookmark(page);
         const way = await samples(page, 1200);
         const soon = way[4];
         await page.waitForTimeout(2500);
@@ -181,7 +191,7 @@ for (const lang of ONLY === "qcr" ? [] : ["en", "bn"]) {
       await page.waitForTimeout(900);
       const ref = await place(page);
       check(`${tag} ${what} precondition: scrolled to row ${row}, far from the start`, ref?.kind === "row" && Math.abs(ref.id - row) <= 1 && (ref.rsT > 300 || Math.abs(ref.pvL) > 300 || ref.winY > 300), JSON.stringify(ref));
-      await tapBookmark(page, "#readBookmarkBtn");
+      await tapBookmark(page);
       await page.waitForTimeout(400);
       const soon = await place(page);
       await page.waitForTimeout(2000);
