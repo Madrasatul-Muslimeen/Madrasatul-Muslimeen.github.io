@@ -3357,3 +3357,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v15.08** (2026-11-15): J140 pop-ups parts 1 and 2 (collapse to top left, full screen, drag and resize).
 - **v15.09** (2026-11-15): the Monitor's own-language note (QR Lead 47L, #1757).
 - **v15.10** (2026-11-15): J140 pop-ups part 3 + the Dua groups note (#1761, #1764).
+- **v15.11** (2026-11-15): Own-language lists behind an OFF gate (J143 B) + Soft Meadow level colours.

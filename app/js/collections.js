@@ -91,6 +91,7 @@ export const TENANT = Object.freeze({
   DUA_EDITS: "duaEdits", // PCF MSA J104 (R6): D03 add / move / several groups / hide and D05 titles, one document per changed or added dua (duaEdits/{tenantId}__{duaKey}). Owner and Prime write; every member reads.
   DUA_SHARES: "duaShares", // PCF MSA J104 (R6): D15 one append-only record per share (duaShares/{autoId}). Any member records; Owner and Prime read.
   DUA_GROUPS: "duaGroups", // PCF MSA J104 (line 25, 13 Nov 2026): the Dua group TREE, ONE document per tree (duaGroups/{tenantId}__{ownerKey}, ownerKey "admin" or a personId). PUBLISHED Rules (the Owner, 13 Nov 2026); written by app/js/dua-saving-data.js. No delete: removing a group writes `nodes` without it.
+  BANGLA_WORDS: "banglaWords", // PCF MSA J143 (16 Nov 2026): the own-language word lists, `banglaWords/{tenantId}__{personId}` and `{tenantId}__madrasah`. CANDIDATE Rules only (docs/proposals/bangla-words.candidate.rules); written by app/js/bangla-words-data.js, behind bangla-words-readiness.js (OFF).
   DOMAINS: "domains", // Phase 3 addition (D12): tenant-authored tag registry backing records.entries.domainIds[] — the Architecture doc names the domainIds field but never lists a domains collection. Same "not in the original doc, added to support a named field" shape as D9's tenantMemberUids/inviteTokens. Mirrors ladders: tenant-authored, no platform seed, freeform tags (legacy app's "Domains are optional & user-defined").
 
   // Layer 2.5 — communication

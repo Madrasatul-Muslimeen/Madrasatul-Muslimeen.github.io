@@ -4285,6 +4285,18 @@
     .quran-word-card [role="tab"] { flex: 1 1 0; min-height: 52px; }
     .word-card-tab-sub { display: block; }
   }
+  /* The Owner's colour combination "Soft Meadow" (16 Nov 2026), one colour per Word Card level in order: WbW Tea Green,
+     Root Sea Foam, Family Thistle, Taṣrīf Moccasin, Depth Silver. A tab wears its colour while it is not the open one;
+     the open tab keeps the pressed look and shows its colour as a bar along its foot, so the pairing stays visible. The
+     tab text stays the card's dark heading colour (measured >= 4.5:1 on all five). */
+  .quran-word-card { --wc-lvl-wbw: #D0F0C0; --wc-lvl-intermediate: #A8D5CE; --wc-lvl-basic: #D8BFD8; --wc-lvl-tasrif: #FFE4B5; --wc-lvl-depth: #C0C0C0; }
+  .quran-word-card [role="tab"][data-word-card-level="wbw"] { --wc-lvl: var(--wc-lvl-wbw); }
+  .quran-word-card [role="tab"][data-word-card-level="intermediate"] { --wc-lvl: var(--wc-lvl-intermediate); }
+  .quran-word-card [role="tab"][data-word-card-level="basic"] { --wc-lvl: var(--wc-lvl-basic); }
+  .quran-word-card [role="tab"][data-word-card-level="tasrif"] { --wc-lvl: var(--wc-lvl-tasrif); }
+  .quran-word-card [role="tab"][data-word-card-level="depth"] { --wc-lvl: var(--wc-lvl-depth); }
+  .quran-word-card [role="tab"][data-word-card-level]:not([aria-selected="true"]) { background: var(--wc-lvl); color: #1b2a41; }
+  .quran-word-card [role="tab"][data-word-card-level][aria-selected="true"] { box-shadow: inset 0 -5px 0 var(--wc-lvl); }
   /* The new purple parts. One token set per card look; every pair is measured at >= 4.5:1 by
      tools/i18n-verify/word-card-five-levels-browser.mjs. The "what it does" line sits on the card's always-light
      surface, so it carries the light pair in both looks. */
@@ -8237,7 +8249,8 @@
     import { loadSurahKeys, loadPersonSurahKeys, setAyahKey, setWordKey, setWordMarks } from "./js/ayah-keys-data.js";
     import { wordMarksRowHtml, wireWordMarksRow, tapMark, tallyDegrees, effortTableHtml, WORD_EFFORT_CSS } from "./js/word-effort.js"; // MSA · QR J136
     // PCF MSA J119 -- words the Qur'an shares with Bangla (Word Card button + list; marks stay on this device until the Rules are published).
-    import { loadBanglaState, saveBanglaState, setBanglaWord, toggleBanglaKind, setBanglaWheel, banglaWheelPlan, activeBanglaSet, banglaFigures } from "./js/bangla-words.js";
+    import { loadBanglaState, saveBanglaState, setBanglaWord, toggleBanglaKind, setBanglaWheel, banglaWheelPlan, activeBanglaSet, banglaFigures, banglaListPayload, withBanglaList, devicePrefsState, replayBanglaChange } from "./js/bangla-words.js";
+    import { isBanglaWordsPersistenceReady } from "./js/bangla-words-readiness.js";
     import { banglaBlockHtml, wireBanglaBlock, banglaMarkRowHtml, wireBanglaMarkRow, banglaWheelSwitchesHtml, wireBanglaWheelSwitches, BANGLA_CSS } from "./js/bangla-words-ui.js";
     import { TITLE_LINE_CSS } from "./js/title-line.js";
     import { marksRowHtml, wireMarksRow, wheelPieces, marksWheelHtml, wireMarksWheel, marksLegendHtml, MARKS_CSS, MARKS_WHEEL_VIEWS } from "./js/marks-ui.js";
@@ -11809,7 +11822,7 @@
       // The switches sit in the Legend drawer on a phone; in the wide window that drawer is under the bottom bar, so they sit above the step list there.
       const bnSwitches = banglaWheelSwitchesHtml(banglaState, { label: t("Bangla words on the Wheel"), ring: t("Ring"), centre: t("Centre line"), tenth: t("Tenth part") });
       const bnSwitchesBesideList = window.matchMedia("(min-width: 900px)").matches;
-      const wireBnSwitches = (root) => wireBanglaWheelSwitches(root, (k, on) => { banglaState = setBanglaWheel(banglaState, k, on); saveBanglaState(banglaState); renderVocabWheel(); });
+      const wireBnSwitches = (root) => wireBanglaWheelSwitches(root, (k, on) => { banglaState = setBanglaWheel(banglaState, k, on); saveBanglaState(banglaSharedOn() ? devicePrefsState(banglaState, banglaDeviceState) : banglaState); renderVocabWheel(); });
       if (!bnSwitchesBesideList) { wheelLegendContainer.insertAdjacentHTML("beforeend", bnSwitches); wireBnSwitches(wheelLegendContainer); }
       const items = b.steps.map((s) => {
         const fill = vocabStepFill(s, mode);
@@ -20957,6 +20970,7 @@
 
     async function ensureLearnNext({ tenantId, personId, confirmationRequired }) {
       const data = await loadLearnNext();
+      await banglaHydrate(); // J143: the selected student's own-language list (does nothing while the Rules are not published)
       if (!knownGroupsData) { try { knownGroupsData = await loadKnownGroups(); } catch (error) { console.warn("Already-known groups unavailable", error); } }
       // Two lists (WbW, Family) = 4 queries on a first open; 0 once cached for the visit.
       await primeAllLemmaProgress(db, { tenantId, personId, level: "wbw" });
@@ -24699,7 +24713,79 @@
     // (I9: when a Word Card first shows a word with a lemma, never at start-up) and repaints.
     const banglaStyleEl = document.createElement("style"); banglaStyleEl.textContent = BANGLA_CSS; document.head.appendChild(banglaStyleEl);
     let banglaState = loadBanglaState(), banglaData = null, banglaByLemma = null, banglaLoad = null, banglaListOpen = false;
+    // PCF MSA J143 (the Owner ticked B, 16 Nov 2026): the lists live in the reader's ACCOUNT (banglaWords/{tenant}__{person} and __madrasah) once the Rules are published
+    // (bangla-words-readiness.js is OFF until then, and everything below does nothing: the page stays on this device's copy exactly as before). When ON: the SELECTED
+    // person's own list is read when a Word Card / Learn next / the Wheel first needs it (I9, never at start-up); this device's list is COPIED up once into the first
+    // person's account and never removed or changed (I4); switching students switches lists (D10: no lock); every failed save reaches the reader (I15).
+    const banglaDeviceState = banglaState; // what this device held when the page opened: never overwritten once the lists are in the account
+    let banglaRemote = { key: "", status: "idle" }, banglaHydrating = null, banglaDirty = [], banglaSaves = Promise.resolve();
+    const banglaSharedOn = () => isBanglaWordsPersistenceReady();
+    function banglaRemoteCtx() {
+      if (!banglaSharedOn() || !activeTenantId || !auth.currentUser || !selectedPersonId) return null;
+      return { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid };
+    }
+    const banglaKeyOf = (c) => `${c.tenantId}|${c.personId}|${c.uid}`;
+    const banglaCopiedKey = (c, scope) => `mm_bangla_copied.v1.${c.tenantId}.${scope}`;
+    const banglaWasCopied = (c, scope) => { try { return localStorage.getItem(banglaCopiedKey(c, scope)) === "1"; } catch { return false; } };
+    const banglaMarkCopied = (c, scope) => { try { localStorage.setItem(banglaCopiedKey(c, scope), "1"); } catch { /* the copy is still in the account */ } };
+    function banglaRepaint() {
+      if (quranWordCardState?.open) renderPersistentWordCard();
+      refreshLearnNextBar();
+      if (typeof wheelKind !== "undefined" && wheelKind === "vocab") renderWheel();
+      if (document.getElementById("learnNextSheet")?.classList.contains("open")) renderLearnNextSheet(true);
+    }
+    /** Reads the two lists for the selected person (ONE get each) and puts them in force. Does nothing while the Rules are not published. */
+    function banglaHydrate() {
+      const c = banglaRemoteCtx();
+      if (!c) return banglaHydrating;
+      const key = banglaKeyOf(c);
+      if (banglaRemote.key === key && (banglaRemote.status === "loading" || banglaRemote.status === "ready")) return banglaHydrating;
+      banglaRemote = { key, status: "loading" };
+      banglaDirty = [];
+      const run = (async () => {
+        const m = await import("./js/bangla-words-data.js");
+        const [own, adm] = await Promise.all([m.loadBanglaList(db, c, c.personId), m.loadBanglaList(db, c, m.BANGLA_SCOPE_MADRASAH)]);
+        if (banglaRemote.key !== key) return; // the reader moved on to another student
+        let st = banglaState;
+        const mineDevice = banglaListPayload(banglaDeviceState, "mine"), adminDevice = banglaListPayload(banglaDeviceState, "admin");
+        if (own.exists) st = withBanglaList(st, "mine", own);
+        else if (mineDevice.words.length && !banglaWasCopied(c, c.personId)) { // copied up ONCE, into the first student's account that opens it on this device
+          st = withBanglaList(st, "mine", mineDevice);
+          const r = await m.saveBanglaList(db, c, c.personId, mineDevice);
+          if (r.ok) banglaMarkCopied(c, c.personId);
+        } else st = withBanglaList(st, "mine", { words: [], kinds: {} });
+        if (adm.exists) st = withBanglaList(st, "admin", adm);
+        else if (adminDevice.words.length && canAdminCatalogueClientSide() && !banglaWasCopied(c, "madrasah")) {
+          st = withBanglaList(st, "admin", adminDevice);
+          const r = await m.saveBanglaList(db, c, m.BANGLA_SCOPE_MADRASAH, adminDevice);
+          if (r.ok) banglaMarkCopied(c, "madrasah");
+        } else st = withBanglaList(st, "admin", { words: [], kinds: {} });
+        // taps that landed while the lists were being read are put back on top (and saved), never lost
+        const dirty = banglaDirty; banglaDirty = [];
+        for (const d of dirty) st = replayBanglaChange(st, d.prev, d.next);
+        banglaState = st;
+        banglaRemote = { key, status: "ready" };
+        for (const d of dirty) banglaPersist(d.prev, d.next, c);
+        banglaRepaint();
+      })().catch((error) => {
+        if (banglaRemote.key === key) banglaRemote = { key, status: "failed" };
+        reportWriteFailure(error, { what: "load your Bangla word list", read: true }); // I15
+      });
+      banglaHydrating = run;
+      return run;
+    }
+    /** Saves whichever list a change touched (the reader's own; the admin's only for an admin). A failed save is reported by safeWrite (I15). */
+    function banglaPersist(prev, next, c = banglaRemoteCtx()) {
+      if (!c) return;
+      for (const [list, scope] of [["mine", c.personId], ["admin", "madrasah"]]) {
+        const before = banglaListPayload(prev, list), after = banglaListPayload(next, list);
+        if (JSON.stringify(before) === JSON.stringify(after)) continue;
+        if (list === "admin" && !canAdminCatalogueClientSide()) continue; // the Rules would refuse it, and the admin marks are read-only here
+        banglaSaves = banglaSaves.then(async () => { const m = await import("./js/bangla-words-data.js"); await m.saveBanglaList(db, c, scope, after); }).catch(() => {});
+      }
+    }
     function banglaEnsureRows() {
+      banglaHydrate();
       if (banglaData || banglaLoad) return;
       banglaLoad = loadLearnNext().then((d) => { banglaData = d; banglaByLemma = new Map((d.rows ?? []).map((r) => [r.l, r])); })
         .catch((error) => console.warn("Bangla words: learn-next not loaded", error))
@@ -24718,7 +24804,7 @@
           language: t("Bangla"), kindNames: { names: t("In {language} Names", { language: t("Bangla") }), rituals: t("In Rituals"), bangla: t("In Daily Use") },
           heading: t("Bangla list"), admin: t("Admin's"), mine: t("Mine"),
           adminNote: t("admin marks"), readOnly: t("read only"), yours: t("yours"), listHeading: t("Words also in Bangla ({n})"),
-          listSwitch: t("Use the Bangla word list"), savedSwitch: t("Count Bangla words as known and on the Wheel"), savedSwitchLabel: t("Bangla words count as known and on the Wheel"), wordSwitch: t("{word} in the list"), deviceOnly: t("Saved on this device only for now."),
+          listSwitch: t("Use the Bangla word list"), savedSwitch: t("Count Bangla words as known and on the Wheel"), savedSwitchLabel: t("Bangla words count as known and on the Wheel"), wordSwitch: t("{word} in the list"), deviceOnly: banglaSharedOn() ? t("Saved in the student's account: the same on every device.") : t("Saved on this device only for now."),
           count: t("{words} words, {percent}% of the Qur'an's words"), empty: t("No words in this list yet."),
         },
       });
@@ -24743,7 +24829,14 @@
       } catch (error) { console.warn("Learn next not refreshed", error); }
     }
     function banglaChanged(next) {
-      banglaState = next; saveBanglaState(banglaState);
+      const prev = banglaState;
+      banglaState = next;
+      if (banglaSharedOn()) {
+        saveBanglaState(devicePrefsState(banglaState, banglaDeviceState)); // the device keeps only the preferences: its own lists stay as they were (I4)
+        const c = banglaRemoteCtx();
+        if (c && banglaRemote.status === "loading") banglaDirty.push({ prev, next }); // the lists are still being read: replayed when they land
+        else if (c && banglaRemote.status === "ready" && banglaRemote.key === banglaKeyOf(c)) banglaPersist(prev, next, c);
+      } else saveBanglaState(banglaState);
       if (quranWordCardState?.open) renderPersistentWordCard();
       refreshLearnNextBar();
     }
@@ -28930,6 +29023,8 @@
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;
       setSelectedPersonId(selectedPersonId);
+      // J143: another student has their own Bangla list (D10: no lock). The previous student's words must not show under this name while theirs is read.
+      if (banglaSharedOn()) { banglaState = withBanglaList(withBanglaList(banglaState, "mine", { words: [], kinds: {} }), "admin", { words: [], kinds: {} }); banglaRemote = { key: "", status: "idle" }; banglaHydrate(); }
       claimForIds = null; // the 👥 choice on the Record cards starts again from the new Student
       openedBookmarkId = null; // bookmarks are per-person documents -- a different person has no "currently open" bookmark of their own yet
       // MAP Phase 3, and D10 is exactly why this matters: teaching several

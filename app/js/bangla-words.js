@@ -7,7 +7,8 @@
 // word (the meaning travels with the mark: khalā "passed away" is not the Bangla "খালি", which is why a reader chooses).
 // Two lists: the ADMIN's list (the same for everyone) and the reader's OWN list. Until the Owner publishes the new saving
 // Rules (docs/proposals/bangla-words-rules.candidate.rules, a CANDIDATE, firestore.rules is untouched), both lists live
-// on THIS DEVICE only (localStorage), and the page says so. Nothing here is wired to Firestore.
+// on THIS DEVICE only (localStorage), and the page says so. Nothing here is wired to Firestore (J143: the saving is bangla-words-data.js, behind
+// bangla-words-readiness.js, and stays off until the Rules are published).
 
 export const BANGLA_STORAGE_KEY = "mm_bangla_words.v1";
 /** Stage 1 of the Owner's J119 answers (11 Nov 2026): a word can be in MORE THAN ONE kind, so the saved shape gains a `kinds` map.
@@ -69,6 +70,50 @@ export function loadBanglaState(storage = globalThis.localStorage) {
 /** Writes v2 only. The v1 entry is left exactly as it was. */
 export function saveBanglaState(state, storage = globalThis.localStorage) {
   try { storage.setItem(BANGLA_STORAGE_KEY_V2, JSON.stringify(normaliseBanglaState(state))); return true; } catch { return false; }
+}
+
+/** The most words one saved list may hold: the cap the banglaWords Rules put on `words` (docs/proposals/bangla-words.candidate.rules). */
+export const BANGLA_MAX_WORDS = 5000;
+
+/** PCF MSA J143 (the Owner ticked B, 16 Nov 2026): `{ words, kinds }` for ONE list, exactly as a saved banglaWords document carries them --
+ *  sorted lemma ids (at most BANGLA_MAX_WORDS), and `kinds` only for those ids, so it can never hold more entries than `words` (the Rules' bound). */
+export function banglaListPayload(state, list) {
+  const s = normaliseBanglaState(state);
+  const words = (s[list] ?? []).slice(0, BANGLA_MAX_WORDS);
+  const kinds = {};
+  for (const id of words) kinds[id] = s.kinds[list][id];
+  return { words, kinds };
+}
+
+/** A NEW state whose `list` (admin or mine) is replaced by what a saved document holds; nothing malformed gets through (it is read through the
+ *  same normaliser as the device copy) and every other field (the viewed list, on/off, the Wheel switches, the other list) is untouched. */
+export function withBanglaList(state, list, saved) {
+  if (!BANGLA_LISTS.includes(list)) return normaliseBanglaState(state);
+  const s = normaliseBanglaState(state);
+  return normaliseBanglaState({ ...s, [list]: saved?.words, kinds: { ...s.kinds, [list]: saved?.kinds } });
+}
+
+/** Re-applies what the reader changed between `prev` and `next` (word added, removed, or its kinds changed, in either list) on top of `base`, and takes
+ *  `next`'s preferences. Used when a tap lands while the saved lists are still being read: the tap is not lost when they arrive. Pure. */
+export function replayBanglaChange(base, prev, next) {
+  const b = normaliseBanglaState(base), p = normaliseBanglaState(prev), n = normaliseBanglaState(next);
+  let out = { ...b, list: n.list, on: n.on, wheel: n.wheel };
+  for (const list of BANGLA_LISTS) {
+    for (const lemma of new Set([...p[list], ...n[list]])) {
+      const inP = p.kinds[list][lemma], inN = n.kinds[list][lemma];
+      if (inN && (!inP || inP.join() !== inN.join())) out = setBanglaWordKinds(out, lemma, inN, { list, canAdmin: true });
+      else if (inP && !inN) out = setBanglaWordKinds(out, lemma, [], { list, canAdmin: true });
+    }
+  }
+  return out;
+}
+
+/** The state to keep on THIS DEVICE once the lists live in the reader's account: the preferences (viewed list, on/off, Wheel switches) are the
+ *  current ones, but the two LISTS stay exactly what the device held, so the device copy is never overwritten or removed (I4) and a second
+ *  student on the same device never sees the first one's words written into it. */
+export function devicePrefsState(state, deviceState) {
+  const s = normaliseBanglaState(state), d = normaliseBanglaState(deviceState);
+  return { ...s, admin: d.admin, mine: d.mine, kinds: d.kinds };
 }
 
 /** The kinds one word carries in a list (default: the viewed list); [] when the word is not in it. */

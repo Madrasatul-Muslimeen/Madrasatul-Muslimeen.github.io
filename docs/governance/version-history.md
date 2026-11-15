@@ -1156,3 +1156,4 @@ total). Allocated by the MMSA Architect.
 15.08: J140 pop-ups parts 1 and 2 (collapse to top left, full screen, drag and resize). Allocated by the MMSA Architect.
 15.09: the Monitor's own-language note (QR Lead 47L, #1757). Allocated by the MMSA Architect.
 15.10: J140 pop-ups part 3 + the Dua groups note (#1761, #1764). Allocated by the MMSA Architect.
+15.11: Own-language lists behind an OFF gate (J143 B) + Soft Meadow level colours. Allocated by the MMSA Architect.

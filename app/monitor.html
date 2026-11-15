@@ -195,6 +195,7 @@
     import { weekKeyFor } from "./js/activity.js";
     import { listAllRecordsForPerson, getSubjectConfirmationOverride, computeConfirmationRequired } from "./js/records.js";
     import { loadLearnNext, vocabBadgeFigures } from "./js/learn-next.js";
+    import { isBanglaWordsPersistenceReady } from "./js/bangla-words-readiness.js"; // J143: the own-language list is counted once the Rules are published (OFF until then)
     import { loadKnownGroups, knownGroupLemmas, excludedFromSteps, stepRowsExcluding } from "./js/known-groups.js"; // J138: the steps leave out the words the student ticked in the Already known groups
     import { primeVocabKnown, vocabKnownFor } from "./js/vocab-known.js";
     import { loadVocabReview } from "./js/vocab-review-data.js";
@@ -558,9 +559,20 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           primeVocabKnown(db, { tenantId: activeTenantId, personId: person.id }),
           loadVocabReview(db, { tenantId: activeTenantId, personId: person.id }),
         ]);
-        const known = vocabKnownFor({ tenantId: activeTenantId, personId: person.id, confirmationRequired });
-        // J138 (the Owner, 15 Nov 2026): the steps count only the words NOT ticked in the Already known groups (the student's own-language list lives on their device and is not read here).
-        const ex = kgData ? excludedFromSteps(knownGroupLemmas(kgData, []), (l) => known({ l })) : new Set();
+        const knownBase = vocabKnownFor({ tenantId: activeTenantId, personId: person.id, confirmationRequired });
+        // J143 (the Owner ticked B, 16 Nov 2026): the student's OWN-language list (Bangla and so on) lives in their account, so ONE get reads it and its words count as
+        // known, as they do for the student. While the Rules are not published nothing is read and the counts leave it out, as before (the note under the table says so).
+        let own = new Set();
+        if (isBanglaWordsPersistenceReady()) {
+          try {
+            const m = await import("./js/bangla-words-data.js");
+            const r = await m.loadBanglaList(db, { tenantId: activeTenantId, uid: auth.currentUser?.uid }, person.id);
+            if (r.exists) own = new Set(r.words);
+          } catch (error) { console.warn("Own-language list not read for", person.id, error); } // a student whose list cannot be read counts without it
+        }
+        const known = (row) => knownBase(row) || own.has(row?.l);
+        // J138 (the Owner, 15 Nov 2026): the steps count only the words NOT ticked in the Already known groups (and, from J143, not in the student's own-language list).
+        const ex = kgData ? excludedFromSteps(knownGroupLemmas(kgData, [...own]), (l) => known({ l })) : new Set();
         const b = vocabBadgeFigures(stepRowsExcluding(data.rows, ex, data.total), data.total, known, data.rows);
         const due = reviewDeck(data.rows, review.words, today, Infinity).length;
         const last = Object.values(review.words).reduce((m, e) => (typeof e?.at === "string" && e.at > m ? e.at : m), "");
@@ -585,7 +597,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         const rows = await Promise.all(people.map((p) => vocabRowFor(p, data, override, today)));
         vocabBody.innerHTML = `<div class="vocab-table-wrap"><table data-vocab-table><thead><tr><th>${t("Student")}</th><th>${t("Words known")}</th><th>${t("Share of the Qur'an")}</th><th>${t("Steps passed")}</th><th>${t("Due for review today")}</th><th>${t("Last practised")}</th></tr></thead>
           <tbody>${rows.join("")}</tbody></table></div>
-          <p class="muted" data-vt-note>${t("These counts leave out a student's own-language list (Bangla and so on): that list is kept on the student's own device, so it cannot be read here.")}</p>`;
+          <p class="muted" data-vt-note>${isBanglaWordsPersistenceReady() ? t("These counts include each student's own-language list (Bangla and so on).") : t("These counts leave out a student's own-language list (Bangla and so on): that list is kept on the student's own device, so it cannot be read here.")}</p>`;
       } catch (err) {
         vocabBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load the Vocabulary table:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
