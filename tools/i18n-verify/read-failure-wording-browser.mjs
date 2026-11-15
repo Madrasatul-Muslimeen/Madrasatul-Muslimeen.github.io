@@ -2,6 +2,9 @@
 // errors.js decides a read by context.read === true, or context.what/action starting read|load|count, or a named read action.
 //   node tools/i18n-verify/read-failure-wording-browser.mjs [--mutate=no-read-words]
 //   --mutate=no-read-words  the read branch is removed from plainMessageFor -> the read checks FAIL, the write checks still pass
+//   --mutate=loud-offline   (J139, 15 Nov 2026) an offline read shows the red banner again -> "an OFFLINE read shows NO banner" FAILS
+// UPDATED IN PLACE 15 Nov 2026 (the Owner, offline phone screenshots; PCF MSA J139): a read that fails with code "unavailable" (offline) now shows NO
+// banner, so the read-wording checks use a real read failure ("not-found") and the offline case has its own checks.
 import fs from "node:fs";
 import path from "node:path";
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -12,10 +15,15 @@ const check = (n, ok, d = "") => {
   ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
-if (MUTATE && MUTATE !== "no-read-words") throw new Error(`unknown mutation ${MUTATE}`);
+if (MUTATE && !["no-read-words", "loud-offline"].includes(MUTATE)) throw new Error(`unknown mutation ${MUTATE}`);
 const ERRORS_JS = "app/js/errors.js";
 function errorsSource() {
   let src = fs.readFileSync(ERRORS_JS, "utf8");
+  if (MUTATE === "loud-offline") {
+    const from = "  if (!isReadFailure(context)) return false;";
+    if (src.split(from).length !== 2) throw new Error("mutation anchor not found exactly once");
+    return src.replace(from, "  return false;");
+  }
   if (MUTATE) {
     const from = "  if (isReadFailure(context)) return";
     if (src.split(from).length !== 2) throw new Error("mutation anchor not found exactly once");
@@ -59,8 +67,8 @@ check("'Reading' is not 'read' as a word boundary trap: 'readjust' is a write", 
 
 // ---- Browser: 390, en and bn ----
 const WORDS = {
-  en: { read: "That information could not be loaded (unavailable). Please check your connection and try again.", write: "That save did not go through (weird). Please try again, and tell the admin if it keeps happening." },
-  bn: { read: "এই তথ্য লোড করা যায়নি (unavailable)। অনুগ্রহ করে আপনার সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।", write: "সংরক্ষণটি সম্পন্ন হয়নি (weird)। অনুগ্রহ করে আবার চেষ্টা করুন, এবং বারবার হতে থাকলে প্রশাসককে জানান।" },
+  en: { read: "That information could not be loaded (not-found). Please check your connection and try again.", write: "That save did not go through (weird). Please try again, and tell the admin if it keeps happening." },
+  bn: { read: "এই তথ্য লোড করা যায়নি (not-found)। অনুগ্রহ করে আপনার সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।", write: "সংরক্ষণটি সম্পন্ন হয়নি (weird)। অনুগ্রহ করে আবার চেষ্টা করুন, এবং বারবার হতে থাকলে প্রশাসককে জানান।" },
 };
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 for (const lang of ["en", "bn"]) {
@@ -77,12 +85,25 @@ for (const lang of ["en", "bn"]) {
   }, [err, context]);
   const w = WORDS[lang];
   for (const [name, ctxo] of [["what: read Arabic word progress", { what: "read Arabic word progress" }], ["what: load the contents list", { what: "load the contents list" }], ["flag read:true", { read: true, collection: "x" }], ["action notesForStudyUnit", { action: "notesForStudyUnit" }]]) {
-    const r = await show({ code: "unavailable" }, ctxo);
+    const r = await show({ code: "not-found" }, ctxo);
     check(`${lang} 390 read says it could not LOAD: ${name}`, r.text === w.read, JSON.stringify(r.text));
     check(`${lang} 390 read banner is not a save message: ${name}`, !/save|সংরক্ষণ/.test(r.text) && r.fits && r.sx <= 0);
   }
-  const rr = await show({ code: "unavailable" }, { what: "read Arabic word progress" });
-  check(`${lang} read banner keeps its Ref line`, /read Arabic word progress/.test(rr.ref) && /unavailable/.test(rr.ref), rr.ref);
+  const rr = await show({ code: "not-found" }, { what: "read Arabic word progress" });
+  check(`${lang} read banner keeps its Ref line`, /read Arabic word progress/.test(rr.ref) && /not-found/.test(rr.ref), rr.ref);
+  // J139: offline reads are calm. The banner is hidden first, so "no banner" is a real state to see (positive control above: it showed for not-found).
+  await page.evaluate(async () => { const b = document.getElementById("qr-write-failure-banner"); if (b) b.style.display = "none"; });
+  const quiet = (err, context) => page.evaluate(async ([err, context]) => {
+    const m = await import("/app/js/errors.js");
+    m.reportWriteFailure(err, context);
+    const b = document.getElementById("qr-write-failure-banner");
+    return !!b && getComputedStyle(b).display !== "none";
+  }, [err, context]);
+  check(`${lang} an OFFLINE read shows NO banner (code unavailable, a read of progress)`, (await quiet({ code: "unavailable" }, { what: "read Arabic word progress" })) === false);
+  check(`${lang} an OFFLINE read of the contents list / a flagged read shows NO banner either`, (await quiet({ code: "unavailable" }, { what: "load the contents list" })) === false && (await quiet({ code: "unavailable" }, { read: true })) === false);
+  check(`${lang} a read that failed for a REAL reason (permission-denied) still shows the banner`, (await quiet({ code: "permission-denied" }, { what: "read Arabic word progress" })) === true);
+  await page.evaluate(async () => { const b = document.getElementById("qr-write-failure-banner"); if (b) b.style.display = "none"; });
+  check(`${lang} a WRITE that cannot reach the server (unavailable) STILL reports (I15)`, (await quiet({ code: "unavailable" }, { collection: "notes", action: "create" })) === true);
   const wr = await show({ code: "weird" }, { collection: "notes", action: "create" });
   check(`${lang} 390 write keeps today's words exactly`, wr.text === w.write, JSON.stringify(wr.text));
   const wp = await show({ code: "permission-denied" }, { what: "update the whole-Qur'an word total for this lemma" });

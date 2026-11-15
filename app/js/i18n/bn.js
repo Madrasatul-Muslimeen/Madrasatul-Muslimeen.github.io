@@ -5215,4 +5215,5 @@ export const BN = {
   "Tick all": "সব টিক দিন",
   "{k} of {n} known": "{n}টির মধ্যে {k}টি জানা",
   "Saving {n} words…": "{n}টি শব্দ সংরক্ষণ হচ্ছে…",
+  "You are offline: your progress shows when you are back online": "আপনি অফলাইনে আছেন: অনলাইনে ফিরলে আপনার অগ্রগতি দেখা যাবে",
 };
