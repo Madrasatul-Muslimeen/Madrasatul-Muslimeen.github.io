@@ -161,6 +161,8 @@
 }
 /* Audit part 141 D1: a note in the Poster and Copy/share pop-ups read 1.92:1 in the night look. */
 [data-card-look="night"] .dua-popcard .hadith-note { color: var(--card-text); }
+/* 15 Nov: the "No groups yet" note in the Dua groups pull-down read 2.95:1 (grey on the night panel). */
+[data-card-look="night"] .dua-pull .hadith-note { color: var(--card-text-muted); }
 
 /* Build 2 (7 Nov 2026, demo v1.06): the card's top bar and its one Menu. 44px tiles, gold for the Menu, calm rows. */
 .dua-topbar { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.6rem; padding: 0.35rem; border: 1px solid #3a4468; border-radius: 0.9rem; background: #0c1329; }
