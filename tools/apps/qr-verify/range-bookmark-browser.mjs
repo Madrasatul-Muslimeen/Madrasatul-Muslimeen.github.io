@@ -1,6 +1,6 @@
 // QR J03 (the Owner): bookmark a range of āyāt from Quran Study's Read view, through MMSA's popover range kind
 // (bookmark-popover.js, MMSA v11.14, pinned). At 390 and 1400, English and Bangla, signed in through MMSA's harness:
-//   - the dialog's last choice is Range (after MSA's five since J42); its Name is "<Surah> <a>–<b>" (Bangla digits and name in Bangla);
+//   - the dialog's last choice is Range (after MSA's five since J42); its Name is "<Surah> - S:a-b - dd.Mon.yy" (v15.07; the surah name in Bangla);
 //   - Save writes the bookmark into the same bookmarks document, position range:S:A-B, with the settings MMSA's
 //     Bookmarks page writes for a range (unitType range, surahNum, ayahNum = from, rangeFrom, rangeTo);
 //   - a reversed or out-of-surah range is refused in words, the dialog staying open;
@@ -10,6 +10,9 @@
 //   --mutate=noposonly a position-only range bookmark is not read: the suite must FAIL
 import "./_root.mjs"; // ported: runs against the built QR app (see _root.mjs)
 import fs from "node:fs";
+// UPDATED IN PLACE (v15.07, the Owner via the QR Lead 47L, #1752; Architect 112L): a new range bookmark is captioned "<Surah> - 2:1-7 - 15.Nov.26"
+// (Latin digits and an English month in every language), from the one pure function the page uses.
+import { captionDate } from "../../../app/js/bookmark-caption.js";
 import { spawn } from "node:child_process";
 
 const MUTATE = process.argv.find((a) => a.startsWith("--mutate="))?.split("=")[1] ?? null;
@@ -103,7 +106,7 @@ async function dialog(width, lang) {
     && ["ayah", "page", "ruku", "surah", "juz"].every((i) => ids.includes(i)), `${tag} the dialog's last choice is Range, after MSA's five (${units.map((u) => u.t).join(" · ")})`);
   await page.click('[data-bm-pop-unit="range"]');
   const f = await page.evaluate(() => ({ from: document.querySelector("[data-bm-pop-range-from]")?.value, to: document.querySelector("[data-bm-pop-range-to]")?.value, name: document.querySelector("[data-bm-pop-name]")?.value }));
-  const wantName = `${surahName} ${dg(lang, 1)}–${dg(lang, 7)}`;
+  const wantName = `${surahName} - 2:1-7 - ${captionDate(new Date())}`;
   check(f.from === "1" && f.to === "7" && f.name === wantName, `${tag} it runs from the āyah on screen to the end of its ruku', named "${wantName}"`, JSON.stringify(f));
 
   // Refused in words: reversed, then past the surah's last āyah.
@@ -126,7 +129,7 @@ async function dialog(width, lang) {
   const all = w.flatMap((x) => (Array.isArray(x.saved) ? x.saved : []));
   const bm = all.find((b) => b.position === "range:2:255-257");
   const s = bm?.settings ?? {};
-  check(name === `${surahName} ${dg(lang, 255)}–${dg(lang, 257)}` && !!bm && bm.name === name, `${tag} saved by its name "${name}" at position range:2:255-257`, JSON.stringify(w).slice(0, 300));
+  check(name === `${surahName} - 2:255-257 - ${captionDate(new Date())}` && !!bm && bm.name === name, `${tag} saved by its name "${name}" at position range:2:255-257`, JSON.stringify(w).slice(0, 300));
   check(!!bm && s.unitType === "range" && s.surahNum === 2 && s.ayahNum === 255 && s.rangeFrom === 255 && s.rangeTo === 257 && bm.moduleId === "quranrevival" && bm.subjectId === "quran",
     `${tag} ...in the bookmarks document, shaped as the others, with MMSA's Range settings`, JSON.stringify({ settings: s, moduleId: bm?.moduleId, doc: w[0]?.id }));
   const others = all.filter((b) => b.position !== "range:2:255-257");
