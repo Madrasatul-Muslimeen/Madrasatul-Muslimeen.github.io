@@ -1396,6 +1396,14 @@
   .aa-sheet .aa-note { color: #5a6680; font-size: 0.8rem; margin: 6px 0 0; }
   .aa-stat button[aria-pressed="true"] { border-color: #1c2433; box-shadow: 0 0 0 2px #fff inset; }
   .aa-stat button:disabled { opacity: .6; cursor: default; }
+  /* J140 part 4: the Take an Approach sheet's top bar (title + ✕); minimise.js adds – and ⛶ and the drag / eight handles. */
+  .aa-sheet .aa-head { display: flex; align-items: center; gap: 4px; }
+  .aa-sheet .aa-head h4 { flex: 1 1 auto; min-width: 0; margin: 0; }
+  .aa-sheet .aa-x { flex: 0 0 auto; min-width: 40px; margin-inline-start: auto; border: 0; background: none; color: inherit; font-size: 1.3rem; font-weight: 700; }
+  .aa-sheet > .mm-h[data-h="e"], .aa-sheet > .mm-h[data-h="ne"], .aa-sheet > .mm-h[data-h="se"] { right: 0; }
+  .aa-sheet > .mm-h[data-h="w"], .aa-sheet > .mm-h[data-h="nw"], .aa-sheet > .mm-h[data-h="sw"] { left: 0; }
+  .aa-sheet > .mm-h[data-h="n"], .aa-sheet > .mm-h[data-h="ne"], .aa-sheet > .mm-h[data-h="nw"] { top: 0; }
+  .aa-sheet > .mm-h[data-h="s"], .aa-sheet > .mm-h[data-h="se"], .aa-sheet > .mm-h[data-h="sw"] { bottom: 0; }
   .aa-sheet .aa-close { margin-top: 12px; width: 100%; background: transparent; border: 1px solid #c9cfdc; color: #1c2433; }
   .aa-result { font-size: 0.8rem; color: #8a1c1c; min-height: 1em; margin-top: 8px; }
   .aa-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; background: #1c2433; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 0.85rem; z-index: 1100; max-width: calc(100% - 32px); }
@@ -15669,7 +15677,7 @@
       const canConfirm = viewerCanConfirmProgress();
       const stages = approachStageIdsFor(canConfirm);
       exploreTakeHost.innerHTML = `<div class="aa-veil" data-aa-veil><div class="aa-sheet" role="dialog" aria-modal="true" aria-label="${escapeHtml(t("Take an Approach"))}" data-aa-sheet>
-        <h4>${escapeHtml(exploreApproachName(tr))}</h4>
+        <div class="aa-head"><h4>${escapeHtml(exploreApproachName(tr))}</h4><button type="button" class="aa-x" data-aa-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>
         <p class="aa-sub" data-aa-now="${cur}">${escapeHtml(where)} · ${escapeHtml(t("now {status}", { status: labels[cur] ?? cur }))}</p>
         <div class="aa-acts">
           <button type="button" data-aa-act="read">📖 ${escapeHtml(t("Read it"))}</button>
