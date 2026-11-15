@@ -243,6 +243,32 @@ test("candidate banglaWords Rules: isolated allow/deny cases", async () => {
     await assertFails(updateDoc(ref(student, id(T, "pS")), { kinds: "x", updatedAt: ts }));
     await assertFails(updateDoc(ref(student, id(T, "pS")), { kinds: { a: [], b: [], c: [] }, updatedAt: ts }));            // 3 > 2 words
     await wipe();
+
+    // --- 8. PCF MSA J143 (the Owner ticked B, 16 Nov 2026): the three cases the account storage stands on, each stated by name and paired with an allow differing in ONE fact. ---
+    // (a) A TEACHER WHO IS NOT CO-ENROLLED is refused a student's list; the one fact that differs is the teacherStudentLinks mirror (pCT has it for pS, pT does not).
+    await put(id(T, "pS"), mine("pS", "uid-student"));
+    await assertFails(getDoc(ref(teacher, id(T, "pS"))));                                                                // read: pT, not co-enrolled
+    await assertFails(setDoc(ref(teacher, id(T, "pS")), mine("pS", "uid-teacher")));                                     // write: pT, not co-enrolled
+    await assertSucceeds(getDoc(ref(coteacher, id(T, "pS"))));                                                           // the SAME role, co-enrolled: read
+    await assertSucceeds(updateDoc(ref(coteacher, id(T, "pS")), { words: ["w5"], updatedAt: ts }));                      // ...and update
+    await wipe();
+    // (b) A STUDENT READS ONLY THEIR OWN list: pS reads pS's, not pS2's; the one fact that differs is whose list it is.
+    await put(id(T, "pS"), mine("pS", "uid-student"));
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), "banglaWords", id(T, "pS2")), mine("pS2", "uid-student2")));
+    await assertSucceeds(getDoc(ref(student, id(T, "pS"))));
+    await assertFails(getDoc(ref(student, id(T, "pS2"))));
+    await assertSucceeds(getDoc(ref(student2, id(T, "pS2"))));
+    await assertFails(getDoc(ref(student2, id(T, "pS"))));
+    await assertFails(setDoc(ref(student, id(T, "pS2")), mine("pS2", "uid-student")));                                   // nor write it
+    await env.withSecurityRulesDisabled((ctx) => deleteDoc(doc(ctx.firestore(), "banglaWords", id(T, "pS2"))));
+    await wipe();
+    // (c) THE MADRASAH LIST IS READABLE BY MEMBERS ONLY: the one fact that differs is membership of THIS madrasah.
+    await put(id(T, "madrasah"), list(T, "madrasah"));
+    for (const c of [student, guardian, teacher, prime, owner]) await assertSucceeds(getDoc(ref(c, id(T, "madrasah"))));
+    for (const c of [other, otherprime, stranger, anon]) await assertFails(getDoc(ref(c, id(T, "madrasah"))));
+    await assertFails(updateDoc(ref(student, id(T, "madrasah")), { words: ["w1"], updatedAt: ts }));                      // a member READS, but only owner / prime / teacher WRITE
+    await assertSucceeds(updateDoc(ref(teacher, id(T, "madrasah")), { words: ["w1"], updatedAt: ts }));
+    await wipe();
   } finally {
     await env.cleanup();
   }
