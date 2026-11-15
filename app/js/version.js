@@ -5,4 +5,8 @@ export const APP_VERSION = "15.05";
 // APP_VERSION stays the plain number -- caches (sw.js), QR's worker and every vNN.NN check read it -- and every place
 // that PRINTS the version prints APP_VERSION_LABEL (it carries its own "v"). allocate-version.py rewrites the date with the number.
 export const APP_VERSION_DATE = "15.11.26";
-export const APP_VERSION_LABEL = `v${APP_VERSION}-${APP_VERSION_DATE}`;
+// J141 (15 Nov 2026, the Owner): the label reads "v15.05 - 15.Nov.2026". Only how it is BUILT changes; the stored
+// number and dd.mm.yy date above are untouched. Month names are English three-letter in every language.
+const _MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const _D = APP_VERSION_DATE.split(".");
+export const APP_VERSION_LABEL = `v${APP_VERSION} - ${parseInt(_D[0], 10)}.${_MON[parseInt(_D[1], 10) - 1]}.20${_D[2]}`;
