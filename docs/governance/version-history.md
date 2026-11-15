@@ -1155,3 +1155,4 @@ total). Allocated by the MMSA Architect.
 15.07: the title goes home and the new version label (J141), bookmark captions, Read opens the Surah list, Mushaf bar Home and Location. Allocated by the MMSA Architect.
 15.08: J140 pop-ups parts 1 and 2 (collapse to top left, full screen, drag and resize). Allocated by the MMSA Architect.
 15.09: the Monitor's own-language note (QR Lead 47L, #1757). Allocated by the MMSA Architect.
+15.10: J140 pop-ups part 3 + the Dua groups note (#1761, #1764). Allocated by the MMSA Architect.

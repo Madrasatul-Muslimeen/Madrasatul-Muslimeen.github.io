@@ -50,6 +50,8 @@ function ensureLetterFont() {
 const CSS = `
 .wp{position:fixed;inset:0;z-index:9600;background:rgba(20,24,40,0.55);display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:'Inter',system-ui,sans-serif}
 .wp-win{display:flex;flex-direction:column;background:#fffdf8;color:#1b1b16;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.45);overflow:hidden;resize:both;width:min(96vw,760px);height:min(78vh,560px);min-width:min(300px,98vw);min-height:min(260px,96vh);max-width:98vw;max-height:98vh}
+.wp-win[data-mm-float]{resize:none}
+.wp-full .wp-win[data-mm-float]{left:0!important;top:0!important;width:100%!important;height:100%!important}
 .wp-full .wp-win{width:100%;height:100%;max-width:none;max-height:none;border-radius:0;resize:none}
 .wp-bar{flex:0 0 auto;display:flex;flex-direction:column;gap:4px;padding:6px 4px;background:#1F3A6E;color:#fff}
 .wp-row{display:flex;gap:3px;align-items:center;min-width:0;flex-wrap:nowrap}
