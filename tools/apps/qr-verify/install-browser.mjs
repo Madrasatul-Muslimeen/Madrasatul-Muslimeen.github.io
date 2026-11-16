@@ -4,6 +4,7 @@
 //     QR's name, id /app/, start /app/quranrevival.html, scope /app/, standalone, QR's colours, and three icons that are
 //     served (200) as PNGs of the size they claim; the iPhone's home-screen icon link is there and served;
 //   - asma.html and asma-about.html still link asma.webmanifest (Asma's own app), and never QR's;
+//   - asma.html's visible Install button (the shared app/js/install-card.js) shows "Install Asma" when the browser offers;
 //   - qr.webmanifest is never MSA's (no "MSA" in its name; MSA's manifest.webmanifest is not in the build).
 // Chrome's installability-errors call is NOT used here: measured on 16 Nov 2026, the headless shell reports no error even
 // with the manifest missing, so it cannot fail; the parsed manifest can. Full Chromium's real verdict for the front page
@@ -80,6 +81,33 @@ try {
     const { url, data: m } = await manifestOf(p);
     check(url.endsWith("/app/asma.webmanifest") && m?.name === "Asma ul Husna", `${u} keeps Asma's own install (asma.webmanifest)`, `${url} ${m?.name}`);
     await p.close();
+  }
+  // PCA J117 (the Owner: "Do it for Asma too"): Asma's visible Install button, the shared app/js/install-card.js. A browser
+  // install offer made by hand is kept for the button ONLY with the card on screen ("Install Asma", nothing covering it);
+  // the QR reader pages never load the card (QuranRevival keeps the browser's own offer).
+  {
+    const p = await ctx.newPage();
+    await p.goto(base + "/app/asma.html", { waitUntil: "networkidle" });
+    await p.waitForTimeout(300);
+    const before = await p.evaluate(() => !!document.getElementById("mmInstallCard") && !document.getElementById("mmInstallCard").hidden);
+    const r = await p.evaluate(() => {
+      const ev = new Event("beforeinstallprompt", { cancelable: true });
+      window.__prompted = 0; ev.prompt = () => { window.__prompted++; return Promise.resolve(); }; ev.userChoice = Promise.resolve({ outcome: "accepted" });
+      window.dispatchEvent(ev);
+      const c = document.getElementById("mmInstallCard");
+      if (!c || c.hidden) return { prevented: ev.defaultPrevented, card: false };
+      const q = c.getBoundingClientRect(), go = c.querySelector(".mm-install-go"), g = go.getBoundingClientRect();
+      const at = document.elementFromPoint(g.left + g.width / 2, g.top + g.height / 2);
+      return { prevented: ev.defaultPrevented, card: true, title: c.querySelector(".mm-install-title").textContent, inside: q.left >= 0 && q.right <= innerWidth && q.bottom <= innerHeight, btn: g.height, hit: at === go || go.contains(at) };
+    });
+    check(!before && r.prevented && r.card && r.title === "Install Asma" && r.inside && r.btn >= 40 && r.hit, "asma.html: the browser's offer is kept for a visible \"Install Asma\" card (inside the screen, button >= 40px, nothing covering it)", JSON.stringify({ before, ...r }));
+    if (r.card) await p.click("#mmInstallCard .mm-install-go");
+    check((await p.evaluate(() => window.__prompted)) === 1, "asma.html: Install calls the browser's own prompt");
+    await p.close();
+    const q = await ctx.newPage();
+    await q.goto(base + "/app/quranrevival.html", { waitUntil: "domcontentloaded" });
+    check(!(await q.evaluate(() => [...document.scripts].some((s) => /install-card\.js/.test(s.src + s.textContent)))), "QR's reader page loads no install card (QuranRevival keeps the browser's own offer)");
+    await q.close();
   }
   await ctx.close();
 } finally {

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "15.16",
+    "version": "15.17",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7397,8 +7397,20 @@
     {
       "version": "15.16",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "PCA J118: the app is MMSA (Madrasatul Muslimeen's Study App), labels only (#1788), heading switch at 800px.",
+      "integration": {
+        "authorizedOn": "2026-11-16",
+        "integratedOn": "2026-11-16",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "15.17",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "PCA J117: Hadith, Dua and Health install as their own apps; one shared Install card (Asma too).",
       "integration": {
         "authorizedOn": "2026-11-16",
         "integratedOn": "2026-11-16",
@@ -7407,8 +7419,9 @@
       }
     }
   ],
-  "nextUnallocated": "15.17",
+  "nextUnallocated": "15.18",
   "nextUnallocatedNote": [
+    "v15.17 was allocated to PCA J117 installs for Hadith, Dua, Health + one Install card, 2026-11-16.",
     "v15.16 was allocated to PCA J118 rename to MMSA, 2026-11-16.",
     "v15.15 was allocated to J140 part 5: – ⛶ ✕ on the remaining pop-ups (#1786) + PCA J117: QuranRevival installs as its own app, 2026-11-16.",
     "v15.14 was allocated to Hadith: Know Your Status Bangla words editable by owner/prime (#1777) + printed pages for 'Amal al-Yawm and al-Adhkar (#1778), 2026-11-16.",

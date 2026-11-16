@@ -153,6 +153,13 @@ check("QR's pages carry none of MSA's install line, and MSA's manifest is not in
     pages.every((f) => !read(qrOut, f).includes(ms.installHead) && !read(qrOut, f).includes('href="./manifest.webmanifest"')) &&
     !fs.existsSync(path.join(qrOut, "app", ms.manifest.file)) && fs.existsSync(path.join(SRC, "app", ms.manifest.file));
 });
+// PCA J117: Hadith, Dua and Health install as their own apps (msa.json "ownInstalls"); their manifests and lines are MMSA's own.
+check("QR carries none of Hadith/Dua/Health's own install manifests or lines (positive control: the source has all three)", () => {
+  const own = readSettings(SRC, "msa").ownInstalls?.pages || [];
+  const all = listFiles(qrOut, ["app", "index.html"]).filter((f) => /\.(html|webmanifest)$/.test(f));
+  return own.length === 3 && own.every((o) => fs.existsSync(path.join(SRC, "app", o.file)) && read(SRC, `app/${o.page}`).includes(o.head)) &&
+    own.every((o) => !fs.existsSync(path.join(qrOut, "app", o.file)) && all.every((f) => !read(qrOut, f).includes(o.head)));
+});
 check("QR's Get-ready script names QR's caches (qr-app, qr-quran, qr-hadith, qr-ext), none of MSA's", () => {
   const t = read(qrOut, "app/js/offline-ready.js");
   return t.includes("`qr-app-${APP_VERSION}`") && t.includes('"qr-quran-v1"') && t.includes('"qr-hadith-v1"') && t.includes('"qr-ext-v1"') && !/["`]mm-[a-z-]+-/.test(t);

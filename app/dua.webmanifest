@@ -1,0 +1,31 @@
+{
+  "name": "Dua Study",
+  "short_name": "Dua",
+  "description": "Dua Study: the duas of the Qur'an and Sunnah, one card per dua, with meaning and progress. Works offline.",
+  "id": "/app/dua-study.html",
+  "start_url": "/app/dua-study.html",
+  "scope": "/app/",
+  "display": "standalone",
+  "theme_color": "#1B2A41",
+  "background_color": "#231a45",
+  "icons": [
+    {
+      "src": "img/icons/dua-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "img/icons/dua-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "img/icons/dua-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

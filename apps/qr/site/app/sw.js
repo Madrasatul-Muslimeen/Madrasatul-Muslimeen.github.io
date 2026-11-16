@@ -233,6 +233,7 @@ const PRECACHE = [
   "js/i18n/asma-names-bn.js",
   "js/i18n/bn.js",
   "js/i18n/surah-names-bn.js",
+  "js/install-card.js",
   "js/labels.js",
   "js/lang.js",
   "js/mastery-wheel.js",

@@ -148,6 +148,12 @@ function rules(base, s) {
     const line = `${base.installHead}\n`;
     add(html, line, s.id === base.id ? line : "", { exact: base.manifest.pages.length }, "MSA's install line (manifest, icon, theme colour)");
   }
+  // PCA J117: Hadith, Dua and Health install as their own apps (msa.json "ownInstalls"). Their lines are MMSA's own too,
+  // so another app's copy of the page loses its line (and the build never copies their manifests, below).
+  for (const o of base.ownInstalls?.pages || []) {
+    const line = `${o.head}\n`;
+    add((p) => p === `app/${o.page}`, line, s.id === base.id ? line : "", { exact: 1 }, `${o.page}'s own install line`);
+  }
 
   const hid = (list) => `export const HIDDEN_FROM_QR = [${list.map((m) => JSON.stringify(m)).join(", ")}];`;
   add((p) => p === "app/js/hidden-modules.js", hid(base.hiddenModules), hid(s.hiddenModules), { exact: 1 }, "modules hidden from this app");
@@ -202,7 +208,9 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
   const keepPage = (rel) => !s.pages || !(rel.startsWith("app/") && rel.endsWith(".html")) || s.pages.includes(rel.slice(4));
   if (s.pages) for (const pg of s.pages) if (!fs.existsSync(path.join(src, "app", pg)) && !inOverlay(`app/${pg}`)) throw new Error(`settings "${id}": page app/${pg} does not exist`);
   // PCF MSA J120 O1: MSA's own web app manifest (its name and icons) is never copied into another app.
-  const msaOwnFile = (rel) => s.id !== base.id && !!base.manifest && rel === `app/${base.manifest.file}`;
+  // PCA J117: nor are the manifests of the pages that install as their own apps (msa.json "ownInstalls").
+  const ownManifests = new Set((base.ownInstalls?.pages || []).map((o) => `app/${o.file}`));
+  const msaOwnFile = (rel) => s.id !== base.id && ((!!base.manifest && rel === `app/${base.manifest.file}`) || ownManifests.has(rel));
   // Settings "siteSkip" (optional): folders inside the site that this app does NOT copy. QR leaves out the ~51 MB of
   // printed Mushaf page pictures and reads them from MSA's address instead (QR J-printed, 98L); the worker also refuses to keep them.
   const skipped = (rel) => (s.siteSkip || []).some((p) => rel === p || rel.startsWith(p + "/"));
