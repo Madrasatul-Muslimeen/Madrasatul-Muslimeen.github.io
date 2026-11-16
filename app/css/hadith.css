@@ -625,6 +625,12 @@ html[data-card-look="night"][data-hadith-colours="a2"] .hwc-chip.hwc-q { border-
    pop-ups (the Full text pop-up): green outer line, orange inner line, the card plate and cream text. */
 .dua-word-pop { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 0.8rem; box-sizing: border-box; background: rgba(4, 8, 18, 0.6); }
 .dua-word-pop > .dua-word-panel { width: min(100%, 36rem); max-height: 86vh; overflow: auto; box-sizing: border-box; margin: 0; padding: 0.8rem 0.9rem; border: 3px solid #123f2c; box-shadow: inset 0 0 0 2px #e2662b; border-radius: 0.9rem; background: #fbf6ea; color: var(--hadith-ink); }
+/* J140 part 4: the pop-up's eight resize handles sit on its own edges (minimise.js adds them) */
+.dua-word-pop > .dua-word-panel > .mm-h[data-h="e"], .dua-word-pop > .dua-word-panel > .mm-h[data-h="ne"], .dua-word-pop > .dua-word-panel > .mm-h[data-h="se"] { right: 0; }
+.dua-word-pop > .dua-word-panel > .mm-h[data-h="w"], .dua-word-pop > .dua-word-panel > .mm-h[data-h="nw"], .dua-word-pop > .dua-word-panel > .mm-h[data-h="sw"] { left: 0; }
+.dua-word-pop > .dua-word-panel > .mm-h[data-h="n"], .dua-word-pop > .dua-word-panel > .mm-h[data-h="ne"], .dua-word-pop > .dua-word-panel > .mm-h[data-h="nw"] { top: 0; }
+.dua-word-pop > .dua-word-panel > .mm-h[data-h="s"], .dua-word-pop > .dua-word-panel > .mm-h[data-h="se"], .dua-word-pop > .dua-word-panel > .mm-h[data-h="sw"] { bottom: 0; }
+.dua-word-pop > .dua-word-panel .mm-min-btn, .dua-word-pop > .dua-word-panel .mm-full-btn { border: 1px solid var(--hadith-rule); }
 [data-card-look="night"] .dua-word-pop > .dua-word-panel { background: var(--card-bg); color: var(--card-text); border-color: #123f2c; }
 
 /* The Owner, 7 Nov 2026 (third screenshot): every Dua body uses the plate and text of the Full text pop-up (the card plate
@@ -744,7 +750,10 @@ body.book-page-open { overflow: hidden; }
 .hs-seg { cursor: pointer; outline: none; }
 .hs-seg.dim { opacity: 0.5; }
 .hs-ring { fill: none; stroke: #3a4f78; stroke-width: 1; }
-.hs-seg:focus-visible .hs-ring, .hs-seg.sel .hs-ring { stroke: #e8c466; stroke-width: 2.5; }
+.hs-seg.sel .hs-ring { stroke: #e8c466; stroke-width: 2.5; }
+.hs-focus-halo, .hs-focus-ring { fill: none; pointer-events: none; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.hs-focus-halo { stroke: #0b1428; stroke-width: 6px; }
+.hs-focus-ring { stroke: #e8c466; stroke-width: 3px; }
 .hs-hub { fill: #17294a; stroke: #3a4f78; }
 .hs-hub-big { fill: #f1f4f8; font: 700 24px system-ui, sans-serif; text-anchor: middle; }
 .hs-hub-small { fill: #aeb9cf; font: 500 10.5px system-ui, sans-serif; text-anchor: middle; }

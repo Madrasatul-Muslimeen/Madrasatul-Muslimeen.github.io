@@ -42,6 +42,11 @@ const WINDOWS = [
   // J140 part 3: Dua
   { id: "duagroup", own: true, root: ".dua-gw", close: ".dua-gw-close", title: ".dua-gw-head b" }, // a Dua group's window (dua-group-ui.js drags and resizes it itself)
   { id: "duapop", root: ".dua-popcard", hide: ".dua-pop", close: ".dua-pop-close", title: ".dua-pophead h3", bar: ".dua-pophead" }, // a Dua Card block opened as a pop-up
+  // J140 part 4
+  { id: "duaword", root: ".dua-word-pop > .dua-word-panel", hide: ".dua-word-pop", close: ".dua-word-panel-close", title: ".dua-word-panel-ar", bar: ".dua-word-panel-head" }, // the Dua word pop-up (dua-word-popup.js)
+  { id: "mapfolder", root: "html:not(.new-mode) .folder-picker-overlay > .folder-picker", hide: ".folder-picker-overlay", close: ".fp-close", title: ".folder-picker-title", bar: ".fp-bar" }, // Mapping My Journey's three folder dialogs (filing picker, destination picker, look / section / delete dialogs)
+  // Quran Study (FROZEN in MSA: an entry, plus a ✕ on the sheet): Explore's Take an Approach
+  { id: "exploretake", root: ".aa-sheet[data-aa-sheet]", hide: ".aa-veil", close: ".aa-x", title: ".aa-head h4", bar: ".aa-head" },
 ];
 // J140: a collapsed pop-up is a bar at the top left, as wide as the left pane of Mapping My Journey's three-pane layout
 // (journey-map.html SPLIT_DEFAULT.three[0] = 4/13 of the width); on a phone (<= 640px) the full width.

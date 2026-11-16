@@ -10,7 +10,7 @@
 // (or Enter/Space cannot open), text under its ratio.   MINOR (printed as INFO): odd tab order, a weak but present ring, focus not returned.
 // Run from the repository root with node serve.js on 8080:
 //   node tools/i18n-verify/hadith-dua-a11y-browser.mjs
-//   --page=hadith|dua  --width=390  --lang=bn  --views=a,b  --list (every finding)  --shots  --mutate=noring (must FAIL)  --no-surfaces
+//   --page=hadith|dua  --width=390  --lang=bn  --views=a,b  --list (every finding)  --shots  --mutate=noring|nosvgring|lowlabel (each must FAIL; nosvgring hides only the wheel ring)  --no-surfaces
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 import { tabClick, reveal } from "./dua-tab-reveal.mjs";
@@ -176,13 +176,17 @@ const INSTALL = () => {
       const bg = bgOf(e);
       const oc = parse(cs.outlineColor);
       const outlineOn = cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0 && (!oc || oc[3] > 0);
-      const shadowOn = cs.boxShadow && cs.boxShadow !== "none";
+      // An SVG segment cannot take an outline: the wheel draws ONE ring path last (data-focus-ring) that follows the focused segment.
+      // It counts as a ring only while it has a real outline (a "d"), a gold stroke of at least 2.5 screen px and no transparency.
+      let svgRing = false;
+      if (e instanceof SVGElement) { const fr = e.ownerSVGElement?.querySelector("[data-focus-ring]"); if (fr) { const fc = getComputedStyle(fr); svgRing = !!fr.getAttribute("d") && fc.stroke !== "none" && parseFloat(fc.strokeWidth) >= 2.5 && parseFloat(fc.opacity) > 0.5 && fc.visibility !== "hidden" && fc.display !== "none"; } }
+      const shadowOn = (cs.boxShadow && cs.boxShadow !== "none");
       let ringRatio = null;
       if (outlineOn && cs.outlineStyle !== "auto" && oc && bg.rgb) ringRatio = ratio(over(oc, bg.rgb), bg.rgb);
       let fixed = false;
       for (let a = e; a && a !== document.body; a = a.parentElement) if (getComputedStyle(a).position === "fixed") fixed = true;
       const pm = document.querySelector("[data-dua-pop]");
-      return { inModal: !!pm && pm.contains(e), hasModal: !!pm, id: e.getAttribute("data-a11y-id"), key: key(e), name: accName(e), top: r.top + scrollY, left: r.left + scrollX, fixed, ringOn: !!(outlineOn || shadowOn), outline: `${cs.outlineStyle} ${cs.outlineWidth} ${cs.outlineColor}`, shadow: shadowOn ? cs.boxShadow.slice(0, 60) : "none", ringRatio, bgReason: bg.reason || "" };
+      return { inModal: !!pm && pm.contains(e), hasModal: !!pm, id: e.getAttribute("data-a11y-id"), key: key(e), name: accName(e), top: r.top + scrollY, left: r.left + scrollX, fixed, ringOn: !!(outlineOn || shadowOn || svgRing), outline: `${cs.outlineStyle} ${cs.outlineWidth} ${cs.outlineColor}`, shadow: shadowOn ? cs.boxShadow.slice(0, 60) : "none", ringRatio, bgReason: bg.reason || "" };
     },
     // (c) text colour against its real background
     contrast() {
@@ -190,7 +194,8 @@ const INSTALL = () => {
       const els = [...document.body.querySelectorAll("*")].filter((e) => !/^(SCRIPT|STYLE|SVG|PATH|OPTION|TEMPLATE|NOSCRIPT|HEAD)$/i.test(e.tagName));
       for (const e of els) {
         const own = [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
-        const field = /^(INPUT|SELECT|TEXTAREA)$/.test(e.tagName) && e.type !== "hidden" && (e.value || e.tagName === "SELECT");
+        // A checkbox / radio / range / file / colour input paints NO value text: its .value ("on") is an attribute, so it is not text to measure (15 Nov 2026: 4 false 1.63:1 findings on Know Your Status). Its label text is measured as the label's own text.
+        const field = /^(INPUT|SELECT|TEXTAREA)$/.test(e.tagName) && !/^(hidden|checkbox|radio|range|file|color)$/i.test(e.type) && (e.value || e.tagName === "SELECT");
         if (!own && !field) continue;
         if (!vis(e) || e.matches(":disabled") || e.closest(":disabled")) continue;
         const cs = getComputedStyle(e);
@@ -223,7 +228,10 @@ const INJECT = () => {
     <p id="inj-grey" style="margin:4px;padding:4px;color:#999;background:#aaa;font-size:16px">Injected grey on grey line</p>`;
   document.body.prepend(h);
 };
-const NORING_CSS = "*,*:focus,*:focus-visible{outline:none!important;box-shadow:none!important}";
+// the wheel's keyboard ring is an SVG path (no outline), so the "noring" mutation hides it too
+const NORING_CSS = "*,*:focus,*:focus-visible{outline:none!important;box-shadow:none!important}.hs-focus-ring,.hs-focus-halo{display:none!important}";
+// --mutate=lowlabel: the "Counts as done" label text goes navy-on-navy; the contrast check must FAIL on the label text (not on the input value)
+const LOWLABEL_CSS = ".hadith-status-done label,.hadith-status-done label *{color:#27406b!important}";
 
 const wait = (P, sel, ms = 25000) => P.waitForSelector(sel, { timeout: ms });
 
@@ -271,6 +279,7 @@ const HADITH_VIEWS = [
   { id: "hadeethenc-assign", label: "Encyclopedia: card with the 👥 list open", go: async (P) => { await hHadeeth(P); await P.click('[data-hadeethenc-card="4563"] [data-assign-trigger]').catch(() => {}); await P.waitForTimeout(500); } },
   { id: "search", label: "Search", go: async (P) => { await hTab(P, "search"); await P.waitForTimeout(1500); } },
   { id: "dua-redirect", label: "Dua links on the Hadith page land on Dua Study (retired Hadith-page Dua tab)", go: async (P) => { await P.goto(new URL("hadith-study.html?view=dua", P.url()).href, { waitUntil: "networkidle" }); await P.waitForURL(/dua-study\.html/, { timeout: 20000 }); await wait(P, ".dua-row, [data-dua-empty], .dua-tile", 25000); await P.waitForTimeout(500); await P.evaluate(() => document.querySelectorAll('[id*="splash"], .mm-splash-overlay').forEach((e) => e.remove())); } },
+  { id: "status", label: "Know Your Status: the progress wheel (By Book) with Counts as done", go: async (P) => { await hTab(P, "status"); await wait(P, "[data-hadith-status-wheel] [data-i]", 25000); await P.waitForTimeout(800); } },
   { id: "explore", label: "Explore", go: async (P) => { await hTab(P, "explore"); await P.waitForTimeout(1500); } },
   { id: "commentary", label: "Commentary", go: async (P) => { await hTab(P, "commentary"); await P.waitForTimeout(1500); } },
 ];
@@ -406,7 +415,7 @@ for (const pg of PAGES) for (const [w, h] of WIDTHS) for (const lang of LANGS) {
     await P.waitForTimeout(500);
     await P.evaluate(() => document.querySelectorAll('[id*="splash"], .mm-splash-overlay').forEach((e) => e.remove()));
   };
-  const prep = async () => { await P.evaluate(INSTALL); if (MUTATE === "noring") await P.addStyleTag({ content: NORING_CSS }); };
+  const prep = async () => { await P.evaluate(INSTALL); if (MUTATE === "noring") await P.addStyleTag({ content: NORING_CSS }); if (MUTATE === "nosvgring") await P.addStyleTag({ content: ".hs-focus-ring,.hs-focus-halo{display:none!important}" }); if (MUTATE === "lowlabel") await P.addStyleTag({ content: LOWLABEL_CSS }); };
   for (const v of pg.views.filter((x) => !VIEWSEL || VIEWSEL.includes(x.id))) {
     const tag = `${pg.id} / ${v.id} / ${w} / ${lang}`;
     try {
