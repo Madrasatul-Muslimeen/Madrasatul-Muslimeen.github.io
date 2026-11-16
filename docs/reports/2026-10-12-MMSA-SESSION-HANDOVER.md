@@ -3363,3 +3363,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v15.14** (2026-11-16): Hadith: Know Your Status Bangla words editable by owner/prime (#1777) + printed pages for 'Amal al-Yawm and al-Adhkar (#1778).
 - **v15.15** (2026-11-16): J140 part 5: – ⛶ ✕ on the remaining pop-ups (#1786) + PCA J117: QuranRevival installs as its own app.
 - **v15.16** (2026-11-16): PCA J118 rename to MMSA.
+- **v15.17** (2026-11-16): PCA J117 installs for Hadith, Dua, Health + one Install card.
