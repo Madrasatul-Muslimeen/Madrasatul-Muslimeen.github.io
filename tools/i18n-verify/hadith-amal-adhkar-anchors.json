@@ -1,0 +1,95 @@
+{
+ "note": "Hand-read anchors for the three books that had no page (Hadith Lead 16L, 16 Nov 2026). Each was read on live shamela.ws: the first five words of OUR record are on the page index given, its last five on that page or the next (printed page = g). `ui` is the record the browser suite opens.",
+ "books": {
+  "nasai-amal": {
+   "at": {
+    "59": [
+     32,
+     0,
+     164
+    ],
+    "352": [
+     158,
+     0,
+     290
+    ],
+    "707": [
+     293,
+     0,
+     425
+    ],
+    "1063": [
+     428,
+     0,
+     560
+    ]
+   },
+   "ui": {
+    "n": 59,
+    "chapter": "ch-18"
+   },
+   "minCoverage": 0.99,
+   "maxBackwards": 0
+  },
+  "ibnsunni-amal": {
+   "at": {
+    "53": [
+     70,
+     0,
+     40
+    ],
+    "330": [
+     445,
+     0,
+     198
+    ],
+    "745": [
+     897,
+     0,
+     423
+    ],
+    "1109": [
+     1330,
+     0,
+     640
+    ]
+   },
+   "ui": {
+    "n": 330,
+    "chapter": "ch-95"
+   },
+   "minCoverage": 0.99,
+   "maxBackwards": 0
+  },
+  "nawawi-adhkar": {
+   "at": {
+    "68": [
+     23,
+     0,
+     25
+    ],
+    "388": [
+     130,
+     0,
+     132
+    ],
+    "781": [
+     263,
+     0,
+     265
+    ],
+    "1164": [
+     374,
+     0,
+     376
+    ]
+   },
+   "ui": {
+    "n": 781,
+    "chapter": "ch-25"
+   },
+   "minCoverage": 0.99,
+   "maxBackwards": 0
+  }
+ }
+}

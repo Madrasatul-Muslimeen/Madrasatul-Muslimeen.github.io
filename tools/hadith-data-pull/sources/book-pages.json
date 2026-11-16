@@ -216,6 +216,63 @@
       },
       "status": "mapped",
       "note": "Owner ticked hd1111n G (11 Nov 2026). Built by shamela-pages-text.py: each of our passages found in Shamela's typed pages by its first 8 words, forward only."
+    },
+    {
+      "key": "nasai-amal",
+      "title": "'Amal al-Yawm wa'l-Layla (an-Nasa'i, ed. Farouk Hamada, Mu'assasat al-Risala)",
+      "kind": "shamela",
+      "keyBy": "n",
+      "versionUri": "0303Nasai.CamalYawmWaLayla.JK000735-ara1",
+      "numbering": "OUR RECORD ORDER n (1-1181, the position in the split files); aligned by text (opening words), forward only",
+      "lastNumber": 1181,
+      "alignKinds": [
+        "hadith"
+      ],
+      "shamela": {
+        "id": "6772",
+        "edition": "ed. Farouk Hamada, al-Risala, 2nd ed. 1406 AH",
+        "lastIndex": 476
+      },
+      "status": "mapped",
+      "note": "Hadith Lead 16L (16 Nov 2026), the Owner's n106j 3.A. Built by shamela-pages-anchors.py (rare 6-word phrases, no-going-back rule): 1148 of 1148 records have a page; two independent halves of each record's anchors agree within one page for 1145 of 1145."
+    },
+    {
+      "key": "ibnsunni-amal",
+      "title": "'Amal al-Yawm wa'l-Layla (Ibn al-Sunni, Shamela 13132)",
+      "kind": "shamela",
+      "keyBy": "n",
+      "versionUri": "0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1",
+      "numbering": "OUR RECORD ORDER n (1-1207, the position in the split files); aligned by text (opening words), forward only",
+      "lastNumber": 1207,
+      "alignKinds": [
+        "hadith"
+      ],
+      "shamela": {
+        "id": "13132",
+        "edition": "as listed on Shamela (Abd al-Qadir Ata's edition)",
+        "lastIndex": 1473
+      },
+      "status": "mapped",
+      "note": "Hadith Lead 16L (16 Nov 2026), the Owner's n106j 3.A. Built by shamela-pages-anchors.py: 766 of 770 records have a page (4 dropped by the no-going-back rule, shown with no link); the two halves agree within one page for 745 of 769 (96.9%); the rest are long narrations that run over a page."
+    },
+    {
+      "key": "nawawi-adhkar",
+      "title": "al-Adhkar (Nawawi, ed. al-Arna'ut, Dar al-Fikr)",
+      "kind": "shamela",
+      "keyBy": "n",
+      "versionUri": "0676Nawawi.Adhkar.JK001249-ara1",
+      "numbering": "OUR RECORD ORDER n (1-1287, the position in the split files); aligned by text (opening words), forward only",
+      "lastNumber": 1287,
+      "alignKinds": [
+        "hadith"
+      ],
+      "shamela": {
+        "id": "1956",
+        "edition": "ed. al-Arna'ut, Dar al-Fikr, 1994",
+        "lastIndex": 411
+      },
+      "status": "mapped",
+      "note": "Hadith Lead 16L (16 Nov 2026), the Owner's n106j 3.A. Built by shamela-pages-anchors.py: 1255 of 1263 records have a page; the two halves agree within one page for 1225 of 1226 (99.9%)."
     }
   ]
 }
