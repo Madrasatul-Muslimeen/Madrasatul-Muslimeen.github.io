@@ -80,6 +80,18 @@ function stripNames(text) {
   assert.equal(text.split("\n\n" + block).length - 1, 1, "stripNames: the hadithNames block is not present exactly once");
   return text.replace("\n\n" + block, "\n");
 }
+// UPDATED IN PLACE 16 Nov 2026 (Architect 114L): the Owner PUBLISHED the Bangla words Rules (PCF MSA J143, "J143 Rules published.",
+// 16 Nov 2026), so firestore.rules is now docs/proposals/bangla-words.DEPLOYMENT-candidate.rules: the Hadith names file plus exactly
+// the banglaWords block. The checks that pinned the names file byte for byte now read stripBangla(firestore.rules), which proves that
+// taking that one block out gives the names file again, so "only the banglaWords block was added" stays checked.
+const BANGLA_DEPLOYMENT = () => read("docs/proposals/bangla-words.DEPLOYMENT-candidate.rules");
+function stripBangla(text) {
+  const cand = read("docs/proposals/bangla-words.candidate.rules");
+  const block = cand.slice(cand.indexOf("    // ====="), cand.lastIndexOf("  }\n}"));
+  assert.ok(block.length > 1000 && block.includes("match /banglaWords/"), "stripBangla: POSITIVE CONTROL, the extract's block was not found");
+  assert.equal(text.split("\n\n" + block).length - 1, 1, "stripBangla: the banglaWords block is not present exactly once");
+  return text.replace("\n\n" + block, "\n");
+}
 
 let passed = 0, failed = 0;
 function check(name, fn) {
@@ -765,8 +777,9 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
   // file with the duaKey pattern widened in duaEdits and duaShares. The DUA KEYS checks below pin that difference exactly.
   check("DUA SAVING: firestore.rules IS the published deployment file (now the dua-keys file), and carries the candidate's three blocks, the duaKey pattern widened", () => {
     const dep = read("docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
-    assert.equal(read("firestore.rules"), NAMES_DEPLOYMENT(), "firestore.rules differs from docs/proposals/hadith-names.DEPLOYMENT-candidate.rules, which is what production carries since 14 Nov 2026");
-    const live = stripNames(read("firestore.rules"));
+    assert.equal(read("firestore.rules"), BANGLA_DEPLOYMENT(), "firestore.rules differs from docs/proposals/bangla-words.DEPLOYMENT-candidate.rules, which is what production carries since 16 Nov 2026");
+    assert.equal(stripBangla(read("firestore.rules")), NAMES_DEPLOYMENT(), "firestore.rules, with the banglaWords block taken out, differs from docs/proposals/hadith-names.DEPLOYMENT-candidate.rules");
+    const live = stripNames(stripBangla(read("firestore.rules")));
     assert.equal(live, GROUPS_DEPLOYMENT(), "firestore.rules, with the hadithNames block taken out, differs from docs/proposals/dua-groups.DEPLOYMENT-candidate.rules");
     assert.equal(stripGroups(live), EFFORT_DEPLOYMENT(), "firestore.rules, with the duaGroups block taken out, differs from docs/proposals/word-effort.DEPLOYMENT-candidate.rules");
     assert.equal(stripEffort(stripGroups(live)), dep, "firestore.rules, with the duaGroups block and the three effort edits taken out, differs from docs/proposals/dua-keys-hisn-quran.DEPLOYMENT-candidate.rules");
@@ -887,7 +900,7 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     assert.ok(m[1].endsWith("|hisn-[0-9]{1,3}-[0-9]{1,3}|quran-[0-9]{1,3}-[0-9]{1,3}(-[0-9]{1,3})?"), "the app's DUA_KEY lacks the candidate's new forms: " + m[1]);
   });
   check("DUA KEYS PUBLISHED: firestore.rules IS the dua-keys file, byte for byte (the Owner published it, 9 Nov 2026)", () => {
-    const fr = stripNames(read("firestore.rules"));
+    const fr = stripNames(stripBangla(read("firestore.rules")));
     assert.equal(stripEffort(stripGroups(fr)), cand, "firestore.rules, with the duaGroups block and the effort edits taken out, differs from the published dua-keys file");
     assert.equal(fr.split(NEW).length - 1, 2, "firestore.rules does not carry the widened pattern twice");
   });
@@ -901,7 +914,7 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
 {
   const cand = read("docs/proposals/dua-groups.candidate.rules");
   const dep = read("docs/proposals/dua-groups.DEPLOYMENT-candidate.rules");
-  const live = read("firestore.rules");
+  const live = stripBangla(read("firestore.rules")); // 16 Nov 2026 (Architect 114L): the banglaWords block, published after this one, taken out
   const blockOf = (src) => src.slice(src.indexOf("    // ====="), src.lastIndexOf("  }\n}")); // the candidate holds one block, opened by its header rule
   check("DUA GROUPS: the candidate governs exactly duaGroups, with no delete, no list, and tenantId/ownerKey/createdBy pinned on update", () => {
     const blocks = [...new Set([...cand.matchAll(/match \/(\w+)\//g)].map((m) => m[1]))].filter((n) => n !== "databases");
@@ -1019,7 +1032,7 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
 {
   const cand = read("tests/firestore/hadith-names-v1.proposed.rules");
   const dep = read("docs/proposals/hadith-names.DEPLOYMENT-candidate.rules");
-  const live = read("firestore.rules");
+  const live = stripBangla(read("firestore.rules")); // 16 Nov 2026 (Architect 114L): the banglaWords block, published after this one, taken out
   const block = cand.slice(cand.indexOf("    // hadithNames/{tenantId} -- NEW."), cand.lastIndexOf("  }\n}"));
   const sw = read("app/js/hadith-names-switch.js");
   const swVal = (sw.match(/export const HADITH_NAMES_PUBLISHED = (true|false);/) || [])[1];
@@ -1082,11 +1095,12 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
 
 // ---------------------------------------------------------------------------------------------------------------------
 // BANGLA WORDS (PCF MSA J143, the Owner ticked B; Architect 114L, 16 Nov 2026): docs/proposals/bangla-words.candidate.rules is the
-// QR Lead's tested extract; docs/proposals/bangla-words.DEPLOYMENT-candidate.rules is the file the Owner pastes (today's
-// firestore.rules + exactly the extract's banglaWords block, at the end). PENDING: until the Owner publishes, firestore.rules must
-// NOT carry the block and app/js/bangla-words-readiness.js must stay NOT ready, so no page reads or writes a banglaWords document
-// production would deny. The day the Owner publishes: firestore.rules becomes the deployment file byte for byte, the gate opens in
-// the same release, and the PENDING checks below are updated in place (as HADITH NAMES above).
+// QR Lead's tested extract; docs/proposals/bangla-words.DEPLOYMENT-candidate.rules is the file the Owner pasted (the Hadith names
+// file + exactly the extract's banglaWords block, at the end).
+// UPDATED IN PLACE 16 Nov 2026 (Architect 114L): the Owner PUBLISHED it ("J143 Rules published.", PCF MSA J143), firestore.rules was
+// made that file byte for byte, and the gate opened in the same release. The two checks that used to say "the deployment file is
+// firestore.rules + the block" and "BANGLA WORDS PENDING: not published, gate NOT ready" now assert what production carries, and that
+// the gate is open ONLY because the block is live (it is never ready without it).
 {
   const cand = read("docs/proposals/bangla-words.candidate.rules");
   const dep = read("docs/proposals/bangla-words.DEPLOYMENT-candidate.rules");
@@ -1106,14 +1120,16 @@ check("Phase 4 evidence is frozen after create, in the Rules and in the writer",
     assert.match(code, /allow create: if banglaShapeOk\(\)\s*&& banglaMayWrite\(d\(\)\.tenantId, d\(\)\.scope\)\s*&& d\(\)\.createdBy == myUid\(\);/);
     assert.match(code, /d\(\)\.createdBy == resource\.data\.createdBy;/);
   });
-  check("BANGLA WORDS: the deployment file is today's firestore.rules + exactly the extract's block, OR (once published and synced) firestore.rules itself", () => {
-    if (live.includes("match /banglaWords/")) { assert.equal(live, dep, "firestore.rules carries banglaWords but is not the deployment file"); return; }
-    const i = live.lastIndexOf("  }\n}");
-    assert.equal(dep, live.slice(0, i).replace(/\n+$/, "") + "\n\n" + block + live.slice(i), "the deployment file is not firestore.rules + exactly the block (rebuild it after any Rules change)");
+  check("BANGLA WORDS PUBLISHED: firestore.rules IS the deployment file, byte for byte, and is the Hadith names file + exactly the extract's block", () => {
+    assert.equal(live, dep, "firestore.rules is not docs/proposals/bangla-words.DEPLOYMENT-candidate.rules, which production carries since 16 Nov 2026");
+    assert.equal(stripBangla(live), NAMES_DEPLOYMENT(), "taking the banglaWords block out of firestore.rules does not give the Hadith names file back");
+    const names = NAMES_DEPLOYMENT(), i = names.lastIndexOf("  }\n}");
+    assert.equal(dep, names.slice(0, i).replace(/\n+$/, "") + "\n\n" + block + names.slice(i), "the deployment file is not the names file + exactly the block");
   });
-  check("BANGLA WORDS PENDING: firestore.rules does not carry the block, and the readiness gate is NOT ready (never ready without the block)", () => {
-    assert.ok(!live.includes("match /banglaWords/"), "firestore.rules carries banglaWords: update these PENDING checks in place to the published state");
-    assert.equal(readyVal, "false", "bangla-words-readiness.js says ready while the banglaWords Rules are not in firestore.rules");
+  check("BANGLA WORDS GATE: the readiness gate is open with a governed decision, and only because firestore.rules carries the block", () => {
+    assert.ok(live.includes("match /banglaWords/{listKey}"), "firestore.rules lacks banglaWords: the gate must not be open");
+    assert.equal(readyVal, "true", "the banglaWords Rules are published but bangla-words-readiness.js is still NOT ready");
+    assert.match(gate, /decision: Object\.freeze\(\{\s*by: "master-architect",\s*on: "\d{4}-\d{2}-\d{2}",\s*reference:\s*"[^"]{20,}"/, "the gate's decision { by, on, reference } is missing or malformed");
   });
 }
 

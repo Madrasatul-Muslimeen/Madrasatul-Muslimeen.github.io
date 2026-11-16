@@ -1,8 +1,10 @@
 // PCF MSA J143 (the Owner ticked B, 16 Nov 2026): the own-language word list in the reader's ACCOUNT, in the real pages (Firebase stubbed).
 //   node tools/i18n-verify/bangla-words-account-browser.mjs [--mutate=NAME]     (repository root, serve.js on :8080 or QR_BASE)
-// The gate (app/js/bangla-words-readiness.js) is OFF in the repository. This suite runs the pages TWICE:
-//   GATE OFF, as shipped: the page behaves exactly as before (the list is on the device, the page says so) and NOTHING touches banglaWords.
-//   GATE ON (the readiness file is replaced in memory by one with a governed decision; the repository is not changed):
+// UPDATED IN PLACE 16 Nov 2026 (Architect 114L, v15.13): the Owner published the banglaWords Rules and the gate
+// (app/js/bangla-words-readiness.js) is now ON in the repository. This suite still runs the pages TWICE:
+//   GATE OFF (the readiness file is replaced in memory by a closed one; the way back): the page behaves exactly as before (the list is
+//     on the device, the page says so) and NOTHING touches banglaWords.
+//   GATE ON, as shipped:
 //     - this device's list is COPIED up once into the first student's account and the device copy is never changed (I4);
 //     - a tap saves the student's own list to banglaWords/{tenant}__{person}; a failed save reaches the reader (I15);
 //     - switching students switches lists (D10: no lock);
@@ -37,14 +39,16 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 const T = "t1"; // the stub's tenant id (firebase-stub TENANT_ID)
 const rows = JSON.parse(fs.readFileSync("tools/quran-data-pull/output/learn-next.json", "utf8")).rows;
 const L1 = rows[0].l, L2 = rows[1].l, L3 = rows[2].l; // real lemma ids, so the list can show them
-const READY_ON = (src) => src.replace("  ready: false,\n  decision: null,", "  ready: true,\n  decision: { by: \"master-architect\", on: \"2026-11-20\", reference: \"docs/test.md\" },");
+const READY_ON = (src) => /\n  ready: true,\n/.test(src) ? src : src.replace("  ready: false,\n  decision: null,", "  ready: true,\n  decision: { by: \"master-architect\", on: \"2026-11-20\", reference: \"docs/test.md\" },");
+const READY_OFF = (src) => { const out = src.replace(/  ready: true,\n  decision: Object\.freeze\(\{[\s\S]*?\n  \}\),/, "  ready: false,\n  decision: null,"); if (!/\n  ready: false,\n  decision: null,/.test(out)) throw new Error("READY_OFF: could not close the gate in memory"); return out; };
+const gateRoute = (ctx, on) => ctx.route("**/app/js/bangla-words-readiness.js*", async (r) => { const res = await r.fetch(); r.fulfill({ response: res, body: (on ? READY_ON : READY_OFF)(await res.text()) }); });
 const seedJs = (rows) => rows.map((r) => `(DATA.banglaWords = DATA.banglaWords || []).push(${JSON.stringify(r)});`).join("\n"); // the stub's own DATA, before the page runs
 const setSel = (page, id, v) => page.evaluate(([i, val]) => { const s = document.getElementById(i); s.value = val; s.dispatchEvent(new Event("change", { bubbles: true })); }, [id, v]);
 
 async function open(on, { width = 390, lang = "en", device = null, seed = [] } = {}) {
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 844 }, extraSeedJs: seedJs(seed) });
   await ctx.route("**/archive.org/**", (r) => r.abort());
-  if (on) await ctx.route("**/app/js/bangla-words-readiness.js*", async (r) => { const res = await r.fetch(); r.fulfill({ response: res, body: READY_ON(await res.text()) }); });
+  await gateRoute(ctx, on);
   if (MUTATE) {
     const [file, a, b] = MUT[MUTATE];
     const src = fs.readFileSync(file, "utf8");
@@ -70,7 +74,7 @@ const device = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("mm
 const MINE = '#quranWordCardMount [data-bangla-list="mine"]';
 const CHIP = '#quranWordCardMount [data-bangla-marks] [data-bangla-kind="bangla"]';
 
-// ===== GATE OFF, as shipped =====
+// ===== GATE OFF (closed in memory: the way back) =====
 {
   const ctx = await open(false);
   const page = await openCard(ctx);
@@ -130,7 +134,7 @@ const seedP2 = [{ _id: `${T}__p2`, tenantId: T, scope: "p2", words: [L2], kinds:
 async function monitorWords(on, lang = "en", width = 1100) {
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 900 }, extraSeedJs: seedJs([{ _id: `${T}__p1`, tenantId: T, scope: "p1", words: [L2, L3], kinds: {} }]) });
   await ctx.route("**/archive.org/**", (r) => r.abort());
-  if (on) await ctx.route("**/app/js/bangla-words-readiness.js*", async (r) => { const res = await r.fetch(); r.fulfill({ response: res, body: READY_ON(await res.text()) }); });
+  await gateRoute(ctx, on);
   if (MUTATE === "monitorown") { const [file, a, b] = MUT.monitorown; const src = fs.readFileSync(file, "utf8"); if (src.split(a).length !== 2) throw new Error("monitorown anchor"); await ctx.route(`**/${file}*`, (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src.replace(a, b) })); }
   const { page } = await openPage(ctx, "/app/monitor.html");
   await page.waitForFunction(() => document.getElementById("vocabLoadBtn") || document.querySelector("[data-vocab-table]"), null, { timeout: 20000 }).catch(() => {});

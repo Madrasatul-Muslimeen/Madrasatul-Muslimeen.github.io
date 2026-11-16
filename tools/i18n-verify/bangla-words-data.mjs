@@ -8,7 +8,7 @@
 //      both directions (a create it would refuse, or a field it allows that nothing writes, fails here).
 //   5. THE PURE HELPERS in bangla-words.js, and that the PAGE and the MONITOR are wired the way the Owner's tick says.
 // Mutations (--mutate=NAME), each must exit 1:
-//   gateopen      the declaration is ready with no decision   -> "OFF by default" fails
+//   gateopen      the declaration keeps ready: true but loses its decision   -> "ON as shipped, by a governed decision" fails (updated in place 16 Nov 2026)
 //   nocap         banglaListPayload ignores the 5000 cap      -> the cap check fails
 //   devwrite      devicePrefsState keeps the account's lists  -> "the device lists are never overwritten" fails
 //   noreplay      replayBanglaChange drops the tap            -> "a tap while the lists load is put back" fails
@@ -28,9 +28,11 @@ const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
 
 // --- 1. THE GATE ---
 let readySrc = read("app/js/bangla-words-readiness.js");
-if (MUTATE === "gateopen") { const a = "  ready: false,\n  decision: null,"; assert.ok(readySrc.includes(a)); readySrc = readySrc.replace(a, "  ready: true,\n  decision: null,"); }
+if (MUTATE === "gateopen") { const out = readySrc.replace(/  ready: true,\n  decision: Object\.freeze\(\{[\s\S]*?\n  \}\),/, "  ready: true,\n  decision: null,"); assert.ok(out !== readySrc, "gateopen: anchor not found"); readySrc = out; }
 const gate = await import(`data:text/javascript;base64,${Buffer.from(readySrc).toString("base64")}`);
-check("the gate is OFF by default (the Rules are not published)", () => { assert.equal(gate.isBanglaWordsPersistenceReady(), false); assert.equal(gate.banglaWordsUnavailableReason(), gate.REASON_BANGLA_WORDS_NOT_DEPLOYED); });
+// UPDATED IN PLACE 16 Nov 2026 (Architect 114L, v15.13): the Owner published the banglaWords Rules, so the shipped gate is ON with a governed
+// decision (rules-authorisation-executable.mjs checks it is ON only because firestore.rules carries the block). It used to say "OFF by default".
+check("the gate is ON as shipped, by a governed decision (the Owner published the Rules, 16 Nov 2026)", () => { assert.equal(gate.isBanglaWordsPersistenceReady(), true); assert.equal(gate.banglaWordsUnavailableReason(), null); assert.equal(gate.BANGLA_WORDS_PERSISTENCE_DECLARATION.decision.by, "master-architect"); });
 const good = { ready: true, decision: { by: "master-architect", on: "2026-11-20", reference: "docs/x.md" } };
 check("POSITIVE CONTROL: a governed decision opens it", () => { assert.equal(gate.isBanglaWordsPersistenceReady(good), true); assert.equal(gate.banglaWordsUnavailableReason(good), null); });
 check("ready: true alone, or a decision by anyone else, or a bad date, or no reference, does NOT open it", () => {

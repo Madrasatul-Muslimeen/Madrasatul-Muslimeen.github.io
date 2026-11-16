@@ -3378,5 +3378,90 @@ service cloud.firestore {
       // No delete (I4/D6) -- a name is retired with status: "retired"
       // inside the document, never removed from Firestore.
     }
+
+    // =====================================================================
+    // PCF MSA J119 -- WORDS THE QUR'AN SHARES WITH BANGLA -- CANDIDATE, NOT PUBLISHED, NOT MERGED.
+    //
+    // Written by the QR Lead, 8 Nov 2026, for the Architect's check and the Owner's publishing step. firestore.rules is
+    // UNTOUCHED (Rules are an Owner Control Gate). Until the Owner publishes this, the app keeps the marks on the device
+    // (app/js/bangla-words.js, localStorage) and says so; nothing in the app writes this collection yet.
+    //
+    // THE SHAPE is ayahKeyMarks (K2): one document per scope, written by exactly the same people.
+    //   banglaWords/{tenantId}__madrasah           the ADMIN's list, the same for everyone
+    //   banglaWords/{tenantId}__{personId}         one reader's OWN list
+    // MADRASAH document: every member reads; owner, prime and teacher write (the "admin" of demo v03).
+    // PERSON document: read and written by exactly canRecordFor(); the person must belong to the tenant.
+    // `words` is a list of lemma ids (learn-next.json `l`); `kinds` (optional, stage 3) says which kinds each carries. Rules cannot inspect each id, so the client validates them;
+    // the list is capped at 5000 so a document cannot grow without limit.
+    // NO delete, ever (I4, D6): removing a word writes a shorter list.
+    // Reads are by document id only (at most two per reader): no composite index is needed.
+    //
+    // A SELF-CONTAINED extract: the helpers below must be reproduced from the deployed rules unchanged for the emulator to
+    // run it alone (as tests/firestore/hadith-subjects-v1.proposed.rules does); it must never be deployed as a whole file.
+    // The block below is meant to be pasted inside `match /databases/{database}/documents { ... }` of firestore.rules and
+    // uses its existing helpers: d(), signedIn(), myUid(), myRolesIn(), canAdminIdentity(), isTeacherIn(),
+    // personInTenant(), canRecordFor().
+    // =====================================================================
+
+    match /banglaWords/{listKey} {
+
+      function banglaShapeOk() {
+        return d().keys().hasOnly([
+                 'tenantId', 'scope', 'words', 'kinds',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'tenantId', 'scope', 'words',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().scope is string && d().scope.size() > 0
+            && listKey == d().tenantId + '__' + d().scope
+            && d().words is list && d().words.size() <= 5000
+            && kindsOk()
+            && d().schemaVersion is number
+            && d().createdAt is timestamp && d().updatedAt is timestamp
+            && d().createdBy is string && d().createdBy.size() > 0;
+      }
+
+      // Stage 3 (QR Lead 46L, 11 Nov 2026; the Owner's J119 answers: a word may be in more than one kind): the ONE new, OPTIONAL
+      // field `kinds`, a map from a lemma id to the list of kinds it carries ('names', 'rituals', 'bangla'; app/js/bangla-words.js).
+      // Absent on every document written under the first candidate, so those stay valid. The Rules bound the SHAPE and the SIZE
+      // (a map with no more entries than `words` lists, which the 5000 cap on `words` already bounds); the client validates the keys
+      // and the three words, because Rules cannot inspect every key of a map. Nothing else about the candidate changes.
+      function kindsOk() {
+        return !('kinds' in d())
+            || (d().kinds is map && d().kinds.size() <= d().words.size());
+      }
+
+      function banglaMayWrite(tenantId, scope) {
+        return scope == 'madrasah'
+            ? (canAdminIdentity(tenantId) || isTeacherIn(tenantId))
+            : (personInTenant(tenantId, scope) && canRecordFor(tenantId, scope));
+      }
+      function banglaMayRead(tenantId, scope) {
+        return scope == 'madrasah'
+            ? (signedIn() && myRolesIn(tenantId).size() > 0)
+            : (personInTenant(tenantId, scope) && canRecordFor(tenantId, scope));
+      }
+
+      // The read-before-create probe: a nonexistent document has no data to expose.
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/banglaWords/$(listKey));
+      // No `allow list`: the app reads these by document id only, so the surface stays minimal (Architect review, 8 Nov).
+      allow get: if banglaMayRead(resource.data.tenantId, resource.data.scope);
+
+      allow create: if banglaShapeOk()
+                    && banglaMayWrite(d().tenantId, d().scope)
+                    && d().createdBy == myUid();
+
+      allow update: if resource != null
+                    && banglaShapeOk()
+                    && banglaMayWrite(resource.data.tenantId, resource.data.scope)
+                    && d().tenantId == resource.data.tenantId
+                    && d().scope == resource.data.scope
+                    && d().createdBy == resource.data.createdBy;
+
+      allow delete: if false; // I4/D6 -- a shorter list, never a deleted document.
+    }
   }
 }
