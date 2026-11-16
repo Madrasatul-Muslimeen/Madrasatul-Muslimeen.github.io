@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "15.11",
+    "version": "15.12",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7337,7 +7337,7 @@
     {
       "version": "15.11",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v15.11 was allocated to J143 B banglaWords behind a readiness gate (OFF) and the Soft Meadow Word Card level colours (#1765, #1766), 2026-11-16.",
       "integration": {
         "authorizedOn": "2026-11-15",
@@ -7345,10 +7345,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "15.12",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Builder #1770 (J140 part 4) and Hadith Lead #1769, released by the Architect 114L",
+      "integration": {
+        "authorizedOn": "2026-11-16",
+        "integratedOn": "2026-11-16",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "15.12",
+  "nextUnallocated": "15.13",
   "nextUnallocatedNote": [
+    "v15.12 was allocated to J140 pop-ups part 4 + Know Your Status keyboard ring, 2026-11-16.",
     "v15.11 was allocated to Own-language lists behind an OFF gate (J143 B) + Soft Meadow level colours, 2026-11-15.",
     "v15.10 was allocated to J140 pop-ups part 3 + the Dua groups note (#1761, #1764), 2026-11-15.",
     "v15.09 was allocated to the Monitor's own-language note (QR Lead 47L, #1757), 2026-11-15.",
