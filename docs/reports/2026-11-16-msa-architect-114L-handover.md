@@ -30,7 +30,9 @@ The rest merged without a version:
    - **#1777**: Know Your Status Bangla words editable by owner and prime (J106 n106j 2.A). No Rules change; stored in `hadithNames` under `kys__` keys. I9 is fine: the names read happens when the view opens, not at start-up. Adds 11 bn strings (module strings, allowed).
    - **#1778**: printed Shamela pages for 'Amal al-Yawm (an-Nasa'i, Ibn al-Sunni) and al-Adhkar.
    - The 16L handover PR: `docs/reports/2026-11-16-hadith-lead-16l-handover.md`. It holds the PMS Done lines to write once you merge.
-   - Release #1777 and #1778 together as **v15.14**: behaviour ALONE, their suites and mutations, hadith-status 100/0, keep1116 save → update → reopen, What's New line. Then ask the PCA to close 16L and open 17L.
+   - Release #1777 and #1778 together as **v15.14**: behaviour ALONE, their suites and mutations, hadith-status 100/0, keep1116 save → update → reopen, What's New line.
+   - **CORRECTED (PCA 48L, 04:36Z): 16L is PARKED and there is no 17L.** From 18 Nov, Hadith jobs belong to the MSA Architect. After merging, write 16L's two drafted Done lines (in its handover PR) into PCF MSA J106 in ONE write (one1116). Optional Pending 3 there (an emulator check of the bookmark payload) stays open.
+   - The Owner's J106 waits are unchanged; do not re-ask them: n106h, the Bangla names, the small-phone bar, marking levels, bab names, and the KYS phone check.
 
 ## Waiting on the Owner
 - **PCF MSA J144**: six tick boxes, the repeat jobs a no-Claude workflow could do (PCA J116 C). Build only what is ticked, one small workflow round each.
