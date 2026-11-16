@@ -1161,3 +1161,4 @@ total). Allocated by the MMSA Architect.
 15.13: J143 Bangla word lists saved in the account (gate ON) + Nasa'i pages tier C. Allocated by the MMSA Architect.
 15.14: Hadith: Know Your Status Bangla words editable by owner/prime (#1777) + printed pages for 'Amal al-Yawm and al-Adhkar (#1778). Allocated by the MMSA Architect.
 15.15: J140 part 5: – ⛶ ✕ on the remaining pop-ups (#1786) + PCA J117: QuranRevival installs as its own app. Allocated by the MMSA Architect.
+15.16: PCA J118 rename to MMSA. Allocated by the MMSA Architect.

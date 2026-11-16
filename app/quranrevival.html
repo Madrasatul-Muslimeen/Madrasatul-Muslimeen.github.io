@@ -17,7 +17,7 @@
        a moment later: the jump decision 81 forbids. Its room is held from the first paint (the CSS under html.zab-reserve) on
        every page that will mount it (not inside a page window or an embed); the module below drops it if Zab is switched off. -->
   <script>(function(){try{var q=new URLSearchParams(location.search);if(window.parent!==window&&(q.get('inWindow')==='1'||q.get('embed')==='1'))return;document.documentElement.classList.add('zab-reserve');}catch(e){}})();</script>
-<title>Madrasah Study App (MSA)</title>
+<title>Madrasatul Muslimeen's Study App (MMSA)</title>
 <style>
   /* Shell round 7 (12 Aug 2026) -- this page is now a real app shell rather
      than a plain scrolling document: a header, a stage that STRETCHES to
@@ -91,15 +91,18 @@
     box-shadow: 0 1px 4px rgba(19, 25, 42, 0.25);
   }
   h1 .head-search-btn:hover { background: #fdf6e3; }
-  /* The Owner, 17 Oct 2026 (PCF inbox 9bnl4tkit8wmvk): the app is "Madrasah Study App (MSA)". Measured: with the
+  /* The Owner, 17 Oct 2026 (PCF inbox 9bnl4tkit8wmvk): the app is "Madrasatul Muslimeen's Study App (MMSA)". Measured: with the
      full name the English title needs 347px, so below 700px the Search button broke onto a second line (the header
-     grew from 40px to 72px at 390px and 99px at 320px). Below 700px the heading shows "MSA"; the tab title and wider
+     grew from 40px to 72px at 390px and 99px at 320px). Below 700px (800px since J118) the heading shows the short name; the tab title and wider
      screens show the full name.
      The short name is drawn by CSS so the page's own label (the "← Back to …" pill reads the heading's text) stays
      the full name. */
   .app-name-short { display: none; }
-  .app-name-short::before { content: "MSA"; }
-  @media (max-width: 699px) { .app-name-full { display: none; } .app-name-short { display: inline; } }
+  .app-name-short::before { content: "MMSA"; }
+  /* J118 (16 Nov 2026, the name became "Madrasatul Muslimeen's Study App (MMSA)"): measured, the English full name is
+     484px (it was 304px), so with the version and Search it needs a 768px screen; at 700-760px Search broke onto a second
+     line (heading 85px tall). The short name now shows below 800px; Bangla (310px) fitted at 700px either way. */
+  @media (max-width: 799px) { .app-name-full { display: none; } .app-name-short { display: inline; } }
   /* v13.15 (QR's title at 320px): an app whose short name is long ("QuranRevival", 146px against MSA's 52px) sets
      these three through its build rule (tools/apps/build-app.mjs). --app-title-flex: 1 1 min-content lets the title
      shrink to its longest word, so the Search button keeps the first line and the version (kept whole by
@@ -6334,7 +6337,7 @@
        relocatePreviewNotice() below. This span just gives the title text
        its own flex box so h1's own justify-content: space-between (below)
        has two things to split between, not one. -->
-  <h1><span id="appTitleText"><a class="app-title-home" id="appTitleHome" href="./quranrevival.html"><span class="app-name-full">Madrasah Study App (MSA)</span><span class="app-name-short"></span></a> <span id="appVersion" class="app-version"></span></span><button type="button" id="headSearchBtn" class="head-search-btn" aria-controls="panelStudyOptions"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="head-search-label">Search</span></button></h1>
+  <h1><span id="appTitleText"><a class="app-title-home" id="appTitleHome" href="./quranrevival.html"><span class="app-name-full">Madrasatul Muslimeen's Study App (MMSA)</span><span class="app-name-short"></span></a> <span id="appVersion" class="app-version"></span></span><button type="button" id="headSearchBtn" class="head-search-btn" aria-controls="panelStudyOptions"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="head-search-label">Search</span></button></h1>
   <!-- Shell round 20 (17 Aug 2026) -- the moving tagline strip. It stands
        EXACTLY where the static tagline stood, which is the owner's own call
        and also the cheap one: measured at 17-19px against the <p>'s own

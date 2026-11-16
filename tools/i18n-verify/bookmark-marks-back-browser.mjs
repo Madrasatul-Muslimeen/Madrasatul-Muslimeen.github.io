@@ -153,7 +153,8 @@ for (const lang of ["en", "bn"]) for (const width of (process.env.WIDTHS ? proce
   const label = await P.evaluate(async () => (await import("/app/js/bookmark-nav.js")).pageLabelOf(document));
   // Updated 17 Oct 2026: the Owner renamed the page "Madrasah Study App (MSA)" (PCF inbox 9bnl4tkit8wmvk). On a phone the
   // heading shows "MSA", drawn by CSS, so the label stays the full name at every width.
-  const wantName = tag.startsWith("bn") ? "মাদ্রাসা স্টাডি অ্যাপ (MSA)" : "Madrasah Study App (MSA)";
+  // Updated 16 Nov 2026 (J118): the name is now "Madrasatul Muslimeen's Study App (MMSA)" (the label the page prints).
+  const wantName = tag.startsWith("bn") ? "মাদ্রাসাতুল মুসলিমীন স্টাডি অ্যাপ (MMSA)" : "Madrasatul Muslimeen's Study App (MMSA)";
   check(`${tag}: the Qur'an page's name is just its heading's words ("${wantName}")`, label === wantName, JSON.stringify(label));
   // UPDATED IN PLACE 10 Oct 2026 (issue #750): the bookmark now opens the Read view itself (with the Notes pane), and the
   // Read tab is a TOGGLE -- the old unconditional click sent the reader back to the landing view (measured: body gains

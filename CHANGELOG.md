@@ -24169,3 +24169,17 @@ Built by the Builder (#1774 → #1786) and the Architect 115L (J117); released b
   - **keep1116:** save → update → reopen from v15.14 to this build on one browser profile kept every saved key (0 lost, 0 changed).
 - Headless Chromium's installability call reports no error even with no manifest, so it is not used as evidence; full Chromium with a persistent profile is.
 - No Rules, key or storage change.
+
+## v15.16 — 17 Nov 2026 (Sydney) — The app is now MMSA, "Madrasatul Muslimeen's Study App" (PCA J118)
+
+Built by the Builder (#1787 → #1788); reviewed, corrected and released by the Architect 116L.
+
+- **#1788 (PCA J118; the Owner, 16 Nov: "I want to name MSA to MMSA. MMSA as Madrasatul Muslimeen's Study App. Enable to appear everywhere of the project"; spelling "Madrasatul" confirmed 5:25 pm, n118a = A):** every name a reader sees changes: page titles ("MMSA — …"), the heading (full name and the short "MMSA"), About, the manifest `name` and `short_name` (the home-screen label is "MMSA"), and the `bn.js` values (মাদ্রাসাতুল মুসলিমীন স্টাডি অ্যাপ (MMSA)). `app/apps/msa.json` name and `titlePrefix` change with them; `build-app.mjs` and `bookmark-nav.js` strip MMSA, MSA and QuranRevival title prefixes alike. Five checks that asserted the old name were updated in place.
+- **Labels only (keep1116):** the file `msa.json`, the id `msa`, storage keys, cache names in `sw.js` and `hidden-modules.js`, icon file names and the `/app/` address are unchanged.
+- **Architect's correction:** the English full name is 484px (was 304px), so at 700–760px Search broke onto a second line (heading 85px tall). The heading now shows the short name below 800px (was 700px); measured 40px tall at 320/390/700/760/799/800/1024/1280 in English and Bangla.
+- **Checks (Architect 116L, on #1788 with `main` v15.15 merged in):**
+  - `behaviour.mjs` ALONE 970/5 (the baseline five: 14a 30i 30j 30l 31a).
+  - `apps-build-check` 58/0.
+  - QR built from this source: `qr-verify/run-all.sh` 31 checks green, including `upgrade-browser` 85/0 and `install-browser` 21/0. QR's titles, heading and manifests still say QuranRevival; the "MMSA" text in QR's build is in code comments and identifiers (11 files already on v15.15) plus a code regex and a `bn.js` string for a page QR does not ship.
+  - **keep1116:** save → update → reopen from v15.15 to this build on one browser profile kept every saved key.
+- No Rules, key or storage change.

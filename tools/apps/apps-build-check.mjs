@@ -115,19 +115,19 @@ check("every page title reads 'QuranRevival — …', none 'MSA — …' (and on
   const pages = listFiles(qrOut, ["app"]).filter((f) => f.endsWith(".html"));
   const expected = qs.pages.map((p) => `app/${p}`).sort();
   if (JSON.stringify(pages) !== JSON.stringify(expected)) throw new Error(`pages: ${pages.join(", ")}`);
-  const fromSrc = expected.filter((f) => fs.existsSync(path.join(SRC, f)) && read(SRC, f).includes("<title>MSA — "));
-  return pages.every((f) => !read(qrOut, f).includes("<title>MSA — ")) && fromSrc.length >= 2 && fromSrc.every((f) => read(qrOut, f).includes("<title>QuranRevival — ")) &&
-    listFiles(SRC, ["app"]).filter((f) => f.endsWith(".html") && read(SRC, f).includes("<title>MSA — ")).length >= 25;
+  const fromSrc = expected.filter((f) => fs.existsSync(path.join(SRC, f)) && read(SRC, f).includes("<title>MMSA — "));
+  return pages.every((f) => !read(qrOut, f).includes("<title>MMSA — ")) && fromSrc.length >= 2 && fromSrc.every((f) => read(qrOut, f).includes("<title>QuranRevival — ")) &&
+    listFiles(SRC, ["app"]).filter((f) => f.endsWith(".html") && read(SRC, f).includes("<title>MMSA — ")).length >= 25;
 });
-check("Bangla titles: every 'MSA — ' key has its 'QuranRevival — ' key", () => {
+check("Bangla titles: every 'MMSA — ' key has its 'QuranRevival — ' key", () => {
   const a = read(SRC, "app/js/i18n/bn.js"), b = read(qrOut, "app/js/i18n/bn.js");
   const n = (t, p) => t.split(`"${p} — `).length - 1;
-  return n(a, "MSA") >= 50 && n(b, "MSA") === 0 && n(b, "QuranRevival") === n(a, "MSA") + n(a, "QuranRevival");
+  return n(a, "MMSA") >= 50 && n(b, "MMSA") === 0 && n(b, "QuranRevival") === n(a, "MMSA") + n(a, "QuranRevival");
 });
 check("the front page's name, heading and short name are QR's", () => {
   const t = read(qrOut, "app/quranrevival.html");
   return t.includes("<title>QuranRevival</title>") && t.includes('<span class="app-name-full">QuranRevival</span>') &&
-    t.includes('.app-name-short::before { content: "QuranRevival"; }') && !t.includes('<span class="app-name-full">Madrasah Study App (MSA)</span>');
+    t.includes('.app-name-short::before { content: "QuranRevival"; }') && !t.includes('<span class="app-name-full">Madrasatul Muslimeen\'s Study App (MMSA)</span>');
 });
 check("the offline caches are qr-…, no mm- cache is named, and the clean-up deletes only qr-… caches", () => {
   const t = read(qrOut, "app/sw.js");
@@ -227,13 +227,13 @@ const mutate = (rel, from, to, fn) => {
 const buildMut = (id) => buildApp({ id, src: mutSrc, out: path.join(TMP, "mut-" + id), only: ONLY });
 check("control: the copied source builds msa and qr", () => buildMut("msa") && buildMut("qr"));
 check("msa.json naming a title prefix the source does not hold stops even the msa build", () =>
-  mutate("app/apps/msa.json", '"titlePrefix": "MSA"', '"titlePrefix": "MMSA"', () => throws(() => buildMut("msa"), /page titles: found 0/)));
+  mutate("app/apps/msa.json", '"titlePrefix": "MMSA"', '"titlePrefix": "MMSAx"', () => throws(() => buildMut("msa"), /page titles: found 0/)));
 check("a cache name renamed in sw.js stops the qr build", () =>
   mutate("app/sw.js", 'const MUSHAF_CACHE_NAME = "mm-mushaf-v1";', 'const MUSHAF_CACHE_NAME = "mmx-mushaf-v1";', () => throws(() => buildMut("qr"), /offline cache "mushaf"/)));
 check("a new place writing MSA's full name, no rule covering it, stops the qr build", () =>
-  mutate("app/notes.html", "</body>", "<p>Madrasah Study App (MSA)</p></body>", () => throws(() => buildMut("qr"), /notes\.html still says "Madrasah Study App \(MSA\)"/)));
+  mutate("app/notes.html", "</body>", "<p>Madrasatul Muslimeen's Study App (MMSA)</p></body>", () => throws(() => buildMut("qr"), /notes\.html still says "Madrasatul Muslimeen's Study App \(MMSA\)"/)));
 check("...but the same words in a comment do not", () =>
-  mutate("app/notes.html", "</body>", "<!-- Madrasah Study App (MSA) --></body>", () => !!buildMut("qr")));
+  mutate("app/notes.html", "</body>", "<!-- Madrasatul Muslimeen's Study App (MMSA) --></body>", () => !!buildMut("qr")));
 check("a new hard-coded MSA cache name elsewhere in app/ stops the qr build", () =>
   mutate("app/js/nav.js", "export const LEGACY_APP_URL", 'const X = "mm-app-x";\nexport const LEGACY_APP_URL', () => throws(() => buildMut("qr"), /nav\.js still says "mm-app-"/)));
 check("a reader page that lost MSA's install line stops even the msa build (PCF MSA J120 O1)", () => {

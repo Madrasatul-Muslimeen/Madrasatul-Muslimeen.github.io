@@ -205,7 +205,7 @@ check("every t(\"...\") / t('...') key this page calls has a Bangla translation 
   assert.deepEqual(missing, [], `key(s) with no Bangla translation: ${JSON.stringify(missing)}`);
 });
 check("the page's own title and intro are translatable (present in bn.js), so translateStatic() has something to find at load", () => {
-  assert.ok("MSA — Mapping My Journey" in BN, "the page <title> has no Bangla translation");
+  assert.ok("MMSA — Mapping My Journey" in BN, "the page <title> has no Bangla translation");
   assert.ok("Mapping My Journey" in BN, "the <h1> text has no Bangla translation");
 });
 
