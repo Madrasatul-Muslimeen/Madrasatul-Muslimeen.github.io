@@ -5,8 +5,9 @@
 //     served (200) as PNGs of the size they claim; the iPhone's home-screen icon link is there and served;
 //   - asma.html and asma-about.html still link asma.webmanifest (Asma's own app), and never QR's;
 //   - qr.webmanifest is never MSA's (no "MSA" in its name; MSA's manifest.webmanifest is not in the build).
-// Chrome's installability-errors call is NOT used: measured on 16 Nov 2026, headless Chromium reports no error even
-// with the manifest missing, so it cannot fail. The parsed manifest can.
+// Chrome's installability-errors call is NOT used here: measured on 16 Nov 2026, the headless shell reports no error even
+// with the manifest missing, so it cannot fail; the parsed manifest can. Full Chromium's real verdict for the front page
+// is in asma-store-browser.mjs section 3 (with its own no-manifest control).
 //   node tools/apps/qr-verify/install-browser.mjs        (needs serve-app on QR_BASE, default :8082; run-all.sh starts it)
 //   --mutate=nomanifest  qr.webmanifest answers 404     -> "links qr.webmanifest, parsed as QuranRevival" FAILS
 //   --mutate=noicon      qr-512.png answers 404          -> "icon … is served" FAILS
