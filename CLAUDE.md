@@ -453,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v15.14 on `main`** (16 Nov 2026 Sydney, shown as "v15.14 - 16.Nov.2026"). **Hadith: the owner or a prime can correct the Know Your Status Bangla words in the app, and the last three library books without one now show their printed Shamela page**, built by Hadith Lead 16L (#1777, #1778) and released by the Architect 115L. The words are stored in `hadithNames` under `kys__` keys (no Rules change; Restore retires, I4); the names read happens when Know Your Status opens, never at start-up (I9). Pages: 'Amal al-Yawm by an-Nasa'i (1148 of 1148) and by Ibn al-Sunni (766 of 770), and al-Adhkar (1255 of 1263), keyed by record order. Checks: see the CHANGELOG entry.
+**Current milestone: v15.15 on `main`** (16 Nov 2026 Sydney, shown as "v15.15 - 16.Nov.2026"). **The last pop-ups get – ⛶ ✕, and QuranRevival installs on a phone as its own app.** J140 part 5 (Builder #1786): Quran Study's filing dialog, Copy chooser, Āyah view, QCR pop-up, the Quran Word Card and the Zab panel (zab-bar.js unchanged) fold, go full screen, drag and resize. PCA J117: `app/apps/qr.json` gains a manifest (`qr.webmanifest`, id /app/, start /app/quranrevival.html, QR's own icons in `apps/qr/site/app/img/icons/`), linked from QR's front page and reader pages; Asma keeps its own install. MSA's own install is unchanged. Checks: see the CHANGELOG entry.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
