@@ -337,6 +337,14 @@ jobs:
           bcount=$(wc -l < /tmp/blocked.txt | tr -d ' ')
           echo "eligible=$ecount" >> "$GITHUB_OUTPUT"
           echo "blocked=$bcount" >> "$GITHUB_OUTPUT"
+          # PCA J116 B (the Owner ticked it, 16 Nov 2026; Architect 114L): the one kind of blocked pull request the model can
+          # act on is a DRAFT (it reviews it and marks it ready). Every other block -- an app change, a protected path,
+          # needs-owner, a running Builder round, red verify -- waits for a person, so a model call about it is spent for nothing.
+          dcount=$(grep -c -- '-- BLOCKED: DRAFT' /tmp/blocked.txt || true)
+          echo "drafts=${dcount:-0}" >> "$GITHUB_OUTPUT"
+          if [ "$ecount" = "0" ] && [ "${dcount:-0}" = "0" ]; then
+            echo "**Nothing for the model this run** (no eligible pull request, no draft waiting): Claude is NOT called." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
           {
             echo "## Architect triage"
@@ -356,8 +364,13 @@ jobs:
           # become part of the prompt's own instructions.
           cp /tmp/eligible.txt /tmp/blocked.txt "$RUNNER_TEMP/" 2>/dev/null || true
 
+      # THE MODEL IS CALLED ONLY WHEN IT HAS SOMETHING TO DO (PCA J116 B, the Owner ticked it 16 Nov 2026). Measured before
+      # this gate: 43 runs in 24 hours (40 of them after a verify run), every one calling Claude, almost all with an empty
+      # eligible list. Each call counts against the Owner's subscription limits. The triage step above is plain shell and
+      # still runs, and still writes its summary, every time.
       - name: Run the Architect
-        if: steps.auth.outputs.ready == 'true'
+        id: architect
+        if: steps.auth.outputs.ready == 'true' && (steps.triage.outputs.eligible != '0' || steps.triage.outputs.drafts != '0')
         uses: anthropics/claude-code-action@v1
         env:
           # Repository-scoped, job-lifetime, and deliberately NOT the Claude App
@@ -546,7 +559,7 @@ jobs:
       # `if: always()` is load-bearing: the step whose failure this explains has
       # already failed by the time this runs, so any default condition skips it.
       - name: Say why Claude stopped, when it stopped badly
-        if: always() && steps.auth.outputs.ready == 'true'
+        if: always() && steps.auth.outputs.ready == 'true' && steps.architect.outcome != 'skipped'
         env:
           CLAUDE_LOG: ${{ runner.temp }}/claude-execution-output.json
         run: |

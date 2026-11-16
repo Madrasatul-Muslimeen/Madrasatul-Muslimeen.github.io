@@ -627,8 +627,14 @@ jobs:
           # listed (`cat`, `cp`), after which the model gave up. The fix keeps the list read-only in spirit: seven
           # harmless verbs (mkdir, ls, cat, head, tail, wc, cp -- cp writes only what the Write tool may already write)
           # and a sentence in the prompt asking for ONE simple command per call. No git write, no push, no pkill.
+          # PCA J116 B (the Owner ticked A, B, C, 16 Nov 2026, "A, B, C all yes"): every Builder run on Sonnet, about 80 turns,
+          # to save the Owner's subscription usage. THE PIN IS A CLAIM ABOUT THE SUBSCRIPTION (see "NO `--model` PIN" above): if
+          # the first run after this change fails in well under a second with `modelUsage: {}`, the account cannot address this
+          # model -- remove the `--model` line (the Action's default is the proven one) and tell the Architect; never retry blindly.
+          # 80 turns is a SMALL round: an issue must name the exact files and the check to pass, and the Builder pushes early.
           claude_args: |
-            --max-turns 250
+            --model claude-sonnet-5-5
+            --max-turns 80
             --allowedTools "mcp__github_file_ops__commit_files,mcp__github_file_ops__delete_files,mcp__github__create_pull_request,Bash(node *),Bash(npx playwright *),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git stash:*),Bash(git rev-parse:*),Bash(git ls-remote:*),Bash(git fetch:*),Bash(mkdir *),Bash(ls *),Bash(cat *),Bash(head *),Bash(tail *),Bash(wc *),Bash(cp *),Read,Edit,Write,Glob,Grep"
 
       # ======================================================================
