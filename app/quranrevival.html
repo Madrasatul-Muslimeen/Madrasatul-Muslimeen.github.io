@@ -93,13 +93,16 @@
   h1 .head-search-btn:hover { background: #fdf6e3; }
   /* The Owner, 17 Oct 2026 (PCF inbox 9bnl4tkit8wmvk): the app is "Madrasatul Muslimeen's Study App (MMSA)". Measured: with the
      full name the English title needs 347px, so below 700px the Search button broke onto a second line (the header
-     grew from 40px to 72px at 390px and 99px at 320px). Below 700px the heading shows "MSA"; the tab title and wider
+     grew from 40px to 72px at 390px and 99px at 320px). Below 700px (800px since J118) the heading shows the short name; the tab title and wider
      screens show the full name.
      The short name is drawn by CSS so the page's own label (the "← Back to …" pill reads the heading's text) stays
      the full name. */
   .app-name-short { display: none; }
   .app-name-short::before { content: "MMSA"; }
-  @media (max-width: 699px) { .app-name-full { display: none; } .app-name-short { display: inline; } }
+  /* J118 (16 Nov 2026, the name became "Madrasatul Muslimeen's Study App (MMSA)"): measured, the English full name is
+     484px (it was 304px), so with the version and Search it needs a 768px screen; at 700-760px Search broke onto a second
+     line (heading 85px tall). The short name now shows below 800px; Bangla (310px) fitted at 700px either way. */
+  @media (max-width: 799px) { .app-name-full { display: none; } .app-name-short { display: inline; } }
   /* v13.15 (QR's title at 320px): an app whose short name is long ("QuranRevival", 146px against MSA's 52px) sets
      these three through its build rule (tools/apps/build-app.mjs). --app-title-flex: 1 1 min-content lets the title
      shrink to its longest word, so the Search button keeps the first line and the version (kept whole by
