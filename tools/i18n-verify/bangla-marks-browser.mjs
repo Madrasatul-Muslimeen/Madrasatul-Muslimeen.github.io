@@ -36,6 +36,10 @@ const bnDigits = (s) => String(s).replace(/[০-৯]/g, (d) => "০১২৩৪�
 for (const lang of LANGS) for (const width of WIDTHS) {
   const tag = `[${lang} ${width}]`, W = L[lang];
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width >= 768 ? 1000 : 1100 }, extraSeedJs: "window.__stubApplyBatches = true;" });
+  // UPDATED IN PLACE 16 Nov 2026 (Architect 114L, v15.13): the banglaWords gate is ON as shipped, so a signed-in reader's marks now go to the
+  // account (proved by bangla-words-account-browser.mjs). This suite proves the DEVICE path, which stays the way back, so it closes the
+  // gate in memory (the repository is not changed) and throws if it cannot.
+  await ctx.route("**/app/js/bangla-words-readiness.js*", async (r) => { const res = await r.fetch(); const src = await res.text(); const out = src.replace(/  ready: true,\n  decision: Object\.freeze\(\{[\s\S]*?\n  \}\),/, "  ready: false,\n  decision: null,"); if (!/\n  ready: false,\n  decision: null,/.test(out)) throw new Error("could not close the banglaWords gate in memory"); r.fulfill({ response: res, body: out }); });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) {
     const [file, a, b] = MUT[MUTATE];

@@ -16,15 +16,21 @@
 /** Who may declare deployment readiness. Closed: a module cannot authorise itself. */
 export const BANGLA_WORDS_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
 
-/** THE DECLARATION. The single place the answer lives. NOT READY: the banglaWords Rules are not published. */
+/** THE DECLARATION. The single place the answer lives. READY since 16 Nov 2026: the Owner published the banglaWords Rules. */
 export const BANGLA_WORDS_PERSISTENCE_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-11-16",
+    reference:
+      "PCF MSA J143: the Owner published docs/proposals/bangla-words.DEPLOYMENT-candidate.rules in study-monitoring (\"J143 Rules published.\", " +
+      "16 Nov 2026); firestore.rules made that file byte for byte, proven by tools/firestore-emulator FULL_RULES_FILE=firestore.rules npm run bangla-words; " +
+      "opened by the Architect 114L in v15.13",
+  }),
   gate: "E1",
   note:
-    "banglaWords saving is OFF: docs/proposals/bangla-words.candidate.rules is a candidate, not published. " +
-    "To open it, the Architect sets ready: true with a decision { by: 'master-architect', on: 'YYYY-MM-DD', reference: '<the record that says the " +
-    "Rules were published and proven>' } in the same commit that records the deployment.",
+    "banglaWords saving is ON: firestore.rules carries the published banglaWords block. The device list is copied up once and the " +
+    "device copy is never removed (keep1116).",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;

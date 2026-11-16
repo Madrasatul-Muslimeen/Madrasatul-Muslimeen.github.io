@@ -465,6 +465,9 @@ const PUBLISHED_DEPLOYMENTS = [
   // Hadith Lead 14L, 8:54 am 15 Nov, v15.02), and firestore.rules was made this file byte for byte; red on main since v15.02 for the
   // same reason as the entries above; the dawahPages-block half is unchanged.
   "docs/proposals/hadith-names.DEPLOYMENT-candidate.rules",
+  // Added 16 Nov 2026 (Architect 114L): the Owner published the Bangla words Rules ("J143 Rules published.", PCF MSA J143), and
+  // firestore.rules was made this file byte for byte (the Hadith names file + the banglaWords block); the dawahPages-block half is unchanged.
+  "docs/proposals/bangla-words.DEPLOYMENT-candidate.rules",
 ];
 function dawahBlock(text) {
   const start = text.indexOf("match /dawahPages/");
