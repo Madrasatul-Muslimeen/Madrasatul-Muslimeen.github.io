@@ -73,6 +73,7 @@ body.jt-dragging { user-select: none; }
 #zabBackdrop:has(+ #zabPanel[${ATTR}]) { display: none !important; }
 /* The Quran Word Card is a window only from 900px (a full-screen sheet below), so – and ⛶ show only there. */
 @media (max-width: 899.98px) { #quranWordCardMount .mm-min-btn, #quranWordCardMount .mm-full-btn { display: none; } }
+.ayah-copy-head .mm-min-btn, .ayah-copy-head .mm-full-btn { min-width: 44px; min-height: 44px; }
 .mm-min-btn:hover, .mm-full-btn:hover { background: rgba(255, 255, 255, 0.12); }
 .mm-min-btn:focus-visible, .mm-full-btn:focus-visible { outline: 3px solid #c9a24b; outline-offset: 1px; }
 /* The chips wait at the bottom right: inside the Zab bar's strip when it is on (its pockets are on the left), else
