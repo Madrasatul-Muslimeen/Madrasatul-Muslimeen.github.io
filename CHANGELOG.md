@@ -24112,3 +24112,34 @@ Built by the Builder (#1762 → #1770) and the Hadith Lead 15L (#1769); reviewed
 - **#1769 (PCF MSA J106, 113L's findings of 15 Nov):** Know Your Status's wheel segments overlap, so a focus ring drawn as a segment's own stroke was half covered and looked like the "selected" outline. One ring path is now drawn LAST, above every segment (a dark halo `.hs-focus-halo` under a 3px gold `.hs-focus-ring`), follows `:focus-visible`, and Enter/Space keeps focus on the segment across the redraw (`v.focusI`).
 - **Checks (Architect 114L, on the merged release branch):** `behaviour.mjs` ALONE 970/5 (the baseline five: 14a 30i 30j 30l 31a); `popup-windows-all-browser` 503/0 with `elementFromPoint` at 1280/768/390/320 in en and bn, and all 7 mutations fail (nodword, nomapx, nomapent, noexpx, noexpent, nohwcx, nofull); `hadith-dua-a11y-browser` hadith 901/0, dua 1423/0, status view 66/0 with mutations noring, nosvgring, lowlabel each failing; hadith-status 100/0; dua-word-popup 43/0; journey-folder-picker 310/0; explore-all-approaches 280/0; popup-collapse 156/0; minimise-windows 48/0; note-window-a11y 940/0; journey-tray-panes 56/0; read-note-pane-window 112/0; hadith-menu-bar 188/0; QR built from this source, `qr-verify/run-all.sh` 30/30. **keep1116:** save → update → reopen from v15.11 to this build kept every saved key unchanged (Bangla word list, Hadith "studied" set, card look).
 - No Rules, key or storage change. J143's `banglaWords` Rules publish still waits on the Owner (n143b); the gate stays OFF.
+
+## v15.13 — 16 Nov 2026 (Sydney) — J143 switched ON: each student's own-language word list is saved in their account (the Owner published the banglaWords Rules)
+
+Released by the Architect 114L. The app half was built by the QR Lead 47L and shipped OFF in v15.11 (#1765); the deployment file came in #1772.
+
+- **The Owner published the Rules** in study-monitoring ("J143 Rules published.", 16 Nov 2026). `firestore.rules` is now `docs/proposals/bangla-words.DEPLOYMENT-candidate.rules` **byte for byte**: the Hadith names file plus exactly the `banglaWords` block. Permanent keys: `banglaWords/{tenantId}__{personId}` (a student's own list) and `{tenantId}__madrasah` (the madrasah's list). There is no delete (I4/D6), reads are by document id only, and no index is needed.
+- **The gate opens:** `app/js/bangla-words-readiness.js` is `ready: true`, with the decision `{ by: "master-architect", on: "2026-11-16", reference: PCF MSA J143 … }`.
+  - From now on, a signed-in reader's marks are saved to the selected student's account, and the Monitor's Vocabulary table counts each student's own list with one read.
+  - The device's list is copied up **once**, into the first student's account that opens it on that device. **The device copy is never removed or changed (keep1116).**
+  - The lists are read lazily, never at start-up (I9). Taps made while the lists are being read are replayed, not lost. A failed save shows the red banner (I15).
+  - The app is hidden while signed out, so a mark is never made with nowhere to save it.
+- **Also in this release: Hadith Lead 15L's #1775** (merged to `main` at 03:51Z by the unattended Architect, verify green, no protected path). For Nasa'i's original book page, tier C places 724 more numbers as APPROXIMATE, using rare 6-word phrases between verified neighbours: 3,964 → 4,688 of 5,765 numbers now have a page. Verified pages are unchanged, and precision on verified numbers with their page hidden is 511/514. Data and test only, nothing under `app/js`. Architect checks: `hadith-nasai-pages-browser` 14/0, `hadith-book-pages-browser` 109/0. The 15L handover (#1776, a doc only) also merged.
+- **Checks updated in place to what production carries** (never deleted):
+  - `rules-authorisation-executable.mjs`:
+    - "BANGLA WORDS PENDING" becomes "PUBLISHED", which asserts firestore.rules is the deployment file and that taking the block out gives the Hadith names file back.
+    - A new "GATE" check: the gate is open with a governed decision, and only because the block is live.
+    - The DUA SAVING, DUA KEYS, DUA GROUPS and HADITH NAMES checks now read `stripBangla(firestore.rules)`.
+  - `dawah-boundary.mjs`: the file is added to `PUBLISHED_DEPLOYMENTS`.
+  - `bangla-words-data.mjs`: "OFF by default" becomes "ON as shipped, by a governed decision". The `gateopen` mutation now removes the decision.
+  - `bangla-words-account-browser.mjs`: ON is the shipped state, and OFF is the gate closed in memory (the way back).
+  - `bangla-marks-browser.mjs` and `bangla-words-browser.mjs` prove the device path, so they now close the gate in memory.
+- **Checks (Architect 114L):**
+  - Rules: `rules-authorisation-executable` 142/0. Its four mutations each fail: gate closed, decision by the wrong authority, rules not synced, rules edited.
+  - `dawah-boundary` 21/0.
+  - Emulator: `FULL_RULES_FILE=firestore.rules npm run bangla-words` passes, run against the whole live file.
+  - `bangla-words-data` 27/0; mutation `gateopen` fails.
+  - `bangla-words-account-browser` 16/0. Mutations leak, nocopyup, devwrite, nopersist, noswitch and monitorown each exit 1.
+  - `bangla-marks-browser` 108/0; `bangla-words-browser` 79/0; `bangla-words-v2` 15/0; `bangla-wheel-browser` 78/0; `vocab-wheel-browser` 118/0.
+  - `behaviour.mjs` run ALONE: 970/5, the baseline five (14a 30i 30j 30l 31a).
+  - QR built from this source: `qr-verify` 30/30 (student-tools 1900/0, student-device 735/0).
+  - **keep1116:** save → update → reopen from v15.12 to this build kept every saved key unchanged (the Bangla list, the Hadith studied set, the card look). With the gate ON, the device list is copied up and kept (proved by nocopyup and devwrite).

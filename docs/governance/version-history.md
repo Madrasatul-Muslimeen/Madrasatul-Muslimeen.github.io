@@ -1158,3 +1158,4 @@ total). Allocated by the MMSA Architect.
 15.10: J140 pop-ups part 3 + the Dua groups note (#1761, #1764). Allocated by the MMSA Architect.
 15.11: Own-language lists behind an OFF gate (J143 B) + Soft Meadow level colours. Allocated by the MMSA Architect.
 15.12: J140 pop-ups part 4 + Know Your Status keyboard ring. Allocated by the MMSA Architect.
+15.13: J143 Bangla word lists saved in the account (gate ON) + Nasa'i pages tier C. Allocated by the MMSA Architect.
