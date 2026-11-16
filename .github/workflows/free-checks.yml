@@ -1,0 +1,242 @@
+# PCF MSA J144 A, B, C, D, F -- decided by the Architect 115L under the Owner's General rule free1116
+# (16 Nov 2026: "Ticks needed will cause me spend time always" -> free GitHub workflows that use NO Claude
+# are the Architect's own decision). Nothing here calls Claude or any paid service; GitHub minutes are free
+# on this public repository. J144 E (a Builder queue) starts Claude runs, so it is NOT here: it waits on the Owner.
+#
+#   A  after every push to main: rebuild app/offline-files.json; if it changed, open a tiny PR with it.
+#   B  after every push to main: the after-merge guards; totals in ONE comment on the status board (#159).
+#   C  every night, ~2:23 am Sydney: behaviour.mjs ALONE + QR's checks against main; totals in one comment.
+#   D  when a Builder run ends: an open builder/* pull request still in draft is marked ready.
+#   F  every Monday: branches whose pull request is merged or closed, listed in one comment (nothing deleted).
+#
+# STATUS-BOARD COMMENTS ARE EDITED IN PLACE, NEVER POSTED AGAIN. claude.yml fires on every issue_comment
+# `created`, and its runs share the `mmsa-builder` concurrency group: a new PENDING run there cancels the older
+# pending one, which can be a dispatched Builder round. An edit fires nothing. So each job owns one comment,
+# found by its marker, created once and then PATCHed. No comment text names the Builder's wake word or the
+# task bridge's command.
+#
+# THE WAY BACK: delete this file (or disable "free-checks" in Actions). Nothing else depends on it.
+
+name: free-checks
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 15 * * *'   # C: 2:23 am Sydney (AEDT)
+    - cron: '41 22 * * 0'   # F: Monday 9:41 am Sydney (AEDT)
+  workflow_run:
+    workflows: ["Builder (Claude Code)"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Run one job now: nightly or branches"
+        required: true
+        default: nightly
+
+permissions:
+  contents: read
+
+concurrency:
+  group: free-checks-${{ github.event_name }}-${{ github.event.schedule || github.ref }}
+  cancel-in-progress: false
+
+env:
+  BOARD: 159
+
+jobs:
+  # ---- A ------------------------------------------------------------------------------------------------------
+  offline-files:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Rebuild app/offline-files.json and open a PR if it changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          node tools/offline/build-offline-files.mjs > /tmp/offline.log 2>&1 || { tail -20 /tmp/offline.log; exit 1; }
+          if git diff --quiet -- app/offline-files.json; then echo "app/offline-files.json is current."; exit 0; fi
+          short=$(git rev-parse --short HEAD)
+          br="auto/offline-files-$short"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$br"
+          git add app/offline-files.json
+          git commit -q -m "Regenerate app/offline-files.json after $short (J144 A, free1116)"
+          git push -q origin "$br"
+          printf '%s\n' "app/offline-files.json rebuilt by \`tools/offline/build-offline-files.mjs\` after main $short. One file, data only." "" "Opened by the free-checks workflow (PCF MSA J144 A, free1116). No AI was used." > /tmp/body.md
+          gh pr create --base main --head "$br" --title "Regenerate app/offline-files.json after $short" --body-file /tmp/body.md \
+            || echo "::warning::Could not open the PR (repository setting 'Allow GitHub Actions to create pull requests' may be off). Branch $br is pushed."
+
+  # ---- B ------------------------------------------------------------------------------------------------------
+  after-merge-guards:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run the after-merge guards
+        run: |
+          set +e
+          : > /tmp/rows.md; failed=0
+          for s in brief-integrity programme-ledger programme-ledger-mutations rules-authorisation-executable; do
+            out=$(node "tools/i18n-verify/$s.mjs" 2>&1); rc=$?
+            line=$(echo "$out" | grep -oE '====.*====' | tail -1)
+            [ "$rc" -eq 0 ] && mark="✅" || { mark="❌"; failed=1; echo "$out" | grep -E '^ *FAIL' | head -5 | sed 's/^/    /' >> /tmp/fails.txt; }
+            echo "| \`$s\` | $mark ${line:-(no summary line)} |" >> /tmp/rows.md
+          done
+          out=$(node tools/apps/apps-build-check.mjs 2>&1); rc=$?
+          line=$(echo "$out" | tail -1)
+          [ "$rc" -eq 0 ] && mark="✅" || { mark="❌"; failed=1; }
+          echo "| \`apps-build-check\` | $mark $line |" >> /tmp/rows.md
+          echo "failed=$failed" >> "$GITHUB_ENV"
+          cat /tmp/rows.md
+      - name: Put the totals on the status board (one comment, edited in place)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          when=$(TZ=Australia/Sydney date '+%-d %b %Y, %-I:%M %P Sydney')
+          { echo "<!-- free1116:after-merge -->"
+            echo "**After-merge guards on \`main\`** (free workflow, J144 B), last run $when on \`$(git rev-parse --short HEAD)\`:"
+            echo ""; echo "| Guard | Result |"; echo "|---|---|"; cat /tmp/rows.md
+            if [ "$failed" = "1" ]; then echo ""; echo "A red line is a new job for the Architect."; [ -f /tmp/fails.txt ] && { echo '```'; cat /tmp/fails.txt; echo '```'; }; fi
+          } > /tmp/board.md
+          bash tools/governance/board-comment.sh "$BOARD" "free1116:after-merge" /tmp/board.md
+          [ "$failed" = "0" ]
+
+  # ---- C ------------------------------------------------------------------------------------------------------
+  nightly:
+    if: (github.event_name == 'schedule' && github.event.schedule == '23 15 * * *') || (github.event_name == 'workflow_dispatch' && inputs.job == 'nightly')
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright and Chromium (into the repository, as claude.yml does)
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock playwright@1.63.0
+          echo "node_modules/" >> .git/info/exclude
+          npx playwright install --with-deps chromium
+      - name: behaviour.mjs ALONE
+        run: |
+          set +e
+          node serve.js > /tmp/serve.log 2>&1 &
+          sleep 2
+          timeout 5400 node tools/i18n-verify/behaviour.mjs > /tmp/behaviour.log 2>&1; echo "rc=$?" >> /tmp/behaviour.log
+          tail -3 /tmp/behaviour.log
+          grep -E '^  FAIL' /tmp/behaviour.log | awk '{print $2}' | sort -u | tr '\n' ' ' > /tmp/bfails.txt
+          cat /tmp/bfails.txt
+      - name: QR built from main, and QR's checks
+        run: |
+          set +e
+          git clone -q --filter=blob:none https://github.com/QuranRevival/QuranRevival.github.io /tmp/qr-repo && export QR_REPO=/tmp/qr-repo
+          node tools/apps/build-app.mjs qr > /tmp/qr-build.log 2>&1 || { tail -20 /tmp/qr-build.log; }
+          timeout 9000 bash tools/apps/qr-verify/run-all.sh > /tmp/qr.log 2>&1; echo "rc=$?" >> /tmp/qr.log
+          tail -35 /tmp/qr.log
+      - name: Put the totals on the status board (one comment, edited in place)
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          when=$(TZ=Australia/Sydney date '+%-d %b %Y, %-I:%M %P Sydney')
+          btot=$(grep -oE '==== [0-9]+ passed, [0-9]+ failed ====' /tmp/behaviour.log | tail -1)
+          bf=$(cat /tmp/bfails.txt 2>/dev/null)
+          base="14a 30i 30j 30l 31a"
+          new=""; for f in $bf; do case " $base " in *" $f "*) ;; *) new="$new $f";; esac; done
+          qok=$(grep -cE ' rc=0 ' /tmp/qr.log || true); qall=$(grep -cE ' rc=[0-9]+ ' /tmp/qr.log || true)
+          qbad=$(grep -E ' rc=[1-9][0-9]* ' /tmp/qr.log | cut -d' ' -f1 | tr '\n' ' ')
+          { echo "<!-- free1116:nightly -->"
+            echo "**Nightly checks on \`main\`** (free workflow, J144 C), last run $when on \`$(git rev-parse --short HEAD)\`:"
+            echo ""
+            echo "- \`behaviour.mjs\` alone: ${btot:-no total (the suite did not finish)}; failures: ${bf:-none}. Baseline: $base."
+            if [ -n "$new" ]; then echo "  - ❌ **Not in the baseline:**$new (a new job for the Architect)."; else echo "  - ✅ nothing outside the baseline."; fi
+            echo "- QR built from \`main\`, \`qr-verify/run-all.sh\`: $qok of $qall green.${qbad:+ ❌ red: $qbad}"
+            echo ""
+            echo "This sandbox-free run has no TLS interception, so a baseline line that PASSES here is worth a look too."
+          } > /tmp/board.md
+          bash tools/governance/board-comment.sh "$BOARD" "free1116:nightly" /tmp/board.md
+
+  # ---- D ------------------------------------------------------------------------------------------------------
+  builder-ready:
+    if: github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Mark a Builder's draft pull request ready for review
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh pr list --repo "$REPO" --state open --draft --limit 50 --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("builder/")) | .number' > /tmp/drafts.txt
+          if [ ! -s /tmp/drafts.txt ]; then echo "No Builder draft is open."; exit 0; fi
+          while read -r n; do
+            echo "Marking #$n ready for review (the Builder's contract opens ready; architect.yml refuses drafts)."
+            gh pr ready "$n" --repo "$REPO"
+          done < /tmp/drafts.txt
+
+  # ---- F ------------------------------------------------------------------------------------------------------
+  branches:
+    if: (github.event_name == 'schedule' && github.event.schedule == '41 22 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.job == 'branches')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: List branches whose pull request is merged or closed (nothing is deleted)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$REPO/branches?per_page=100" --jq '.[].name' | grep -vxE 'main|gh-pages' > /tmp/branches.txt || true
+          gh pr list --repo "$REPO" --state all --limit 1000 --json headRefName,state,number \
+            --jq '.[] | "\(.headRefName)\t\(.state)\t\(.number)"' > /tmp/prs.tsv
+          : > /tmp/rows.md; count=0
+          while read -r b; do
+            open=$(awk -F'\t' -v b="$b" '$1==b && $2=="OPEN"' /tmp/prs.tsv | head -1)
+            [ -n "$open" ] && continue
+            done_pr=$(awk -F'\t' -v b="$b" '$1==b && ($2=="MERGED" || $2=="CLOSED") {print $2" #"$3; exit}' /tmp/prs.tsv)
+            [ -z "$done_pr" ] && continue
+            echo "- \`$b\` ($done_pr)" >> /tmp/rows.md; count=$((count+1))
+          done < /tmp/branches.txt
+          when=$(TZ=Australia/Sydney date '+%-d %b %Y, %-I:%M %P Sydney')
+          { echo "<!-- free1116:branches -->"
+            echo "**Branches whose pull request is merged or closed** (free workflow, J144 F), $when: **$count**. Nothing is deleted; the Owner decides in the PCF."
+            echo ""; echo "<details><summary>The list</summary>"; echo ""; cat /tmp/rows.md; echo ""; echo "</details>"
+          } > /tmp/board.md
+          head -c 60000 /tmp/board.md > /tmp/board-cut.md
+          bash tools/governance/board-comment.sh "$BOARD" "free1116:branches" /tmp/board-cut.md
