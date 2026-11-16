@@ -41,15 +41,17 @@ const mp = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/book-pages/
 const reg = JSON.parse(fs.readFileSync("tools/hadith-data-pull/sources/book-pages.json", "utf8")).books.find((b) => b.key === "nasai");
 const mapped = mp.p.map((v, i) => (v === null ? 0 : 1)).reduce((a, b) => a + b, 0);
 check("registry: Nasa'i is mapped and names its own versionUri", reg.status === "mapped" && reg.versionUri === NAS);
-check("map: 5,765 standard numbers, two parts in STANDARD numbers (1-5 holds up to 4983, vol 6 from 4988)", mp.numbers === 5765 && mp.p.length === 5765 && mp.parts.length === 2 && mp.parts[0].to === 4983 && mp.parts[1].from === 4988 && mp.parts[1].to === 5755, JSON.stringify(mp.parts));
-check("map: at least 3,900 of 5,672 standard numbers have a page (69.9% today); the rest are null, never a guess", mapped >= 3900 && mapped <= 5672 && mp.p.every((v) => v === null || (Number.isInteger(v) && v >= 0)), String(mapped));
+check("map: 5,765 standard numbers, two parts in STANDARD numbers (1-5 holds up to 4983, vol 6 from 4986: 16 Nov tier C placed 4986 and 4987 on vol 6, before 4988)", mp.numbers === 5765 && mp.p.length === 5765 && mp.parts.length === 2 && mp.parts[0].to === 4983 && mp.parts[1].from === 4986 && mp.parts[1].to === 5757, JSON.stringify(mp.parts));
+// 16 Nov 2026 (Hadith Lead 15L, Owner J106 n106j 3A): tier C adds 724 APPROXIMATE pages (rare 6-word phrases, between verified neighbours); verified 3,964 stay.
+check("map: at least 4,600 of 5,672 standard numbers have a page (4,688 today: 3,964 verified + 724 approximate); the rest are null, never a guess", mapped >= 4600 && mapped <= 5672 && mp.p.every((v) => v === null || (Number.isInteger(v) && v >= 0)), String(mapped));
 const part = (n) => (n <= mp.parts[0].to ? 0 : 1);
 let backwards = 0, last = [-1, -1];
 mp.p.forEach((v, i) => { if (v === null) return; const cur = [part(i + 1), v]; if (cur[0] < last[0] || (cur[0] === last[0] && cur[1] < last[1])) backwards++; last = cur; });
 check("map: pages never go backwards across the two scan files", backwards === 0, String(backwards));
 const ANCH = { 2: [0, 22], 2500: [0, 1416], 5000: [1, 24], 5755: [1, 377] };
 check(`map: hand-read anchors ${Object.entries(ANCH).map(([n, [pi, l]]) => `${n} -> file ${pi + 1} leaf ${l}`).join(", ")}`, Object.entries(ANCH).every(([n, [pi, l]]) => part(Number(n)) === pi && mp.p[n - 1] === l));
-check("map: the printed-number gap 4984-4987 has no page (it falls between the files)", [4984, 4985, 4986, 4987].every((n) => mp.p[n - 1] === null));
+check("map: the printed-number gap 4984-4985 has no page (it falls between the files); 4986-4987 sit on vol 6 and are approximate", [4984, 4985].every((n) => mp.p[n - 1] === null) && [4986, 4987].every((n) => Number.isInteger(mp.p[n - 1]) && mp.a.includes(n)), JSON.stringify([mp.p[4983], mp.p[4984], mp.p[4985], mp.p[4986], mp.a.filter((n) => n > 4980 && n < 4990)]));
+check("map: every approximate number has a page, the list is sorted (the reader binary-searches it), and there are 700+ of them", mp.a.length >= 700 && mp.a.every((n, i) => Number.isInteger(mp.p[n - 1]) && (i === 0 || mp.a[i - 1] < n)), String(mp.a.length));
 
 // ---- the app module
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });

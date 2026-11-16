@@ -110,6 +110,57 @@ for c, v in res.items():
     elif local(ws, full[c]) >= 0.65: ok[c] = v; tierB += 1
     else: dropped += 1
 
+# tier C (Hadith Lead 15L, 16 Nov 2026, Owner J106 n106j 3A "finish Nasa'i first"): a number that no tier above could verify is placed by its RARE
+# 6-word phrases. A 6-gram counts only if it appears on at most 2 leaves of the whole scan (so "the Messenger of Allah said" never votes); the
+# best leaf must hold at least 2 of them, beat every other leaf, and lie between the page of the nearest verified number before and after it
+# (or the previous tier-C placement), in scan order. Every tier-C page is flagged APPROXIMATE (the `a` list), like Bukhari's and Tirmidhi's, so the
+# reader says so. Precision is measured, not assumed: the same rule is run on VERIFIED numbers with their own page hidden (printed below).
+import collections, random
+G = collections.defaultdict(set)
+for pi, lv in enumerate(LV):
+    for l in range(len(lv)):
+        ws = lw(pi, l)
+        for j in range(len(ws) - 5): G[tuple(ws[j:j + 6])].add((pi, l))
+def placeC(c, okmap, lo_hi_from):
+    t = full[c]; cnt = collections.Counter()
+    for j in range(len(t) - 5):
+        locs = G.get(tuple(t[j:j + 6]), ())
+        if 0 < len(locs) <= 2:
+            for loc in locs: cnt[loc] += 1
+    if not cnt: return None
+    best = cnt.most_common(2)
+    if len(best) > 1 and best[1][1] >= best[0][1]: return None
+    loc, n = best[0]
+    if n < 2: return None
+    a_, b_ = lo_hi_from(c)
+    return loc if a_ <= loc <= b_ else None
+def bounds_over(m):
+    ks = sorted(m)
+    def f(c):
+        i = bisect.bisect_left(ks, c)
+        lo = m[ks[i - 1]] if i > 0 and ks[i - 1] != c else (m[ks[i - 2]] if i > 1 else (0, 0))
+        j = i + 1 if i < len(ks) and ks[i] == c else i
+        hi = m[ks[j]] if j < len(ks) else (9, 10 ** 9)
+        return lo, hi
+    return f
+vk = sorted(ok); random.seed(1); samp = random.sample(vk, 600); fb = bounds_over(ok)
+placed = right = 0
+for c in samp:
+    r = placeC(c, ok, fb)
+    if r is None: continue
+    placed += 1
+    if r == ok[c] or (r[0] == ok[c][0] and abs(r[1] - ok[c][1]) <= 1): right += 1
+precisionC = f"{right} of {placed} ({100 * right / max(1, placed):.1f}%) on 600 verified numbers with their own page hidden"
+approx = []
+for c in sorted(Tn):
+    if c in ok: continue
+    r = placeC(c, ok, fb)
+    if r is not None: ok[c] = r; approx.append(c)
+# order: tier C must not go backwards past the verified numbers around it
+for c in list(approx):
+    ks = sorted(ok); i = ks.index(c)
+    if (i > 0 and ok[ks[i - 1]] > ok[c]) or (i + 1 < len(ks) and ok[c] > ok[ks[i + 1]]): del ok[c]; approx.remove(c)
+
 top = row["lastNumber"] + 7   # standard numbering runs to 5765
 p = [None] * top
 for c, (pi, l) in ok.items(): p[c - 1] = l
@@ -120,9 +171,9 @@ out = {
     "book": "nasai", "archiveId": row["archiveId"], "numbers": top, "scanFile": parts[0]["scanFile"],
     "parts": [{"from": cs[0], "to": cs[-1], "scanFile": pt["scanFile"], "slug": pt["scanSlug"], "pdf": pt["pdfFile"], "pdfBytes": pt["pdfBytes"], "leaves": len(LV[i])}
               for i, (pt, cs) in enumerate(zip(parts, cites_by_part))],
-    "p": p, "a": [],
+    "p": p, "a": approx,
 }
 op = os.path.join(ROOT, "tools/hadith-data-pull/output/book-pages/nasai.json")
 json.dump(out, open(op, "w"), separators=(",", ":"))
-print(f"tier B {tierB}; dropped {dropped}; scan lines {len(recs)}; anchors {anchors1}; +fill {pass12 - anchors1}; text-only +{aligned - pass12}; aligned {aligned}; "
+print(f"tier C (approximate) +{len(approx)}; precision of the rule: {precisionC}"); print(f"tier B {tierB}; dropped {dropped}; scan lines {len(recs)}; anchors {anchors1}; +fill {pass12 - anchors1}; text-only +{aligned - pass12}; aligned {aligned}; "
       f"verified {len(ok)} of {len(Tn)} standard numbers ({100 * len(ok) / len(Tn):.1f}%); in order: {mono}; parts: {[(x['from'], x['to']) for x in out['parts']]}")
