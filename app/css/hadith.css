@@ -781,3 +781,7 @@ body.book-page-open { overflow: hidden; }
 .hadith-status-rows .hs-name .hs-ar { display: block; text-align: right; font-size: 0.98rem; }
 .hadith-status-rows .hs-bar { display: flex; height: 7px; border-radius: 4px; overflow: hidden; margin-top: 4px; background: #34486f; }
 .hadith-status-rows .hs-pc { font-size: 0.8rem; font-weight: 600; text-align: end; }
+/* PCF MSA J106 n106j 2.A -- the Know Your Status Bangla words editor (owner/prime only) */
+.hadith-kys-editor[hidden] { display: none; }
+.hadith-kys-box { resize: vertical; min-height: 3.2rem; line-height: 1.5; }
+.hadith-kys-editor .hadith-names-ar, [data-card-look="night"] .hadith-kys-editor .hadith-names-ar { font-size: 0.9rem; font-weight: 600; color: var(--hadith-ink, #1d2a3a); } /* the Know Your Status page is on the light page, not inside a night card: the English line is dark ink either way */
