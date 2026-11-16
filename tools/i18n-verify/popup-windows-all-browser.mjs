@@ -265,6 +265,70 @@ for (const [lang, width, height] of [["en", 1280, 900], ["bn", 1280, 900], ["en"
     await exercise(page, `${tagB} Learn next`, "#learnNextSheet", ".ln-close");
     await ctx.close();
   }
+
+  // ---- part 5 (Quran Study, FROZEN: entries and ✕ only): the pop-ups the Āyah card opens
+  for (const [key, tag, root, x, tile, ready] of [
+    ["copy", "Copy āyāt", ".ayah-copy-dlg > .ayah-copy-box", ".ayah-copy-x", "[data-ayah-sheet-copy]", ".ayah-copy-dlg > .ayah-copy-box .ayah-copy-x"],
+    ["nv", "Āyah view", "#ayahNoteViewPopup > .ayah-nv-box", ".ayah-nv-x", "[data-ayah-sheet-noteview]", "#ayahNoteViewPopup > .ayah-nv-box .ayah-nv-x"],
+    ["qcr", "QCR pop-up", ".qcr-pop > .qcr-pop-box", ".qcr-pop-x", "[data-ayah-sheet-qcr]", ".qcr-pop > .qcr-pop-box .qcr-pop-x"],
+    ["filing", "File in folders", "#ayahFolderFilingOverlay > #ayahFolderFilingCard", ".ayah-folder-filing-x", "[data-ayah-sheet-file-folder]", "#ayahFolderFilingOverlay.open #ayahFolderFilingCard .ayah-folder-filing-x"],
+  ]) {
+    const ctx = await context(lang, width, height);
+    const { page } = await openPage(ctx, "/app/quranrevival.html");
+    await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+    await page.waitForTimeout(500);
+    if (!(await page.evaluate(() => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
+    await page.click("#tabReadBtn"); await page.waitForTimeout(400);
+    await page.evaluate(() => { const s = document.getElementById("surahSelect"); if (s.value !== "22") { s.value = "22"; s.dispatchEvent(new Event("change", { bubbles: true })); } });
+    await page.waitForFunction(() => document.querySelector('#readView [data-word-occurrence^="quran-word-occurrence:v1:22:"]'), null, { timeout: 15000 }).catch(() => {});
+    await page.evaluate(() => { const el = document.getElementById("ayahSelect"); el.value = "3"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+    await page.waitForFunction(() => document.querySelector('[data-ayah-num-badge="22:3"]'), null, { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(500);
+    await page.evaluate(() => { document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()); document.querySelector('[data-ayah-num-badge="22:3"]')?.click(); });
+    await page.waitForSelector("[data-ayah-sheet] .ayah-sheet-ref", { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(400);
+    await page.evaluate(() => { const b = document.querySelector("[data-ayah-sheet-more]"); if (b && b.getAttribute("aria-expanded") !== "true") b.click(); });
+    await page.waitForTimeout(200);
+    await page.evaluate((t) => document.querySelector(`[data-ayah-sheet] ${t}`)?.click(), tile);
+    await page.waitForSelector(ready, { timeout: 8000 }).catch(() => {});
+    check(`${tagB} ${tag} is open (positive control)`, !!(await rectOf(page, root)));
+    await exercise(page, `${tagB} ${tag}`, root, x);
+    await page.click(`${root} ${x}`).catch(() => {});
+    await page.waitForTimeout(300);
+    check(`${tagB} ${tag}: ✕ closes it`, await page.evaluate((root) => { const e = document.querySelector(root); return !e || e.getClientRects().length === 0; }, root));
+    await ctx.close();
+  }
+
+  // ---- part 5: the Zab panel (zab-bar.js is NOT changed)
+  {
+    const ctx = await context(lang, width, height);
+    const { page } = await openPage(ctx, "/app/quranrevival.html");
+    await page.waitForSelector("#zabRoot", { state: "attached", timeout: 15000 }).catch(() => {});
+    await page.evaluate(() => { document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()); [...document.querySelectorAll("[data-zab-open]")].find((b) => b.getClientRects().length)?.click(); });
+    await page.waitForSelector("#zabPanel:not([hidden]) .zab-head [data-zab-close]", { timeout: 8000 }).catch(() => {});
+    check(`${tagB} Zab panel is open (positive control)`, !!(await rectOf(page, "#zabPanel:not([hidden])")));
+    await exercise(page, `${tagB} Zab panel`, "#zabPanel", ".zab-head [data-zab-close]");
+    await page.click("#zabPanel .zab-head [data-zab-close]").catch(() => {});
+    await page.waitForTimeout(250);
+    check(`${tagB} Zab panel: ✕ closes it`, await page.evaluate(() => document.getElementById("zabPanel")?.hidden === true));
+    await ctx.close();
+  }
+
+  // ---- part 5: the Quran Word Card (a window from 900px; a full-screen sheet below)
+  if (width >= 900) {
+    const ctx = await context(lang, width, height);
+    const { page } = await openPage(ctx, "/app/quranrevival.html");
+    await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+    await page.waitForTimeout(500);
+    if (!(await page.evaluate(() => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
+    await page.click("#tabReadBtn"); await page.waitForTimeout(400);
+    await page.waitForFunction(() => document.querySelector('#readView [data-word-occurrence]'), null, { timeout: 15000 }).catch(() => {});
+    await page.evaluate(() => document.querySelector('#readView [data-word-occurrence]')?.click());
+    await page.waitForSelector("#quranWordCardMount:not([hidden]) [data-word-card-close]", { timeout: 8000 }).catch(() => {});
+    check(`${tagB} Quran Word Card is open (positive control)`, !!(await rectOf(page, "#quranWordCardMount:not([hidden])")));
+    await exercise(page, `${tagB} Quran Word Card`, "#quranWordCardMount", "[data-word-card-close]");
+    await ctx.close();
+  }
 }
 
 // ---- a click on a module bar collapses the open pop-up (Hadith's bar, Dua's bar)
