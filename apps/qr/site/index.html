@@ -11,6 +11,9 @@
 <meta name="description" content="Quran Study, Asma ul Husna and Learn Deen On-the-Go.">
 <meta name="theme-color" content="#0f4c4c">
 <link rel="icon" href="data:,">
+<!-- PCA J117: QuranRevival installs as its own app (its manifest and home-screen icon; Asma's pages keep Asma's own). The <base> makes these /app/ from both copies. -->
+<link rel="manifest" href="qr.webmanifest">
+<link rel="apple-touch-icon" href="img/icons/qr-apple-touch-icon.png">
 <script>
   // Before first paint, so neither the look nor the language flashes (the same keys as MMSA's prefs.js and Asma).
   try {
