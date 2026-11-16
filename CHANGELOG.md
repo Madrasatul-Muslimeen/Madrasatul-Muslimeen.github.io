@@ -24143,3 +24143,12 @@ Released by the Architect 114L. The app half was built by the QR Lead 47L and sh
   - `behaviour.mjs` run ALONE: 970/5, the baseline five (14a 30i 30j 30l 31a).
   - QR built from this source: `qr-verify` 30/30 (student-tools 1900/0, student-device 735/0).
   - **keep1116:** save → update → reopen from v15.12 to this build kept every saved key unchanged (the Bangla list, the Hadith studied set, the card look). With the gate ON, the device list is copied up and kept (proved by nocopyup and devwrite).
+
+## v15.14 — 16 Nov 2026 (Sydney) — Hadith: Know Your Status Bangla words editable by the owner or a prime; printed pages for 'Amal al-Yawm and al-Adhkar
+
+Built by Hadith Lead 16L (#1777, #1778); released by the Architect 115L.
+
+- **#1777 (PCF MSA J106 n106j 2.A):** on Know Your Status, an owner or a prime sees **Edit Bangla words**: the 40 words of that page, each with the built-in Bangla, a box, Save and Restore built-in Bangla. A change is read by everyone in the madrasah who reads in Bangla; English readers are unchanged. A correction must keep every `{…}` placeholder. Stored in `hadithNames` under `kys__<slug>` keys: no Rules change. Restore retires the entry (I4). The names document is read when the view opens (I9). A refused write says so in words (I15). 11 module strings added to `bn.js`.
+- **#1778 (PCF MSA J106 n106j 3.A):** a **Printed page (Shamela)** button on the hadith card for the three books that had none: 'Amal al-Yawm wa-l-Layla by an-Nasa'i (Shamela 6772, 1148 of 1148), by Ibn al-Sunni (13132, 766 of 770) and al-Adhkar by an-Nawawi (1956, 1255 of 1263), keyed by record order `n`. New tool `tools/hadith-data-pull/shamela-pages-anchors.py` (rare 6-word phrases vote). Every library book now has an original page.
+- **Checks (Architect 115L, on the merged release branch):** `hadith-kys-words-browser` 53/0, `--prove` 9 of 9 mutations caught; `hadith-amal-adhkar-pages-browser` 114/0, `--prove` 10 of 10 caught; `hadith-book-pages-browser` 109/0; `hadith-status-browser` 100/0; `behaviour.mjs` ALONE (see the PR); `app/offline-files.json` rebuilt. **keep1116:** save → update → reopen from v15.13 to this build on one browser profile kept every saved key (0 lost, 0 changed).
+- No Rules, key or storage change.
