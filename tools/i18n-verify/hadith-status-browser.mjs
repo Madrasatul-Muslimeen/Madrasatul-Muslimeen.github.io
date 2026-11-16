@@ -20,7 +20,7 @@ const MUT = {
   nofail: ["js/hadith-status.js", "          console.error(err);\n          await draw({ text: t(\"The status could not be saved. Check the connection and try again.\"), failed: true });", "          console.error(err);\n          await draw({ text: t(\"Saved on its bookmark as {name}.\", { name: label(s) }) });"],
   alldone: ["js/hadith-status-model.js", "export const DEFAULT_DONE = Object.freeze([\"mem\", \"rev\"]);", "export const DEFAULT_DONE = Object.freeze([\"mem\", \"rev\", \"need\", \"saved\"]);"],
   wrongpos: ["js/hadith-status-model.js", "export const statusPosition = (versionUri, n) => `openiti:${versionUri}:${n}`;", "export const statusPosition = (versionUri, n) => `hadith:${versionUri}:${n}`;"],
-  noback: ["js/hadith-browser.js", "state.statusBack = { label: `← ${t(\"Back to Hadith {n}\", { n: num(no) })}` };", "state.statusBack = null;"],
+  noback: ["js/hadith-browser.js", "state.statusBack = { label: `← ${kysT(\"Back to Hadith {n}\", { n: num(no) })}` };", "state.statusBack = null;"],
   eagerread: ["js/hadith-browser.js", "registerBuiltinSubjects(HADITH_SUBJECTS);\n", "registerBuiltinSubjects(HADITH_SUBJECTS);\nprimeStatuses(() => {});\n"],
   paleglyph: ["css/hadith.css", ".hs-glyph.hs-mem { color: #14733f; }", ".hs-glyph.hs-mem { color: #46c486; }"],
   clearremoves: ["js/hadith-study-actions.js", "    const ok = await updateSavedBookmarkFields(db, session.tenantId, session.personId, existing.id, { position: existing.position, settings });", "    const ok = status === null ? (await removeSavedBookmark(db, session.tenantId, session.personId, existing.id), true) : await updateSavedBookmarkFields(db, session.tenantId, session.personId, existing.id, { position: existing.position, settings });"],

@@ -87,7 +87,24 @@ export const BOOK_PAGE_BOOKS = {
     key: "riyad", kind: "shamela", keyBy: "n", shamelaId: "12014",
     title: { en: "Riyad al-Salihin", bn: "রিয়াযুস সালিহীন" },
     edition: { en: "ed. al-Arna'ut, al-Risala", bn: "শু'আইব আল-আরনাউত সম্পাদিত, আর-রিসালা" },
-  },  // Sunan al-Darimi: our text and Shamela's print number their hadith differently after the first few, so the map is keyed by OUR record order `n`.
+  },  // The three books that had no page at all (the Owner, 16 Nov 2026, n106j 3.A: "find a source for the three books with none"): the typed printed page on
+  // Shamela, found for each of OUR records by rare phrases from its text (tools/hadith-data-pull/shamela-pages-anchors.py), keyed by OUR record order `n`.
+  "0303Nasai.CamalYawmWaLayla.JK000735-ara1": {
+    key: "nasai-amal", kind: "shamela", keyBy: "n", shamelaId: "6772",
+    title: { en: "'Amal al-Yawm wa'l-Layla (an-Nasa'i)", bn: "আমালুল ইয়াওম ওয়াল লাইলা (আন-নাসাঈ)" },
+    edition: { en: "ed. Farouk Hamada, al-Risala, 2nd ed. 1406 AH", bn: "ফারুক হামাদাহ সম্পাদিত, আর-রিসালা, ২য় সংস্করণ, ১৪০৬ হিজরী" },
+  },
+  "0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1": {
+    key: "ibnsunni-amal", kind: "shamela", keyBy: "n", shamelaId: "13132",
+    title: { en: "'Amal al-Yawm wa'l-Layla (Ibn al-Sunni)", bn: "আমালুল ইয়াওম ওয়াল লাইলা (ইবনুস সুন্নী)" },
+    edition: { en: "as listed on Shamela (Abd al-Qadir Ata's edition)", bn: "শামেলায় তালিকাভুক্ত (আবদুল কাদির আতা সম্পাদিত)" },
+  },
+  "0676Nawawi.Adhkar.JK001249-ara1": {
+    key: "nawawi-adhkar", kind: "shamela", keyBy: "n", shamelaId: "1956",
+    title: { en: "al-Adhkar (Nawawi)", bn: "আল-আযকার (আন-নাওয়াবী)" },
+    edition: { en: "ed. al-Arna'ut, Dar al-Fikr, 1994", bn: "আল-আরনাউত সম্পাদিত, দারুল ফিকর, ১৯৯৪" },
+  },
+  // Sunan al-Darimi: our text and Shamela's print number their hadith differently after the first few, so the map is keyed by OUR record order `n`.
   "0255CabdAllahDarimi.Sunan.JK000842-ara1": {
     key: "darimi", kind: "shamela", keyBy: "n", shamelaId: "21795",
     title: { en: "Sunan al-Darimi", bn: "সুনানুদ দারিমী" },

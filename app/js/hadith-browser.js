@@ -35,7 +35,7 @@ import { HADITH_COLOURS, getHadithColours, setHadithColours } from "./hadith-col
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 import { settingsHost, addPreviewCue } from "./hadith-menu-settings.js";
 import { mountContinueStrip, parkContinueStrip } from "./hadith-continue-mount.js";
-import { nameLine, primeNames, renderNamesEditor } from "./hadith-names.js";
+import { nameLine, primeNames, renderNamesEditor, kysT } from "./hadith-names.js";
 import { primeStatuses, statusBadge, renderStatusRow, renderStatusWheel } from "./hadith-status.js";
 import { bookKey, groupKey } from "./hadith-names-model.js";
 import { subjectAddRow, renderSubjectList, renderSubjectEditor, registerBuiltinSubjects, knownSubjects, loadSubjectChoices, subjectLabel } from "./hadith-subjects.js";
@@ -1187,7 +1187,7 @@ function renderOpenitiSource(state) {
     body.textContent = "";
     body.appendChild(el("p", "hadith-note", t("Loading…")));
     // Know Your Status: the card's link to the wheel, with a way back to this hadith (the way-back law). `oi` is replaced when the book changes, so it is set on every draw.
-    state.oi.openWheel = (no) => { state.view = "status"; state.statusBack = { label: `← ${t("Back to Hadith {n}", { n: num(no) })}` }; state.render(); };
+    state.oi.openWheel = (no) => { state.view = "status"; state.statusBack = { label: `← ${kysT("Back to Hadith {n}", { n: num(no) })}` }; state.render(); };
     renderOpenitiBody(body, state.oi, localRefresh).catch((err) => {
       console.error(err);
       body.textContent = "";

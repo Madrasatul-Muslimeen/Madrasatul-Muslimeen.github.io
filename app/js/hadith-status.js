@@ -7,7 +7,8 @@
  * The pure half is hadith-status-model.js. The one read and the writes live in hadith-study-actions.js (loaded on first
  * use, I9). Nothing here is read at startup: the person's bookmarks are read once, after the reader list is drawn.
  */
-import { t, num } from "./i18n.js";
+import { num } from "./i18n.js";
+import { kysT as t, primeNames, renderKysWordsEditor } from "./hadith-names.js"; // t(): the madrasah's own Bangla for these words first (J106 n106j 2.A)
 import { el, loadHadithStudyActions, readFailedNote, openitiDisplayTitle } from "./hadith-shared-ui.js";
 import { loadOpenitiBookSummaries, loadOpenitiBookIndex } from "./openiti-corpus.js";
 import { loadSubjectChoices, activeEntries, subjectLabel } from "./hadith-subjects.js";
@@ -161,6 +162,7 @@ export function renderStatusWheel(body, state, rerender, back = null) {
   root.dataset.hadithStatusWheel = "";
   body.appendChild(root);
   root.appendChild(el("p", "hadith-note", t("Loading…")));
+  primeNames(rerender); // the madrasah's names, one read of one document, only when this view opens (a no-op if already read)
 
   (async () => {
     const { actions, session } = await sessionAndActions();
@@ -172,6 +174,7 @@ export function renderStatusWheel(body, state, rerender, back = null) {
       root.appendChild(b);
     }
     root.appendChild(el("h2", "hadith-status-h", t("Know Your Status")));
+    renderKysWordsEditor(root, { onChange: rerender }); // owner/prime only; nothing for anyone else
     if (!session) {
       const why = el("p", "hadith-note", t("Sign in and choose who you're studying as to see your status."));
       why.dataset.hadithStatusWhy = "signedOut";

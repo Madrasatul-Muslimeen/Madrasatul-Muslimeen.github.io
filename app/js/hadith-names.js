@@ -12,11 +12,14 @@ import { getAppLang } from "./prefs.js";
 import { el, readFailedNote, loadHadithStudyActions } from "./hadith-shared-ui.js";
 import { namesEnabled } from "./hadith-names-switch.js";
 import { namesFrom, nameOf, setName, retireName, bookKey, groupKey } from "./hadith-names-model.js";
+import { KYS_WORDS, kysKey, kysOverride, kysTranslate, checkKysBn } from "./hadith-kys-words.js";
 
 let cache = null;      // { tenantId, names, docExists }
 let known = {};        // the names as last read, for the places that need one now and cannot wait for a read
 let editorOpen = false; // a saved change redraws the whole book view: the panel the owner was working in reopens, with its message
 let pendingNote = null;
+let kysOpen = false;   // Know Your Status words: the same for the "Edit Bangla words" panel
+let kysNote = null;
 
 async function loadShared() {
   const actions = await loadHadithStudyActions();
@@ -143,5 +146,108 @@ export function renderNamesEditor(box, { versionUri, titleAr, chapters, onChange
   if (editorOpen) set(true, startNote);
 }
 
+/**
+ * t() for the Know Your Status words (PCF MSA J106, n106j 2.A): in Bangla, the madrasah's own correction when there is one,
+ * else the app's built-in Bangla. English, a signed-out reader and the switch being off all get plain t().
+ */
+export function kysT(en, vars) {
+  if (!namesEnabled()) return t(en, vars);
+  return kysTranslate(known, getAppLang(), t, en, vars);
+}
+
+/**
+ * "Edit Bangla words" (owner or prime only): the 40 Know Your Status words, each with the built-in Bangla, a box, Save and
+ * "Restore built-in Bangla". The button is drawn only once the session is known to be owner/prime (nothing for anyone else).
+ * One change is saved at a time; a refused write is said in words and nothing shows as saved (I15). `onChange()` redraws the page.
+ */
+export function renderKysWordsEditor(box, { onChange } = {}) {
+  if (!namesEnabled()) return;
+  const wrap = el("div", "hadith-names-editor hadith-kys-editor");
+  wrap.dataset.hadithKysEditor = "";
+  wrap.hidden = true;
+  const open = button("hadith-subject-btn hadith-names-open", t("Edit Bangla words"));
+  open.dataset.hadithKysOpen = "";
+  open.setAttribute("aria-expanded", "false");
+  const panel = el("div", "hadith-names-panel");
+  panel.hidden = true;
+  wrap.append(open, panel);
+  box.appendChild(wrap);
+
+  async function draw(note = null) {
+    panel.textContent = "";
+    panel.appendChild(el("p", "hadith-note", t("Loading…")));
+    let shared, builtIn;
+    try { [shared, builtIn] = await Promise.all([loadShared(), import("./i18n/bn.js").then((m) => m.BN)]); } catch (err) { panel.textContent = ""; panel.appendChild(readFailedNote(err, draw)); return; }
+    panel.textContent = "";
+    const { session, actions, data } = shared;
+    if (!session || !session.canManage) { wrap.hidden = true; return; }
+    const msg = el("p", "hadith-note hadith-names-msg", note?.text ?? "");
+    msg.setAttribute("role", "status");
+    msg.dataset.hadithNamesMsg = "";
+    if (note?.failed) msg.dataset.hadithNamesFailed = "";
+    const ctx = () => ({ by: session.myPersonId ?? session.uid, at: new Date().toISOString() });
+    const apply = async (fn, doneText, failText) => {
+      const res = fn();
+      if (res.error) { await draw({ text: failText, failed: true }); return; }
+      if (!res.changed) { await draw(); return; }
+      const keys = Object.keys(res.names).filter((k) => JSON.stringify(res.names[k]) !== JSON.stringify(data.names[k]));
+      const ok = await actions.saveHadithNames({ tenantId: session.tenantId, names: res.names, keys, docExists: data.docExists, uid: session.uid });
+      if (!ok) { await draw({ text: failText, failed: true }); return; }
+      data.names = res.names; data.docExists = true; known = res.names;
+      if (onChange) { kysNote = { text: doneText }; onChange(); } else await draw({ text: doneText });
+    };
+    panel.appendChild(el("p", "hadith-note", t("These are the Bangla words on Know Your Status. Change one and everyone in the madrasah reads it. Keep every {…} as it is.")));
+    for (const en of KYS_WORDS) {
+      const key = kysKey(en);
+      const built = builtIn[en] ?? en;
+      const own = kysOverride(data.names, en, "bn");
+      const row = el("div", "hadith-names-row");
+      row.dataset.hadithKysRow = key;
+      const src = el("span", "hadith-names-ar", en);
+      src.lang = "en";
+      const input = el("textarea", "hadith-subject-edit-name hadith-kys-box");
+      input.rows = 2; input.maxLength = 160; input.lang = "bn";
+      input.value = own ?? built;
+      input.dataset.hadithKysBn = key;
+      input.setAttribute("aria-label", `${t("Bangla words")}: ${en}`);
+      const save = button("hadith-subject-btn", t("Save words"));
+      save.dataset.hadithKysSave = key;
+      save.addEventListener("click", () => {
+        const bad = checkKysBn(en, input.value);
+        if (bad) { msg.textContent = bad === "empty" ? t("Write the words first.") : t("Keep every {…} exactly as in the English line."); msg.dataset.hadithNamesFailed = ""; input.focus(); return; }
+        const next = input.value.replace(/\s+/g, " ").trim();
+        if (!own && next === built) { msg.textContent = t("That is already the built-in Bangla."); delete msg.dataset.hadithNamesFailed; return; }
+        save.disabled = true;
+        apply(() => setName(data.names, key, { bn: next, en: "" }, ctx()), t("Words saved."), t("The words could not be saved. Check the connection and try again."));
+      });
+      const acts = el("div", "hadith-subject-edit-actions hadith-names-actions");
+      acts.appendChild(save);
+      if (own) {
+        const rm = button("hadith-subject-btn", t("Restore built-in Bangla"));
+        rm.dataset.hadithKysRestore = key;
+        rm.addEventListener("click", () => { rm.disabled = true; apply(() => retireName(data.names, key, ctx()), t("Built-in Bangla restored."), t("It could not be saved. Check the connection and try again.")); });
+        acts.appendChild(rm);
+      }
+      row.append(src, input, acts);
+      panel.appendChild(row);
+    }
+    panel.appendChild(msg);
+  }
+
+  const set = (show, note = null) => {
+    kysOpen = show;
+    panel.hidden = !show;
+    open.setAttribute("aria-expanded", show ? "true" : "false");
+    if (show) draw(note);
+  };
+  open.addEventListener("click", () => set(panel.hidden));
+  // The button exists only for the owner or a prime: ask who is reading, once, and show it only then.
+  loadShared().then(({ session }) => {
+    if (!session || !session.canManage) return;
+    wrap.hidden = false;
+    if (kysOpen) { const n = kysNote; kysNote = null; set(true, n); }
+  }).catch(() => {});
+}
+
 /** Test hook: forget the cached names. */
-export function resetHadithNamesCache() { cache = null; known = {}; editorOpen = false; pendingNote = null; }
+export function resetHadithNamesCache() { cache = null; known = {}; editorOpen = false; pendingNote = null; kysOpen = false; kysNote = null; }

@@ -3360,3 +3360,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v15.11** (2026-11-15): Own-language lists behind an OFF gate (J143 B) + Soft Meadow level colours.
 - **v15.12** (2026-11-16): J140 pop-ups part 4 + Know Your Status keyboard ring.
 - **v15.13** (2026-11-16): J143 Bangla word lists saved in the account (gate ON) + Nasa'i pages tier C.
+- **v15.14** (2026-11-16): Hadith: Know Your Status Bangla words editable by owner/prime (#1777) + printed pages for 'Amal al-Yawm and al-Adhkar (#1778).
