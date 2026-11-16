@@ -47,6 +47,14 @@ const WINDOWS = [
   { id: "mapfolder", root: "html:not(.new-mode) .folder-picker-overlay > .folder-picker", hide: ".folder-picker-overlay", close: ".fp-close", title: ".folder-picker-title", bar: ".fp-bar" }, // Mapping My Journey's three folder dialogs (filing picker, destination picker, look / section / delete dialogs)
   // Quran Study (FROZEN in MSA: an entry, plus a ✕ on the sheet): Explore's Take an Approach
   { id: "exploretake", root: ".aa-sheet[data-aa-sheet]", hide: ".aa-veil", close: ".aa-x", title: ".aa-head h4", bar: ".aa-head" },
+  // J140 part 5. Quran Study (FROZEN in MSA): entries, plus a ✕ where one was missing (the filing dialog, the Āyah view).
+  { id: "filing", root: "#ayahFolderFilingOverlay.open > #ayahFolderFilingCard", hide: "#ayahFolderFilingOverlay", close: ".ayah-folder-filing-x", title: "#ayahFolderFilingTitle", bar: ".ayah-folder-filing-head" }, // "File in folder(s)…" (ayah-folder-filing-renderer.js fills it)
+  { id: "ayahcopy", root: ".ayah-copy-dlg > .ayah-copy-box", hide: ".ayah-copy-dlg", close: ".ayah-copy-x", title: ".ayah-copy-head h3", bar: ".ayah-copy-head" },
+  { id: "ayahnv", root: "#ayahNoteViewPopup:not([hidden]) > .ayah-nv-box", hide: "#ayahNoteViewPopup", close: ".ayah-nv-x", title: ".ayah-nv-ref", bar: ".ayah-nv-head" },
+  { id: "qcrpop", root: ".qcr-pop:not([hidden]) > .qcr-pop-box", hide: ".qcr-pop", close: ".qcr-pop-x", title: ".qcr-pop-title", bar: ".qcr-pop-head" },
+  { id: "qwordcard", own: true, root: "#quranWordCardMount:not([hidden])", close: "[data-word-card-close]", title: ".word-card-reference" }, // the Quran Word Card, a window on a computer (initPopupWindow drags and resizes it)
+  // The Zab panel (zab-bar.js is unchanged: this entry only reads its markup; QR's byte-for-byte copy stays valid).
+  { id: "zab", root: "#zabPanel:not([hidden])", close: ".zab-head [data-zab-close]", title: ".zab-head h2", bar: ".zab-head" },
 ];
 // J140: a collapsed pop-up is a bar at the top left, as wide as the left pane of Mapping My Journey's three-pane layout
 // (journey-map.html SPLIT_DEFAULT.three[0] = 4/13 of the width); on a phone (<= 640px) the full width.
@@ -61,6 +69,10 @@ const CSS = `
 ${handleCss("mm-h")}
 body.jt-dragging { user-select: none; }
 [data-mm-full] > .mm-h { display: none; }
+/* J140 part 5: the Zab panel's backdrop is a sibling before it, so a minimised panel takes its backdrop with it. */
+#zabBackdrop:has(+ #zabPanel[${ATTR}]) { display: none !important; }
+/* The Quran Word Card is a window only from 900px (a full-screen sheet below), so – and ⛶ show only there. */
+@media (max-width: 899.98px) { #quranWordCardMount .mm-min-btn, #quranWordCardMount .mm-full-btn { display: none; } }
 .mm-min-btn:hover, .mm-full-btn:hover { background: rgba(255, 255, 255, 0.12); }
 .mm-min-btn:focus-visible, .mm-full-btn:focus-visible { outline: 3px solid #c9a24b; outline-offset: 1px; }
 /* The chips wait at the bottom right: inside the Zab bar's strip when it is on (its pockets are on the left), else
@@ -224,7 +236,7 @@ function toggleFull(root) {
   if (!st.full) {
     st.saved = root.hasAttribute("style") ? root.getAttribute("style") : null;
     st.rect = st.rect ?? null;
-    Object.assign(root.style, { position: "fixed", left: "0px", top: "0px", width: "100vw", height: "100vh", right: "auto", bottom: "auto", margin: "0", transform: "none", maxWidth: "none", maxHeight: "none" });
+    Object.assign(root.style, { position: "fixed", left: "0px", top: "0px", width: "100vw", height: "100vh", right: "auto", bottom: "auto", margin: "0", transform: "none", maxWidth: "none", maxHeight: "none", boxSizing: "border-box" });
     st.full = true;
     root.setAttribute(FULL_ATTR, "");
   } else {
@@ -294,7 +306,7 @@ function addButtons() {
   }
   // A window closed by its own code while minimised: its chip goes, and it opens normally next time.
   for (const [target, { chip, spec }] of minimised) {
-    const closed = !target.isConnected || target.hidden || (spec.id === "ayah" && !target.classList.contains("open"))
+    const closed = !target.isConnected || target.hidden || ((spec.id === "ayah" || spec.id === "filing") && !target.classList.contains("open"))
       || (spec.id === "track" && !target.querySelector(".way-modal"));
     if (closed) { minimised.delete(target); chip.remove(); target.removeAttribute(ATTR); }
   }
