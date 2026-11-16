@@ -11,6 +11,7 @@
 //   part 4 (J140, #1762), each -> "<pop-up> has – ⛶ ✕":
 //   nodword (Dua word pop-up entry), nomapx (journey-map.html dialog loses its ✕), nomapent (dialog entry),
 //   noexpx (Take an Approach loses its ✕), noexpent (Take an Approach entry)
+//   part 5 (J140, this round): nofilx nofilent nocopyent nonvx nonvent noqcrent nowcent nozabent nofullsize (see MUT below)
 //   nocollapse a module bar no longer collapses pop-ups              -> "a click on a module bar collapses it"
 import fs from "node:fs";
 import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
@@ -46,11 +47,21 @@ const MUT = {
   nomapent: [[MIN, [['close: ".fp-close"', 'close: ".fp-closeX"']]]],                                         // -> "Folder dialog has – ⛶ ✕"
   noexpx: [["app/quranrevival.html", [['class="aa-x" data-aa-close', 'class="aa-xq" data-aa-close']]]],       // -> "Take an Approach has – ⛶ ✕"
   noexpent: [[MIN, [['close: ".aa-x"', 'close: ".aa-xX"']]]],                                                   // -> "Take an Approach has – ⛶ ✕"
+  // part 5 (J140, this round), each -> "<pop-up> has – ⛶ ✕"
+  nofilx: [["app/quranrevival.html", [['class="ayah-folder-filing-x" id=', 'class="ayah-folder-filing-xq" id=']]]],     // the filing dialog loses its ✕   -> "File in folders has – ⛶ ✕"
+  nofilent: [[MIN, [['close: ".ayah-folder-filing-x"', 'close: ".ayah-folder-filing-xX"']]]],                              // -> "File in folders has – ⛶ ✕"
+  nocopyent: [[MIN, [['close: ".ayah-copy-x"', 'close: ".ayah-copy-xX"']]]],                                                // -> "Copy āyāt has – ⛶ ✕"
+  nonvx: [["app/quranrevival.html", [['class="ayah-nv-x" data-ayah-nv-back', 'class="ayah-nv-xq" data-ayah-nv-back']]]],     // the Āyah view loses its ✕        -> "Āyah view has – ⛶ ✕"
+  nonvent: [[MIN, [['close: ".ayah-nv-x"', 'close: ".ayah-nv-xX"']]]],                                                      // -> "Āyah view has – ⛶ ✕"
+  noqcrent: [[MIN, [['close: ".qcr-pop-x"', 'close: ".qcr-pop-xX"']]]],                                                     // -> "QCR pop-up has – ⛶ ✕"
+  nowcent: [[MIN, [['close: "[data-word-card-close]", title', 'close: "[data-word-card-closeX]", title']]]],                // -> "Quran Word Card has – ⛶ ✕"
+  nozabent: [[MIN, [['close: ".zab-head [data-zab-close]"', 'close: ".zab-head [data-zab-closeX]"']]]],                      // -> "Zab panel has – ⛶ ✕"
+  nofullsize: [[MIN, [[', boxSizing: "border-box" });', ' });']]]],                                                          // ⛶ overshoots by the border -> "Quran Word Card ⛶ fills the viewport"
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 
 let pass = 0, fail = 0;
-const check = (n, ok, d = "") => { if (typeof ok?.then === "function") throw new Error(`check "${n}" was given a promise`); ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`)); };
+const check = (n, ok, d = "") => { if (typeof ok?.then === "function") throw new Error(`check "${n}" was given a promise`); ok ? (pass++, process.env.QUIET || console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`)); };
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 
 async function context(lang, width, height, extraSeedJs = undefined) {
@@ -114,8 +125,9 @@ async function exercise(page, tag, root, x, { handles = true } = {}) {
     return null;
   }, [root, x]);
   const here = await rectOf(page, root);
-  if (here.w >= vp.width && here.h >= vp.height) { console.log(`  SKIP  ${tag} drag: the window already fills the screen (a sheet), nothing to move`); return; }
-  if (bar) {
+  const fills = here.w >= vp.width && here.h >= vp.height;
+  if (fills) console.log(`  SKIP  ${tag} drag: the window already fills the screen (a sheet), nothing to move`);
+  else if (bar) {
     const before = await rectOf(page, root);
     // toward the free side, so a window that nearly fills the screen is not stopped by the edge
     const sx = before.x + before.w / 2 > vp.width / 2 ? -60 : 60, sy = before.y + before.h / 2 > vp.height / 2 ? -40 : 40;
@@ -263,6 +275,74 @@ for (const [lang, width, height] of [["en", 1280, 900], ["bn", 1280, 900], ["en"
     await page.waitForFunction(() => { const s = document.getElementById("learnNextSheet"); return s && !s.hidden && s.querySelectorAll(".ln-row").length > 0; }, null, { timeout: 15000 }).catch(() => {});
     check(`${tagB} Quran Study: Learn next is open (positive control)`, !!(await rectOf(page, "#learnNextSheet:not([hidden])")));
     await exercise(page, `${tagB} Learn next`, "#learnNextSheet", ".ln-close");
+    await ctx.close();
+  }
+
+  // ---- part 5 (Quran Study, FROZEN: entries and ✕ only): the pop-ups the Āyah card opens
+  for (const [key, tag, root, x, tile, ready] of [
+    ["copy", "Copy āyāt", ".ayah-copy-dlg > .ayah-copy-box", ".ayah-copy-x", "[data-ayah-sheet-copy]", ".ayah-copy-dlg > .ayah-copy-box .ayah-copy-x"],
+    ["nv", "Āyah view", "#ayahNoteViewPopup > .ayah-nv-box", ".ayah-nv-x", "[data-ayah-sheet-noteview]", "#ayahNoteViewPopup > .ayah-nv-box .ayah-nv-x"],
+    ["qcr", "QCR pop-up", ".qcr-pop > .qcr-pop-box", ".qcr-pop-x", "[data-ayah-sheet-qcr]", ".qcr-pop > .qcr-pop-box .qcr-pop-x"],
+    ["filing", "File in folders", "#ayahFolderFilingOverlay > #ayahFolderFilingCard", ".ayah-folder-filing-x", "[data-ayah-sheet-file-folder]", "#ayahFolderFilingOverlay.open #ayahFolderFilingCard .ayah-folder-filing-x"],
+  ]) {
+    if (key === "nv" && width >= 1000) { console.log(`  SKIP  ${tagB} ${tag}: on a computer 📖 widens the Āyah card's own pane (J70) and opens no pop-up`); continue; }
+    const ctx = await context(lang, width, height);
+    const { page } = await openPage(ctx, "/app/quranrevival.html");
+    await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+    await page.waitForTimeout(500);
+    if (!(await page.evaluate(() => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
+    await page.click("#tabReadBtn"); await page.waitForTimeout(400);
+    await page.evaluate(() => { const s = document.getElementById("surahSelect"); if (s.value !== "22") { s.value = "22"; s.dispatchEvent(new Event("change", { bubbles: true })); } });
+    await page.waitForFunction(() => document.querySelector('#readView [data-word-occurrence^="quran-word-occurrence:v1:22:"]'), null, { timeout: 15000 }).catch(() => {});
+    await page.evaluate(() => { const el = document.getElementById("ayahSelect"); el.value = "3"; el.dispatchEvent(new Event("change", { bubbles: true })); });
+    await page.waitForFunction(() => document.querySelector('[data-ayah-num-badge="22:3"]'), null, { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(500);
+    await page.evaluate(() => { document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()); document.querySelector('[data-ayah-num-badge="22:3"]')?.click(); });
+    await page.waitForSelector("[data-ayah-sheet] .ayah-sheet-ref", { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(400);
+    await page.evaluate(() => { const b = document.querySelector("[data-ayah-sheet-more]"); if (b && b.getAttribute("aria-expanded") !== "true") b.click(); });
+    await page.waitForTimeout(200);
+    await page.evaluate((t) => document.querySelector(`[data-ayah-sheet] ${t}`)?.click(), tile);
+    await page.waitForSelector(ready, { timeout: 8000 }).catch(() => {});
+    check(`${tagB} ${tag} is open (positive control)`, !!(await rectOf(page, root)));
+    await exercise(page, `${tagB} ${tag}`, root, x);
+    await page.click(`${root} ${x}`).catch(() => {});
+    await page.waitForTimeout(300);
+    check(`${tagB} ${tag}: ✕ closes it`, await page.evaluate((root) => { const e = document.querySelector(root); return !e || e.getClientRects().length === 0; }, root));
+    await ctx.close();
+  }
+
+  // ---- part 5: the Zab panel (zab-bar.js is NOT changed)
+  {
+    const ctx = await context(lang, width, height);
+    const { page } = await openPage(ctx, "/app/quranrevival.html");
+    await page.waitForSelector("#zabRoot", { state: "attached", timeout: 15000 }).catch(() => {});
+    await page.evaluate(() => { document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()); [...document.querySelectorAll("[data-zab-open]")].find((b) => b.getClientRects().length)?.click(); });
+    await page.waitForSelector("#zabPanel:not([hidden]) .zab-head [data-zab-close]", { timeout: 8000 }).catch(() => {});
+    check(`${tagB} Zab panel is open (positive control)`, !!(await rectOf(page, "#zabPanel:not([hidden])")));
+    await exercise(page, `${tagB} Zab panel`, "#zabPanel", ".zab-head [data-zab-close]");
+    await page.click("#zabPanel .zab-head [data-zab-close]").catch(() => {});
+    await page.waitForTimeout(250);
+    check(`${tagB} Zab panel: ✕ closes it`, await page.evaluate(() => document.getElementById("zabPanel")?.hidden === true));
+    await ctx.close();
+  }
+
+  // ---- part 5: the Quran Word Card (a window from 900px; a full-screen sheet below)
+  if (width >= 900) {
+    const ctx = await context(lang, width, height);
+    const { page } = await openPage(ctx, "/app/quranrevival.html");
+    await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((e) => e.remove()));
+    await page.waitForTimeout(500);
+    if (!(await page.evaluate(() => document.getElementById("tabReadBtn")?.getBoundingClientRect().width > 0))) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
+    await page.click("#tabReadBtn"); await page.waitForTimeout(400);
+    await page.waitForFunction(() => document.querySelector('#readView [data-word-occurrence]'), null, { timeout: 15000 }).catch(() => {});
+    await page.evaluate(() => document.querySelector('#readView [data-word-occurrence]')?.click());
+    await page.waitForSelector("#quranWordCardMount:not([hidden]) [data-word-card-close]", { timeout: 8000 }).catch(() => {});
+    check(`${tagB} Quran Word Card is open (positive control)`, !!(await rectOf(page, "#quranWordCardMount:not([hidden])")));
+    await exercise(page, `${tagB} Quran Word Card`, "#quranWordCardMount", "[data-word-card-close]", { handles: false }); // it keeps its own drag and its own eight handles (initPopupWindow)
+    // Observed, not asserted: once a word is open the mount holds only .word-card-content (its eight [data-note-resize] handles from the
+    // static markup are no longer children of it). That is how main already behaves; recorded in the PR as a finding.
+    console.log(`  NOTE  ${tagB} Quran Word Card own resize handles present: ${await page.locator("#quranWordCardMount [data-note-resize]").count()} of 8`);
     await ctx.close();
   }
 }

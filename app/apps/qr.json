@@ -19,7 +19,46 @@
     "theme": "#0f4c4c",
     "background": "#0d2225"
   },
-  "manifest": null,
+  "manifest": {
+    "file": "qr.webmanifest",
+    "about": "PCA J117 (the Owner, 16 Nov 2026: \"Why can't i have it for QR … too?\"): QuranRevival's own install, like MSA's J120 O1. Linked from QR's reader pages, NOT from asma.html or asma-about.html, which keep Asma's own install (asma.webmanifest, J31). Same scope /app/, different id, so the two installs stay separate apps on the phone. QR's front page (index.html, at / and /app/, one file) is QR's own overlay file, so it carries the two links itself.",
+    "pages": [
+      "quranrevival.html",
+      "ldog-study.html",
+      "journey-map.html",
+      "ayah-poster.html"
+    ],
+    "appleIcon": "img/icons/qr-apple-touch-icon.png",
+    "data": {
+      "name": "QuranRevival",
+      "short_name": "QuranRevival",
+      "description": "Read and study the Qur'an: one āyah at a time or the Mushaf, word by word, with notes. Works offline.",
+      "id": "/app/",
+      "start_url": "/app/quranrevival.html",
+      "scope": "/app/",
+      "display": "standalone",
+      "icons": [
+        {
+          "src": "img/icons/qr-192.png",
+          "sizes": "192x192",
+          "type": "image/png",
+          "purpose": "any"
+        },
+        {
+          "src": "img/icons/qr-512.png",
+          "sizes": "512x512",
+          "type": "image/png",
+          "purpose": "any"
+        },
+        {
+          "src": "img/icons/qr-maskable-512.png",
+          "sizes": "512x512",
+          "type": "image/png",
+          "purpose": "maskable"
+        }
+      ]
+    }
+  },
   "cachePrefix": "qr",
   "hiddenModules": [
     "general",

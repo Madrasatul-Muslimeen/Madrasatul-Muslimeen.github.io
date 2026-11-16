@@ -24152,3 +24152,20 @@ Built by Hadith Lead 16L (#1777, #1778); released by the Architect 115L.
 - **#1778 (PCF MSA J106 n106j 3.A):** a **Printed page (Shamela)** button on the hadith card for the three books that had none: 'Amal al-Yawm wa-l-Layla by an-Nasa'i (Shamela 6772, 1148 of 1148), by Ibn al-Sunni (13132, 766 of 770) and al-Adhkar by an-Nawawi (1956, 1255 of 1263), keyed by record order `n`. New tool `tools/hadith-data-pull/shamela-pages-anchors.py` (rare 6-word phrases vote). Every library book now has an original page.
 - **Checks (Architect 115L, on the merged release branch):** `hadith-kys-words-browser` 53/0, `--prove` 9 of 9 mutations caught; `hadith-amal-adhkar-pages-browser` 114/0, `--prove` 10 of 10 caught; `hadith-book-pages-browser` 109/0; `hadith-status-browser` 100/0; `behaviour.mjs` ALONE (see the PR); `app/offline-files.json` rebuilt. **keep1116:** save → update → reopen from v15.13 to this build on one browser profile kept every saved key (0 lost, 0 changed).
 - No Rules, key or storage change.
+
+## v15.15 — 16 Nov 2026 (Sydney) — The last pop-ups get – ⛶ ✕ (J140 part 5); QuranRevival installs as its own app (PCA J117)
+
+Built by the Builder (#1774 → #1786) and the Architect 115L (J117); released by the Architect 115L.
+
+- **#1786 (PCF MSA J140 part 5):** `minimise.js` gains entries for Quran Study's 'File in folder(s)…' dialog, the Āyah card's Copy chooser, the Āyah view, the QCR pop-up, the Quran Word Card (a window from 900px; – and ⛶ hidden below) and the Zab panel. `zab-bar.js` is unchanged: the entry only reads its markup, and a minimised panel hides its backdrop by CSS. Frozen `quranrevival.html` (safety-only rule): ✕ added where one was missing (filing dialog, Āyah view), the filing ✕ named from `t("Close")`, and the Copy chooser writes its box and top bar once (a moved window keeps its place) and repaints only its body. Full screen sets `box-sizing: border-box`.
+- **PCA J117 (the Owner: "Why can't i have it for QR … too?"):** QuranRevival gets its own installable front door, like MSA's J120 O1. `app/apps/qr.json` `manifest`: `qr.webmanifest` (name QuranRevival, id `/app/`, start `/app/quranrevival.html`, scope `/app/`, standalone, QR's colours), icons drawn by `node tools/offline/make-icons.mjs --app=qr` into QR's overlay (MSA's re-render is byte-identical), plus an iPhone home-screen icon. Linked from QR's front page (both copies, still byte-identical) and quranrevival, ldog-study, journey-map and ayah-poster. Asma's two pages keep `asma.webmanifest` (a separate app on the phone). `build-app.mjs`: manifest icons may live in the overlay, an `appleIcon` link is added, and a manifest page replaced by the overlay stops the build (the front page's link was lost that way on the first try).
+- **Checks (Architect 115L, on the merged release branch):**
+  - `behaviour.mjs` ALONE 970/5 (the baseline five: 14a 30i 30j 30l 31a).
+  - `popup-windows-all-browser` 894/0 (elementFromPoint at 1280/768/390/320, en and bn); all 20 mutations fail (part 5: nofilx nofilent nocopyent nonvx nonvent noqcrent nowcent nozabent nofullsize).
+  - `zab-bar.js` byte-identical to v15.14.
+  - QR built from this source: `qr-verify/run-all.sh` 31 checks green, including `upgrade-browser` 85/0 (run with a read-only clone of QR's repository) and the new `install-browser` 21/0 (mutations nomanifest, noicon, asmaqr each fail).
+  - `asma-store-browser` 85/0: its no-manifest control moved from the front page (which now has QR's manifest) to 404.html, updated in place, and full Chromium reports **no installability errors** for QR's front page.
+  - `apps-build-check` 58/0 (the fx fixture takes `manifest: null`, reason recorded).
+  - **keep1116:** save → update → reopen from v15.14 to this build on one browser profile kept every saved key (0 lost, 0 changed).
+- Headless Chromium's installability call reports no error even with no manifest, so it is not used as evidence; full Chromium with a persistent profile is.
+- No Rules, key or storage change.
