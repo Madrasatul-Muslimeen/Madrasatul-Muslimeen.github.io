@@ -80,6 +80,11 @@ def main():
         # (the menu and those buttons print Arabic UI words such as "تحميل الصفحة التالية" that must never join a passage)
         start = body.find('<div class="nass')
         end = body.find('<div class="text-center margin-top-20', start) if start >= 0 else -1
+        if start >= 0 and end <= start:
+            # Shamela's newer page template has no "load next page" block: the book text ends at the first page-control <button> / row
+            # (16 Nov 2026: without this the WHOLE page, menus and scripts included, joined the word stream)
+            ends = [e for e in (body.find("<button", start), body.find('<div class="row"', start)) if e > start]
+            end = min(ends) if ends else -1
         text = body[start:end] if start >= 0 and end > start else body
         words = norm(TAGS.sub(" ", text))
         meta = (i, int(m.group(1) or 0), int(m.group(2)))
