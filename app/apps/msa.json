@@ -15,8 +15,16 @@
   "colours": { "theme": "#1B2A41", "background": "#1B2A41" },
   "manifest": {
     "file": "manifest.webmanifest",
-    "pages": ["about.html", "accept-invite.html", "admin-self-check.html", "arabic-study.html", "asma-study.html", "ayah-poster.html", "backup.html", "bookmarks.html", "catalogue.html", "classes.html", "course-offers.html", "curriculum.html", "dawah.html", "deen-study.html", "dua-study.html", "general-study.html", "hadith-collections.html", "hadith-study.html", "health-study.html", "homework.html", "import-notes.html", "index.html", "journey-map.html", "ldog-study.html", "life-skill.html", "migrate.html", "monitor.html", "naturelife-study.html", "notes.html", "onboarding.html", "people.html", "quranrevival.html", "records.html", "taglines.html"],
+    "pages": ["about.html", "accept-invite.html", "admin-self-check.html", "arabic-study.html", "asma-study.html", "ayah-poster.html", "backup.html", "bookmarks.html", "catalogue.html", "classes.html", "course-offers.html", "curriculum.html", "dawah.html", "deen-study.html", "general-study.html", "hadith-collections.html", "homework.html", "import-notes.html", "index.html", "journey-map.html", "ldog-study.html", "life-skill.html", "migrate.html", "monitor.html", "naturelife-study.html", "notes.html", "onboarding.html", "people.html", "quranrevival.html", "records.html", "taglines.html"],
     "data": "PCF MSA J120 O1: the manifest is the file app/manifest.webmanifest itself, and tools/offline/install-links.mjs puts installHead on these pages (it checks the list is every app/*.html reader page). The one-source build takes MSA's installHead out of every other app's pages."
+  },
+  "ownInstalls": {
+    "about": "PCA J117 (the Owner, 16 Nov 2026: \"Enable Hadith, Health, Dua also separately installable\"): each of these pages is its own app on a phone, with its own manifest, icon and name, so it carries THIS line instead of installHead (tools/offline/install-links.mjs checks both). Same scope /app/ as MMSA, a different id, so they install as separate apps. Its manifest and line are MMSA's own: another app built from here never copies the manifest and loses the line (tools/apps/build-app.mjs). The visible Install button is app/js/install-card.js.",
+    "pages": [
+      {"page": "hadith-study.html", "file": "hadith.webmanifest", "head": "<link rel=\"manifest\" href=\"./hadith.webmanifest\" /><link rel=\"apple-touch-icon\" href=\"./img/icons/hadith-apple-touch-icon.png\" /><meta name=\"theme-color\" content=\"#1B2A41\" />"},
+      {"page": "dua-study.html", "file": "dua.webmanifest", "head": "<link rel=\"manifest\" href=\"./dua.webmanifest\" /><link rel=\"apple-touch-icon\" href=\"./img/icons/dua-apple-touch-icon.png\" /><meta name=\"theme-color\" content=\"#1B2A41\" />"},
+      {"page": "health-study.html", "file": "health.webmanifest", "head": "<link rel=\"manifest\" href=\"./health.webmanifest\" /><link rel=\"apple-touch-icon\" href=\"./img/icons/health-apple-touch-icon.png\" /><meta name=\"theme-color\" content=\"#1B2A41\" />"}
+    ]
   },
   "installHead": "<link rel=\"manifest\" href=\"./manifest.webmanifest\" /><link rel=\"apple-touch-icon\" href=\"./img/icons/msa-192.png\" /><meta name=\"theme-color\" content=\"#1B2A41\" />",
   "cachePrefix": "mm",
