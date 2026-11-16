@@ -236,7 +236,7 @@ function toggleFull(root) {
   if (!st.full) {
     st.saved = root.hasAttribute("style") ? root.getAttribute("style") : null;
     st.rect = st.rect ?? null;
-    Object.assign(root.style, { position: "fixed", left: "0px", top: "0px", width: "100vw", height: "100vh", right: "auto", bottom: "auto", margin: "0", transform: "none", maxWidth: "none", maxHeight: "none" });
+    Object.assign(root.style, { position: "fixed", left: "0px", top: "0px", width: "100vw", height: "100vh", right: "auto", bottom: "auto", margin: "0", transform: "none", maxWidth: "none", maxHeight: "none", boxSizing: "border-box" });
     st.full = true;
     root.setAttribute(FULL_ATTR, "");
   } else {
