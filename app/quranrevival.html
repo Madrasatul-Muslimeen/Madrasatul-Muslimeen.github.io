@@ -5004,6 +5004,8 @@
   /* PCF MSA J68: the Āyah card's Copy chooser, over the card, in the card's own look (both looks via --card-*). */
   .ayah-copy-dlg { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 16px; background: rgba(10,16,30,0.45); }
   .ayah-copy-box { width: min(440px, 100%); box-sizing: border-box; display: grid; gap: 0.7rem; padding: 0.8rem 0.9rem 0.9rem; border-radius: 14px; background: var(--card-bg, #fff); color: var(--card-text, #13241f); box-shadow: var(--card-shadow, 0 10px 30px rgba(0,0,0,0.3)); border: 1px solid var(--card-line, #d6ddd9); }
+  .ayah-copy-body { display: grid; gap: 0.7rem; align-content: start; min-height: 0; overflow-y: auto; }
+  .ayah-copy-box { overflow: hidden; grid-template-rows: auto minmax(0, 1fr); }
   .ayah-copy-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .ayah-copy-head h3 { margin: 0; font-size: 1.05rem; color: var(--card-heading, #1d6b4a); }
   .ayah-copy-x { min-width: 44px; min-height: 44px; border: 0; background: none; color: var(--card-text-muted, #5b6d66); font-size: 1.3rem; cursor: pointer; }
@@ -5231,6 +5233,7 @@
   .ayah-nv-nav button:disabled { opacity: 0.4; cursor: default; }
   .ayah-nv-nav button:focus-visible, .ayah-nv-back:focus-visible { outline: 3px solid #c9a24b; outline-offset: 2px; }
   .ayah-nv-back { flex: 0 0 auto; white-space: nowrap; min-height: 40px; padding: 0 0.8rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+  .ayah-nv-x { flex: 0 0 auto; margin-inline-start: auto; min-width: 40px; min-height: 40px; border: 0; background: none; color: #1F3A6E; font: inherit; font-size: 1.3rem; font-weight: 700; cursor: pointer; border-radius: 0.5rem; }
   .ayah-nv-ref { font-weight: 700; color: #1F3A6E; min-width: 0; overflow-wrap: anywhere; }
   .ayah-nv-sec { margin-top: 0.6rem; }
   .ayah-nv-sec > summary { cursor: pointer; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #6b6b60; padding: 0.3rem 0; }
@@ -5529,6 +5532,7 @@
   .ayah-folder-filing-head { display: flex; align-items: center; gap: 0.6rem; flex: 0 0 auto; margin-bottom: 0.5rem; flex-wrap: wrap; }
   .ayah-folder-filing-back { min-height: 40px; padding: 0 0.9rem; border-radius: 999px; border: 1px solid var(--card-line); background: rgba(255,255,255,0.06); color: var(--card-link); font: inherit; font-weight: 600; cursor: pointer; flex: 0 0 auto; }
   #ayahFolderFilingCard h3 { flex: 0 0 auto; }
+  .ayah-folder-filing-x { flex: 0 0 auto; margin-inline-start: auto; min-width: 40px; min-height: 40px; border: 0; background: none; color: inherit; font: inherit; font-size: 1.5rem; font-weight: 700; cursor: pointer; border-radius: 0.5rem; }
   #ayahFolderFilingNotePickerMount, #ayahFolderFilingMsg { flex: 0 0 auto; }
   #ayahFolderFilingPickerMount { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   #ayahFolderFilingPickerMount .ayah-folder-picker { flex: 1 1 auto; min-height: 0; }
@@ -8070,6 +8074,7 @@
     <div id="ayahFolderFilingCard" role="dialog" aria-labelledby="ayahFolderFilingTitle">
       <div class="ayah-folder-filing-head">
         <button type="button" class="ayah-folder-filing-back" id="ayahFolderFilingBackBtn"></button>
+        <button type="button" class="ayah-folder-filing-x" id="ayahFolderFilingCloseBtn" aria-label="Close" title="Close">&times;</button>
       </div>
       <h3 id="ayahFolderFilingTitle"></h3>
       <div id="ayahFolderFilingNotePickerMount"></div>
@@ -23350,16 +23355,18 @@
       const opts = (sel) => Array.from({ length: n }, (_, i) => `<option value="${i + 1}"${i + 1 === sel ? " selected" : ""}>${num(i + 1)}</option>`).join("");
       const paint = () => {
         const pressed = (on) => `aria-pressed="${on ? "true" : "false"}"`;
-        dlg.innerHTML = `<div class="ayah-copy-box" role="dialog" aria-modal="true" aria-labelledby="ayahCopyTitle">
+        // J140 part 5: the box and its top bar are written once (so a moved / resized window keeps its place); only the body repaints.
+        if (!dlg.firstElementChild) dlg.innerHTML = `<div class="ayah-copy-box" role="dialog" aria-modal="true" aria-labelledby="ayahCopyTitle">
           <div class="ayah-copy-head"><h3 id="ayahCopyTitle">📋 ${escapeHtml(t("Copy āyāt"))}</h3><button type="button" class="ayah-copy-x" data-copy-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>
-          <div class="ayah-copy-row" role="group" aria-label="${escapeHtml(t("Āyāt"))}"><span class="ayah-copy-lab">${escapeHtml(t("Āyāt"))}</span><div class="ayah-copy-seg">
+          <div class="ayah-copy-body"></div></div>`;
+        dlg.querySelector(".ayah-copy-body").innerHTML = `<div class="ayah-copy-row" role="group" aria-label="${escapeHtml(t("Āyāt"))}"><span class="ayah-copy-lab">${escapeHtml(t("Āyāt"))}</span><div class="ayah-copy-seg">
             <button type="button" data-copy-mode="one" ${pressed(st.mode === "one")}>${escapeHtml(t("This āyah"))} ${num(surah)}:${num(ayah)}</button>
             ${many ? `<button type="button" data-copy-mode="many" ${pressed(st.mode === "many")}>${escapeHtml(t("Several āyāt"))}</button>` : ""}</div></div>
           ${st.mode === "many" ? `<div class="ayah-copy-row ayah-copy-range"><label class="ayah-copy-lab" for="ayahCopyFrom">${escapeHtml(t("From"))}</label><select id="ayahCopyFrom" data-copy-from>${opts(st.from)}</select><label class="ayah-copy-lab" for="ayahCopyTo">${escapeHtml(t("To"))}</label><select id="ayahCopyTo" data-copy-to>${opts(st.to)}</select></div>` : ""}
           <div class="ayah-copy-row" role="group" aria-label="${escapeHtml(t("Include"))}"><span class="ayah-copy-lab">${escapeHtml(t("Include"))}</span><div class="ayah-copy-seg">
             ${[["ar", t("Arabic")], ["en", t("English")], ["bn", t("Bangla")]].map(([k, l]) => `<button type="button" data-copy-lang="${k}" ${pressed(st.langs.includes(k))}>${escapeHtml(l)}</button>`).join("")}</div></div>
           <button type="button" class="ayah-copy-go" data-copy-go${st.langs.length ? "" : " disabled"}>📋 ${escapeHtml(st.mode === "many" && st.to > st.from ? t("Copy {n} āyāt", { n: num(st.to - st.from + 1) }) : t("Copy"))}</button>
-          <p class="ayah-copy-status" role="status" aria-live="polite" data-copy-status></p></div>`;
+          <p class="ayah-copy-status" role="status" aria-live="polite" data-copy-status></p>`;
       };
       // The card closed when its 📋 was pressed (as every tile does); closing the chooser opens it again, on 📋 Copy.
       const close = () => {
@@ -25599,7 +25606,7 @@
         }, true);
       }
       const ref = ayahRefLabel(surah, ayah, { half });
-      const head = `<div class="ayah-nv-head"><button type="button" class="ayah-nv-back" data-ayah-nv-back><span aria-hidden="true">←</span> ${escapeHtml(t("Āyah card"))}</button><span class="ayah-nv-ref">${escapeHtml(ref)}</span></div>`;
+      const head = `<div class="ayah-nv-head"><button type="button" class="ayah-nv-back" data-ayah-nv-back><span aria-hidden="true">←</span> ${escapeHtml(t("Āyah card"))}</button><span class="ayah-nv-ref">${escapeHtml(ref)}</span><button type="button" class="ayah-nv-x" data-ayah-nv-back aria-label="${escapeHtml(t("Close"))}" title="${escapeHtml(t("Close"))}">✕</button></div>`;
       pop.innerHTML = `<div class="ayah-nv-box" role="dialog" aria-modal="true" aria-label="${escapeHtml(ref)}">${head}<p class="ayah-nv-loading">${escapeHtml(t("Loading…"))}</p></div>`;
       pop.hidden = false;
       pop.dataset.unitKey = unitKey;
@@ -25756,6 +25763,7 @@
         fontOpen: false,
       };
       ayahFolderFilingOverlayEl.classList.add("open");
+      { const x = document.getElementById("ayahFolderFilingCloseBtn"); if (x) { x.setAttribute("aria-label", t("Close")); x.title = t("Close"); } }
       renderAyahFolderFilingNow();
       try {
         // The Owner, 8 Oct 2026: "Takes long time loading." The tree kept from the last load is shown at once and
@@ -25967,6 +25975,8 @@
       const { surah, ayah, half } = parseAyahUnitKey(key);
       openAyahActionSheet(`${surah}:${ayah}`, half);
     });
+    // J140 part 5: the ✕ closes the chooser (the same close as a tap outside / Esc).
+    document.getElementById("ayahFolderFilingCloseBtn").addEventListener("click", () => closeAyahFolderFiling());
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && ayahFolderFilingOverlayEl.classList.contains("open")) closeAyahFolderFiling();
     });

@@ -282,7 +282,9 @@ fs.writeFileSync(path.join(mutSrc, "apps/fx/site/app/fx-own.html"), "<!doctype h
 fs.writeFileSync(path.join(mutSrc, "apps/fx/site/app/js/continue-strip.js"), "// fx's own\n");
 const fxEdits = [{ id: "nav#1", file: "app/js/nav.js", why: "fixture", from: "export const LEGACY_APP_URL", to: "export const FX = 1;\nexport const LEGACY_APP_URL", exact: 1 }];
 fs.writeFileSync(path.join(mutSrc, "apps/fx/edits.json"), JSON.stringify(fxEdits));
-const fxs = { ...qs, id: "fx", pages: null, afterBuild: null, site: ["index.html", "app"], overlay: "apps/fx/site", edits: "apps/fx/edits.json" };
+// manifest: null since PCA J117 gave QR its own manifest (icons in QR's overlay, which fx's overlay does not have). fx tests
+// overlays and edits; manifests have their own fixture above ("fixture.webmanifest").
+const fxs = { ...qs, id: "fx", pages: null, afterBuild: null, manifest: null, site: ["index.html", "app"], overlay: "apps/fx/site", edits: "apps/fx/edits.json" };
 const buildFx = (over = {}) => buildApp({ settings: { ...fxs, ...over }, src: mutSrc, out: path.join(TMP, "fx"), only: ONLY });
 check("an own file is added and an own file replaces the source's", () => {
   const r = buildFx();

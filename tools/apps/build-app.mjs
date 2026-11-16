@@ -271,17 +271,24 @@ export function buildApp({ id, settings, src = ".", out, only } = {}) {
     const data = { ...m.data };
     if (s.colours.theme && !data.theme_color) data.theme_color = s.colours.theme;
     if (s.colours.background && !data.background_color) data.background_color = s.colours.background;
+    // An icon is in the source's app/ or (PCA J117: an app's own icons, e.g. QR's) in its overlay folder's app/.
+    const iconFound = (rel) => fs.existsSync(path.join(src, "app", rel)) || (s.overlay && fs.existsSync(path.join(src, s.overlay, "app", rel)));
     for (const icon of data.icons || []) {
-      if (!fs.existsSync(path.join(src, "app", icon.src))) throw new Error(`cannot build "${id}": manifest icon app/${icon.src} does not exist`);
+      if (!iconFound(icon.src)) throw new Error(`cannot build "${id}": manifest icon app/${icon.src} does not exist`);
     }
+    if (m.appleIcon && !iconFound(m.appleIcon)) throw new Error(`cannot build "${id}": manifest appleIcon app/${m.appleIcon} does not exist`);
     extra.set(`app/${m.file}`, JSON.stringify(data, null, 2) + "\n");
     for (const page of m.pages) {
       const rel = `app/${page}`;
       if (!fs.existsSync(path.join(src, rel))) throw new Error(`cannot build "${id}": manifest page ${rel} does not exist`);
+      if (s.overlay && fs.existsSync(path.join(src, s.overlay, rel))) throw new Error(`cannot build "${id}": manifest page ${rel} is replaced by the overlay, so its manifest link would be lost: put the link in the overlay file itself`);
       const t = textOf(rel);
       if (/<link rel="manifest"/.test(t)) throw new Error(`cannot build "${id}": ${rel} already has a manifest link`);
       const href = path.posix.relative(path.posix.dirname(rel), `app/${m.file}`);
-      changed.set(rel, headInsert(t, `<link rel="manifest" href="${href.includes("/") ? href : "./" + href}">\n`, rel));
+      let line = `<link rel="manifest" href="${href.includes("/") ? href : "./" + href}">\n`;
+      // The iPhone reads no manifest icon: its home-screen icon is this link (PCA J117), added where the page has none.
+      if (m.appleIcon && !/<link rel="apple-touch-icon"/.test(t)) line += `<link rel="apple-touch-icon" href="${path.posix.relative(path.posix.dirname(rel), `app/${m.appleIcon}`)}">\n`;
+      changed.set(rel, headInsert(t, line, rel));
     }
   }
   if (s.icon) {
