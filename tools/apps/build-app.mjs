@@ -97,8 +97,8 @@ function rules(base, s) {
 
   add(html, `<title>${base.titlePrefix}${DASH}`, `<title>${s.titlePrefix}${DASH}`, { min: 25 }, "page titles");
   add((p) => p === "app/js/i18n/bn.js", `"${base.titlePrefix}${DASH}`, `"${s.titlePrefix}${DASH}`, { min: 50 }, "Bangla page titles (key and value)");
-  const strip = "(?:QuranRevival|MSA)";
-  const stripTo = ["QuranRevival", "MSA"].includes(s.titlePrefix) ? strip : `(?:QuranRevival|MSA|${s.titlePrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`;
+  const strip = "(?:QuranRevival|MMSA|MSA)";
+  const stripTo = ["QuranRevival", "MMSA", "MSA"].includes(s.titlePrefix) ? strip : `(?:QuranRevival|MMSA|MSA|${s.titlePrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`;
   add((p) => p === "app/js/bookmark-nav.js", `/^${strip}\\s*[—-]\\s*/`, `/^${stripTo}\\s*[—-]\\s*/`, { exact: 1 }, "bookmark names drop the app's title prefix");
 
   const fb = base.name.full, fs_ = s.name.full;

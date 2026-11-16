@@ -1,6 +1,6 @@
 {
-  "name": "Madrasah Study App (MSA)",
-  "short_name": "MSA",
+  "name": "Madrasatul Muslimeen's Study App (MMSA)",
+  "short_name": "MMSA",
   "description": "Madrasatul Muslimeen's Study App: Qur'an, Hadith, Dua and notes.",
   "id": "/app/",
   "start_url": "/app/quranrevival.html",

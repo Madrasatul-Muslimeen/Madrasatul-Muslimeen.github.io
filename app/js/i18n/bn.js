@@ -162,7 +162,7 @@ export const BN = {
   "Show this opener": "এই সূচনা পর্দা দেখান",
 
   // --- About page -------------------------------------------------------
-  "MSA — About": "MSA — পরিচিতি",
+  "MMSA — About": "MMSA — পরিচিতি",
   "About QuranRevival": "কুরআনরিভাইভাল সম্পর্কে",
   "Phase 0 & 1 — individually tracked features":
     "পর্যায় ০ ও ১ — আলাদাভাবে চিহ্নিত বৈশিষ্ট্যসমূহ",
@@ -203,7 +203,7 @@ export const BN = {
   "Date": "তারিখ",
 
   // --- Onboarding: creating an account ---------------------------------
-  "MSA — Create your account (F-011)": "MSA — আপনার অ্যাকাউন্ট তৈরি করুন",
+  "MMSA — Create your account (F-011)": "MMSA — আপনার অ্যাকাউন্ট তৈরি করুন",
   "Create your account (F-011)": "আপনার অ্যাকাউন্ট তৈরি করুন",
   "Sets up a brand-new account: your account, your own person record, and\n     your owner role, all created together. Nothing existing is touched.":
     "একদম নতুন অ্যাকাউন্ট তৈরি করে: আপনার অ্যাকাউন্ট, আপনার নিজের ব্যক্তি-রেকর্ড এবং আপনার মালিকানার ভূমিকা — সবই একসাথে। বিদ্যমান কিছুই পরিবর্তন করা হয় না।",
@@ -243,7 +243,7 @@ export const BN = {
   // --- Accepting an invite ----------------------------------------------
   // Often the FIRST screen a new person ever sees, and the one place a
   // Bangla-only reader is most likely to give up if it is in English.
-  "MSA — Accept invite (F-014)": "MSA — আমন্ত্রণ গ্রহণ",
+  "MMSA — Accept invite (F-014)": "MMSA — আমন্ত্রণ গ্রহণ",
   "Accept invite": "আমন্ত্রণ গ্রহণ করুন",
   "Accept": "গ্রহণ করুন",
   "Checking your invite link…": "আপনার আমন্ত্রণ লিংক যাচাই করা হচ্ছে…",
@@ -297,7 +297,7 @@ export const BN = {
 
   // --- The landing screen and its dock tabs ------------------------------
   "QuranRevival — Phase 4/5": "কুরআনরিভাইভাল",
-  "Madrasah Study App (MSA)": "মাদ্রাসা স্টাডি অ্যাপ (MSA)", // the Owner, 17 Oct 2026 (PCF inbox 9bnl4tkit8wmvk): the main page's name
+  "Madrasatul Muslimeen's Study App (MMSA)": "মাদ্রাসাতুল মুসলিমীন স্টাডি অ্যাপ (MMSA)", // the Owner, 17 Oct 2026 (PCF inbox 9bnl4tkit8wmvk): the main page's name
   "Mastery Wheel": "দক্ষতার চাকা", // ?
   "Study options": "অধ্যয়নের সেটিংস",
   // Enhancement round -- the dock's own tab label ("Options"), a shorter
@@ -813,15 +813,15 @@ export const BN = {
   // are where a wrong word would do the most damage.
 
   // --- The nine module pages ---------------------------------------------
-  "MSA — Deen Study": "MSA — দ্বীন শিক্ষা",
-  "MSA — Arabic Language": "MSA — আরবি ভাষা",
-  "MSA — Hadith": "MSA — হাদীস",
-  "MSA — General Study": "MSA — সাধারণ শিক্ষা",
-  "MSA — Nature-Life": "MSA — প্রকৃতি ও জীবন",
-  "MSA — Life Skill": "MSA — জীবন দক্ষতা",
-  "MSA — Health": "MSA — স্বাস্থ্য",
-  "MSA — Learn Deen On-the-Go": "MSA — চলার পথে দ্বীন শিক্ষা",
-  "MSA — Asma ul Husna": "MSA — আসমাউল হুসনা",
+  "MMSA — Deen Study": "MMSA — দ্বীন শিক্ষা",
+  "MMSA — Arabic Language": "MMSA — আরবি ভাষা",
+  "MMSA — Hadith": "MMSA — হাদীস",
+  "MMSA — General Study": "MMSA — সাধারণ শিক্ষা",
+  "MMSA — Nature-Life": "MMSA — প্রকৃতি ও জীবন",
+  "MMSA — Life Skill": "MMSA — জীবন দক্ষতা",
+  "MMSA — Health": "MMSA — স্বাস্থ্য",
+  "MMSA — Learn Deen On-the-Go": "MMSA — চলার পথে দ্বীন শিক্ষা",
+  "MMSA — Asma ul Husna": "MMSA — আসমাউল হুসনা",
 
   // --- Shared module-page furniture --------------------------------------
   "Nothing under here yet.": "এখানে এখনো কিছু নেই।",
@@ -1175,8 +1175,8 @@ export const BN = {
 
   // --- About page, the long blurb ---------------------------------------
   // QR Stage 1 (PCF J30): the app is now QuranRevival; four modules hidden.
-  "This app is now QuranRevival: Quran Study, Deen Study, Arabic, Hadith (with the Duas), Learn Deen On-the-Go and Asma ul Husna. General Study, Nature-Life, Life Skill and Health are hidden for now and will return in the new MSA app (Madrasah Study App); nothing saved in them is lost.":
-    "এই অ্যাপটি এখন QuranRevival: কুরআন অধ্যয়ন, দ্বীন শিক্ষা, আরবি, হাদীস (দোয়াসহ), চলার পথে দ্বীন শিক্ষা এবং আসমাউল হুসনা। সাধারণ শিক্ষা, প্রকৃতি ও জীবন, জীবন দক্ষতা এবং স্বাস্থ্য আপাতত লুকানো আছে; এগুলো নতুন MSA অ্যাপে (মাদরাসা স্টাডি অ্যাপ) ফিরে আসবে, আর এগুলোতে সংরক্ষিত কিছুই হারাবে না।",
+  "This app is now QuranRevival: Quran Study, Deen Study, Arabic, Hadith (with the Duas), Learn Deen On-the-Go and Asma ul Husna. General Study, Nature-Life, Life Skill and Health are hidden for now and will return in the new MMSA app (Madrasatul Muslimeen's Study App); nothing saved in them is lost.":
+    "এই অ্যাপটি এখন QuranRevival: কুরআন অধ্যয়ন, দ্বীন শিক্ষা, আরবি, হাদীস (দোয়াসহ), চলার পথে দ্বীন শিক্ষা এবং আসমাউল হুসনা। সাধারণ শিক্ষা, প্রকৃতি ও জীবন, জীবন দক্ষতা এবং স্বাস্থ্য আপাতত লুকানো আছে; এগুলো নতুন MMSA অ্যাপে (মাদ্রাসাতুল মুসলিমীন স্টাডি অ্যাপ) ফিরে আসবে, আর এগুলোতে সংরক্ষিত কিছুই হারাবে না।",
   "What's actually built versus only planned — read directly from this\n     app's own feature registry, never restated by hand, so this page can't\n     drift out of sync with the real code.":
     "কী কী সত্যিই তৈরি হয়েছে আর কী কেবল পরিকল্পনায় আছে — সরাসরি অ্যাপের নিজস্ব বৈশিষ্ট্য-নথি থেকে পড়া, হাতে লেখা নয়, তাই এই পাতাটি কখনো প্রকৃত কোড থেকে আলাদা হয়ে যেতে পারে না।",
   "Phase 0 & 1 — individually tracked features":
@@ -1234,10 +1234,10 @@ export const BN = {
   "Manzil": "মানযিল",
 
   // --- Page titles and headings -----------------------------------------
-  "MSA — Records": "MSA — রেকর্ড",
-  "MSA — Monitor": "MSA — পর্যবেক্ষণ",
-  "MSA — Homework": "MSA — বাড়ির কাজ",
-  "MSA — Course Offers": "MSA — কোর্স অফার",
+  "MMSA — Records": "MMSA — রেকর্ড",
+  "MMSA — Monitor": "MMSA — পর্যবেক্ষণ",
+  "MMSA — Homework": "MMSA — বাড়ির কাজ",
+  "MMSA — Course Offers": "MMSA — কোর্স অফার",
   "Claim a status against a unit of study, see it confirmed or returned, and\n     confirm a whole surah, subject or week in one go.":
     "অধ্যয়নের কোনো একটি এককের বিপরীতে একটি অবস্থা দাবি করুন, তা নিশ্চিত হলো নাকি ফেরত এলো দেখুন, এবং একটি পূর্ণ সূরা, বিষয় বা সপ্তাহ একসাথে নিশ্চিত করুন।",
   "One report covering every module — whatever has actually been claimed or\n     logged. Quran gets an extra Approach-status section below, since it is\n     the only subject with structured progress data today.":
@@ -1560,10 +1560,10 @@ export const BN = {
   "Draft": "খসড়া",
 
   // --- Page titles, headings and intros ---------------------------------
-  "MSA — People": "MSA — ব্যক্তিবর্গ",
-  "MSA — Catalogue": "MSA — তালিকা",
-  "MSA — Curriculum": "MSA — পাঠ্যক্রম",
-  "MSA — Classes": "MSA — ক্লাস",
+  "MMSA — People": "MMSA — ব্যক্তিবর্গ",
+  "MMSA — Catalogue": "MMSA — তালিকা",
+  "MMSA — Curriculum": "MMSA — পাঠ্যক্রম",
+  "MMSA — Classes": "MMSA — ক্লাস",
   "Everyone in this madrasah: add a person, invite someone who signs in\n     themselves, and see who looks after whom.":
     "এই মাদরাসার সবাই: একজন ব্যক্তি যোগ করুন, কাউকে আমন্ত্রণ জানান যিনি নিজেই সাইন ইন করবেন, এবং কে কার দেখাশোনা করেন তা দেখুন।",
   "Modules, the subject tree, the Quran Approaches, and ladders and levels —\n     the data every study screen reads from. Anyone in the madrasah can look;\n     only the owner and a prime can edit.":
@@ -2099,7 +2099,7 @@ export const BN = {
 
   // --- The editing screen (taglines.html) -------------------------------
   "Taglines": "ট্যাগলাইন",
-  "MSA — Taglines": "MSA — ট্যাগলাইন",
+  "MMSA — Taglines": "MMSA — ট্যাগলাইন",
   "The moving line under the app's name on the Quran Study page. Write the lines, say where each one links, choose the order and how long each one holds the strip. Only you can change these.":
     "কুরআন অধ্যয়ন পাতায় অ্যাপের নামের নিচের চলমান লাইন। লাইনগুলো লিখুন, কোনটি কোথায় নিয়ে যাবে তা বলুন, ক্রম ঠিক করুন এবং প্রতিটি কত সময় থাকবে তা বেছে নিন। কেবল আপনিই এগুলো বদলাতে পারেন।",
   "Only the account owner can change the taglines.": "কেবল অ্যাকাউন্টের মালিকই ট্যাগলাইন বদলাতে পারেন।",
@@ -2160,7 +2160,7 @@ export const BN = {
   "Every bookmark you have saved, from any module, in one place. Open one to jump straight back to where it was made. Group them into folders however you like.":
     "আপনার সংরক্ষণ করা প্রতিটি বুকমার্ক, যেকোনো মডিউল থেকে, একই জায়গায়। একটি খুললেই সরাসরি যেখানে তৈরি হয়েছিল সেখানে চলে যাবেন। ইচ্ছেমতো ফোল্ডারে ভাগ করে রাখুন।",
   "No bookmarks saved yet. Look for the ☆/🔖 button on a study screen.": "এখনো কোনো বুকমার্ক সংরক্ষণ করা হয়নি। অধ্যয়ন পাতায় ☆/🔖 বোতামটি খুঁজুন।",
-  "MSA — Bookmarks": "MSA — বুকমার্ক",
+  "MMSA — Bookmarks": "MMSA — বুকমার্ক",
 
   // =====================================================================
   // Fixes round (23 Aug 2026) -- the bookmark-name popover (item 1) and the
@@ -2483,7 +2483,7 @@ export const BN = {
   // are its own headings as much as the page's.
   // -------------------------------------------------------------------
   "Backup": "ব্যাকআপ",
-  "MSA — Backup": "MSA — ব্যাকআপ",
+  "MMSA — Backup": "MMSA — ব্যাকআপ",
   "backup|noun": "ব্যাকআপ",
   "Save everything this madrasah has written — people, the catalogue, and every claim, note, bookmark and log entry — as one file on your own device. It opens in any browser, needs no internet, and is yours to keep.":
     "এই মাদরাসার লেখা সবকিছু — মানুষ, ক্যাটালগ, এবং প্রতিটি দাবি, নোট, বুকমার্ক ও লগ এন্ট্রি — আপনার নিজের ডিভাইসে একটি ফাইল হিসেবে সংরক্ষণ করুন। এটি যেকোনো ব্রাউজারে খোলে, ইন্টারনেট লাগে না, এবং এটি আপনারই।",
@@ -2970,7 +2970,7 @@ export const BN = {
   // written here would print literally on a Bangla page while the English
   // side -- real markup -- decoded correctly.
   // ---------------------------------------------------------------------
-  "MSA — Hadith Collections (synthetic pilot)": "MSA — হাদিস সংকলনসমূহ (কৃত্রিম পরীক্ষামূলক)",
+  "MMSA — Hadith Collections (synthetic pilot)": "MMSA — হাদিস সংকলনসমূহ (কৃত্রিম পরীক্ষামূলক)",
   "Hadith Collections": "হাদিস সংকলনসমূহ",
   "Hadith Corpus": "হাদিস ভাণ্ডার",
   "Explore": "অন্বেষণ",
@@ -3066,7 +3066,7 @@ export const BN = {
   "My Notes for this unit": "এই ইউনিটের আমার নোট",
 
   // --- MAP Phase 6 (P6-F, issue #199) -- Mapping My Journey, all three view options + toggle ---
-  "MSA — Mapping My Journey": "MSA — আমার যাত্রার মানচিত্র",
+  "MMSA — Mapping My Journey": "MMSA — আমার যাত্রার মানচিত্র",
   "Every permanent Note you've written, organised your way — folders, a timeline, or a path. Try all three; the app remembers which you picked.":
     "আপনি যে সব স্থায়ী নোট লিখেছেন, সেগুলো আপনার নিজের পছন্দমতো সাজানো — ফোল্ডার, টাইমলাইন, অথবা পথ। তিনটিই চেষ্টা করে দেখুন; অ্যাপ মনে রাখবে আপনি কোনটি বেছে নিয়েছেন।",
   "Everything": "সবকিছু",
@@ -3167,7 +3167,7 @@ export const BN = {
   // kept as the transliterated term (দাওয়াহ) -- an English translation would
   // lose the specific meaning the Owner's own ADR-011 uses throughout.
   "Dawah": "দাওয়াহ", // ?
-  "MSA — Dawah": "MSA — দাওয়াহ", // ?
+  "MMSA — Dawah": "MMSA — দাওয়াহ", // ?
   "Turn one of your own permanent Notes into a printable page — shared inside this Madrasah once it's ready.":
     "আপনার নিজের একটি স্থায়ী নোটকে একটি প্রিন্টযোগ্য পাতায় রূপান্তর করুন — এটি প্রস্তুত হলে এই মাদরাসার ভেতরে শেয়ার করা হবে।",
   "My pages": "আমার পাতাসমূহ",
@@ -4593,7 +4593,7 @@ export const BN = {
   // PCF MSA J52 — the Āyah posters (20 Oct 2026)
   // ---------------------------------------------------------------------
   "Āyah poster": "আয়াতের পোস্টার",
-  "MSA — Āyah poster": "MSA — আয়াতের পোস্টার",
+  "MMSA — Āyah poster": "MMSA — আয়াতের পোস্টার",
   "Which poster?": "কোন পোস্টার?",
   "Study poster": "পড়ার পোস্টার",
   "For children: every word with its meaning, for the wall": "শিশুদের জন্য: প্রতিটি শব্দ তার অর্থসহ, দেয়ালে লাগানোর জন্য",
@@ -4743,7 +4743,7 @@ export const BN = {
   "The book numbers could not be loaded. Check the connection and open this hadith again.": "বইয়ের নম্বরগুলো লোড করা যায়নি। সংযোগ দেখে এই হাদীসটি আবার খুলুন।", // ?
   // PCF MSA J106: Hadith Study's menu bar and Subjects.
   "Hadith Study": "হাদীস অধ্যয়ন", // ?
-  "MSA — Hadith Study": "MSA — হাদীস অধ্যয়ন", // ?
+  "MMSA — Hadith Study": "MMSA — হাদীস অধ্যয়ন", // ?
   "Hadith Books": "হাদীসের কিতাবসমূহ", // ?
   "All Hadith Books": "সব হাদীসের কিতাব", // ?
   "The book's opening": "কিতাবের শুরু", // ? (the title page and Bismillah before a book's first heading)
