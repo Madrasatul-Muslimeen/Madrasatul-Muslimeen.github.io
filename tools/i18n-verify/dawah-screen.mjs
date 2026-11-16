@@ -244,7 +244,7 @@ check("every NEW t(\"...\") key notes.html's own Dawah entry point calls has a B
   assert.ok("Make a printable page" in BN, "\"Make a printable page\" has no Bangla translation");
 });
 check("the page's own title and heading are translatable (present in bn.js), so translateStatic() has something to find at load", () => {
-  assert.ok("MSA — Dawah" in BN, "the page <title> has no Bangla translation");
+  assert.ok("MMSA — Dawah" in BN, "the page <title> has no Bangla translation");
   assert.ok("Dawah" in BN, "the <h1> text has no Bangla translation");
 });
 
