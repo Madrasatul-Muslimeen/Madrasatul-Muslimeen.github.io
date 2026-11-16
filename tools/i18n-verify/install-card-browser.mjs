@@ -83,11 +83,12 @@ const card = (page) => page.evaluate(() => {
     no: c.querySelector(".mm-install-no").textContent, ios: ios.hidden ? "" : ios.textContent,
     left: r.left, right: r.right, top: r.top, bottom: r.bottom, vw: innerWidth, vh: innerHeight,
     minBtn: Math.min(...btns.map((b) => b.height)), btnsInside: btns.every((b) => b.left >= r.left && b.right <= r.right + 0.5),
-    // Nothing covers any part of a button: the element at its centre AND at four points 3px in from its corners is the
-    // button itself (the Zab 🧰 corner covered Install's right end, 17 Nov; a centre-only test missed that).
+    // Nothing covers any part of a button: the element at its centre, at both ends and at its top and bottom edge is the
+    // button itself (the Zab 🧰 corner covered Install's right end, 17 Nov; a centre-only test missed that). The buttons
+    // are pills, so the ends are taken half a height in (a point 3px from a corner is outside the pill, on the card).
     covered: [...c.querySelectorAll("button")].filter((b) => b.offsetParent).filter((b) => {
-      const q = b.getBoundingClientRect();
-      const pts = [[q.left + q.width / 2, q.top + q.height / 2], [q.left + 3, q.top + 3], [q.right - 3, q.top + 3], [q.left + 3, q.bottom - 3], [q.right - 3, q.bottom - 3]];
+      const q = b.getBoundingClientRect(), mx = q.left + q.width / 2, my = q.top + q.height / 2, h = q.height / 2;
+      const pts = [[mx, my], [q.left + h, my], [q.right - h, my], [mx, q.top + 3], [mx, q.bottom - 3]];
       return pts.some(([x, y]) => { const at = document.elementFromPoint(x, y); return !(at === b || b.contains(at)); });
     }).map((b) => b.className),
   };
