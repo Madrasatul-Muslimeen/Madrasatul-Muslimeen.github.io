@@ -154,9 +154,16 @@ async function installability() {
     const page = ctx.pages()[0] ?? await ctx.newPage();
     page.setDefaultTimeout(30000);
     const cdp = await ctx.newCDPSession(page);
-    await page.goto(`${base}/`, { waitUntil: "load" });
+    // The control page was the front page until PCA J117 (16 Nov 2026) gave QR's front page its own manifest; it is now
+    // 404.html, which has none. Updated in place, and the front page's new verdict is checked below.
+    await page.goto(`${base}/404.html`, { waitUntil: "load" });
     const control = (await cdp.send("Page.getInstallabilityErrors")).installabilityErrors ?? [];
-    check(control.some((e) => e.errorId === "no-manifest"), `Chromium's check is live: the front page (no manifest) is refused (${control.map((e) => e.errorId).join(", ")})`);
+    check(control.some((e) => e.errorId === "no-manifest"), `Chromium's check is live: 404.html (no manifest) is refused (${control.map((e) => e.errorId).join(", ")})`);
+    // PCA J117: QuranRevival installs as its own app, from its front page.
+    await page.goto(`${base}/`, { waitUntil: "load" });
+    const front = await cdp.send("Page.getAppManifest");
+    const frontErrs = (await cdp.send("Page.getInstallabilityErrors")).installabilityErrors ?? [];
+    check(front.url.endsWith("/app/qr.webmanifest") && frontErrs.length === 0, `PCA J117: Chromium reports NO installability errors for QuranRevival's front page (${front.url.split("/").pop()}${frontErrs.length ? ": " + frontErrs.map((e) => e.errorId).join(", ") : ""})`);
     await page.goto(`${base}/app/asma.html`, { waitUntil: "load" });
     await page.waitForFunction(() => !!navigator.serviceWorker.controller);
     const man = await cdp.send("Page.getAppManifest");
