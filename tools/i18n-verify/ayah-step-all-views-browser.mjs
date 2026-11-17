@@ -24,7 +24,8 @@ for (const width of [360, 600, 768, 1280]) {
   for (let i = 0; i < 3; i++) { if (await page.evaluate(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0)) break; await goReadOn(page); await page.waitForTimeout(1300); }
   await page.waitForSelector(".meaning-ayah", { timeout: 15000 }).catch(() => {});
   const slot = await page.evaluate(() => { const s = document.getElementById("readMeaningLayersSlot"); const mb = s?.querySelector("[data-ml-menu]"); const lab = [...(s?.querySelectorAll("label") ?? [])].map((l) => l.getBoundingClientRect().width); return { btn: !!mb && mb.getBoundingClientRect().width > 0, labelsShown: lab.filter((w) => w > 0).length }; });
-  if (width < 900) check(`${tag} the three layer switches are folded under ONE "Show ▾" button`, slot.btn && slot.labelsShown === 0, JSON.stringify(slot));
+  // UPDATED IN PLACE (17 Nov 2026, Read bar tidy, the Owner: "Show items should be inside the 3 dots"): below 900px the three switches are in the ⋮ sheet, not on the bar.
+  if (width < 900) check(`${tag} below 900px the three layer switches are not on the bar (no "Show ▾" there; they are in the ⋮ sheet)`, !slot.btn && slot.labelsShown === 0, JSON.stringify(slot));
   else check(`${tag} from 900px the three stand open on the bar, no "Show" button`, !slot.btn && slot.labelsShown === 3, JSON.stringify(slot));
   // UPDATED IN PLACE (13 Nov 2026, the Owner: "Read on: 2 lines"): below 600px in Read on the bar's four step buttons are in the bar's ⋮ menu (body.read-bar-steps-in-menu), so
   // there ◂ ▸ are two tiles of that menu; from 600px, and in the Mushaf, they stay on the bar.

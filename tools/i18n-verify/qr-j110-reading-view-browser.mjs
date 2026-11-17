@@ -122,24 +122,29 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 360], ["en", 768],
 
   // ---- A: the switches ---------------------------------------------------------------------------------------
   const s0 = await switches(page);
-  check(`${tag} A: the switches are in the Read bar's own slot (no new bar)`, s0.inBar && s0.slotShown, JSON.stringify(s0));
+  // UPDATED IN PLACE (17 Nov 2026, the Owner: "Show items should be inside the 3 dots"; Read bar tidy): below 900px the three layer
+  // switches are NOT on the bar any more (the real slot is parked out of sight), they are the "Show" group of the bar's ⋮ sheet, and
+  // pressing one presses the real switch. From 900px they stay open on the bar's own slot, as before.
+  if (!phone) check(`${tag} A: the switches are in the Read bar's own slot (no new bar)`, s0.inBar && s0.slotShown, JSON.stringify(s0));
   if (phone) {
-    check(`${tag} A: on a phone ONE "${lang === "bn" ? "দেখান" : "Show"} ▾" button, a finger's size, and the three switches folded away`, !!s0.btn && s0.btn.h >= 40 && s0.btn.text.startsWith(lang === "bn" ? "দেখান" : "Show") && s0.btn.expanded === "false" && s0.labels.length === 3 && s0.labels.every((l) => l.w === 0), JSON.stringify(s0));
-    await page.click("#readMeaningLayersSlot [data-ml-menu]"); await page.waitForTimeout(250);
-    const s1 = await switches(page);
-    check(`${tag} A: a tap opens the three, each on screen, ≥40px tall and really under the finger`, s1.btn?.expanded === "true" && s1.labels.length === 3 && s1.labels.every((l) => l.w > 0 && l.h >= 40 && l.inView && l.hit), JSON.stringify(s1.labels));
+    check(`${tag} A: on a phone the switches are NOT on the bar (no "Show ▾" there, no new bar)`, !s0.slotShown && s0.labels.every((l) => l.w === 0) && !(s0.btn && s0.btn.w > 0), JSON.stringify(s0));
+    const sheet = () => page.evaluate(() => {
+      const g = document.querySelector("#readQuickMenuSlot .qm-show"), r = g?.getBoundingClientRect();
+      const boxes = [...(g?.querySelectorAll("[data-qm-layer]") ?? [])].map((b) => { const l = b.closest("label") ?? b, x = l.getBoundingClientRect(); return { k: b.dataset.qmLayer, on: b.checked, h: Math.round(x.height), w: Math.round(x.width), inView: x.left >= 0 && x.right <= innerWidth && x.top >= 0 && x.bottom <= innerHeight }; });
+      const real = Object.fromEntries([...document.querySelectorAll("#readMeaningLayersSlot [data-meaning-layer]")].map((c) => [c.dataset.meaningLayer, c.checked]));
+      return { shown: !!r && r.height > 0, boxes, real };
+    });
+    await page.click("#readQuickMenuSlot .ayah-quick-btn"); await page.waitForTimeout(400);
+    const s1 = await sheet();
+    check(`${tag} A: the ⋮ sheet shows a Show group with English, Bangla and Word by Word, each ≥40px and on screen`, s1.shown && s1.boxes.map((b) => b.k).join() === "en,bn,wbw" && s1.boxes.every((b) => b.h >= 40 && b.w > 0 && b.inView), JSON.stringify(s1));
     await page.screenshot({ path: `${SHOT_DIR}/j110-show-open-${lang}-${width}.png` });
-    await page.click('#readMeaningLayersSlot [data-meaning-layer="wbw"]'); await page.waitForTimeout(1400);
-    const s2 = await switches(page);
-    check(`${tag} A: ticking a switch keeps the list open and the focus on that switch (the flow re-renders)`, s2.btn?.expanded === "true" && s2.labels.every((l) => l.w > 0) && s2.active === "wbw", JSON.stringify({ exp: s2.btn?.expanded, active: s2.active }));
-    await page.click('#readMeaningLayersSlot [data-meaning-layer="wbw"]'); await page.waitForTimeout(1400);
-    await page.keyboard.press("Escape"); await page.waitForTimeout(200);
-    const s3 = await switches(page);
-    check(`${tag} A: Esc folds them away again`, s3.btn?.expanded === "false" && s3.labels.every((l) => l.w === 0), JSON.stringify(s3.btn));
-    await page.click("#readMeaningLayersSlot [data-ml-menu]"); await page.waitForTimeout(200);
-    await page.click("#pageViewContainer .meaning-page-rule"); await page.waitForTimeout(250); // a plain spot (a word would open its Word Card)
-    const s4 = await switches(page);
-    check(`${tag} A: a tap elsewhere folds them away`, s4.btn?.expanded === "false", JSON.stringify(s4.btn));
+    await page.evaluate(() => document.querySelector('#readQuickMenuSlot [data-qm-layer="wbw"]').click()); await page.waitForTimeout(1400);
+    const s2 = await sheet();
+    check(`${tag} A: ticking Word by Word in the sheet flips the real switch, and the sheet's tick agrees`, s2.real.wbw !== s1.real.wbw && s2.boxes.find((b) => b.k === "wbw")?.on === s2.real.wbw, JSON.stringify({ before: s1.real, after: s2.real }));
+    await page.evaluate(() => document.querySelector('#readQuickMenuSlot [data-qm-layer="wbw"]').click()); await page.waitForTimeout(1400);
+    await page.keyboard.press("Escape"); await page.waitForTimeout(250);
+    const s3 = await sheet();
+    check(`${tag} A: Esc closes the sheet`, !s3.shown, JSON.stringify(s3));
   } else {
     check(`${tag} A: on a tablet or computer no "Show ▾"; the three stand open on the bar, each tappable`, !s0.btn && s0.labels.length === 3 && s0.labels.every((l) => l.w > 0 && l.inView && l.hit), JSON.stringify(s0));
   }

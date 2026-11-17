@@ -142,7 +142,10 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const s1 = await state(page);
     check(`${t} Read on → the flow, opened at 57:2, 📖 still names the Mushaf, not pressed`, s1.flow > 0 && s1.flowKey === "57:2" && !s1.tick && names(lang, s1, "mushaf", width) && !s1.oldShown, JSON.stringify({ flow: s1.flow, key: s1.flowKey, pressed: s1.pressed, tick: s1.tick }));
     const r1 = await rows(page);
-    check(`${t} ...beside the Layers switches it is the icon alone, 40px, below 1024px; no sideways overflow`, (width >= 1024 || s1.w === 40) && r1.over <= 0, JSON.stringify({ w: s1.w, over: r1.over }));
+    // UPDATED IN PLACE (17 Nov 2026, Read bar tidy): below 900px the Layers (Show) switches live in the ⋮ sheet, not on the bar, so
+    // there is nothing for 📖 to squeeze beside at 600-899px: it keeps its word there. The icon-alone rule stays below 600px (space)
+    // and from 900 to 1023px (the switches are on the bar again).
+    check(`${t} ...📖 is the icon alone (40px) below 600px and at 900-1023px, icon and word at 600-899px and from 1024px; no sideways overflow`, (width < 600 || (width >= 900 && width < 1024) ? s1.w === 40 : s1.w > 40) && r1.over <= 0, JSON.stringify({ w: s1.w, over: r1.over }));
 
     await page.click("#readMeaningBtn"); await waitMushaf(page, true);
     const s2 = await state(page);

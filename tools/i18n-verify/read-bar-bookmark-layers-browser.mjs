@@ -85,7 +85,8 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
   // The widest parts: the unit chip 98px, "Show 3 ▾" 95px, "Read on" 65px, and ten 40px buttons. Left failing until the Owner chooses (see PR #1649).
   const barH0 = await page.evaluate(() => Math.round(document.getElementById("readBar").getBoundingClientRect().height)); // before the Show menu opens (it opens inside the bar)
   const showTop = await page.evaluate(() => { const b = document.querySelector("#readMeaningLayersSlot [data-ml-menu]"), r = b?.getBoundingClientRect(); return r && r.width > 0 ? Math.round(r.top) : null; });
-  if (showTop !== null) { await page.click("#readMeaningLayersSlot [data-ml-menu]", { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(250); }
+  const phoneSheet = W < 900; // UPDATED IN PLACE (17 Nov 2026, Read bar tidy, the Owner: "Show items should be inside the 3 dots"): below 900px the switches are the Show group of the ⋮ sheet
+  if (showTop !== null && !phoneSheet) { await page.click("#readMeaningLayersSlot [data-ml-menu]", { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(250); }
   const L = await page.evaluate(() => {
     const slot = document.getElementById("readMeaningLayersSlot"), bar = document.getElementById("readBar").getBoundingClientRect(), m = document.getElementById("readMeaningBtn").getBoundingClientRect();
     const labels = [...(slot?.querySelectorAll("label") ?? [])].map((l) => { const r = l.getBoundingClientRect(); return { t: l.textContent.trim(), on: l.querySelector("input").checked, top: Math.round(r.top), h: Math.round(r.height), whole: l.scrollWidth <= l.clientWidth + 1, inBar: r.left >= bar.left - 1 && r.right <= bar.right + 1 }; });
@@ -98,15 +99,25 @@ for (const [lang, W] of [["en", 400], ["bn", 400], ["en", 390], ["en", 1280]]) {
   L.cover = barH0;
   // PCF MSA J75 (the Owner, 22 Oct 2026: "For English, write only Eng"): below 480px the English switch reads "Eng".
   const want = lang === "bn" ? ["ইংরেজি", "বাংলা", "শব্দে শব্দে"] : [W < 480 ? "Eng" : "English", "Bangla", "WbW"];
-  check(`${tag} the three switches are on the Read bar, none left in the flow, each whole and 36px tall: ${want.join(" / ")}`, L.inFlow === 0 && JSON.stringify(L.labels.map((l) => l.t)) === JSON.stringify(want) && L.labels.every((l) => l.whole && l.inBar && l.h >= 36), JSON.stringify(L));
-  check(`${tag} ...on 📖's own line, so the bar and switches take at most 60px (one line) from 600px, and at most 106px (two lines: in Read on its four step buttons are in the ⋮ menu, the Owner 13 Nov) below it (137px before, 151px three lines)`, (showTop !== null ? W < 600 && Math.abs(showTop - L.mTop) < 4 : W >= 600 && L.labels.every((l) => Math.abs(l.top - L.mTop) < 4)) && L.cover <= (W < 600 ? 106 : 60), JSON.stringify({ cover: L.cover, showTop, tops: L.labels.map((l) => l.top), mTop: L.mTop }));
+  if (phoneSheet) {
+    const sheetState = () => page.evaluate(() => { const g = document.querySelector("#readQuickMenuSlot .qm-show"), r = g?.getBoundingClientRect(); return { shown: !!r && r.height > 0, boxes: [...(g?.querySelectorAll("[data-qm-layer]") ?? [])].map((b) => { const x = (b.closest("label") ?? b).getBoundingClientRect(); return { k: b.dataset.qmLayer, h: Math.round(x.height), w: Math.round(x.width) }; }) }; });
+    await page.click("#readQuickMenuSlot .ayah-quick-btn", { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(400);
+    const SS = await sheetState();
+    check(`${tag} the three switches are NOT on the Read bar and none is left in the flow; they are the Show group of the ⋮ sheet (English, Bangla, Word by Word), each ≥ 40px`, L.inFlow === 0 && showTop === null && L.labels.every((l) => l.h === 0) && SS.shown && SS.boxes.map((b) => b.k).join() === "en,bn,wbw" && SS.boxes.every((b) => b.h >= 40 && b.w > 0), JSON.stringify({ L, SS }));
+    check(`${tag} ...so the bar alone takes at most 106px (two lines)`, L.cover <= 106, JSON.stringify({ cover: L.cover }));
+  } else {
+    check(`${tag} the three switches are on the Read bar, none left in the flow, each whole and 36px tall: ${want.join(" / ")}`, L.inFlow === 0 && JSON.stringify(L.labels.map((l) => l.t)) === JSON.stringify(want) && L.labels.every((l) => l.whole && l.inBar && l.h >= 36), JSON.stringify(L));
+    check(`${tag} ...on 📖's own line, so the bar and switches take at most 60px (one line) from 600px, and at most 106px (two lines: in Read on its four step buttons are in the ⋮ menu, the Owner 13 Nov) below it (137px before, 151px three lines)`, (showTop !== null ? W < 600 && Math.abs(showTop - L.mTop) < 4 : W >= 600 && L.labels.every((l) => Math.abs(l.top - L.mTop) < 4)) && L.cover <= (W < 600 ? 106 : 60), JSON.stringify({ cover: L.cover, showTop, tops: L.labels.map((l) => l.top), mTop: L.mTop }));
+  }
   check(`${tag} no sideways scroll`, L.over <= 0, String(L.over));
   // Switching Bangla off still works from the bar, and the bar keeps the switches.
-  await page.click('#readMeaningLayersSlot [data-meaning-layer="bn"]', { timeout: 4000 }).catch(() => {}); // bounded: a mutant with no switches must end in counted FAILs, not a crash
+  if (phoneSheet) await page.evaluate(() => document.querySelector('#readQuickMenuSlot [data-qm-layer="bn"]')?.click()); // the sheet's own switch, which presses the real one
+  else await page.click('#readMeaningLayersSlot [data-meaning-layer="bn"]', { timeout: 4000 }).catch(() => {}); // bounded: a mutant with no switches must end in counted FAILs, not a crash
   await page.waitForFunction(() => document.querySelectorAll("#pageViewContainer [data-meaning-key]").length > 0 && !document.querySelector("#pageViewContainer .ayah-translation-bn"), null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(500);
   const off = await page.evaluate(() => ({ bn: document.querySelectorAll("#pageViewContainer .ayah-translation-bn").length, box: document.querySelector('#readMeaningLayersSlot [data-meaning-layer="bn"]')?.checked, filled: (() => { const e = document.querySelector('#readMeaningLayersSlot [data-meaning-layer="bn"]'); return e ? getComputedStyle(e.parentElement).backgroundColor : null; })() }));
   check(`${tag} tapping Bangla turns it off: no Bangla in the flow, its pill outlined (white)`, off.bn === 0 && off.box === false && off.filled === "rgb(255, 255, 255)", JSON.stringify(off));
+  if (phoneSheet) { await page.keyboard.press("Escape"); await page.waitForTimeout(250); }
   await page.click("#readMeaningBtn"); await page.waitForTimeout(900);
   check(`${tag} back on the Mushaf, the switches leave the bar`, await page.evaluate(() => { const s = document.getElementById("readMeaningLayersSlot"); return !!s && s.hidden && s.getBoundingClientRect().width === 0; }));
   const bad = errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|Failed to load resource/i.test(e));
