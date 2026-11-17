@@ -35,7 +35,7 @@ const WINDOWS = [
   { id: "wordform", root: ".word-card-dpop-box", hide: ".word-card-dpop", close: ".word-card-dpop-close", title: ".word-card-dpop-title", bar: ".word-card-dpop-head" },
   // J140 part 3: Hadith
   { id: "hadithpane", own: true, back: true, root: ".hadith-pane-float", close: "[data-reader-dock]", title: ".hadith-pane-title", bar: ".hadith-pane-head" }, // a popped-out reader pane (hadith-reader.js drags and resizes it itself)
-  { id: "hadithword", back: true, root: ".hwc-sheet", hide: ".hwc-overlay", close: ".hwc-close", title: ".hwc-title", bar: ".hwc-head" }, // Hadith Word Card
+  { id: "hadithword", root: ".hwc-sheet", hide: ".hwc-overlay", close: ".hwc-close", title: ".hwc-title", bar: ".hwc-head" }, // Hadith Word Card
   { id: "bookpage", back: true, root: ".book-page-pane", hide: ".book-page-overlay", close: ".book-page-close", title: ".book-page-title", bar: ".book-page-head" }, // original book page
   // J140 part 3: Notes / writing -- the word pop-out (it keeps its own ⛶, wp-full)
   { id: "wordpopout", noFull: true, root: ".wp-win", hide: ".wp", close: "[data-wp='close']", title: "[data-wp-mode][aria-pressed='true']" },

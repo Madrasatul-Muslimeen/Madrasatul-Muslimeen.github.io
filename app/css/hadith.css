@@ -482,7 +482,7 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .hadith-reader-steps { display: none; gap: 0.3rem; margin-bottom: 0.4rem; }
 .hadith-reader-step { flex: 1; min-height: 40px; border: 1px solid var(--hadith-rule); background: #fff; border-radius: 0.5rem; cursor: pointer; color: var(--hadith-ink); font: inherit; font-size: 0.88rem; }
 .hadith-reader-step.on { border-color: var(--hadith-gold); background: #f3ead6; font-weight: 600; }
-.hadith-reader-grid { display: grid; grid-template-columns: var(--c1, 26%) 8px var(--c2, 30%) 8px minmax(0, 1fr); height: min(76vh, 50rem); min-height: 22rem;
+.hadith-reader-grid { display: grid; grid-template-columns: minmax(14.5rem, var(--c1, 26%)) 8px var(--c2, 30%) 8px minmax(0, 1fr); /* 14.5rem: the Chapters heading holds its title, three tool icons and two size icons (17 Nov 2026) */ height: min(76vh, 50rem); min-height: 22rem;
   border: 1px solid var(--hadith-rule); border-radius: 0.6rem; overflow: hidden; background: #fff; }
 .hadith-reader-grid[data-max] { grid-template-columns: minmax(0, 1fr); }
 .hadith-reader-grid[data-max] > .hadith-pane:not(.is-max), .hadith-reader-grid[data-max] > .hadith-splitter { display: none; }
@@ -822,4 +822,8 @@ body.book-page-open { overflow: hidden; }
 @media (max-width: 360px) {
   .book-page-head { gap: 0.1rem; padding-left: 0.3rem; }
   .book-page-title, .hwc-title, .hadith-pane-float .hadith-pane-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; min-width: 0; flex: 1 1 0; }
+}
+@media (min-width: 721px) and (max-width: 1100px) { /* a tablet: the Chapters heading is all buttons; its name would be cut to "…" */
+  .hadith-reader-grid > [data-reader-pane="chapters"] .hadith-pane-title { display: none; }
+  .hadith-reader-grid > [data-reader-pane="chapters"] .hadith-pane-tools { margin-inline-start: auto; }
 }

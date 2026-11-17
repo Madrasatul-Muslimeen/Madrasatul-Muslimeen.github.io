@@ -138,6 +138,19 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await ctx.close();
 }
 
+// ---- 4b. a popped-out pane is a window: ← Back, ⛶ Full screen and ✕ -------------------------------------------------------------------
+{
+  const tag = "[en 1280 popped-out pane]";
+  const { ctx, page: P } = await open("en", 1280);
+  await press(P, '[data-reader-pop="chapters"]'); await P.waitForSelector(".hadith-pane-float", { timeout: 8000 }).catch(() => {});
+  await P.waitForSelector(".hadith-pane-float .mm-back-btn", { timeout: 5000 }).catch(() => {});
+  const ctl = await P.evaluate(() => { const q = (s) => { const e = document.querySelector(`.hadith-pane-float ${s}`); if (!e) return null; const r = e.getBoundingClientRect(); return { w: r.width, h: r.height }; }; return { back: q(".mm-back-btn"), full: q(".mm-full-btn"), close: q("[data-reader-dock]") }; });
+  check(`${tag} the window has ← Back, ⛶ Full screen and ✕, each at least 40px`, [ctl.back, ctl.full, ctl.close].every((c) => c && c.w >= 40 && c.h >= 40), JSON.stringify(ctl));
+  await P.click(".hadith-pane-float .mm-back-btn"); await settle(P, 400);
+  check(`${tag} ← Back puts the pane back in its place (the window is gone)`, (await P.$(".hadith-pane-float")) === null && !!(await P.$('[data-reader-pane="chapters"] [data-openiti-chapter]')));
+  await ctx.close();
+}
+
 // ---- 5. English beside the Arabic -------------------------------------------------------------------------------------------------------
 for (const lang of ["en", "bn"]) {
   const tag = `[${lang} 390 English names]`;
