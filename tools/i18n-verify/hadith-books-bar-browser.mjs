@@ -25,6 +25,8 @@ const MUT = {
   noenter: ["js/hadith-reader.js", "oi.toolEnter = true; // focus moves into the panel once it is drawn", "oi.toolEnter = false;"],
   nofloattools: ["js/hadith-reader.js", "if (def) tools.appendChild(toolButton(def, opts)); } // also in a popped-out pane", "if (def && !oi.float[key]) tools.appendChild(toolButton(def, opts)); } // also in a popped-out pane"],
   nofocusafterback: ["js/minimise.js", "    if (pane) setTimeout(() => document.querySelector(`[data-reader-pop=\"${pane}\"]`)?.focus(), 60);", ""],
+  // (the hidden twin of ⓘ comes AFTER the bar in the page, so a plain querySelector also finds the visible one today; visibleOne() is defence in depth and its check cannot be failed by a mutation)
+  nofullfocus: ["js/hadith-reader.js", "oi.toolFull = !oi.toolFull; oi.toolFullFocus = true;", "oi.toolFull = !oi.toolFull;"],
   nowayback: ["js/hadith-reader.js", "    oi.toolFrom = oi.phone !== \"chapters\" ? oi.phone : (oi.toolFrom ?? null);", "    oi.toolFrom = null;"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -120,6 +122,20 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   const { ctx, page: P } = await open("en", 390);
   await P.focus('[data-reader-tool="info"]'); await P.keyboard.press("Enter"); await P.waitForSelector('[data-tool-panel="info"]', { timeout: 8000 }).catch(() => {}); await settle(P, 300);
   check(`${tag} Enter on ⓘ opens its panel and focus lands inside it, on ← Back`, await P.evaluate(() => document.activeElement?.matches('[data-tool-panel="info"] [data-tool-back]')));
+  await ctx.close();
+}
+{
+  const tag = "[en 390 keyboard full]";
+  const { ctx, page: P } = await open("en", 390);
+  await P.focus('[data-reader-tool="info"]'); await P.keyboard.press("Enter"); await P.waitForSelector('[data-tool-panel="info"]', { timeout: 8000 }).catch(() => {}); await settle(P, 300);
+  await P.focus('[data-tool-panel="info"] [data-tool-full]'); await P.keyboard.press("Enter"); await settle(P, 400);
+  check(`${tag} ⛶ with the keyboard goes full screen and focus stays on the (new) full-screen button`, await P.evaluate(() => document.querySelector('[data-tool-panel="info"]')?.classList.contains("is-full") && document.activeElement === document.querySelector('[data-tool-panel="info"] [data-tool-full]')));
+  await ctx.close();
+}
+{
+  const tag = "[en 390 keyboard]";
+  const { ctx, page: P } = await open("en", 390);
+  await P.focus('[data-reader-tool="info"]'); await P.keyboard.press("Enter"); await P.waitForSelector('[data-tool-panel="info"]', { timeout: 8000 }).catch(() => {}); await settle(P, 300);
   await P.keyboard.press("Escape"); await settle(P, 400);
   check(`${tag} Escape closes it and focus is back on ⓘ`, (await P.$('[data-tool-panel="info"]')) === null && (await P.evaluate(() => document.activeElement === document.querySelector('[data-reader-tool="info"]'))));
   await ctx.close();
@@ -139,6 +155,8 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   check(`${tag} ⓘ from the Text tab shows its panel at the top of Chapters`, (await P.$eval('[data-reader-show="chapters"]', (n) => n.getAttribute("aria-pressed"))) === "true");
   await press(P, '[data-tool-panel="info"] [data-tool-back]'); await settle(P, 500);
   check(`${tag} ← Back returns to the Text tab it was opened from (the way-back law)`, (await P.$eval('[data-reader-show="text"]', (n) => n.getAttribute("aria-pressed"))) === "true" && (await P.$('[data-tool-panel="info"]')) === null);
+  // the Chapters pane keeps a hidden copy of ⓘ that comes first in the page: focus must land on the one in the bar
+  check(`${tag} ...and focus is on the visible ⓘ in the bar, not its hidden twin`, await P.evaluate(() => { const a = document.activeElement; return !!a && a.matches('[data-reader-tool="info"]') && a.getClientRects().length > 0; }));
   await ctx.close();
 }
 

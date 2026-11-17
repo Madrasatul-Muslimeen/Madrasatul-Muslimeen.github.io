@@ -169,7 +169,7 @@ function toolPanel(def, opts) {
   const full = el("button", "hadith-pane-btn", oi.toolFull ? "⤡" : "⛶");
   full.type = "button"; full.dataset.toolFull = ""; full.title = oi.toolFull ? t("Back to three panes") : t("Full screen"); full.setAttribute("aria-label", full.title);
   full.setAttribute("aria-pressed", String(!!oi.toolFull));
-  full.addEventListener("click", () => { oi.toolFull = !oi.toolFull; localRefresh(); });
+  full.addEventListener("click", () => { oi.toolFull = !oi.toolFull; oi.toolFullFocus = true; localRefresh(); });
   const x = el("button", "hadith-pane-btn", "✕");
   x.type = "button"; x.dataset.toolClose = ""; x.title = t("Close"); x.setAttribute("aria-label", t("Close"));
   x.addEventListener("click", () => close(false));
@@ -232,9 +232,18 @@ function buildPane(key, opts, phone = false) {
   }
   if (oi.toolFocus) { // after a panel closes, focus goes back to the icon that opened it (way-back law)
     const id = oi.toolFocus; oi.toolFocus = null;
-    queueMicrotask(() => setTimeout(() => document.querySelector(`[data-reader-tool="${id}"]`)?.focus(), 0));
+    queueMicrotask(() => setTimeout(() => visibleOne(`[data-reader-tool="${id}"]`)?.focus(), 0)); // on a phone the same icon also sits, hidden, in the Chapters pane
+  }
+  if (oi.toolFullFocus && openDef) { // ⛶ / ⤡ redraws the panel: keep the keyboard user inside it, on the new full-screen button
+    oi.toolFullFocus = false;
+    queueMicrotask(() => setTimeout(() => visibleOne(`[data-tool-panel="${openDef.id}"] [data-tool-full]`)?.focus(), 0));
   }
   return pane;
+}
+
+/** The first element matching `sel` that is really on screen (a hidden duplicate cannot take focus). */
+function visibleOne(sel) {
+  return [...document.querySelectorAll(sel)].find((n) => n.getClientRects().length > 0) || null;
 }
 
 function defaultRect(key) {

@@ -127,7 +127,7 @@ export function renderNamesEditor(box, { versionUri, titleAr, chapters, onChange
       input.setAttribute("aria-label", t("Bangla name"));
       const inputEn = el("input", "hadith-subject-edit-name");
       inputEn.type = "text"; inputEn.maxLength = 160; inputEn.lang = "en";
-      inputEn.value = cur && cur.status !== "retired" ? cur.en : "";
+      inputEn.value = cur ? cur.en : ""; // a retired name keeps its English words, so saving a new Bangla one cannot wipe them
       inputEn.dataset.hadithNamesEn = r.key;
       inputEn.placeholder = t("English name");
       inputEn.setAttribute("aria-label", t("English name"));
