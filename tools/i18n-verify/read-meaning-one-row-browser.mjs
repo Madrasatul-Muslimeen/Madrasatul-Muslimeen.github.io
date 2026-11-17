@@ -7,7 +7,7 @@
 // (3) No dashed line above the first page's label; no rule under the menu row below 600px.
 // (4) A computer (1280) keeps 📖's word and the menu row's rule.
 // Run from the repository root, serve.js on :8080 (QR_BASE for another port).
-//   --mutate=nobreak  no line break before the switches  -> (1) fails at 412/390
+//   --mutate=noshow   the ⋮ sheet's Show group has no switches (17 Nov 2026) -> the "Show group" checks fail at 412/390/360
 //   --mutate=prevnum  the button names the page number     -> (2) fails
 //   --mutate=rule     the first label keeps its dashed line -> (3) fails
 //   --mutate=longlabels  "Surah list" and "English" in full -> (5) fails
@@ -21,7 +21,7 @@ const check = (name, ok, detail = "") => {
 };
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
 const MUT = {
-  nobreak: ['#readBar:has(#readMeaningLayersSlot:not([hidden]))::before { content: ""; order: 1; flex: 0 0 100%; height: 0; }', ""],
+  noshow: ['<div class="qm-show-row">${sw("en", t("English"))}${sw("bn", t("Bangla"))}${sw("wbw", t("Word by Word"))}</div>', ""],
   prevnum: ['">↑ ${escapeHtml(t("Previous page"))}</button>', '">↑ ${escapeHtml(t("Page {page}", { page: num(Math.max(1, first - 1)) }))}</button>'],
   rule: ["[data-meaning-pages] > .meaning-page-rule:first-child { border-top: 0; padding-top: 0; }", ""],
   longlabels: ["@media (max-width: 479px) { #readListBtn .rl-short, #readMeaningLayersSlot .ml-short { display: inline; } #readListBtn .rl-long, #readMeaningLayersSlot .ml-long { display: none; } }", ""],
@@ -62,9 +62,19 @@ for (const lang of ["en", "bn"]) for (const [width, height] of [[412, 900], [390
   });
   if (width < 900) {
     const mid = (a) => (a[1] + a[2]) / 2;
-    const oneRow = Math.abs(mid(m.slot) - mid(m.end)) < 8 && m.slot[3] <= m.end[0] + 1 && m.tools.every((t) => Math.abs(t.mid - mid(m.end)) < 4);
-    check(`${tag} English · Bangla · WbW and 🔖 📖 ⤢ ⋯ are one row`, oneRow, JSON.stringify({ slot: m.slot, end: m.end }));
-    check(`${tag} ...inside the bar, no sideways scroll, the tools 40px`, m.slot[0] >= m.bar[0] - 1 && m.end[3] <= m.bar[1] + 1 && m.sw <= m.vw && m.tools.every((t) => t.w >= 39.5 && t.h >= 39.5), JSON.stringify(m));
+    // UPDATED IN PLACE (17 Nov 2026, the Owner: "Show items should be inside the 3 dots"): below 900px the English · Bangla · WbW switches are no longer
+    // on the bar (they are the "Show" group of the ⋮ sheet), so the bar's tools are ONE row on their own, inside the bar.
+    check(`${tag} English · Bangla · WbW are NOT on the bar below 900px (parked, 0 wide)`, m.slot[3] - m.slot[0] < 1, JSON.stringify({ slot: m.slot }));
+    const oneRow = m.tools.every((t) => Math.abs(t.mid - mid(m.end)) < 4);
+    check(`${tag} 📖 ⤢ ⋮ and the rest of the right-hand tools are one row`, oneRow, JSON.stringify({ end: m.end, tools: m.tools }));
+    check(`${tag} ...inside the bar, no sideways scroll, the tools 40px`, m.end[3] <= m.bar[1] + 1 && m.sw <= m.vw && m.tools.every((t) => t.w >= 39.5 && t.h >= 39.5), JSON.stringify(m));
+    // the ⋮ sheet carries the Show group, and pressing a switch there presses the real one
+    await ev(() => document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.click()); await P.waitForTimeout(500);
+    const grp = await ev(() => { const g = document.querySelector("#readQuickMenuSlot [data-qm-show]"); const boxes = [...(g?.querySelectorAll("[data-qm-layer]") ?? [])]; return { shown: !!g && !g.hidden && g.getClientRects().length > 0, keys: boxes.map((b) => b.dataset.qmLayer).join(), bn: document.querySelector('#readMeaningLayersSlot [data-meaning-layer="bn"]')?.checked }; });
+    check(`${tag} the ⋮ sheet has a "Show" group with English · Bangla · Word by Word`, grp.shown && grp.keys === "en,bn,wbw", JSON.stringify(grp));
+    await ev(() => document.querySelector('#readQuickMenuSlot [data-qm-layer="bn"]')?.click()); await P.waitForTimeout(700);
+    const after = await ev(() => ({ bn: document.querySelector('#readMeaningLayersSlot [data-meaning-layer="bn"]')?.checked }));
+    check(`${tag} pressing Bangla in the ⋮ sheet turns the real Bangla switch off (and the flow with it)`, grp.bn === true && after.bn === false, JSON.stringify([grp.bn, after.bn]));
     check(`${tag} no rule under the menu row below 600px`, !m.navLine);
   } else {
     check(`${tag} a computer keeps 📖's word and the menu row's rule`, m.word && m.navLine, JSON.stringify({ word: m.word, nav: m.navLine }));
