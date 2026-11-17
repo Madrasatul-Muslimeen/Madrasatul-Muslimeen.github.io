@@ -139,7 +139,11 @@ jobs:
       - name: Install Playwright and Chromium (into the repository, as claude.yml does)
         run: |
           set -euo pipefail
-          npm install --no-save --no-package-lock playwright@1.63.0
+          npm install --no-save --no-package-lock playwright@1.63.0 typescript@6.0.2
+          # QR's strip-comments-check parses with TypeScript, which is not a dependency of this repository; in the
+          # sandbox it is /opt/node22/... (its default), here the copy just installed (first manual C run, 17 Nov:
+          # it crashed with no output for want of it).
+          echo "TS_PATH=$PWD/node_modules/typescript" >> "$GITHUB_ENV"
           echo "node_modules/" >> .git/info/exclude
           npx playwright install --with-deps chromium
       - name: behaviour.mjs ALONE
