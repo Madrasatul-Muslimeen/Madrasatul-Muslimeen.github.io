@@ -5005,6 +5005,9 @@
      rather than built speculatively. Reuses .qm-item/.qm-divider (the
      Read/Note view quick menus' own item styling) for every action row. */
   /* PCF MSA J68: the Āyah card's Copy chooser, over the card, in the card's own look (both looks via --card-*). */
+  .ayah-play-list { display: grid; gap: 0.35rem; }
+  .ayah-play-list label, .ayah-play-loop { display: flex; align-items: center; gap: 0.5rem; min-height: 40px; }
+  .ayah-play-list input, .ayah-play-loop input { width: 22px; height: 22px; flex: 0 0 auto; }
   .ayah-copy-dlg { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 16px; background: rgba(10,16,30,0.45); }
   .ayah-copy-box { width: min(440px, 100%); box-sizing: border-box; display: grid; gap: 0.7rem; padding: 0.8rem 0.9rem 0.9rem; border-radius: 14px; background: var(--card-bg, #fff); color: var(--card-text, #13241f); box-shadow: var(--card-shadow, 0 10px 30px rgba(0,0,0,0.3)); border: 1px solid var(--card-line, #d6ddd9); }
   .ayah-copy-body { display: grid; gap: 0.7rem; align-content: start; min-height: 0; overflow-y: auto; }
@@ -23414,6 +23417,61 @@
       dlg.querySelector("[data-copy-go]")?.focus();
     }
 
+    /** The Owner, 17 Nov 2026 ("Play button here should open a card to select play options" -> "A, Listening in Study Options"): the
+     *  ⋮ menu's ▶ Play opens this small card with the SAME choices as Study options > Listening -- reciters, Repeat, Mode -- each one
+     *  the real control (a change here is a change there, so the two never disagree), then ▶ Play. Each Ayah plays THIS āyah (Repeat
+     *  times); Whole Unit plays the current unit as Study options' own Play does (and Loop, which only a unit has, shows then). */
+    let quickRepeatRun = 0;
+    function openAyahPlayDialog(unitKey) {
+      const { surah, ayah } = parseAyahUnitKey(unitKey);
+      document.getElementById("ayahPlayDlg")?.remove();
+      const real = (sel) => document.querySelector(sel);
+      const dlg = document.createElement("div");
+      dlg.id = "ayahPlayDlg"; dlg.className = "ayah-copy-dlg";
+      const reciterIds = Object.keys(RECITERS).filter((id) => reciterSupportsSingleAyah(id) && reciterOffersSurah(id, surah));
+      const paint = () => {
+        const repeat = real("#drillRepeatSelect")?.value ?? "1", mode = real("#drillModeSelect")?.value ?? "each", loop = !!real("#loopToggle")?.checked;
+        const ticked = new Set(drillSelectedReciterIds ?? []);
+        dlg.innerHTML = `<div class="ayah-copy-box" role="dialog" aria-modal="true" aria-labelledby="ayahPlayTitle">
+          <div class="ayah-copy-head"><h3 id="ayahPlayTitle">▶ ${escapeHtml(t("Play options"))}</h3><button type="button" class="ayah-copy-x" data-play-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>
+          <div class="ayah-copy-body">
+            <div class="ayah-copy-row ayah-play-reciters" role="group" aria-label="${escapeHtml(t("Listening"))}"><span class="ayah-copy-lab">${escapeHtml(t("Listening"))}</span>
+              <div class="ayah-play-list">${reciterIds.map((id) => `<label><input type="checkbox" data-play-reciter="${escapeHtml(id)}"${ticked.has(id) ? " checked" : ""}> ${escapeHtml(t(RECITERS[id].label))}</label>`).join("")}</div></div>
+            <div class="ayah-copy-row"><label class="ayah-copy-lab" for="ayahPlayRepeat">${escapeHtml(t("Repeat"))}</label><select id="ayahPlayRepeat" data-play-repeat>${[1, 2, 3, 5, 10].map((n) => `<option value="${n}"${String(n) === String(repeat) ? " selected" : ""}>${num(n)}×</option>`).join("")}</select></div>
+            <div class="ayah-copy-row"><label class="ayah-copy-lab" for="ayahPlayMode">${escapeHtml(t("Mode"))}</label><select id="ayahPlayMode" data-play-mode><option value="each"${mode === "each" ? " selected" : ""}>${escapeHtml(t("Each Ayah"))}</option><option value="whole"${mode === "whole" ? " selected" : ""}>${escapeHtml(t("Whole Unit"))}</option></select></div>
+            ${mode === "whole" ? `<label class="ayah-copy-row ayah-play-loop"><input type="checkbox" data-play-loop${loop ? " checked" : ""}> ${escapeHtml(t("Loop"))}</label>` : ""}
+            <button type="button" class="ayah-copy-go" data-play-go>▶ ${escapeHtml(t("Play"))}</button>
+          </div></div>`;
+      };
+      const close = () => { dlg.remove(); window.removeEventListener("keydown", onKey, true); };
+      const onKey = (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); close(); } };
+      const setReal = (sel, key, value) => { const el = real(sel); if (!el) return; el[key] = value; el.dispatchEvent(new Event("change", { bubbles: true })); };
+      dlg.addEventListener("click", (e) => {
+        if (e.target === dlg || e.target.closest("[data-play-close]")) { close(); return; }
+        if (!e.target.closest("[data-play-go]")) return;
+        const repeat = Math.max(1, Number(real("#drillRepeatSelect")?.value) || 1), mode = real("#drillModeSelect")?.value ?? "each";
+        close();
+        if (mode === "whole") { playCurrentSelection({ fresh: true }).catch(reportPlayFailure); return; }
+        const run = ++quickRepeatRun;
+        unlockAudio(); warmSegmentedTimestamps();
+        const reciterId = playbackReciterIds()[0] ?? currentReciterId;
+        if (!reciterId) { alert(t("Pick a reciter in Listening settings first.")); return; }
+        (async () => { for (let i = 0; i < repeat && run === quickRepeatRun; i++) await playOneAndWait(surah, ayah, reciterId); })().catch(reportPlayFailure);
+        renderReadTransport();
+      });
+      dlg.addEventListener("change", (e) => {
+        const r = e.target.closest("[data-play-reciter]");
+        if (r) { const box = real(`.drill-reciter-check[value="${CSS.escape(r.dataset.playReciter)}"]`); if (box) { box.checked = r.checked; box.dispatchEvent(new Event("change", { bubbles: true })); } return; }
+        if (e.target.matches("[data-play-repeat]")) { setReal("#drillRepeatSelect", "value", e.target.value); return; }
+        if (e.target.matches("[data-play-mode]")) { setReal("#drillModeSelect", "value", e.target.value); paint(); return; }
+        if (e.target.matches("[data-play-loop]")) { setReal("#loopToggle", "checked", e.target.checked); }
+      });
+      window.addEventListener("keydown", onKey, true);
+      paint();
+      document.body.appendChild(dlg);
+      dlg.querySelector("[data-play-go]")?.focus();
+    }
+
     /** Plays exactly this one āyah with whatever reciter is already ticked/current -- the quick menu's own "just a click away" Play, distinct from playCurrentSelection()'s unit-wide drill. */
     function quickPlayAyah(unitKey) {
       const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
@@ -23437,7 +23495,7 @@
           return buildAyahText(unitKey, langs, surah === currentSurahNum ? null : await getSurah(surah));
         },
         onTextMenuOpen: (unitKey) => { ensurePanePlainNotes(unitKey); },
-        onPlay: quickPlayAyah,
+        onPlay: openAyahPlayDialog, // the Owner, 17 Nov 2026: ▶ Play opens the play-options card (same choices as Study options > Listening)
         onOpenNote: (unitKey) => openLatestNoteFromMenu(unitKey), // J114: the latest Note in the Journey tray (it was the Notes pane, decision 95)
         onUnitBookmark: () => { readBookmarkBtn.click(); },
         onMenuOpen: (unitKey, wrap) => {
