@@ -108,6 +108,32 @@ export function bookmarkTimeText(iso) {
     ? new Intl.DateTimeFormat("bn-BD-u-nu-beng", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(d)
     : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
+// The Owner, 17 Nov 2026: a saved Quran bookmark is SHOWN as "Al-Hadid - 57:1-6 - 12.Oct.26" (surah, place, day made), old ones too.
+// Display only (the stored name is kept as the tooltip and is never rewritten). The two small tables load on first use of a list
+// that holds a Quran bookmark, never at startup (I9); until they arrive, or for a unit they cannot resolve, the stored name shows.
+let captionTables = null;
+async function loadCaptionTables() {
+  if (!captionTables) {
+    captionTables = Promise.all([
+      fetch("/tools/quran-data-pull/output/surah-index.json").then((r) => (r.ok ? r.json() : [])),
+      fetch("/tools/quran-data-pull/output/page-index.json").then((r) => (r.ok ? r.json() : [])),
+    ]).then(([surahIndex, pageRows]) => ({ surahIndex, pageRows })).catch(() => { captionTables = null; return null; });
+  }
+  return captionTables;
+}
+async function paintCaptions(listEl, doc) {
+  const spans = [...listEl.querySelectorAll("[data-bm-cap]")];
+  if (!spans.length) return;
+  const tables = await loadCaptionTables();
+  if (!tables?.surahIndex?.length) return;
+  const [{ savedBookmarkCaption }, { resolveUnitInfo }] = await Promise.all([import("./bookmark-caption.js"), import("./unit-resolve.js")]);
+  const byId = new Map((doc?.saved ?? []).map((x) => [x.id, x]));
+  for (const span of spans) {
+    const b = byId.get(span.dataset.bmCap);
+    const cap = b && savedBookmarkCaption(b, tables, resolveUnitInfo);
+    if (cap && span.isConnected) { span.title = b.name ?? ""; span.textContent = cap; }
+  }
+}
 let linkCtx = { doc: null, times: true }; // set by renderBookmarkList() for the rows it renders
 function bookmarkLinkHtml(b) {
   const href = bookmarkHref(b);
@@ -117,7 +143,7 @@ function bookmarkLinkHtml(b) {
   // The Owner, 7 Oct 2026 (a screenshot of this list): "Enable bookmark n folder delete here (handy)". A 🗑 on every
   // bookmark: it is only marked removed (I4, D6), Undo is offered at once, and Manage bookmarks can restore it later.
   const name = escapeHtml(b.name);
-  return `<div class="nav-bm-row" data-bm-row-id="${escapeHtml(b.id)}"><a class="nav-bm-link nav-bm-item" data-bm-open-id="${escapeHtml(b.id)}" href="${href}"><span class="nav-bm-mark" aria-hidden="true">🔖</span><span class="nav-bm-name">${name}</span>${when}</a>` +
+  return `<div class="nav-bm-row" data-bm-row-id="${escapeHtml(b.id)}"><a class="nav-bm-link nav-bm-item" data-bm-open-id="${escapeHtml(b.id)}" href="${href}"><span class="nav-bm-mark" aria-hidden="true">🔖</span><span class="nav-bm-name"${b.moduleId === "quranrevival" ? ` data-bm-cap="${escapeHtml(b.id)}"` : ""}>${name}</span>${when}</a>` +
     `<button type="button" class="nav-bm-del" data-bm-remove-bookmark="${escapeHtml(b.id)}" aria-label="${escapeHtml(t("Remove bookmark"))}: ${name}" title="${escapeHtml(t("Remove bookmark"))}">🗑</button></div>`;
 }
 
@@ -524,6 +550,7 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
       });
     if (openIds?.size) listEl.querySelectorAll("details[data-bm-folder-id]").forEach((d) => { if (openIds.has(d.dataset.bmFolderId)) d.open = true; });
     wireControls(bookmarksDoc, roster);
+    paintCaptions(listEl, bookmarksDoc);
   }
 
   // Changing either option re-renders from the SAME document already in

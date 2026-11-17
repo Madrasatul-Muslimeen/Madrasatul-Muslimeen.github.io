@@ -241,9 +241,14 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await toggle();
     let n = await ev(page, () => document.querySelectorAll("audio").length);
     await ev(page, () => document.querySelector("#readQuickMenuSlot [data-qm-play]").click());
+    // UPDATED IN PLACE (17 Nov 2026, the Owner chose "A, Listening in Study Options"): the menu's Play no longer starts at once, it opens the
+    // play-options card; the card's own ▶ Play then starts the recitation (the Read bar shows ⏸) and closes the card and the menu.
+    const cardOpen = await page.waitForSelector("#ayahPlayDlg [data-play-go]", { timeout: 5000 }).then(() => true).catch(() => false);
+    check(`${t}: Play opens the play-options card`, cardOpen);
+    await ev(page, () => document.querySelector("#ayahPlayDlg [data-play-go]")?.click());
     await page.waitForFunction(() => document.getElementById("readPlayBtn").textContent.trim() === "⏸", null, { timeout: 8000 }).catch(() => {});
-    const playing = await ev(page, () => ({ btn: document.getElementById("readPlayBtn").textContent.trim(), closed: !document.querySelector("#readQuickMenuSlot .quick-menu.open") }));
-    check(`${t}: Play starts the recitation (the Read bar shows ⏸) and closes the menu`, playing.btn === "⏸" && playing.closed, JSON.stringify(playing));
+    const playing = await ev(page, () => ({ btn: document.getElementById("readPlayBtn").textContent.trim(), closed: !document.querySelector("#readQuickMenuSlot .quick-menu.open") && !document.getElementById("ayahPlayDlg") }));
+    check(`${t}: the card's ▶ Play starts the recitation (the Read bar shows ⏸) and closes the card and the menu`, playing.btn === "⏸" && playing.closed, JSON.stringify(playing));
     await ev(page, () => document.getElementById("readPlayBtn").click());
     await settle(page, 300);
     // Word by Word flips the reading choice, both ways.

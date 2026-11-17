@@ -5008,6 +5008,11 @@
      rather than built speculatively. Reuses .qm-item/.qm-divider (the
      Read/Note view quick menus' own item styling) for every action row. */
   /* PCF MSA J68: the Āyah card's Copy chooser, over the card, in the card's own look (both looks via --card-*). */
+  /* Codex review (17 Nov 2026): on a short screen (a phone on its side) the card is never taller than the screen, so its body scrolls and ▶ Play can be reached. */
+  #ayahPlayDlg .ayah-copy-box { max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); }
+  .ayah-play-list { display: grid; gap: 0.35rem; }
+  .ayah-play-list label, .ayah-play-loop { display: flex; align-items: center; gap: 0.5rem; min-height: 40px; }
+  .ayah-play-list input, .ayah-play-loop input { width: 22px; height: 22px; flex: 0 0 auto; }
   .ayah-copy-dlg { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 16px; background: rgba(10,16,30,0.45); }
   .ayah-copy-box { width: min(440px, 100%); box-sizing: border-box; display: grid; gap: 0.7rem; padding: 0.8rem 0.9rem 0.9rem; border-radius: 14px; background: var(--card-bg, #fff); color: var(--card-text, #13241f); box-shadow: var(--card-shadow, 0 10px 30px rgba(0,0,0,0.3)); border: 1px solid var(--card-line, #d6ddd9); }
   .ayah-copy-body { display: grid; gap: 0.7rem; align-content: start; min-height: 0; overflow-y: auto; }
@@ -8360,7 +8365,7 @@
     } from "./js/audio-player.js";
     import { translateStatic, t, num, parseNum, surahName, ensureCatalogueReady } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
-    import { recitationUrls, savedFor, saveRecitation, removeRecitation, estimateBytes, mbText as recitationMbText } from "./js/recitation-offline.js";
+    import { recitationUrls, savedFor, saveRecitation, removeRecitation, recitationFileBlob, estimateBytes, mbText as recitationMbText } from "./js/recitation-offline.js";
     import { isZabReady } from "./js/zab-readiness.js";
     import { armScreensaver } from "./js/screensaver-idle.js";
 
@@ -21070,17 +21075,19 @@
       const kg = knownGroupsData;
       if (!kg) return null;
       const asma = asmaGroupsOfNames(DEFAULT_ASMA_COLLECTIONS, asmaNameInfo, kg.names);
-      const lists = [{ k: "allah", lemmas: lemmasOfAsmaGroups(asma) }, ...kg.groups.map((g) => ({ k: g.k, lemmas: g.lemmas })), { k: KNOWN_LANGUAGE_GROUP, lemmas: [...activeBanglaSet(banglaState)] }];
+      // The Owner, 17 Nov 2026: seven groups in this order; "Words used in the Names in My Language" (bnnames) comes AFTER "Words used in My Language".
+      const after = kg.groups.filter((g) => g.k === "bnnames"), before = kg.groups.filter((g) => g.k !== "bnnames");
+      const lists = [{ k: "allah", lemmas: lemmasOfAsmaGroups(asma) }, ...before.map((g) => ({ k: g.k, lemmas: g.lemmas })), { k: KNOWN_LANGUAGE_GROUP, lemmas: [...activeBanglaSet(banglaState)] }, ...after.map((g) => ({ k: g.k, lemmas: g.lemmas }))];
       return { asma, lists, figures: knownGroupFigures(lists, { rowOf: knownRowOf, isKnown: (lemma) => learnNextIsKnown({ l: lemma }), total: learnNextCtx.data.total }) };
     }
     function knownGroupTitle(k) {
       const g = knownGroupsData?.groups?.find((x) => x.k === k);
       const bn = getAppLang() === "bn";
-      if (k === "allah") return { main: t("Allah's Names"), sub: t("From the Asma groups") };
-      if (k === KNOWN_LANGUAGE_GROUP) return { main: t("Words in Your Own Language"), sub: t("(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)") };
+      if (k === "allah") return { main: t("Allah's Names & Attributes"), sub: t("From the Asma groups") };
+      if (k === KNOWN_LANGUAGE_GROUP) return { main: t("Words used in My Language"), sub: t("(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)") };
       return g ? { main: bn ? g.bn : g.en, sub: bn ? "" : g.bn } : { main: k, sub: "" };
     }
-    const KNOWN_COLOURS = { allah: "#b8860b", prophets: "#2e7d6b", people: "#7a4fb5", ibadah: "#1f6fb2", daily: "#c0563b", [KNOWN_LANGUAGE_GROUP]: "#5c8a1e" };
+    const KNOWN_COLOURS = { allah: "#b8860b", prophets: "#2e7d6b", people: "#7a4fb5", ibadah: "#1f6fb2", daily: "#c0563b", [KNOWN_LANGUAGE_GROUP]: "#5c8a1e", bnnames: "#8a4f1e" };
     function knownWordHtml(w, { meaningOverride, nameLine, lang = false } = {}) {
       const r = w.row, own = knownOwn(w.lemma), via = w.known && !own && !lang;
       const meaning = meaningOverride ?? learnNextMeaning(r);
@@ -23417,6 +23424,96 @@
       dlg.querySelector("[data-copy-go]")?.focus();
     }
 
+    /** The Owner, 17 Nov 2026 ("Play button here should open a card to select play options" -> "A, Listening in Study Options"): the
+     *  ⋮ menu's ▶ Play opens this small card with the SAME choices as Study options > Listening -- reciters, Repeat, Mode -- each one
+     *  the real control (a change here is a change there, so the two never disagree), then ▶ Play. Each Ayah plays THIS āyah (Repeat
+     *  times); Whole Unit plays the current unit as Study options' own Play does (and Loop, which only a unit has, shows then). */
+    function openAyahPlayDialog(unitKey) {
+      const { surah, ayah } = parseAyahUnitKey(unitKey);
+      document.getElementById("ayahPlayDlg")?.remove();
+      const real = (sel) => document.querySelector(sel);
+      const dlg = document.createElement("div");
+      dlg.id = "ayahPlayDlg"; dlg.className = "ayah-copy-dlg";
+      // Each Ayah plays THIS āyah, so a reciter must be able to play it on its own in this āyah's sūrah; Whole Unit plays the
+      // current unit, where a reciter with only a whole-sūrah file can play too (Codex review, 17 Nov 2026).
+      const reciterChoices = (mode) => Object.keys(RECITERS).filter((id) => (mode === "whole"
+        ? reciterOffersSurah(id, currentSurahNum) && (reciterSupportsSingleAyah(id) || !!RECITERS[id].surahUrl)
+        : reciterSupportsSingleAyah(id) && reciterOffersSurah(id, surah)));
+      const paint = () => {
+        const repeat = real("#drillRepeatSelect")?.value ?? "1", mode = real("#drillModeSelect")?.value ?? "each", loop = !!real("#loopToggle")?.checked;
+        const reciterIds = reciterChoices(mode);
+        const ticked = new Set(drillSelectedReciterIds ?? []);
+        dlg.innerHTML = `<div class="ayah-copy-box" role="dialog" aria-modal="true" aria-labelledby="ayahPlayTitle">
+          <div class="ayah-copy-head"><h3 id="ayahPlayTitle">▶ ${escapeHtml(t("Play options"))}</h3><button type="button" class="ayah-copy-x" data-play-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>
+          <div class="ayah-copy-body">
+            <div class="ayah-copy-row ayah-play-reciters" role="group" aria-label="${escapeHtml(t("Listening"))}"><span class="ayah-copy-lab">${escapeHtml(t("Listening"))}</span>
+              <div class="ayah-play-list">${reciterIds.map((id) => `<label><input type="checkbox" data-play-reciter="${escapeHtml(id)}"${ticked.has(id) ? " checked" : ""}> ${escapeHtml(t(RECITERS[id].label))}</label>`).join("")}</div></div>
+            <div class="ayah-copy-row"><label class="ayah-copy-lab" for="ayahPlayRepeat">${escapeHtml(t("Repeat"))}</label><select id="ayahPlayRepeat" data-play-repeat>${[1, 2, 3, 5, 10].map((n) => `<option value="${n}"${String(n) === String(repeat) ? " selected" : ""}>${num(n)}×</option>`).join("")}</select></div>
+            <div class="ayah-copy-row"><label class="ayah-copy-lab" for="ayahPlayMode">${escapeHtml(t("Mode"))}</label><select id="ayahPlayMode" data-play-mode><option value="each"${mode === "each" ? " selected" : ""}>${escapeHtml(t("Each Ayah"))}</option><option value="whole"${mode === "whole" ? " selected" : ""}>${escapeHtml(t("Whole Unit"))}</option></select></div>
+            ${mode === "whole" ? `<label class="ayah-copy-row ayah-play-loop"><input type="checkbox" data-play-loop${loop ? " checked" : ""}> ${escapeHtml(t("Loop"))}</label>` : ""}
+            <button type="button" class="ayah-copy-go" data-play-go>▶ ${escapeHtml(t("Play"))}</button>
+          </div></div>`;
+      };
+      const close = () => { dlg.remove(); window.removeEventListener("keydown", onKey, true); };
+      const onKey = (e) => {
+        if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); close(); return; }
+        if (e.key !== "Tab") return;
+        // Keep Tab inside the card: it is modal (Codex review, 17 Nov 2026).
+        const f = [...dlg.querySelectorAll("button, input, select")].filter((el) => !el.disabled && el.getClientRects().length > 0);
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1], at = document.activeElement;
+        if (!dlg.contains(at)) { e.preventDefault(); first.focus(); }
+        else if (e.shiftKey && at === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
+      };
+      const setReal = (sel, key, value) => { const el = real(sel); if (!el) return; el[key] = value; el.dispatchEvent(new Event("change", { bubbles: true })); };
+      dlg.addEventListener("click", (e) => {
+        if (e.target === dlg || e.target.closest("[data-play-close]")) { close(); return; }
+        if (!e.target.closest("[data-play-go]")) return;
+        const repeat = Math.max(1, Number(real("#drillRepeatSelect")?.value) || 1), mode = real("#drillModeSelect")?.value ?? "each";
+        close();
+        if (mode === "whole") { playCurrentSelection({ fresh: true }).catch(reportPlayFailure); return; }
+        // Each Ayah: the SAME drill Study options plays (every ticked reciter, Repeat times, and the reading bar's Stop ends it).
+        const ids = (drillSelectedReciterIds ?? []).filter((id) => RECITERS[id] && reciterSupportsSingleAyah(id) && reciterOffersSurah(id, surah));
+        if (!ids.length) { alert(t("Pick a reciter in Listening settings first.")); return; }
+        unlockAudio(); warmSegmentedTimestamps();
+        // A run already sounding is stopped AND its listening session settled (what it heard still counts), as Study options' Play does. This
+        // one āyah starts NO listening session of its own: the session snapshots the SELECTED unit, so on another āyah of the flow view it
+        // would be credited to the wrong one, and the old ▶ Play of this menu never started one either (Codex review, 17 Nov 2026).
+        if (isPlaying() || isPaused() || isRunContinuing()) { stopDrill(); stopAudio(); settleListeningSession("stopped"); } else { stopDrill(); stopAudio(); }
+        playDrill({ surahNum: surah, fromAyah: ayah, toAyah: ayah, reciterIds: ids, repeatCount: repeat, mode: "each" }).catch(reportPlayFailure).finally(renderReadTransport);
+        renderReadTransport();
+      });
+      dlg.addEventListener("change", (e) => {
+        const r = e.target.closest("[data-play-reciter]");
+        if (r) {
+          // The choice is written to the shared selection itself, not only through the hidden Study options box: that box exists
+          // only for reciters of the CURRENT sūrah, and this āyah may belong to another (Codex review, 17 Nov 2026).
+          const id = r.dataset.playReciter, set = new Set(drillSelectedReciterIds ?? []);
+          if (r.checked) set.add(id); else set.delete(id);
+          drillSelectedReciterIds = [...set];
+          const box = real(`.drill-reciter-check[value="${CSS.escape(id)}"]`);
+          if (box) { box.checked = r.checked; box.dispatchEvent(new Event("change", { bubbles: true })); }
+          return;
+        }
+        if (e.target.matches("[data-play-repeat]")) { setReal("#drillRepeatSelect", "value", e.target.value); return; }
+        if (e.target.matches("[data-play-mode]")) {
+          setReal("#drillModeSelect", "value", e.target.value);
+          // Loop belongs to Whole Unit only: leaving it ON behind a hidden checkbox would repeat a single āyah for ever (Codex review, 17 Nov 2026).
+          if (e.target.value === "each" && real("#loopToggle")?.checked) setReal("#loopToggle", "checked", false);
+          paint(); return;
+        }
+        if (e.target.matches("[data-play-loop]")) { setReal("#loopToggle", "checked", e.target.checked); }
+      });
+      window.addEventListener("keydown", onKey, true);
+      // Loop belongs to Whole Unit only: a Loop left ON from Study options while Mode is Each Ayah would repeat this one āyah for ever
+      // behind a checkbox this card hides, so it is cleared on opening as well as on a change of mode (Codex review, 17 Nov 2026).
+      if ((real("#drillModeSelect")?.value ?? "each") === "each" && real("#loopToggle")?.checked) setReal("#loopToggle", "checked", false);
+      paint();
+      document.body.appendChild(dlg);
+      dlg.querySelector("[data-play-go]")?.focus();
+    }
+
     /** Plays exactly this one āyah with whatever reciter is already ticked/current -- the quick menu's own "just a click away" Play, distinct from playCurrentSelection()'s unit-wide drill. */
     function quickPlayAyah(unitKey) {
       const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
@@ -23440,7 +23537,7 @@
           return buildAyahText(unitKey, langs, surah === currentSurahNum ? null : await getSurah(surah));
         },
         onTextMenuOpen: (unitKey) => { ensurePanePlainNotes(unitKey); },
-        onPlay: quickPlayAyah,
+        onPlay: openAyahPlayDialog, // the Owner, 17 Nov 2026: ▶ Play opens the play-options card (same choices as Study options > Listening)
         onOpenNote: (unitKey) => openLatestNoteFromMenu(unitKey), // J114: the latest Note in the Journey tray (it was the Notes pane, decision 95)
         onUnitBookmark: () => { readBookmarkBtn.click(); },
         onMenuOpen: (unitKey, wrap) => {
@@ -28214,6 +28311,7 @@
     // whose audio can be saved. A failed save is said in words here (I15), never only in the console.
     // -----------------------------------------------------------------------
     let recitOfflineBusy = false;
+    let recitFileBusy = false;
     let recitOfflineStatus = null; // { kind: "info" | "error", text }
     let recitOfflineSurah = null;
     function recitOfflineReciterId() {
@@ -28226,39 +28324,68 @@
       if (!box) return;
       const rid = recitOfflineReciterId();
       if (recitOfflineSurah === null) recitOfflineSurah = currentSurahNum;
-      const surah = recitOfflineSurah;
-      const count = recitOfflineAyahCount(surah);
+      const surah = recitOfflineSurah; // a sūrah number, or "all": the whole Qur'an in one press (the Owner, 17 Nov 2026)
+      const isAll = surah === "all";
+      const count = isAll ? 0 : recitOfflineAyahCount(surah);
       const saved = rid ? savedFor(rid) : {};
+      const missing = isAll ? surahIndex.filter((x) => !saved[x.surahNumber]) : [];
+      const missingBytes = missing.reduce((n, x) => n + estimateBytes(x.ayahCount), 0);
       const savedNums = Object.keys(saved).map(Number).sort((a, b) => a - b);
-      const sig = JSON.stringify([rid, surah, savedNums, recitOfflineBusy, recitOfflineStatus, getAppLang()]);
+      const sig = JSON.stringify([rid, surah, savedNums, recitOfflineBusy, recitOfflineStatus, recitFileBusy, getAppLang()]);
       if (box.dataset.sig === sig) return;
       box.dataset.sig = sig;
       const reciterName = rid ? t(RECITERS[rid].label) : "";
       const head = `<h5>${t("Recitation for offline")}</h5>`;
       if (!rid) { box.innerHTML = head + `<p class="opt-note">${t("The reciters ticked above cannot be saved for offline.")}</p>`; return; }
-      const isSaved = !!saved[surah];
+      const isSaved = isAll ? missing.length === 0 : !!saved[surah];
       box.innerHTML = head +
         `<p class="opt-note">${t("Choose the sūrahs you want to listen to with no internet. Saved for {reciter}; about 1 MB for each minute of recitation.", { reciter: reciterName })}</p>` +
-        `<div class="recit-off-row"><select id="recitOfflineSurah" aria-label="${t("Surah")}">${surahIndex.map((x) => `<option value="${x.surahNumber}"${x.surahNumber === surah ? " selected" : ""}>${surahDisplayName(x.surahNumber)}</option>`).join("")}</select>` +
+        `<div class="recit-off-row"><select id="recitOfflineSurah" aria-label="${t("Surah")}"><option value="all"${isAll ? " selected" : ""}>${escapeHtml(t("The whole Qur'an ({n} sūrahs)", { n: num(surahIndex.length) }))}</option>${surahIndex.map((x) => `<option value="${x.surahNumber}"${x.surahNumber === surah ? " selected" : ""}>${surahDisplayName(x.surahNumber)}</option>`).join("")}</select>` +
         (isSaved
           ? `<button type="button" id="recitOfflineRemove">${t("Remove from this device")}</button>`
-          : `<button type="button" id="recitOfflineSave"${recitOfflineBusy ? " disabled" : ""}>${t("Save for offline")} (${t("about")} ${recitationMbText(estimateBytes(count))})</button>`) + `</div>` +
+          : `<button type="button" id="recitOfflineSave"${recitOfflineBusy ? " disabled" : ""}>${t("Save for offline")} (${t("about")} ${recitationMbText(isAll ? missingBytes : estimateBytes(count))})</button>`) + `</div>` +
+        (isAll ? "" : `<div class="recit-off-row"><button type="button" id="recitFileBtn"${recitFileBusy ? " disabled" : ""}>⬇ ${t("Download MP3 file")} (${t("about")} ${recitationMbText(estimateBytes(count))})</button></div>`) +
         `<p class="recit-off-status" id="recitOfflineStatus" role="${recitOfflineStatus?.kind === "error" ? "alert" : "status"}" data-kind="${recitOfflineStatus?.kind ?? ""}">${recitOfflineStatus ? escapeHtml(recitOfflineStatus.text) : ""}</p>` +
         (savedNums.length ? `<ul class="recit-off-list" aria-label="${t("Saved for offline")}">${savedNums.map((n) => `<li><span>${surahDisplayName(n)} · ${recitationMbText(saved[n].bytes)}</span><button type="button" data-recit-remove="${n}">${t("Remove")}</button></li>`).join("")}</ul>` : "");
-      document.getElementById("recitOfflineSurah").addEventListener("change", (e) => { recitOfflineSurah = Number(e.target.value); recitOfflineStatus = null; renderRecitationOffline(); });
+      document.getElementById("recitOfflineSurah").addEventListener("change", (e) => { recitOfflineSurah = e.target.value === "all" ? "all" : Number(e.target.value); recitOfflineStatus = null; renderRecitationOffline(); });
       document.getElementById("recitOfflineSave")?.addEventListener("click", async () => {
         if (recitOfflineBusy) return;
         recitOfflineBusy = true; recitOfflineStatus = { kind: "info", text: t("Saving…") }; renderRecitationOffline();
         try {
+          if (isAll) {
+            // The whole Qur'an in one press: the sūrahs not yet kept, one after another; a failure stops and says which.
+            let kept = 0;
+            for (const x of missing) {
+              const el0 = document.getElementById("recitOfflineStatus"); if (el0) el0.textContent = t("Saving sūrah {done} of {total}…", { done: num(kept + 1), total: num(missing.length) });
+              await saveRecitation({ reciterId: rid, surah: x.surahNumber, ayahCount: x.ayahCount });
+              kept++;
+            }
+            recitOfflineStatus = { kind: "info", text: t("Saved for offline: the whole Qur'an ({n} sūrahs).", { n: num(surahIndex.length) }) };
+          } else {
           const bytes = await saveRecitation({ reciterId: rid, surah, ayahCount: count, onProgress: (d, n) => {
             const el = document.getElementById("recitOfflineStatus"); if (el) el.textContent = t("Saving… {done} of {total}", { done: num(d), total: num(n) });
           } });
           recitOfflineStatus = { kind: "info", text: t("Saved for offline: {name} ({size}).", { name: surahDisplayName(surah), size: recitationMbText(bytes) }) };
+          }
         } catch (err) { recitOfflineStatus = { kind: "error", text: err?.message || t("Could not save this recitation.") }; }
         recitOfflineBusy = false; renderRecitationOffline();
       });
       const removeIt = async (n) => { await removeRecitation({ reciterId: rid, surah: n, ayahCount: recitOfflineAyahCount(n) }); recitOfflineStatus = { kind: "info", text: t("Removed: {name}.", { name: surahDisplayName(n) }) }; renderRecitationOffline(); };
-      document.getElementById("recitOfflineRemove")?.addEventListener("click", () => removeIt(surah));
+      document.getElementById("recitOfflineRemove")?.addEventListener("click", async () => { if (isAll) { for (const x of surahIndex) if (saved[x.surahNumber]) await removeIt(x.surahNumber); } else await removeIt(surah); });
+      document.getElementById("recitFileBtn")?.addEventListener("click", async () => {
+        if (recitFileBusy || isAll) return;
+        recitFileBusy = true; recitOfflineStatus = { kind: "info", text: t("Preparing the file…") }; renderRecitationOffline();
+        try {
+          const blob = await recitationFileBlob({ reciterId: rid, surah, ayahCount: count, onProgress: (d, n) => { const el = document.getElementById("recitOfflineStatus"); if (el) el.textContent = t("Preparing the file… {done} of {total}", { done: num(d), total: num(n) }); } });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url; a.download = `${String(surah).padStart(3, "0")} - ${surahDisplayName(surah)}.mp3`; a.hidden = true;
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+          recitOfflineStatus = { kind: "info", text: t("The file is in your Downloads folder: {name} ({size}).", { name: surahDisplayName(surah), size: recitationMbText(blob.size) }) };
+        } catch (err) { recitOfflineStatus = { kind: "error", text: err?.message || t("Could not make this file.") }; }
+        recitFileBusy = false; renderRecitationOffline();
+      });
       box.querySelectorAll("[data-recit-remove]").forEach((b) => b.addEventListener("click", () => removeIt(Number(b.dataset.recitRemove))));
     }
 

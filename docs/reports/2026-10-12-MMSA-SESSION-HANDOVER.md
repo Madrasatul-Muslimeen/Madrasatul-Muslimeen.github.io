@@ -3366,3 +3366,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v15.17** (2026-11-16): PCA J117 installs for Hadith, Dua, Health + one Install card.
 - **v15.18** (2026-11-17): MMSA icon + Hud once (#1794).
 - **v15.19** (2026-11-17): Learn next words left (#1798).
+- **v15.20** (2026-11-17): four QR Lead rounds (#1797 bookmark captions, #1799 Already-known categories, #1801 Play card, #1802 whole-Quran offline + MP3).

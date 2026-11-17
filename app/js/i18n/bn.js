@@ -585,6 +585,17 @@ export const BN = {
   "Choose the sūrahs you want to listen to with no internet. Saved for {reciter}; about 1 MB for each minute of recitation.": "ইন্টারনেট ছাড়া যে সূরাগুলো শুনতে চান সেগুলো বেছে নিন। {reciter}-এর তিলাওয়াত রাখা হবে; প্রতি মিনিটে প্রায় ১ এমবি।",
   "Remove from this device": "এই ডিভাইস থেকে সরান",
   "Save for offline": "অফলাইনের জন্য রাখুন",
+  "The whole Qur'an ({n} sūrahs)": "পুরো কুরআন ({n}টি সূরা)", // ?
+  "Saving sūrah {done} of {total}…": "সূরা সংরক্ষণ হচ্ছে: {done}/{total}…", // ?
+  "Saved for offline: the whole Qur'an ({n} sūrahs).": "অফলাইনের জন্য সংরক্ষিত: পুরো কুরআন ({n}টি সূরা)।", // ?
+  "Download MP3 file": "MP3 ফাইল ডাউনলোড", // ?
+  "Preparing the file…": "ফাইল তৈরি হচ্ছে…", // ?
+  "Preparing the file… {done} of {total}": "ফাইল তৈরি হচ্ছে… {done}/{total}", // ?
+  "The file is in your Downloads folder: {name} ({size}).": "ফাইলটি আপনার ডাউনলোড ফোল্ডারে আছে: {name} ({size})।", // ?
+  "Could not make this file.": "এই ফাইলটি তৈরি করা যায়নি।", // ?
+  "this reciter's audio cannot be downloaded as a file": "এই ক্বারীর তিলাওয়াত ফাইল হিসেবে ডাউনলোড করা যায় না", // ?
+  "the audio server does not allow downloading": "অডিও সার্ভার ডাউনলোড করতে দেয় না", // ?
+  "the audio server did not answer or does not allow downloading": "অডিও সার্ভার সাড়া দেয়নি বা ডাউনলোড করতে দেয় না", // ?
   "about": "প্রায়",
   "Saved for offline": "অফলাইনের জন্য রাখা হয়েছে",
   "Saving… {done} of {total}": "রাখা হচ্ছে… {total}-এর মধ্যে {done}",
@@ -5259,6 +5270,8 @@ export const BN = {
   "Allah's Names": "আল্লাহর নামসমূহ",
   "From the Asma groups": "আসমা-গ্রুপ থেকে",
   "Words in Your Own Language": "আপনার নিজের ভাষার শব্দ",
+  "Allah's Names & Attributes": "আল্লাহর নাম ও গুণাবলি", // ?
+  "Words used in My Language": "আমার ভাষায় ব্যবহৃত শব্দ", // ?
   "(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)": "(বাংলাদেশি মুসলিমদের জন্য বাংলা, পাকিস্তানি মুসলিমদের জন্য উর্দু, ইত্যাদি।)",
   "Known through its Family or your language list": "এর পরিবার বা আপনার ভাষার তালিকার মাধ্যমে জানা",
   "counted above": "উপরে গণনা করা হয়েছে",

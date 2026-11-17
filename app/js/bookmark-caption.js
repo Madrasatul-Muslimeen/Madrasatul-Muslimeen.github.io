@@ -25,3 +25,19 @@ export function captionForUnit(info, { nameOf, ayahCountOf, extra = "", date = n
   const to = info.toSurah === surah ? info.toAyah : (ayahCountOf?.(surah) ?? info.fromAyah);
   return bookmarkCaption({ name: nameOf?.(surah), surah, from: info.fromAyah, to, extra, date });
 }
+
+/** The Owner, 17 Nov 2026 ("how it was skipped?"): every SAVED Quran bookmark is SHOWN by this caption in the Bookmarks list, old ones
+    included, from its own unit key and the day it was made (createdAt). Display only: the stored name is never changed (keep1116).
+    `tables` = { surahIndex, pageRows } (the same shapes resolveUnitInfo takes). Returns null when the unit cannot be resolved
+    (the list then keeps the stored name). `resolve` is resolveUnitInfo, handed in so this file stays pure. */
+export function savedBookmarkCaption(b, tables, resolve) {
+  if (!b || b.moduleId !== "quranrevival" || typeof b.position !== "string") return null;
+  const info = resolve(b.position, tables);
+  if (!info) return null;
+  const nameOf = (n) => tables.surahIndex?.find((s) => s.surahNumber === n)?.nameEnglish;
+  const ayahCountOf = (n) => tables.surahIndex?.find((s) => s.surahNumber === n)?.ayahCount;
+  const extra = info.unitType === "page" ? `Page ${b.position.split(":").pop()}` : info.unitType === "ruku" ? `Ruku' ${b.position.split(":").pop()}` : "";
+  const when = b.createdAt ? new Date(b.createdAt) : null;
+  if (!when || Number.isNaN(when.getTime())) return null;
+  return captionForUnit(info, { nameOf, ayahCountOf, extra, date: when });
+}
