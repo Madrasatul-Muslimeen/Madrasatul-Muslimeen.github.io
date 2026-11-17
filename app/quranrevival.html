@@ -4425,7 +4425,8 @@
   .ln-seg button:disabled { opacity: 0.5; cursor: default; }
   .ln-share { display: inline-block; margin-inline-start: 0.25rem; padding: 0 0.35rem; border-radius: 0.6rem; background: #f1e9fb; color: #4b2a85; font-size: 0.75rem; font-weight: 800; }
   .ln-tile-n { font-size: 0.72rem; overflow-wrap: anywhere; } .ln-tile-p { font-size: 1rem; }
-  .ln-hide { display: flex; align-items: center; gap: 0.25rem 0.5rem; flex-wrap: wrap; min-height: 44px; font-size: 0.9rem; }
+  .ln-hide { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; font-size: 0.9rem; }
+  .ln-hide-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.5rem; }
   /* The Owner, 17 Nov 2026: beside "Hide words I know", how many words of the chosen range are still to learn. */
   .ln-left { margin-inline-start: auto; font-weight: 700; color: #4b2a85; font-variant-numeric: tabular-nums; }
   .ln-hide input { width: 22px; height: 22px; flex: 0 0 auto; }
@@ -21253,7 +21254,7 @@
           ${isWbw ? `<div class="ln-review" data-ln-review>${learnNextReviewHtml()}</div>` : ""}
           <div class="ln-tiles" role="group" aria-label="${escapeHtml(t("Steps"))}">${tiles}</div>
           ${groupsOn ? knownPanelHtml() : showing}
-          ${groupsOn ? "" : `<label class="ln-hide"><input type="checkbox" data-ln-hide${learnNextHide ? " checked" : ""}> <span>${escapeHtml(unit === "word" ? t("Hide words I know ({n} known)", { n: grouped(knownTotal) }) : unit === "root" ? t("Hide roots I have studied ({n} studied)", { n: grouped(knownTotal) }) : t("Hide families I know ({n} known)", { n: grouped(knownTotal) }))}</span>${range ? (() => { const left = rows.reduce((n, r) => n + (r.r >= range.from && r.r <= range.to && !lnIsKnown(r) ? 1 : 0), 0); return `<span class="ln-left" data-ln-left>${escapeHtml(unit === "root" ? t("{n} roots left to learn in this range", { n: grouped(left) }) : unit === "family" ? t("{n} families left to learn in this range", { n: grouped(left) }) : t("{n} words left to learn in this range", { n: grouped(left) }))}</span>`; })() : ""}</label>`}
+          ${groupsOn ? "" : `<div class="ln-hide-row"><label class="ln-hide"><input type="checkbox" data-ln-hide${learnNextHide ? " checked" : ""}> <span>${escapeHtml(unit === "word" ? t("Hide words I know ({n} known)", { n: grouped(knownTotal) }) : unit === "root" ? t("Hide roots I have studied ({n} studied)", { n: grouped(knownTotal) }) : t("Hide families I know ({n} known)", { n: grouped(knownTotal) }))}</span></label>${range ? (() => { const left = rows.reduce((n, r) => n + (r.r >= range.from && r.r <= range.to && !lnIsKnown(r) ? 1 : 0), 0); return `<span class="ln-left" data-ln-left>${escapeHtml(unit === "root" ? t("{n} roots left to learn in this range", { n: grouped(left) }) : unit === "family" ? t("{n} families left to learn in this range", { n: grouped(left) }) : t("{n} words left to learn in this range", { n: grouped(left) }))}</span>`; })() : ""}</div>`}
           ${groupsOn ? "" : `<div class="ln-list" data-ln-list>${list}</div>${more}`}
         </div>`;
       const next = el.querySelector("[data-ln-scroll]");
