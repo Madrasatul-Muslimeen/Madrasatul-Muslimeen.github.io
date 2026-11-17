@@ -453,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v15.20 on `main`** (17 Nov 2026 Sydney, shown as "v15.20 - 17.Nov.2026"). **Four QR Lead rounds in one release.** #1797: the Bookmarks list shows every saved Quran bookmark as "Surah - 57:1-6 - 12.Oct.26". #1799: Already known gets the Owner's seven categories and titles. #1801: the ⋮ menu's Play opens a play-options card (reciters, Repeat, Mode, Loop). #1802: Recitation for offline saves the whole Qur'an in one press, and a sūrah downloads as a real MP3 file. Checks: see the CHANGELOG entry.
+**Current milestone: v15.21 on `main`** (17 Nov 2026 Sydney, shown as "v15.21 - 17.Nov.2026"). **The Play card says when a whole-sūrah-only reciter plays.** #1804 (QR Lead, the follow-up to #1801's last Codex note): under Whole Unit the ⋮ ▸ Play card says "A reciter with only a whole-sūrah recording plays only when no other reciter is ticked." (Study options' own rule, unchanged), in English and Bangla. Checks: see the CHANGELOG entry.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
