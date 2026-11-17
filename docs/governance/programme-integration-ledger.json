@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "15.18",
+    "version": "15.19",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7421,8 +7421,20 @@
     {
       "version": "15.18",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The home-screen icon says MMSA; Hud listed once in the Prophets' names (#1794).",
+      "integration": {
+        "authorizedOn": "2026-11-17",
+        "integratedOn": "2026-11-17",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "15.19",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Learn next: words left to learn in the chosen range (#1798, QR Lead).",
       "integration": {
         "authorizedOn": "2026-11-17",
         "integratedOn": "2026-11-17",
@@ -7431,8 +7443,9 @@
       }
     }
   ],
-  "nextUnallocated": "15.19",
+  "nextUnallocated": "15.20",
   "nextUnallocatedNote": [
+    "v15.19 was allocated to Learn next words left (#1798), 2026-11-17.",
     "v15.18 was allocated to MMSA icon + Hud once (#1794), 2026-11-17.",
     "v15.17 was allocated to PCA J117 installs for Hadith, Dua, Health + one Install card, 2026-11-16.",
     "v15.16 was allocated to PCA J118 rename to MMSA, 2026-11-16.",

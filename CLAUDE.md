@@ -453,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v15.18 on `main`** (17 Nov 2026 Sydney, shown as "v15.18 - 17.Nov.2026"). **The home-screen icon says MMSA, and Hud is listed once in the Prophets' names.** The Owner, 17 Nov (via the QR Lead): the installed icon still showed a book with "MSA"; `tools/offline/make-icons.mjs` now draws "MMSA" into the same files (`app/img/icons/msa-*.png`, names unchanged; keep1116). And (PR #1794, QR Lead 47L; the Owner: "Hud is twice") the Already-known Prophets' names no longer list the dictionary's second Hud (هُود2, "Jews"): 28 → 27, with a check that no Arabic word is listed twice in one group. Checks: see the CHANGELOG entry.
+**Current milestone: v15.19 on `main`** (17 Nov 2026 Sydney, shown as "v15.19 - 17.Nov.2026"). **Learn next shows how many words are left to learn in the chosen range.** The Owner, 17 Nov (via the QR Lead, PR #1798): beside "Hide words I know" (and its roots/families versions), a count "{n} words left to learn in this range", in English and Bangla, outside the label so a tap on it never toggles the box. Checks: see the CHANGELOG entry.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

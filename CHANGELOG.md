@@ -24205,3 +24205,11 @@ Released by the Architect 117L.
 - **#1794 (QR Lead 47L; the Owner, 17 Nov: "Hud is twice"):** the dictionary's second Hud (`هُود2`, 3x, "Jews", e.g. 2:111) is taken out of the Already-known "The Prophets' names" list (`learn-known-seed.json` → `learn-known-groups.json`): 28 → 27. The word itself, its Word Card and any mark on it are untouched.
 - **Checks (Architect 117L):** `learn-known-groups-browser` 50/0 on this branch; its new mutation `hudtwice` fails 8 checks by name. Icons looked at (maskable mark inside the safe zone). `apps-build-check` and `install-links --check` green. **keep1116:** saved on v15.17 (`main`), reopened on v15.18 on the same address and browser profile (Hadith, Dua, Health, Quran Study): every saved key kept (3 → 3, 0 lost, 0 changed), the IndexedDB test value kept.
 - No Rules, key or storage change.
+
+## v15.19 — 17 Nov 2026 (Sydney) — Learn next: words left to learn in the chosen range (#1798)
+
+Built by the QR Lead 47L (#1798); reviewed and released by the Architect 117L.
+
+- **#1798 (the Owner, 17 Nov):** Quran Study's Learn next sheet shows, beside "Hide words I know" (and the roots and families versions), how many words, roots or families of the chosen range are still to learn ("{n} words left to learn in this range"; Bangla drafts marked `// ?` in `bn.js`). The count sits in its own row wrapper outside the label (`.ln-hide-row`), so a tap on it never toggles the checkbox (a Codex finding, fixed before release).
+- **Checks (Architect 117L, on this branch with `main` v15.18 merged in):** `learn-next-words-left-browser` 12/0; its mutations `inlabel` (4 FAIL), `noleft` (6 FAIL) and `wholelist` (4 FAIL) are caught by name. `learn-next-browser` 204/0. `apps-build-check` 59/0; QR builds. `app/offline-files.json` regenerated after the merge. **keep1116:** saved on v15.18 (`main`), reopened on v15.19 on the same address and browser profile: every saved key kept (3 → 3, 0 lost, 0 changed), the IndexedDB test value kept.
+- No Rules, key or storage change.
