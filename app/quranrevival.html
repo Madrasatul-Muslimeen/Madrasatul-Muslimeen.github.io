@@ -21067,17 +21067,19 @@
       const kg = knownGroupsData;
       if (!kg) return null;
       const asma = asmaGroupsOfNames(DEFAULT_ASMA_COLLECTIONS, asmaNameInfo, kg.names);
-      const lists = [{ k: "allah", lemmas: lemmasOfAsmaGroups(asma) }, ...kg.groups.map((g) => ({ k: g.k, lemmas: g.lemmas })), { k: KNOWN_LANGUAGE_GROUP, lemmas: [...activeBanglaSet(banglaState)] }];
+      // The Owner, 17 Nov 2026: seven groups in this order; "Words used in the Names in My Language" (bnnames) comes AFTER "Words used in My Language".
+      const after = kg.groups.filter((g) => g.k === "bnnames"), before = kg.groups.filter((g) => g.k !== "bnnames");
+      const lists = [{ k: "allah", lemmas: lemmasOfAsmaGroups(asma) }, ...before.map((g) => ({ k: g.k, lemmas: g.lemmas })), { k: KNOWN_LANGUAGE_GROUP, lemmas: [...activeBanglaSet(banglaState)] }, ...after.map((g) => ({ k: g.k, lemmas: g.lemmas }))];
       return { asma, lists, figures: knownGroupFigures(lists, { rowOf: knownRowOf, isKnown: (lemma) => learnNextIsKnown({ l: lemma }), total: learnNextCtx.data.total }) };
     }
     function knownGroupTitle(k) {
       const g = knownGroupsData?.groups?.find((x) => x.k === k);
       const bn = getAppLang() === "bn";
-      if (k === "allah") return { main: t("Allah's Names"), sub: t("From the Asma groups") };
-      if (k === KNOWN_LANGUAGE_GROUP) return { main: t("Words in Your Own Language"), sub: t("(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)") };
+      if (k === "allah") return { main: t("Allah's Names & Attributes"), sub: t("From the Asma groups") };
+      if (k === KNOWN_LANGUAGE_GROUP) return { main: t("Words used in My Language"), sub: t("(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)") };
       return g ? { main: bn ? g.bn : g.en, sub: bn ? "" : g.bn } : { main: k, sub: "" };
     }
-    const KNOWN_COLOURS = { allah: "#b8860b", prophets: "#2e7d6b", people: "#7a4fb5", ibadah: "#1f6fb2", daily: "#c0563b", [KNOWN_LANGUAGE_GROUP]: "#5c8a1e" };
+    const KNOWN_COLOURS = { allah: "#b8860b", prophets: "#2e7d6b", people: "#7a4fb5", ibadah: "#1f6fb2", daily: "#c0563b", [KNOWN_LANGUAGE_GROUP]: "#5c8a1e", bnnames: "#8a4f1e" };
     function knownWordHtml(w, { meaningOverride, nameLine, lang = false } = {}) {
       const r = w.row, own = knownOwn(w.lemma), via = w.known && !own && !lang;
       const meaning = meaningOverride ?? learnNextMeaning(r);

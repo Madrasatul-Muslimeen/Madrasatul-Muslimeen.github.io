@@ -5256,6 +5256,8 @@ export const BN = {
   "Allah's Names": "আল্লাহর নামসমূহ",
   "From the Asma groups": "আসমা-গ্রুপ থেকে",
   "Words in Your Own Language": "আপনার নিজের ভাষার শব্দ",
+  "Allah's Names & Attributes": "আল্লাহর নাম ও গুণাবলি", // ?
+  "Words used in My Language": "আমার ভাষায় ব্যবহৃত শব্দ", // ?
   "(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)": "(বাংলাদেশি মুসলিমদের জন্য বাংলা, পাকিস্তানি মুসলিমদের জন্য উর্দু, ইত্যাদি।)",
   "Known through its Family or your language list": "এর পরিবার বা আপনার ভাষার তালিকার মাধ্যমে জানা",
   "counted above": "উপরে গণনা করা হয়েছে",
