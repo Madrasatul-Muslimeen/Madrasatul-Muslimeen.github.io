@@ -5008,6 +5008,8 @@
      rather than built speculatively. Reuses .qm-item/.qm-divider (the
      Read/Note view quick menus' own item styling) for every action row. */
   /* PCF MSA J68: the Āyah card's Copy chooser, over the card, in the card's own look (both looks via --card-*). */
+  /* Codex review (17 Nov 2026): on a short screen (a phone on its side) the card is never taller than the screen, so its body scrolls and ▶ Play can be reached. */
+  #ayahPlayDlg .ayah-copy-box { max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); }
   .ayah-play-list { display: grid; gap: 0.35rem; }
   .ayah-play-list label, .ayah-play-loop { display: flex; align-items: center; gap: 0.5rem; min-height: 40px; }
   .ayah-play-list input, .ayah-play-loop input { width: 22px; height: 22px; flex: 0 0 auto; }
@@ -23426,16 +23428,20 @@
      *  ⋮ menu's ▶ Play opens this small card with the SAME choices as Study options > Listening -- reciters, Repeat, Mode -- each one
      *  the real control (a change here is a change there, so the two never disagree), then ▶ Play. Each Ayah plays THIS āyah (Repeat
      *  times); Whole Unit plays the current unit as Study options' own Play does (and Loop, which only a unit has, shows then). */
-    let quickRepeatRun = 0;
     function openAyahPlayDialog(unitKey) {
       const { surah, ayah } = parseAyahUnitKey(unitKey);
       document.getElementById("ayahPlayDlg")?.remove();
       const real = (sel) => document.querySelector(sel);
       const dlg = document.createElement("div");
       dlg.id = "ayahPlayDlg"; dlg.className = "ayah-copy-dlg";
-      const reciterIds = Object.keys(RECITERS).filter((id) => reciterSupportsSingleAyah(id) && reciterOffersSurah(id, surah));
+      // Each Ayah plays THIS āyah, so a reciter must be able to play it on its own in this āyah's sūrah; Whole Unit plays the
+      // current unit, where a reciter with only a whole-sūrah file can play too (Codex review, 17 Nov 2026).
+      const reciterChoices = (mode) => Object.keys(RECITERS).filter((id) => (mode === "whole"
+        ? reciterOffersSurah(id, currentSurahNum) && (reciterSupportsSingleAyah(id) || !!RECITERS[id].surahUrl)
+        : reciterSupportsSingleAyah(id) && reciterOffersSurah(id, surah)));
       const paint = () => {
         const repeat = real("#drillRepeatSelect")?.value ?? "1", mode = real("#drillModeSelect")?.value ?? "each", loop = !!real("#loopToggle")?.checked;
+        const reciterIds = reciterChoices(mode);
         const ticked = new Set(drillSelectedReciterIds ?? []);
         dlg.innerHTML = `<div class="ayah-copy-box" role="dialog" aria-modal="true" aria-labelledby="ayahPlayTitle">
           <div class="ayah-copy-head"><h3 id="ayahPlayTitle">▶ ${escapeHtml(t("Play options"))}</h3><button type="button" class="ayah-copy-x" data-play-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>
@@ -23449,7 +23455,17 @@
           </div></div>`;
       };
       const close = () => { dlg.remove(); window.removeEventListener("keydown", onKey, true); };
-      const onKey = (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); close(); } };
+      const onKey = (e) => {
+        if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); close(); return; }
+        if (e.key !== "Tab") return;
+        // Keep Tab inside the card: it is modal (Codex review, 17 Nov 2026).
+        const f = [...dlg.querySelectorAll("button, input, select")].filter((el) => !el.disabled && el.getClientRects().length > 0);
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1], at = document.activeElement;
+        if (!dlg.contains(at)) { e.preventDefault(); first.focus(); }
+        else if (e.shiftKey && at === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
+      };
       const setReal = (sel, key, value) => { const el = real(sel); if (!el) return; el[key] = value; el.dispatchEvent(new Event("change", { bubbles: true })); };
       dlg.addEventListener("click", (e) => {
         if (e.target === dlg || e.target.closest("[data-play-close]")) { close(); return; }
@@ -23457,18 +23473,34 @@
         const repeat = Math.max(1, Number(real("#drillRepeatSelect")?.value) || 1), mode = real("#drillModeSelect")?.value ?? "each";
         close();
         if (mode === "whole") { playCurrentSelection({ fresh: true }).catch(reportPlayFailure); return; }
-        const run = ++quickRepeatRun;
+        // Each Ayah: the SAME drill Study options plays (every ticked reciter, Repeat times, and the reading bar's Stop ends it).
+        const ids = (drillSelectedReciterIds ?? []).filter((id) => RECITERS[id] && reciterSupportsSingleAyah(id) && reciterOffersSurah(id, surah));
+        if (!ids.length) { alert(t("Pick a reciter in Listening settings first.")); return; }
         unlockAudio(); warmSegmentedTimestamps();
-        const reciterId = playbackReciterIds()[0] ?? currentReciterId;
-        if (!reciterId) { alert(t("Pick a reciter in Listening settings first.")); return; }
-        (async () => { for (let i = 0; i < repeat && run === quickRepeatRun; i++) await playOneAndWait(surah, ayah, reciterId); })().catch(reportPlayFailure);
+        stopDrill(); stopAudio();
+        beginListeningSession();
+        playDrill({ surahNum: surah, fromAyah: ayah, toAyah: ayah, reciterIds: ids, repeatCount: repeat, mode: "each" }).catch(reportPlayFailure).finally(renderReadTransport);
         renderReadTransport();
       });
       dlg.addEventListener("change", (e) => {
         const r = e.target.closest("[data-play-reciter]");
-        if (r) { const box = real(`.drill-reciter-check[value="${CSS.escape(r.dataset.playReciter)}"]`); if (box) { box.checked = r.checked; box.dispatchEvent(new Event("change", { bubbles: true })); } return; }
+        if (r) {
+          // The choice is written to the shared selection itself, not only through the hidden Study options box: that box exists
+          // only for reciters of the CURRENT sūrah, and this āyah may belong to another (Codex review, 17 Nov 2026).
+          const id = r.dataset.playReciter, set = new Set(drillSelectedReciterIds ?? []);
+          if (r.checked) set.add(id); else set.delete(id);
+          drillSelectedReciterIds = [...set];
+          const box = real(`.drill-reciter-check[value="${CSS.escape(id)}"]`);
+          if (box) { box.checked = r.checked; box.dispatchEvent(new Event("change", { bubbles: true })); }
+          return;
+        }
         if (e.target.matches("[data-play-repeat]")) { setReal("#drillRepeatSelect", "value", e.target.value); return; }
-        if (e.target.matches("[data-play-mode]")) { setReal("#drillModeSelect", "value", e.target.value); paint(); return; }
+        if (e.target.matches("[data-play-mode]")) {
+          setReal("#drillModeSelect", "value", e.target.value);
+          // Loop belongs to Whole Unit only: leaving it ON behind a hidden checkbox would repeat a single āyah for ever (Codex review, 17 Nov 2026).
+          if (e.target.value === "each" && real("#loopToggle")?.checked) setReal("#loopToggle", "checked", false);
+          paint(); return;
+        }
         if (e.target.matches("[data-play-loop]")) { setReal("#loopToggle", "checked", e.target.checked); }
       });
       window.addEventListener("keydown", onKey, true);
