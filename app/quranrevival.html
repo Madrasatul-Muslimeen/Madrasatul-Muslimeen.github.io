@@ -5005,6 +5005,8 @@
      rather than built speculatively. Reuses .qm-item/.qm-divider (the
      Read/Note view quick menus' own item styling) for every action row. */
   /* PCF MSA J68: the Āyah card's Copy chooser, over the card, in the card's own look (both looks via --card-*). */
+  /* Codex review (17 Nov 2026): on a short screen (a phone on its side) the card is never taller than the screen, so its body scrolls and ▶ Play can be reached. */
+  #ayahPlayDlg .ayah-copy-box { max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); }
   .ayah-play-list { display: grid; gap: 0.35rem; }
   .ayah-play-list label, .ayah-play-loop { display: flex; align-items: center; gap: 0.5rem; min-height: 40px; }
   .ayah-play-list input, .ayah-play-loop input { width: 22px; height: 22px; flex: 0 0 auto; }
@@ -23488,7 +23490,12 @@
           return;
         }
         if (e.target.matches("[data-play-repeat]")) { setReal("#drillRepeatSelect", "value", e.target.value); return; }
-        if (e.target.matches("[data-play-mode]")) { setReal("#drillModeSelect", "value", e.target.value); paint(); return; }
+        if (e.target.matches("[data-play-mode]")) {
+          setReal("#drillModeSelect", "value", e.target.value);
+          // Loop belongs to Whole Unit only: leaving it ON behind a hidden checkbox would repeat a single āyah for ever (Codex review, 17 Nov 2026).
+          if (e.target.value === "each" && real("#loopToggle")?.checked) setReal("#loopToggle", "checked", false);
+          paint(); return;
+        }
         if (e.target.matches("[data-play-loop]")) { setReal("#loopToggle", "checked", e.target.checked); }
       });
       window.addEventListener("keydown", onKey, true);

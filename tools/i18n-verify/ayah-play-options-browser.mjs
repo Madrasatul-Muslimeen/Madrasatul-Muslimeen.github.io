@@ -10,6 +10,8 @@
 //   --mutate=oldlist     Whole Unit offers only single-ayah reciters        -> "a whole-sūrah-only reciter is offered under Whole Unit" FAILS
 //   --mutate=boxonly     a tick only goes through the hidden Study options box -> "a reciter with no hidden box still plays" FAILS
 //   --mutate=notrap      Tab is not kept inside the card                    -> "Tab stays inside the card" FAILS
+//   --mutate=noheight    the card has no maximum height                      -> "the card never outgrows a short screen" FAILS
+//   --mutate=keeploop    Loop stays on when the card goes back to Each Ayah  -> "Loop is cleared when the card goes back to Each Ayah" FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
@@ -21,6 +23,8 @@ const MUT = {
   nostop: [F, 'playDrill({ surahNum: surah, fromAyah: ayah, toAyah: ayah, reciterIds: ids, repeatCount: repeat, mode: "each" })', '(async () => { for (let i = 0; i < repeat; i++) await playOneAndWait(surah, ayah, ids[0]); })()'],
   oldlist: [F, "? reciterOffersSurah(id, currentSurahNum) && (reciterSupportsSingleAyah(id) || !!RECITERS[id].surahUrl)", "? reciterOffersSurah(id, currentSurahNum) && reciterSupportsSingleAyah(id)"],
   boxonly: [F, "drillSelectedReciterIds = [...set];\n          const box", "const box"],
+  noheight: [F, "#ayahPlayDlg .ayah-copy-box { max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); }", "#ayahPlayDlg .ayah-copy-box { }"],
+  keeploop: [F, 'if (e.target.value === "each" && real("#loopToggle")?.checked) setReal("#loopToggle", "checked", false);', ''],
   notrap: [F, 'if (e.key !== "Tab") return;\n        // Keep Tab inside the card', 'if (true) return;\n        // Keep Tab inside the card'],
   noloop: [F, '${mode === "whole" ? `<label class="ayah-copy-row ayah-play-loop">', '${false ? `<label class="ayah-copy-row ayah-play-loop">'],
 };
@@ -130,6 +134,32 @@ for (const w of [390, 1280]) {
   await page.evaluate(() => document.querySelector("#ayahPlayDlg [data-play-go]")?.click());
   await sleep(page, 3000);
   check(`${tag} a reciter with no hidden Study options box still plays (the card writes the shared choice itself)`, c && hits.some((u) => !/basfar/.test(u)) , JSON.stringify([c, hits.slice(0, 3)]));
+  // (Play closes the card, so open a fresh one for the checks that follow, and for the Esc check at the end.)
+  await page.evaluate(() => document.getElementById("readStopBtn")?.click()); await sleep(page, 300);
+  await page.evaluate(() => document.querySelector("[data-qm-toggle], .ayah-quick-btn, .ayah-quick-badge")?.click()); await sleep(page, 400);
+  await page.evaluate(() => document.querySelector("[data-qm-play]")?.click()); await sleep(page, 500);
+  check(`${tag} (positive control) a fresh card is open for the last checks`, !!(await page.$("#ayahPlayDlg [data-play-go]")));
+  // ---- Codex review (17 Nov 2026): Loop is cleared when the card goes back to Each Ayah
+  await page.evaluate(() => { const s = document.querySelector("#ayahPlayDlg [data-play-mode]"); if (s) { s.value = "whole"; s.dispatchEvent(new Event("change", { bubbles: true })); } });
+  await sleep(page, 250);
+  await page.evaluate(() => { const l = document.querySelector("#ayahPlayDlg [data-play-loop]"); if (l) { l.checked = true; l.dispatchEvent(new Event("change", { bubbles: true })); } });
+  const loopOn = await page.evaluate(() => !!document.getElementById("loopToggle")?.checked);
+  await page.evaluate(() => { const s = document.querySelector("#ayahPlayDlg [data-play-mode]"); if (s) { s.value = "each"; s.dispatchEvent(new Event("change", { bubbles: true })); } });
+  await sleep(page, 250);
+  const loopAfter = await page.evaluate(() => !!document.getElementById("loopToggle")?.checked);
+  check(`${tag} Loop is cleared when the card goes back to Each Ayah (positive control: it was on under Whole Unit)`, loopOn && !loopAfter, JSON.stringify([loopOn, loopAfter]));
+  // ---- the card never outgrows a short screen, and Play is reachable
+  // (the card is pinned at its size when it opens, so close it, make the screen short, and open a fresh one)
+  await page.keyboard.press("Escape"); await sleep(page, 200);
+  await page.setViewportSize({ width: w, height: 320 }); await sleep(page, 400);
+  await page.evaluate(() => document.querySelector("[data-qm-toggle], .ayah-quick-btn, .ayah-quick-badge")?.click()); await sleep(page, 400);
+  await page.evaluate(() => document.querySelector("[data-qm-play]")?.click()); await sleep(page, 600);
+  const short = await page.evaluate(() => { const b = document.querySelector("#ayahPlayDlg .ayah-copy-box").getBoundingClientRect(), g = document.querySelector("#ayahPlayDlg [data-play-go]"), body = document.querySelector("#ayahPlayDlg .ayah-copy-body"); g.scrollIntoView({ block: "nearest" }); const r = g.getBoundingClientRect(); return { boxH: Math.round(b.height), vh: innerHeight, playBottom: Math.round(r.bottom), scrolls: body.scrollHeight > body.clientHeight }; });
+  check(`${tag} the card never outgrows a short screen (320px tall) and ▶ Play can be reached`, short.boxH <= short.vh && short.playBottom <= short.vh, JSON.stringify(short));
+  await page.keyboard.press("Escape"); await sleep(page, 200);
+  await page.setViewportSize({ width: w, height: 860 }); await sleep(page, 300);
+  await page.evaluate(() => document.querySelector("[data-qm-toggle], .ayah-quick-btn, .ayah-quick-badge")?.click()); await sleep(page, 400);
+  await page.evaluate(() => document.querySelector("[data-qm-play]")?.click()); await sleep(page, 600);
   await page.keyboard.press("Escape"); await sleep(page, 200);
   check(`${tag} Esc closes the card`, !(await page.$("#ayahPlayDlg")));
   await ctx.close();
