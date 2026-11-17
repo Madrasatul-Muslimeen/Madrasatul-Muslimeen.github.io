@@ -141,7 +141,7 @@ function toolButton(def, opts) {
   b.addEventListener("click", () => {
     if (on) { oi.tool = null; oi.toolFull = false; if (oi.toolFrom) oi.phone = oi.toolFrom; oi.toolFrom = null; localRefresh(); return; }
     oi.toolFrom = oi.phone !== "chapters" ? oi.phone : (oi.toolFrom ?? null); // the way back: Back returns to the tab it was opened from
-    oi.tool = def.id; oi.toolFull = false;
+    oi.tool = def.id; oi.toolFull = false; oi.toolEnter = true; // focus moves into the panel once it is drawn
     oi.phone = "chapters"; // the panel lives at the top of the Chapters pane
     localRefresh();
   });
@@ -193,7 +193,7 @@ function buildPane(key, opts, phone = false) {
   title.title = titles[key]; // a narrow pane cuts its heading with large text (audit part 136 H2)
   head.appendChild(title);
   const tools = el("span", "hadith-pane-tools");
-  for (const id of toolIdsFor(key, phone)) { const def = toolDefs.find((d) => d.id === id); if (def && !oi.float[key]) tools.appendChild(toolButton(def, opts)); }
+  for (const id of toolIdsFor(key, phone)) { const def = toolDefs.find((d) => d.id === id); if (def) tools.appendChild(toolButton(def, opts)); } // also in a popped-out pane, where the controls would otherwise be out of reach
   if (!oi.float[key] && !phone) {
     const maxed = oi.max === key;
     const max = el("button", "hadith-pane-btn", maxed ? "⤡" : "⤢");
@@ -226,6 +226,10 @@ function buildPane(key, opts, phone = false) {
   const openDef = key === "chapters" && oi.tool ? toolDefs.find((d) => d.id === oi.tool) : null;
   if (openDef) body.appendChild(toolPanel(openDef, opts));
   opts[key](body, head);
+  if (oi.toolEnter && openDef) { // a keyboard or screen-reader user who opened a tool lands inside its panel, on ← Back
+    oi.toolEnter = false;
+    queueMicrotask(() => setTimeout(() => document.querySelector(`[data-tool-panel="${openDef.id}"] [data-tool-back]`)?.focus(), 0));
+  }
   if (oi.toolFocus) { // after a panel closes, focus goes back to the icon that opened it (way-back law)
     const id = oi.toolFocus; oi.toolFocus = null;
     queueMicrotask(() => setTimeout(() => document.querySelector(`[data-reader-tool="${id}"]`)?.focus(), 0));

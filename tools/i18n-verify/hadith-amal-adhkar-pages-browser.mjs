@@ -23,6 +23,7 @@ const MUT = {
   withdownload: ["js/hadith-book-viewer.js", "  if (!shamela) {\n    const dl = bookDownload(book);", "  if (true) {\n    const dl = bookDownload(book);"],
   noescape: ["js/hadith-book-viewer.js", 'if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closePane(); return; }', ""],
   eagerload: ["js/hadith-book-viewer.js", "  const note = el(\"span\", \"book-page-error\");", "  loadBookPage(versionUri, lazy ? 1 : number).catch(() => {});\n  const note = el(\"span\", \"book-page-error\");"],
+  ringlimited: ["js/hadith-book-viewer.js", "      const ring = [...pane.querySelectorAll(\"button, a[href]\")].filter((n) => n.getClientRects().length > 0 && !n.disabled);", "      const ring = [close, credit, down, out].filter(Boolean);"],
   noback: ["js/minimise.js", "  if (!spec.back || root.querySelector(\":scope .mm-back-btn\")) return;", "  return;"],
   shiftedmap: ["MAP", "", ""], // serves each of the three maps with every page index moved on by one
 };
@@ -128,6 +129,8 @@ for (const [key, B] of Object.entries(BOOKS)) for (const [lang, width] of [["en"
     await P.waitForSelector(".book-page-pane .mm-back-btn", { timeout: 5000 }).catch(() => {});
     const ctl = await P.evaluate(() => { const q = (s) => { const e = document.querySelector(`.book-page-pane ${s}`); if (!e) return null; const r = e.getBoundingClientRect(); return { w: r.width, h: r.height }; }; return { back: q(".mm-back-btn"), full: q(".mm-full-btn"), close: q(".book-page-close") }; });
     check(`${tag} the pop-up has ← Back, ⛶ Full screen and ✕, each at least 40px`, [ctl.back, ctl.full, ctl.close].every((c) => c && c.w >= 40 && c.h >= 40), JSON.stringify(ctl));
+    const seen = new Set(); for (let k = 0; k < 10; k++) { await P.keyboard.press("Tab"); seen.add(await P.evaluate(() => document.activeElement?.className?.toString().split(" ").find((c) => /^(mm-back-btn|mm-full-btn|mm-min-btn|book-page-close)$/.test(c)) ?? "")); }
+    check(`${tag} Tab can reach ← Back, ⛶, – and ✕ inside the pop-up (the focus ring covers every control)`, ["mm-back-btn", "mm-full-btn", "mm-min-btn", "book-page-close"].every((c) => seen.has(c)), [...seen].join());
     await P.click(".book-page-pane .mm-back-btn"); await P.waitForTimeout(150);
     check(`${tag} ← Back closes it and focus is back on the button`, (await P.$("[data-book-page-pane]")) === null && (await P.evaluate((s) => document.activeElement === document.querySelector(s), BTN)));
     await btn.click(); await P.waitForSelector("[data-book-page-pane]");

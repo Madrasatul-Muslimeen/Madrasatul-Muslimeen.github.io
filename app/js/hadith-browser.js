@@ -1573,7 +1573,7 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
     const ownEn = englishName(groupKey(oi.bookUri, c.id));
     if (ownEn) { const e = el("span", "hadith-row-en", ownEn); e.dataset.openitiChapterEn = c.id; e.lang = "en"; row.appendChild(e); }
     const ownChapter = nameLine(groupKey(oi.bookUri, c.id));
-    if (ownChapter) row.appendChild(ownChapter);
+    if (ownChapter && !(ownEn && getAppLang() !== "bn")) row.appendChild(ownChapter); // an English reader already has the English name just above: not twice
     if (c.firstNumber != null) {
       row.appendChild(el("span", "hadith-row-meta", `${num(c.firstNumber)}–${num(c.lastNumber)}`));
     }

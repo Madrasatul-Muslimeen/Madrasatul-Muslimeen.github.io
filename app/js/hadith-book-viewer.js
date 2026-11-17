@@ -95,7 +95,8 @@ function showPane(info, number, opener) {
   const onKey = (e) => {
     if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closePane(); return; }
     if (e.key === "Tab") { // keep Tab inside the pane: × -> link -> credit -> ×
-      const ring = [close, credit, down, out].filter(Boolean);
+      // every control in the pane, in order: the header's ← Back, – ⛶ and ✕ (added by minimise.js after the pane is built), then the footer's links
+      const ring = [...pane.querySelectorAll("button, a[href]")].filter((n) => n.getClientRects().length > 0 && !n.disabled);
       const i = ring.indexOf(document.activeElement);
       e.preventDefault();
       ring[(i + (e.shiftKey ? ring.length - 1 : 1)) % ring.length].focus();

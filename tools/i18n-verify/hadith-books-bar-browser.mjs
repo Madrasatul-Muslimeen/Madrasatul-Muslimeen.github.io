@@ -22,6 +22,9 @@ const MUT = {
   gokeepsopen: ["js/hadith-browser.js", "        ctx.done();\n        localRefresh();\n        return;", "        localRefresh();\n        return;"],
   noenglish: ["js/hadith-browser.js", "        const e = el(\"span\", \"hadith-row-en\", b.en); e.dataset.openitiChapterEn = c.id; e.lang = \"en\";\n        row.insertBefore(e, row.querySelector(\".hadith-row-meta\"));", ""],
   wideheadings: ["css/hadith.css", ".hadith-crumbs { margin: 0.25rem 0 0.2rem; }", ".hadith-crumbs { margin: 1.4rem 0 1.4rem; }"],
+  noenter: ["js/hadith-reader.js", "oi.toolEnter = true; // focus moves into the panel once it is drawn", "oi.toolEnter = false;"],
+  nofloattools: ["js/hadith-reader.js", "if (def) tools.appendChild(toolButton(def, opts)); } // also in a popped-out pane", "if (def && !oi.float[key]) tools.appendChild(toolButton(def, opts)); } // also in a popped-out pane"],
+  nofocusafterback: ["js/minimise.js", "    if (pane) setTimeout(() => document.querySelector(`[data-reader-pop=\"${pane}\"]`)?.focus(), 60);", ""],
   nowayback: ["js/hadith-reader.js", "    oi.toolFrom = oi.phone !== \"chapters\" ? oi.phone : (oi.toolFrom ?? null);", "    oi.toolFrom = null;"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -111,6 +114,17 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await ctx.close();
 }
 
+// ---- 2b. keyboard: opening a tool puts focus inside its panel (a re-draw would otherwise leave it on the page) ----------------------------
+{
+  const tag = "[en 390 keyboard]";
+  const { ctx, page: P } = await open("en", 390);
+  await P.focus('[data-reader-tool="info"]'); await P.keyboard.press("Enter"); await P.waitForSelector('[data-tool-panel="info"]', { timeout: 8000 }).catch(() => {}); await settle(P, 300);
+  check(`${tag} Enter on ⓘ opens its panel and focus lands inside it, on ← Back`, await P.evaluate(() => document.activeElement?.matches('[data-tool-panel="info"] [data-tool-back]')));
+  await P.keyboard.press("Escape"); await settle(P, 400);
+  check(`${tag} Escape closes it and focus is back on ⓘ`, (await P.$('[data-tool-panel="info"]')) === null && (await P.evaluate(() => document.activeElement === document.querySelector('[data-reader-tool="info"]'))));
+  await ctx.close();
+}
+
 // ---- 3. Go closes its panel and opens the hadith; Back from a panel opened on the Text tab returns to the Text tab ------------------
 {
   const tag = "[en 390 go and way back]";
@@ -146,7 +160,11 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await P.waitForSelector(".hadith-pane-float .mm-back-btn", { timeout: 5000 }).catch(() => {});
   const ctl = await P.evaluate(() => { const q = (s) => { const e = document.querySelector(`.hadith-pane-float ${s}`); if (!e) return null; const r = e.getBoundingClientRect(); return { w: r.width, h: r.height }; }; return { back: q(".mm-back-btn"), full: q(".mm-full-btn"), close: q("[data-reader-dock]") }; });
   check(`${tag} the window has ← Back, ⛶ Full screen and ✕, each at least 40px`, [ctl.back, ctl.full, ctl.close].every((c) => c && c.w >= 40 && c.h >= 40), JSON.stringify(ctl));
+  check(`${tag} the popped-out Chapters pane still carries ⚙ ⓘ ⚡ (its Go box and index choice are not out of reach)`, (await visible(P, ".hadith-pane-float [data-reader-tool]")) === 3);
+  await press(P, '.hadith-pane-float [data-reader-tool="actions"]'); await P.waitForSelector('.hadith-pane-float [data-tool-panel="actions"] [data-openiti-goto-input]', { timeout: 8000 }).catch(() => {});
+  check(`${tag} ⚡ in the window opens its panel there, with the Go box`, !!(await P.$('.hadith-pane-float [data-tool-panel="actions"] [data-openiti-goto-input]')));
   await P.click(".hadith-pane-float .mm-back-btn"); await settle(P, 400);
+  check(`${tag} after ← Back focus is on the pane's own pop-out button (not lost to the page)`, await P.evaluate(() => document.activeElement === document.querySelector('[data-reader-pop="chapters"]')));
   check(`${tag} ← Back puts the pane back in its place (the window is gone)`, (await P.$(".hadith-pane-float")) === null && !!(await P.$('[data-reader-pane="chapters"] [data-openiti-chapter]')));
   await ctx.close();
 }

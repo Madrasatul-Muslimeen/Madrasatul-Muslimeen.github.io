@@ -24,6 +24,7 @@ const MUT = {
   nodisplay: ["js/hadith-names.js", "  const text = nameOf(known, key, getAppLang());\n  if (!text) return null;", "  return null;"],
   samekey: ["js/hadith-names-model.js", "export const groupKey = (versionUri, chapterId) => `${bookKey(versionUri)}__${chapterId}`;", "export const groupKey = (versionUri, chapterId) => `${bookKey(versionUri)}__x`;"],
   alwayscreate: ["js/hadith-names-model.js", "  if (!docExists) return { kind: \"create\"", "  if (true) return { kind: \"create\""],
+  englishtwice: ["js/hadith-browser.js", "if (ownChapter && !(ownEn && getAppLang() !== \"bn\")) row.appendChild(ownChapter);", "if (ownChapter) row.appendChild(ownChapter);"],
   showretired: ["js/hadith-names-model.js", "  if (!e || e.status === \"retired\") return null;", "  if (!e) return null;"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -129,6 +130,7 @@ for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
   await P.fill(`[data-hadith-names-en="${CH3}"]`, "Book of Faith");
   await tap(P, `[data-hadith-names-save="${CH3}"]`); await settle(P, 600);
   check(`${tag} an English name typed beside it shows under the Arabic chapter, in either language`, (await P.$eval('[data-openiti-chapter-en="ch-3"]', (n) => n.textContent).catch(() => null)) === "Book of Faith");
+  check(`${tag} the English name appears ONCE on the row (an English reader is not shown it twice)`, (await P.$eval('[data-openiti-chapter="ch-3"]', (n) => n.textContent.split("Book of Faith").length - 1).catch(() => -1)) === 1);
   // retire
   await P.waitForSelector(`[data-hadith-names-remove="${CH3}"]`, { timeout: 8000 });
   await tap(P, `[data-hadith-names-remove="${CH3}"]`); await settle(P, 600);

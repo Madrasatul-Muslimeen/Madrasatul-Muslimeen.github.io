@@ -263,7 +263,12 @@ function addBack(root, spec, close) {
   b.setAttribute("aria-label", t("Back"));
   b.title = t("Back");
   b.addEventListener("pointerdown", (e) => e.stopPropagation());
-  b.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); close.click(); });
+  b.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const pane = root.dataset.readerFloat; // a popped-out Hadith pane: once it is docked again, focus goes to its own pop-out button (way-back law)
+    close.click();
+    if (pane) setTimeout(() => document.querySelector(`[data-reader-pop="${pane}"]`)?.focus(), 60);
+  });
   bar.insertBefore(b, bar.firstChild);
 }
 function enhance(root, spec, close) {
