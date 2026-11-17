@@ -3,7 +3,7 @@
 //   node tools/offline/make-icons.mjs --app=qr   (PCA J117: QR's own install icons, into QR's overlay folder)
 //   node tools/offline/make-icons.mjs --app=hadith|dua|health   (PCA J117: each module's own install, msa.json "ownInstalls")
 // Writes app/img/icons/msa-192.png, msa-512.png and msa-maskable-512.png. A calm
-// icon: the app's night navy, an open-book mark and the letters "MSA" in the
+// icon: the app's night navy, an open-book mark and the letters "MMSA" (PCA J118 rename; was "MSA") in the
 // app's gold. The maskable one fills its square and keeps the mark inside the
 // middle 80% (the "safe zone" a phone may crop to a circle). Re-run only when
 // the design changes; the PNGs are committed.
@@ -28,7 +28,7 @@ fs.mkdirSync(OUT, { recursive: true });
 
 // MSA: night navy and gold. QR: its own teal (qr.json colours.theme #0f4c4c) and the same gold.
 const NAVY = MOD ? MOD.dark : APP === "qr" ? "#0d2225" : "#1B2A41", NAVY_2 = MOD ? MOD.light : APP === "qr" ? "#0f4c4c" : "#1F3A6E", GOLD = "#e2bd62";
-const LABEL = MOD ? MOD.label : APP === "qr" ? "QR" : "MSA";
+const LABEL = MOD ? MOD.label : APP === "qr" ? "QR" : "MMSA";
 // A longer word gets a smaller letter so it stays inside the icon (and the maskable safe zone): "Health" at 104px is ~400px wide.
 const FONT = LABEL.length <= 3 ? 104 : LABEL.length <= 4 ? 96 : 80, SPACING = LABEL.length <= 3 ? 6 : 2;
 // One SVG, drawn on a 512 grid. `inset` shrinks the mark for the maskable icon.
