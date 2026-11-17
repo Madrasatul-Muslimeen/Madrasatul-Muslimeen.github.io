@@ -165,7 +165,8 @@ for (const w of [390, 1440]) {
     await page.click("details.nav-cat-bookmark > summary").catch(() => {});
     await page.waitForTimeout(400);
     const nav = await page.evaluate(() => { const a = document.querySelector('[data-bm-open-id="bmR"]'); return a ? { name: a.querySelector(".nav-bm-name")?.textContent.trim(), href: a.getAttribute("href") } : null; });
-    check(`${tag}: the Bookmark menu shows its name and opens ?bookmark=bmR`, !!nav && nav.name === "Al-Baqarah 255–257" && /bookmark=bmR\b/.test(nav.href), JSON.stringify(nav));
+    // UPDATED IN PLACE (17 Nov 2026, the Owner's bookmark-title style): the menu now SHOWS the caption built from the bookmark's unit and the day it was made, not the stored name.
+    check(`${tag}: the Bookmark menu shows its caption and opens ?bookmark=bmR`, !!nav && nav.name === "Al-Baqara - 2:255-257 - 16.Oct.26" && /bookmark=bmR\b/.test(nav.href), JSON.stringify(nav));
     await ctx.close();
   }
   {
