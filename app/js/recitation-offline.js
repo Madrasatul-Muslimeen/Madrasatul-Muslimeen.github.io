@@ -92,6 +92,31 @@ export async function saveRecitation({ reciterId, surah, ayahCount, onProgress =
   return bytes;
 }
 
+/** The Owner, 17 Nov 2026 ("Download: C, both options"): ONE real MP3 file of a sūrah, for the reader's Downloads folder. A reciter with
+ *  a whole-sūrah file gives that file; one with a file per āyah gets its files joined in order (MP3 frames join end to end), so
+ *  either way it is a single playable .mp3. Nothing is kept in the app and nothing stored changes. onProgress(done, total). */
+export async function recitationFileBlob({ reciterId, surah, ayahCount, onProgress = () => {}, fetchFn = (...a) => fetch(...a) }) {
+  const urls = recitationUrls(reciterId, surah, ayahCount);
+  if (!urls) throw failure(t("this reciter's audio cannot be downloaded as a file"));
+  const parts = new Array(urls.length);
+  let done = 0, next = 0, firstError = null;
+  onProgress(0, urls.length);
+  async function worker() {
+    while (!firstError && next < urls.length) {
+      const i = next++;
+      try {
+        const res = await fetchFn(urls[i], { mode: "cors", credentials: "omit" });
+        if (!res || res.type === "opaque" || !res.ok) throw failure(res && res.ok === false ? t("the audio server answered {status}", { status: num(res.status) }) : t("the audio server does not allow downloading"));
+        parts[i] = await res.blob();
+        done++; onProgress(done, urls.length);
+      } catch (e) { firstError = firstError || (e && e.reported ? e : failure(t("the audio server did not answer or does not allow downloading"))); }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, urls.length) }, worker));
+  if (firstError) throw firstError;
+  return new Blob(parts, { type: "audio/mpeg" });
+}
+
 /** The worker serves only files it knows are saved (app/sw.js savedAudio): tell it the set changed. Best effort. */
 function tellWorker() {
   try { navigator.serviceWorker?.controller?.postMessage({ type: "audio-saved-changed" }); } catch { /* no worker: nothing to tell */ }
