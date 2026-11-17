@@ -589,6 +589,8 @@ export const BN = {
   "Saving sūrah {done} of {total}…": "সূরা সংরক্ষণ হচ্ছে: {done}/{total}…", // ?
   "Saved for offline: the whole Qur'an ({n} sūrahs).": "অফলাইনের জন্য সংরক্ষিত: পুরো কুরআন ({n}টি সূরা)।", // ?
   "Download MP3 file": "MP3 ফাইল ডাউনলোড", // ?
+  "Meccan": "মাক্কী", // ?
+  "Medinan": "মাদানী", // ?
   "A reciter with only a whole-sūrah recording plays only when no other reciter is ticked.": "যে ক্বারীর শুধু পুরো সূরার রেকর্ডিং আছে, তিনি তখনই চলেন যখন অন্য কোনো ক্বারী টিক করা নেই।", // ?
   "Preparing the file…": "ফাইল তৈরি হচ্ছে…", // ?
   "Preparing the file… {done} of {total}": "ফাইল তৈরি হচ্ছে… {done}/{total}", // ?

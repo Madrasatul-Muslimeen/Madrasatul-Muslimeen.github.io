@@ -2474,7 +2474,8 @@
      tools PANEL below 900px sets its own taller tiles, which this min-size does not touch. */
   #readBar .qr-ico { box-sizing: border-box; min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
   /* 11 Nov 2026: on the narrowest phones, while the way-back chip holds the bar's line, the quick 🔍 steps aside (search stays in Study options) so the bar gains no line. */
-  @media (max-width: 359px) { #readBar:has(#readBackSlot > *) #readSearchBtn { display: none; } }
+  /* 17 Nov 2026 (the Owner: Back and ✕ on the bar's line, Show moved into ⋮): with a way back docked, 🔍 steps aside below 380px (it was 360px) so ← ✕ share the second line with Read on ⤢ ⋮. */
+  @media (max-width: 379.98px) { #readBar:has(#readBackSlot > *) #readSearchBtn { display: none; } }
   #readBar .qr-ico[hidden] { display: none; }
   /* The Owner, 11 Nov 2026: ☰ alone (no word) when the word would cost a row of the bar (fitReadListWord()). */
   #readBar #readListBtn.word-off .read-list-word { display: none; }
@@ -2696,6 +2697,14 @@
     #readBar .read-loc-wrap { display: contents; } #readBar .read-loc-btn { display: none; }
   }
   @media (max-width: 899.98px) { .read-loc-page { display: none; } .read-loc-btn { padding: 0; width: 36px; min-width: 36px; } } /* tablet: the bar has ~43px to spare, so the pin is icon-only there too */
+  /* The Owner, 17 Nov 2026 ("Page should go inside the location button"): from 400 to 899px the pin carries its page, "📍 Page 262", and the gold
+     "Page 262" chip that said the same thing steps aside. Only when the unit IS a page: any other unit (Range / Ruku' / Juz / Surah) keeps its own chip and the pin stays icon-only. */
+  @media (min-width: 400px) and (max-width: 899.98px) {
+    #readBar:has(.read-unit-chip[data-unit-type="page"]) .read-loc-btn { width: auto; min-width: 40px; padding: 0 0.55rem; }
+    #readBar:has(.read-unit-chip[data-unit-type="page"]) .read-loc-page { display: inline; font-size: 0.82rem; font-weight: 700; white-space: nowrap; }
+    #readBar:has(.read-unit-chip[data-unit-type="page"]) .read-loc-page:empty { display: none; }
+    .read-unit-chip[data-unit-type="page"] { display: none; }
+  }
   @media (max-width: 429.98px) {
     body.read-bar-steps-in-menu #readBar :is(#prevAyahBtn, #nextAyahBtn) { width: 36px; min-width: 36px; padding-inline: 0; }
     #readBar .read-unit-chip { max-width: 3.6rem; padding: 0.3rem 0.25rem; }
@@ -2974,8 +2983,8 @@
   /* Measured at 820px (en): in the Meaning view, "📜 Mushaf" beside the English / Bangla / WbW switches took the bar to a
      second line (146px vs 100px), as 📖 Meaning did on main; with the switches on the bar it is the icon alone up to 1023px. */
   @media (max-width: 1023.98px) {
-    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
-    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
   }
   /* 📜 Mushaf: the word costs ~47px, and at 600px (page reference + 🔖 + 📖 Meaning + ⤢) the bar wrapped to two lines
      with it (measured in review), so it is 📜 alone below 768px. Hidden while the Meaning flow is open over the Mushaf,
@@ -3075,28 +3084,28 @@
     body.rq-wrap.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readHint { bottom: calc(var(--rq-h, 52px) + 0.75rem); }
   }
   @media (max-width: 479px) {
-    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
-    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
-    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readBarEnd { gap: 0.25rem; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden])) #readBarEnd { gap: 0.25rem; }
     #readMeaningLayersSlot { gap: 0.15rem; }
     #readMeaningLayersSlot label { padding: 0 0.36rem; }
     /* ...and the switches and the tools are ONE row: a zero-height break (this ::before, a whole line wide) ends the
        line before the switches, so the bar never seats them beside ⏮ ⏭ ▶ ■ and leaves the tools a line of their own. */
-    #readBar:has(#readMeaningLayersSlot:not([hidden]))::before { content: ""; order: 1; flex: 0 0 100%; height: 0; }
-    #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readMeaningLayersSlot { order: 2; }
-    #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readBarEnd { order: 3; }
-    #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readBackSlot { order: 4; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden]))::before { content: ""; order: 1; flex: 0 0 100%; height: 0; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden])) > #readMeaningLayersSlot { order: 2; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden])) > #readBarEnd { order: 3; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden])) > #readBackSlot { order: 4; }
     /* The Owner, 22 Oct 2026 ("How to organise buttons in one row? Write only 'Surah', discard ' list', For English,
        write only Eng. Mushaf only icon."): ☰ Surah and Eng, and ☰ Surah joins the switches' row. */
-    #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readListBtn { order: 2; }
-    body.read-from-contents #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readListBtn { padding: 0 0.45rem; gap: 0.2rem; }
-    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readBarEnd { gap: 0.15rem; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden])) > #readListBtn { order: 2; }
+    body.read-from-contents #readBar:has(> #readMeaningLayersSlot:not([hidden])) > #readListBtn { padding: 0 0.45rem; gap: 0.2rem; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden])) #readBarEnd { gap: 0.15rem; }
     #readMeaningLayersSlot label { padding: 0 0.3rem; }
     /* QR Lead (the Owner, 23 Oct 2026, "both read the same"): ☰ is on every Read now. Outside the bare full screen the
        bar also shows ⋯ and the transport, so ☰ joining the switches' row pushed the tools to a third line (360-412px):
        there it stays at the head of the transport's line, its icon alone (spoken name "Surah list"). */
-    body.read-from-contents:not(.fs-hide-transport) #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readListBtn { order: -1; padding: 0; width: 40px; }
-    body.read-from-contents:not(.fs-hide-transport) #readBar:has(#readMeaningLayersSlot:not([hidden])) > #readListBtn .read-list-word { display: none; }
+    body.read-from-contents:not(.fs-hide-transport) #readBar:has(> #readMeaningLayersSlot:not([hidden])) > #readListBtn { order: -1; padding: 0; width: 40px; }
+    body.read-from-contents:not(.fs-hide-transport) #readBar:has(> #readMeaningLayersSlot:not([hidden])) > #readListBtn .read-list-word { display: none; }
   }
 
   @media (max-width: 379px) { #readMeaningLayersSlot label { padding: 0 0.3rem; font-size: 0.7rem; } }
@@ -3127,6 +3136,16 @@
     #readMeaningLayersSlot.ml-open .ml-items { display: flex; }
     #readMeaningLayersSlot .ml-items label { height: 40px; padding: 0 0.8rem; font-size: 0.85rem; }
   }
+  /* The Owner, 17 Nov 2026 ("Show items should be inside the 3 dots"): below 900px the real switches are PARKED in #readShowHome (inside the closed
+     #readToolsMenu, never on screen) and the bar's ⋮ sheet shows a "Show" group that mirrors them (showGroupHtml(), data-qm-layer) and presses them. */
+  #readShowHome { display: none; }
+  .qm-show { display: none; }
+  @media (max-width: 899.98px) { .qm-show:not([hidden]) { display: block; } }
+  .qm-show .qm-show-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .qm-show .qm-show-sw { position: relative; display: inline-flex; align-items: center; height: 40px; box-sizing: border-box; margin: 0; padding: 0 0.85rem; border: 1.5px solid #1F3A6E; border-radius: 999px; background: #fff; color: #1F3A6E; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+  .qm-show .qm-show-sw:has(input:checked) { background: #1F3A6E; color: #fff; }
+  .qm-show .qm-show-sw:focus-within { outline: 3px solid #B8862F; outline-offset: 2px; }
+  .qm-show .qm-show-sw input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
   /* The Owner, 9 Nov 2026 (Demo 1): the "Read on" switch, at every width (it sits just before the Layers slot). */
   .read-on-switch { display: inline-flex; align-items: center; gap: 0.4rem; height: 40px; padding: 0 0.7rem; border: 1px solid #c9d1e0; border-radius: 10px; background: #fff; color: #1F3A6E; font-size: 0.85rem; font-weight: 600; cursor: pointer; flex: 0 0 auto; }
   .read-on-switch { position: relative; box-sizing: border-box; margin: 0; }
@@ -3138,8 +3157,8 @@
   @media (max-width: 1279.98px) { .read-on-switch { padding: 0 0.45rem; font-size: 0.78rem; border-radius: 9px; } }
   /* Same measurement, 1024-1279px: with Read on the Layers stand open, and 📖 keeping its word pushes the bar onto a new line; icon alone, 40px. */
   @media (min-width: 1024px) and (max-width: 1279.98px) {
-    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
-    #readBar:has(#readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden])) #readMeaningBtn { padding: 0; width: 40px; }
+    #readBar:has(> #readMeaningLayersSlot:not([hidden])) #readMeaningBtn .read-meaning-word { display: none; }
   }
   @media (max-width: 359.98px) { .read-on-switch { padding: 0 0.3rem; gap: 0.25rem; font-size: 0.72rem; } }
   @media (min-width: 900px) and (max-width: 919.98px) { .read-on-switch { padding: 0 0.25rem; font-size: 0.74rem; } #readMeaningLayersSlot .ml-items label { padding: 0 0.4rem; font-size: 0.8rem; } }
@@ -5478,6 +5497,13 @@
   .unit-marker-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.35rem 0; }
   .unit-marker-row > .unit-flow-marker, .unit-marker-row > .unit-flow-surah-heading { flex: 1 1 auto; width: auto; margin: 0; }
   .unit-flow-marker { display: block; width: 100%; min-height: 40px; margin: 0.35rem 0; padding: 0.4rem 0.6rem; font: inherit; font-size: 0.82rem; font-weight: 600; color: #7a5f1e; background: rgba(201,162,75,0.14); border: 1px solid rgba(201,162,75,0.4); border-radius: 6px; cursor: pointer; text-align: center; }
+  /* The Owner, 17 Nov 2026: the beginning of a sūrah in the flow views, a gold double frame (see surahFlowHeadingHtml()). */
+  .unit-flow-surah-heading.surah-start-banner { display: flex; flex-direction: column; align-items: center; gap: 0.12rem; margin: 1.1rem 0 0.9rem; padding: 0.55rem 0.8rem 0.6rem; color: #1F3A6E; background: linear-gradient(180deg, #fbf4dc 0%, #f6ecc8 100%); border: 1px solid #b8862f; border-radius: 12px; box-shadow: inset 0 0 0 3px #fbf4dc, inset 0 0 0 4px #d9bd73, 0 1px 3px rgba(120, 90, 20, 0.18); font-weight: 400; }
+  .surah-start-banner .ssb-ar { font-family: var(--quran-font, "Amiri Quran", "Amiri", serif); font-size: 1.9rem; line-height: 1.5; color: #7a5a14; }
+  .surah-start-banner .ssb-name { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.02em; color: #1F3A6E; }
+  .surah-start-banner .ssb-facts { font-size: 0.78rem; font-weight: 600; color: #8a6d1f; letter-spacing: 0.03em; }
+  .surah-start-banner .ssb-orn { font-size: 0.7rem; letter-spacing: 0.35em; color: #b8862f; line-height: 1; }
+  .surah-start-banner:focus-visible { outline: 3px solid #1F3A6E; outline-offset: 2px; }
   .unit-flow-surah-heading { display: block; width: 100%; min-height: 40px; margin: 0.35rem 0; padding: 0.4rem 0.6rem; font: inherit; font-size: 0.95rem; font-weight: 700; color: #1F3A6E; background: #f6f2e4; border: 1px solid #e3d6ab; border-radius: 6px; cursor: pointer; text-align: center; }
   /* The Mushaf surah banner is a real <button> now (issue #348) -- reset the
      UA's own button chrome so the ornamental glyph's existing size/centring
@@ -7014,6 +7040,9 @@
                  handler. The way back (#readBackSlot) and the status line stay on the bar itself, never inside ⋯. -->
             <button type="button" class="secondary qr-ico read-tools-btn" id="readToolsBtn" aria-haspopup="true" aria-expanded="false" aria-controls="readToolsMenu" aria-label="More tools" title="More tools">⋯<span class="read-tools-count" hidden></span></button>
             <div id="readToolsMenu" class="read-tools" role="group" aria-label="More tools">
+              <!-- The Owner, 17 Nov 2026 ("Show items should be inside the 3 dots"): below 900px the Show switches (English, Bangla, Word by Word) are parked here
+                   (placeMeaningLayersSlot()), off screen, instead of a "Show ▾" button on the bar; the bar's ⋮ sheet carries the Show group that presses them. From 900px they stand on the bar as before. -->
+              <div id="readShowHome" class="read-show-home"></div>
               <!-- Note-view enhancement round 3 -- "same resizing at the READ
                    view too". Filled in by JS (renderTextSizeButtonHtml()) once
                    at init, same as every other static-markup slot on this
@@ -22017,7 +22046,13 @@
     function surahFlowHeadingHtml(surahNum, ayahNum) {
       if (ayahNum !== 1) return "";
       const meta = surahIndex.find((s) => s.surahNumber === surahNum);
-      return `<button type="button" class="unit-flow-surah-heading" data-unit-marker="${escapeHtml(buildUnitKey.surah(surahNum))}">${escapeHtml(surahName(surahNum, meta?.nameEnglish))}</button>`;
+      // The Owner, 17 Nov 2026 ("The beginning of a Surah should be noticeable, elegant and distinctive looking"): the sūrah's name in Arabic, its
+      // name in the reader's language, and where it was revealed and how many āyāt it has, in a gold double frame between two ornaments.
+      // Still ONE button opening the sūrah's card (data-unit-marker), as before.
+      const ar = meta?.nameArabic ? `<span class="ssb-ar" lang="ar" dir="rtl">${escapeHtml(meta.nameArabic)}</span>` : "";
+      const rev = meta?.revelationType === "Medinan" ? t("Medinan") : meta?.revelationType === "Meccan" ? t("Meccan") : "";
+      const facts = [rev, meta?.ayahCount ? t("{n} āyāt", { n: num(meta.ayahCount) }) : ""].filter(Boolean).join(" · ");
+      return `<button type="button" class="unit-flow-surah-heading surah-start-banner" data-unit-marker="${escapeHtml(buildUnitKey.surah(surahNum))}" aria-label="${escapeHtml(surahName(surahNum, meta?.nameEnglish))}"><span class="ssb-orn" aria-hidden="true">❖ ✦ ❖</span>${ar}<span class="ssb-name">${escapeHtml(surahName(surahNum, meta?.nameEnglish))}</span>${facts ? `<span class="ssb-facts">${escapeHtml(facts)}</span>` : ""}<span class="ssb-orn ssb-orn-end" aria-hidden="true">❖ ✦ ❖</span></button>`;
     }
 
     // ===================== ⋯ More tools on the Read bar (the Owner, 10 Oct 2026) =====================
@@ -22399,6 +22434,24 @@
     // J110 A: the phone's "Show ▾" stays open while the reader ticks the switches (each tick re-renders the flow), and
     // closes on a tap elsewhere or Esc. From 600px the button is not shown and the open state changes nothing.
     var meaningLayersOpen = false, meaningLayerRefocus = null;
+    /** The Owner, 17 Nov 2026 ("Show items should be inside the 3 dots"): below 900px the Show switches move into the ⋮ panel's first row (#readShowHome),
+     *  from 900px they stand on the bar, before the way back, as they always did. The slot keeps its id, its switches and their handlers: only its parent changes. */
+    readQuickMenuSlot?.addEventListener("change", (e) => {
+      const box = e.target.closest?.("[data-qm-layer]");
+      if (!box) return;
+      const real = document.querySelector(`#readMeaningLayersSlot [data-meaning-layer="${box.dataset.qmLayer}"]`);
+      if (real) real.click(); // the real switch's own handler does the rest (it saves the choice and repaints the flow)
+      paintShowGroup(box.closest(".ayah-quick-wrap") ?? document);
+    });
+    const layersPhoneMq = window.matchMedia("(max-width: 899.98px)");
+    function placeMeaningLayersSlot() {
+      const slot = document.getElementById("readMeaningLayersSlot"), home = document.getElementById("readShowHome"), bar = document.getElementById("readBar");
+      if (!slot || !home || !bar) return;
+      if (layersPhoneMq.matches) { home.dataset.title = t("Show"); if (slot.parentElement !== home) home.appendChild(slot); }
+      else if (slot.parentElement !== bar) bar.insertBefore(slot, document.getElementById("readBackSlot"));
+    }
+    placeMeaningLayersSlot();
+    layersPhoneMq.addEventListener?.("change", placeMeaningLayersSlot);
     function setMeaningLayersOpen(open) {
       meaningLayersOpen = !!open;
       const slot = document.getElementById("readMeaningLayersSlot");
@@ -23750,16 +23803,32 @@
         decides anything); they are filled from the live selects each time the sheet opens (paintStudyPlaces), so a long āyah list is
         not copied on every render. The three tiles press the same buttons they always did (onExtra). */
     const STUDY_PLACE_IDS = ["readUnitTypeSelect", "readSurahSelect", "readAyahSelect", "readUnitNumSelect", "readRangeFromSelect", "readRangeToSelect"];
+    /** The Owner, 17 Nov 2026: the Show switches as a group of the ⋮ sheet (below 900px; CSS .qm-show). They mirror the parked real switches and press them. */
+    function showGroupHtml() {
+      const sw = (k, label) => `<label class="qm-show-sw"><input type="checkbox" data-qm-layer="${k}"><span>${escapeHtml(label)}</span></label>`;
+      return `<div class="qm-group qm-show" role="group" aria-label="${escapeHtml(t("Show"))}" data-qm-show hidden>
+        <div class="qm-group-title">${escapeHtml(t("Show"))}</div>
+        <div class="qm-show-row">${sw("en", t("English"))}${sw("bn", t("Bangla"))}${sw("wbw", t("Word by Word"))}</div>
+      </div>`;
+    }
+    function paintShowGroup(wrap) {
+      const group = wrap.querySelector("[data-qm-show]");
+      if (!group) return;
+      const slot = document.getElementById("readMeaningLayersSlot");
+      group.hidden = !slot || slot.hidden;
+      for (const box of group.querySelectorAll("[data-qm-layer]")) box.checked = !!readMeaningLayers[box.dataset.qmLayer];
+    }
     function studyGroupHtml() {
       const tileHtml = (act, glyph, label, full) => `<button type="button" class="qm-item qm-tile" data-qm-act="${act}" title="${escapeHtml(full)}" aria-label="${escapeHtml(full)}"><span class="qm-glyph" aria-hidden="true">${glyph}</span><span class="qm-label">${escapeHtml(label)}</span></button>`;
       return `<div class="qm-group qm-study" role="group" aria-label="${escapeHtml(t("Study"))}">
         <div class="qm-group-title">${escapeHtml(t("Study"))}</div>
         <div class="qm-places">${STUDY_PLACE_IDS.map((id) => `<select class="qm-place" data-qm-place="${id}" hidden></select>`).join("")}</div>
         <div class="qm-tiles qm-study-tiles">${tileHtml("approach", "🎯", t("Approach"), t("Take an Approach"))}${tileHtml("record", "✅", t("Record"), t("Record Your Progress"))}${tileHtml("status", "📊", t("Status"), t("Know Your Status"))}</div>
-      </div>`;
+      </div>${showGroupHtml()}`;
     }
     /** Fill the sheet's mirrors from the live pickers (called as the sheet opens). */
     function paintStudyPlaces(wrap) {
+      paintShowGroup(wrap);
       syncReadPickers(); // the live pickers' own options and which of them show, as of now (a render may still be on its way to this line)
       for (const m of wrap.querySelectorAll("[data-qm-place]")) {
         const src = document.getElementById(m.dataset.qmPlace);
@@ -24687,7 +24756,7 @@
       const el = document.querySelector("[data-read-loc-page]");
       if (!el) return;
       const pg = readLocAnchor().page;
-      el.textContent = pg ? num(pg) : "";
+      el.textContent = pg ? t("Page {page}", { page: num(pg) }) : "";
     }
     async function renderReadLocList() {
       const list = document.querySelector("[data-read-loc-list]");
@@ -27802,6 +27871,7 @@
       // type, including a single Ayah, which opens the Ayah Card instead of
       // the Unit Card (readUnitChip's own click handler decides that).
       readUnitChip.hidden = isMushaf;
+      readUnitChip.dataset.unitType = currentUnitType; // the Owner, 17 Nov 2026: a Page chip steps aside where the 📍 carries the page (CSS)
       if (!isMushaf) {
         const chipText = unitChipText(unitInfo);
         readUnitChip.querySelector(".read-unit-chip-text").textContent = chipText;
