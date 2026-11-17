@@ -23450,6 +23450,7 @@
               <div class="ayah-play-list">${reciterIds.map((id) => `<label><input type="checkbox" data-play-reciter="${escapeHtml(id)}"${ticked.has(id) ? " checked" : ""}> ${escapeHtml(t(RECITERS[id].label))}</label>`).join("")}</div></div>
             <div class="ayah-copy-row"><label class="ayah-copy-lab" for="ayahPlayRepeat">${escapeHtml(t("Repeat"))}</label><select id="ayahPlayRepeat" data-play-repeat>${[1, 2, 3, 5, 10].map((n) => `<option value="${n}"${String(n) === String(repeat) ? " selected" : ""}>${num(n)}×</option>`).join("")}</select></div>
             <div class="ayah-copy-row"><label class="ayah-copy-lab" for="ayahPlayMode">${escapeHtml(t("Mode"))}</label><select id="ayahPlayMode" data-play-mode><option value="each"${mode === "each" ? " selected" : ""}>${escapeHtml(t("Each Ayah"))}</option><option value="whole"${mode === "whole" ? " selected" : ""}>${escapeHtml(t("Whole Unit"))}</option></select></div>
+            ${mode === "whole" ? `<p class="opt-note ayah-play-note" data-play-note>${escapeHtml(t("A reciter with only a whole-sūrah recording plays only when no other reciter is ticked."))}</p>` : ""}
             ${mode === "whole" ? `<label class="ayah-copy-row ayah-play-loop"><input type="checkbox" data-play-loop${loop ? " checked" : ""}> ${escapeHtml(t("Loop"))}</label>` : ""}
             <button type="button" class="ayah-copy-go" data-play-go>▶ ${escapeHtml(t("Play"))}</button>
           </div></div>`;

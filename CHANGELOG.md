@@ -24224,3 +24224,11 @@ Built by the QR Lead 47L; reviewed together and released by the Architect 117L.
 - **#1802:** Recitation for offline saves the whole Qur'an in one press, and a sūrah downloads as a real MP3 file (`recitation-offline.js`; Bangla drafts marked `// ?` in `bn.js`).
 - **Checks (Architect 117L, on the merged branch over `main` v15.19):** `ayah-play-options-browser` 40/0, mutations `openloop`, `session` and `nosettle` each caught; `audit-part12-words` 508/0; `bookmark-list-captions` 14/0; `bookmark-range-popover` 158/0; `learn-known-groups` 53/0; `recitation-mp3-download` 14/0; `learn-next-words-left` 12/0; `learn-next` 204/0; `apps-build-check` 59/0, QR builds. `app/offline-files.json` regenerated after each merge. **keep1116:** saved on v15.19 (`main`), reopened on v15.20 on the same address and browser profile: every saved key kept (3 → 3, 0 lost, 0 changed), the IndexedDB test value kept.
 - No Rules, key or storage change.
+
+## v15.21 — 17 Nov 2026 (Sydney) — Play card: the Whole Unit note (#1804)
+
+Built by the QR Lead 47L (#1804); reviewed and released by the Architect 117L.
+
+- **#1804 (the follow-up to #1801's last Codex note):** under Whole Unit, the ⋮ ▸ ▶ Play card says "A reciter with only a whole-sūrah recording plays only when no other reciter is ticked." That is Study options' existing rule (`playbackReciterIds()`), unchanged; the card now says it in words. Bangla draft marked `// ?` in `bn.js`.
+- **Checks (Architect 117L, on this branch over `main` v15.20):** `ayah-play-options-browser` 42/0; its new mutation `nonote` fails the new check by name at 390px and 1280px. `ayah-menu-sheet-browser` 87/0. `apps-build-check` 59/0. `app/offline-files.json` matches. **keep1116:** saved on v15.20 (`main`), reopened on v15.21 on the same address and browser profile: every saved key kept (3 → 3, 0 lost, 0 changed), the IndexedDB test value kept.
+- No Rules, key or storage change.

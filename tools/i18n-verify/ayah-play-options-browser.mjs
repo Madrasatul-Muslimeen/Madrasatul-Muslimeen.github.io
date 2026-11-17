@@ -12,6 +12,7 @@
 //   --mutate=notrap      Tab is not kept inside the card                    -> "Tab stays inside the card" FAILS
 //   --mutate=noheight    the card has no maximum height                      -> "the card never outgrows a short screen" FAILS
 //   --mutate=keeploop    Loop stays on when the card goes back to Each Ayah  -> "Loop is cleared when the card goes back to Each Ayah" FAILS
+//   --mutate=nonote     the whole-sūrah-only note is not drawn under Whole Unit -> "Whole Unit says a whole-sūrah-only reciter plays only when alone" FAILS
 //   --mutate=openloop   opening the card in Each Ayah with Loop already on leaves Loop on -> "Loop is cleared when the card opens in Each Ayah" FAILS
 //   --mutate=session     the card's Each Ayah starts a listening session of the SELECTED unit again -> "Each Ayah starts no listening session" FAILS
 //   --mutate=nosettle    a run already sounding is not settled before the card's run replaces it   -> "a run already sounding is settled" FAILS
@@ -27,6 +28,7 @@ const MUT = {
   oldlist: [F, "? reciterOffersSurah(id, currentSurahNum) && (reciterSupportsSingleAyah(id) || !!RECITERS[id].surahUrl)", "? reciterOffersSurah(id, currentSurahNum) && reciterSupportsSingleAyah(id)"],
   boxonly: [F, "drillSelectedReciterIds = [...set];\n          const box", "const box"],
   noheight: [F, "#ayahPlayDlg .ayah-copy-box { max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); }", "#ayahPlayDlg .ayah-copy-box { }"],
+  nonote: [F, '${mode === "whole" ? `<p class="opt-note ayah-play-note" data-play-note>', '${false ? `<p class="opt-note ayah-play-note" data-play-note>'],
   openloop: [F, 'if ((real("#drillModeSelect")?.value ?? "each") === "each" && real("#loopToggle")?.checked) setReal("#loopToggle", "checked", false);\n      paint();', 'paint();'],
   session: [F, "if (isPlaying() || isPaused() || isRunContinuing()) { stopDrill(); stopAudio(); settleListeningSession(\"stopped\"); } else { stopDrill(); stopAudio(); }\n        playDrill({ surahNum: surah, fromAyah: ayah", "if (isPlaying() || isPaused() || isRunContinuing()) { stopDrill(); stopAudio(); settleListeningSession(\"stopped\"); } else { stopDrill(); stopAudio(); }\n        beginListeningSession();\n        playDrill({ surahNum: surah, fromAyah: ayah"],
   nosettle: [F, 'stopDrill(); stopAudio(); settleListeningSession("stopped"); } else { stopDrill(); stopAudio(); }\n        playDrill({ surahNum: surah, fromAyah: ayah', 'stopDrill(); stopAudio(); } else { stopDrill(); stopAudio(); }\n        playDrill({ surahNum: surah, fromAyah: ayah'],
@@ -90,10 +92,12 @@ for (const w of [390, 1280]) {
   const inside2 = await page.evaluate(() => !!document.activeElement?.closest("#ayahPlayDlg"));
   check(`${tag} Tab stays inside the card (forwards from the last control, backwards from the first)`, inside1 && inside2, JSON.stringify([inside1, inside2]));
   // ---- a whole-sūrah-only reciter is offered under Whole Unit (and not under Each Ayah)
+  const noteWhole = await page.evaluate(() => document.querySelector("#ayahPlayDlg [data-play-note]")?.textContent.trim() ?? null);
   const kevanWhole = await page.evaluate(() => [...document.querySelectorAll("#ayahPlayDlg .ayah-play-list label")].some((l) => /Kevan/.test(l.textContent)));
   await page.evaluate(() => { const s = document.querySelector("#ayahPlayDlg [data-play-mode]"); s.value = "each"; s.dispatchEvent(new Event("change", { bubbles: true })); });
   await sleep(page, 300);
   const kevanEach = await page.evaluate(() => [...document.querySelectorAll("#ayahPlayDlg .ayah-play-list label")].some((l) => /Kevan/.test(l.textContent)));
+  check(`${tag} Whole Unit says a whole-sūrah-only reciter plays only when alone`, /whole-sūrah recording plays only when no other reciter is ticked/.test(noteWhole ?? ""), String(noteWhole));
   check(`${tag} a whole-sūrah-only reciter is offered under Whole Unit (and not under Each Ayah)`, kevanWhole && !kevanEach, JSON.stringify([kevanWhole, kevanEach]));
   // ---- two ticked reciters both play (Each Ayah): tick Abdullah Basfar and Ibraheem Walk on the card, Repeat 1, Play
   const tick = (label, on) => page.evaluate(([label, on]) => { const l = [...document.querySelectorAll("#ayahPlayDlg .ayah-play-list label")].find((x) => x.textContent.includes(label)); const i = l?.querySelector("input"); if (!i) return false; if (i.checked !== on) { i.checked = on; i.dispatchEvent(new Event("change", { bubbles: true })); } return true; }, [label, on]);
