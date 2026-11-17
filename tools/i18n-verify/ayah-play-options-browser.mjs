@@ -12,6 +12,7 @@
 //   --mutate=notrap      Tab is not kept inside the card                    -> "Tab stays inside the card" FAILS
 //   --mutate=noheight    the card has no maximum height                      -> "the card never outgrows a short screen" FAILS
 //   --mutate=keeploop    Loop stays on when the card goes back to Each Ayah  -> "Loop is cleared when the card goes back to Each Ayah" FAILS
+//   --mutate=openloop   opening the card in Each Ayah with Loop already on leaves Loop on -> "Loop is cleared when the card opens in Each Ayah" FAILS
 //   --mutate=session     the card's Each Ayah starts a listening session of the SELECTED unit again -> "Each Ayah starts no listening session" FAILS
 //   --mutate=nosettle    a run already sounding is not settled before the card's run replaces it   -> "a run already sounding is settled" FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -26,6 +27,7 @@ const MUT = {
   oldlist: [F, "? reciterOffersSurah(id, currentSurahNum) && (reciterSupportsSingleAyah(id) || !!RECITERS[id].surahUrl)", "? reciterOffersSurah(id, currentSurahNum) && reciterSupportsSingleAyah(id)"],
   boxonly: [F, "drillSelectedReciterIds = [...set];\n          const box", "const box"],
   noheight: [F, "#ayahPlayDlg .ayah-copy-box { max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); }", "#ayahPlayDlg .ayah-copy-box { }"],
+  openloop: [F, 'if ((real("#drillModeSelect")?.value ?? "each") === "each" && real("#loopToggle")?.checked) setReal("#loopToggle", "checked", false);\n      paint();', 'paint();'],
   session: [F, "if (isPlaying() || isPaused() || isRunContinuing()) { stopDrill(); stopAudio(); settleListeningSession(\"stopped\"); } else { stopDrill(); stopAudio(); }\n        playDrill({ surahNum: surah, fromAyah: ayah", "if (isPlaying() || isPaused() || isRunContinuing()) { stopDrill(); stopAudio(); settleListeningSession(\"stopped\"); } else { stopDrill(); stopAudio(); }\n        beginListeningSession();\n        playDrill({ surahNum: surah, fromAyah: ayah"],
   nosettle: [F, 'stopDrill(); stopAudio(); settleListeningSession("stopped"); } else { stopDrill(); stopAudio(); }\n        playDrill({ surahNum: surah, fromAyah: ayah', 'stopDrill(); stopAudio(); } else { stopDrill(); stopAudio(); }\n        playDrill({ surahNum: surah, fromAyah: ayah'],
   keeploop: [F, 'if (e.target.value === "each" && real("#loopToggle")?.checked) setReal("#loopToggle", "checked", false);', ''],
@@ -158,6 +160,14 @@ for (const w of [390, 1280]) {
   await sleep(page, 250);
   const loopAfter = await page.evaluate(() => !!document.getElementById("loopToggle")?.checked);
   check(`${tag} Loop is cleared when the card goes back to Each Ayah (positive control: it was on under Whole Unit)`, loopOn && !loopAfter, JSON.stringify([loopOn, loopAfter]));
+  // ---- Codex review: Loop already ON in Study options with Mode = Each Ayah, then the card is OPENED: Loop is cleared on opening
+  await page.keyboard.press("Escape"); await sleep(page, 200);
+  await page.evaluate(() => { const m = document.getElementById("drillModeSelect"); m.value = "each"; m.dispatchEvent(new Event("change", { bubbles: true })); const l = document.getElementById("loopToggle"); l.checked = true; l.dispatchEvent(new Event("change", { bubbles: true })); });
+  const loopSet = await page.evaluate(() => !!document.getElementById("loopToggle")?.checked);
+  await page.evaluate(() => document.querySelector("[data-qm-toggle], .ayah-quick-btn, .ayah-quick-badge")?.click()); await sleep(page, 400);
+  await page.evaluate(() => document.querySelector("[data-qm-play]")?.click()); await sleep(page, 600);
+  const loopOpened = await page.evaluate(() => !!document.getElementById("loopToggle")?.checked);
+  check(`${tag} Loop is cleared when the card opens in Each Ayah (positive control: it was on before)`, loopSet && !loopOpened, JSON.stringify([loopSet, loopOpened]));
   // ---- the card never outgrows a short screen, and Play is reachable
   // (the card is pinned at its size when it opens, so close it, make the screen short, and open a fresh one)
   await page.keyboard.press("Escape"); await sleep(page, 200);

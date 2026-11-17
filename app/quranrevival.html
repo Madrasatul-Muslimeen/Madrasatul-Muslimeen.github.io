@@ -23501,6 +23501,9 @@
         if (e.target.matches("[data-play-loop]")) { setReal("#loopToggle", "checked", e.target.checked); }
       });
       window.addEventListener("keydown", onKey, true);
+      // Loop belongs to Whole Unit only: a Loop left ON from Study options while Mode is Each Ayah would repeat this one āyah for ever
+      // behind a checkbox this card hides, so it is cleared on opening as well as on a change of mode (Codex review, 17 Nov 2026).
+      if ((real("#drillModeSelect")?.value ?? "each") === "each" && real("#loopToggle")?.checked) setReal("#loopToggle", "checked", false);
       paint();
       document.body.appendChild(dlg);
       dlg.querySelector("[data-play-go]")?.focus();
