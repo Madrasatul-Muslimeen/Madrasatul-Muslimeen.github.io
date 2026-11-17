@@ -9,6 +9,7 @@
 //   --mutate=noshow     the ⋮ sheet's Show group is never drawn                    -> "the ⋮ sheet carries Show" FAILS
 //   --mutate=showslot   the Show slot stays on the bar below 900px                 -> "not on the bar" and "← ✕ on line two" FAIL
 //   --mutate=plainbanner  the sūrah start is the old plain heading                 -> the banner checks FAIL
+//   --mutate=noreopen     ticking a layer in the ⋮ sheet leaves the sheet closed (Codex P2) -> "the sheet stays open" FAILS
 //   --mutate=nosearchhide the 🔍 stays beside the way back below 380px            -> "🔍 gives way" FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -19,6 +20,7 @@ const MUT = {
   noshow: ["@media (max-width: 899.98px) { .qm-show:not([hidden]) { display: block; } }", "@media (max-width: 899.98px) { .qm-show:not([hidden]) { display: none !important; } }"],
   showslot: ["if (layersPhoneMq.matches) { home.dataset.title", "if (false) { home.dataset.title"],
   plainbanner: ['class="unit-flow-surah-heading surah-start-banner"', 'class="unit-flow-surah-heading"'],
+  noreopen: ["\n        setTimeout(reopen, 50);\n      }", "\n      }"],
   nosearchhide: ["@media (max-width: 379.98px) { #readBar:has(#readBackSlot > *) #readSearchBtn { display: none; } }", ""],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -91,6 +93,19 @@ for (const [lang, width] of [["en", 412], ["en", 1280], ["en", 390], ["en", 360]
     check(`${tag} 2: the ⋮ sheet carries Show: English, Bangla, Word by Word`, sh.shown && sh.keys === "en,bn,wbw", JSON.stringify(sh));
   } else {
     check(`${tag} 2: from 900px the switches stand on the bar and the ⋮ sheet has no Show group`, !!b2.slot && !sh.shown, JSON.stringify({ slot: b2.slot, sh }));
+  }
+  if (width < 900) {
+    // Codex P2 on #1807: ticking a layer repaints the Read bar and used to close the ⋮ sheet, so a second tick meant reopening it.
+    const flip = (k) => page.evaluate((x) => document.querySelector(`#readQuickMenuSlot [data-qm-layer="${x}"]`)?.click(), k);
+    const st = () => page.evaluate(() => { const m = document.querySelector("#readQuickMenuSlot .quick-menu"), g = m?.querySelector(".qm-show"); return { open: !!m?.classList.contains("open") && m.getBoundingClientRect().height > 0, on: [...(g?.querySelectorAll("[data-qm-layer]") ?? [])].map((b) => b.checked).join() }; });
+    const before = await st();
+    await flip("bn"); await page.waitForTimeout(1800);
+    const after1 = await st();
+    check(`${tag} 2: ticking Bangla in the sheet keeps the sheet open, now with Bangla off`, before.open && after1.open && before.on === "true,true,true" && after1.on === "true,false,true", JSON.stringify({ before, after1 }));
+    await flip("wbw"); await page.waitForTimeout(1800);
+    const after2 = await st();
+    check(`${tag} 2: a second tick works without reopening ⋮ (Word by Word off too)`, after2.open && after2.on === "true,false,false", JSON.stringify(after2));
+    await flip("bn"); await page.waitForTimeout(1200); await flip("wbw"); await page.waitForTimeout(1200); // put both back
   }
   await page.keyboard.press("Escape"); await page.waitForTimeout(300);
 

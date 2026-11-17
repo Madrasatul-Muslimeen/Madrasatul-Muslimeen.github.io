@@ -22442,7 +22442,20 @@
       if (!box) return;
       const real = document.querySelector(`#readMeaningLayersSlot [data-meaning-layer="${box.dataset.qmLayer}"]`);
       if (real) real.click(); // the real switch's own handler does the rest (it saves the choice and repaints the flow)
-      paintShowGroup(box.closest(".ayah-quick-wrap") ?? document);
+      const oldWrap = box.closest(".ayah-quick-wrap");
+      paintShowGroup(oldWrap ?? document);
+      // The repaint can rebuild the whole Read bar, and with it the ⋮ and its open sheet (Codex P2 on #1807). A reader ticking two layers
+      // should not have to reopen ⋮ for each, so when the sheet we were in is gone, open the new one again.
+      if (oldWrap) {
+        let tries = 0;
+        const reopen = () => {
+          if (oldWrap.isConnected) return; // same sheet: nothing was rebuilt
+          const btn = document.querySelector("#readQuickMenuSlot .ayah-quick-btn");
+          if (btn && !btn.closest(".ayah-quick-wrap")?.querySelector(".quick-menu.open")) { btn.click(); return; }
+          if (++tries < 40) setTimeout(reopen, 50);
+        };
+        setTimeout(reopen, 50);
+      }
     });
     const layersPhoneMq = window.matchMedia("(max-width: 899.98px)");
     function placeMeaningLayersSlot() {
