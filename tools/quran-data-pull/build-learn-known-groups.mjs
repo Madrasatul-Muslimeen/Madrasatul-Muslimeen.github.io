@@ -14,10 +14,11 @@ const idx = new Map();
 for (const r of LN.rows) { const k = norm(r.l); if (!idx.has(k)) idx.set(k, r.l); }
 const known = new Set(LN.rows.map((r) => r.l));
 const TITLES = {
-  prophets: { en: "The Prophets' names", bn: "নবীদের নাম" },
-  people: { en: "Well-known names", bn: "পরিচিত নাম" },
-  ibadah: { en: "Words in Ebadah (Rituals)", bn: "ইবাদতের (আমলের) শব্দ" },
-  daily: { en: "Words of daily life", bn: "প্রতিদিনের জীবনের শব্দ" },
+  prophets: { en: "Prophet's Names", bn: "নবীদের নাম" },
+  people: { en: "Well-Known Names", bn: "পরিচিত নাম" },
+  ibadah: { en: "Words used in Ebadah (Rituals)", bn: "ইবাদতের (আমলের) শব্দ" },
+  daily: { en: "Words used in Daily Life", bn: "প্রতিদিনের জীবনের শব্দ" },
+  bnnames: { en: "Words used in the Names in My Language", bn: "আমার ভাষার নামে ব্যবহৃত শব্দ" },
 };
 const groups = seed.groups.filter((g) => TITLES[g.k]).map((g) => ({ k: g.k, ...TITLES[g.k], lemmas: g.lemmas }));
 const names = {};

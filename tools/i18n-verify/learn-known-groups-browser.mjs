@@ -8,6 +8,7 @@
 //   dupcount   a word in two groups is counted in both        -> "Tick all on Ebadah ... the count is each word ONCE"
 //   oldtitle   the old group titles                           -> "the Owner's titles"
 //   nopanel    the tile opens nothing                         -> "the first step opens the six groups"
+//   sixwords   ḥamd is back in Words used in Daily Life             -> "Words used in Daily Life no longer holds ism, shāʾa ..." FAILS
 //   smalltick  a 14px tick box                                -> "tick boxes are 22px or more"
 //   hudtwice   the second Hud is listed in the Prophets again    -> "no Arabic word is listed twice in one group"
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -18,9 +19,10 @@ const MUT = {
   notick: ["app/quranrevival.html", "try { await vocabWrite(items); } catch (error) { console.warn(\"Already-known tick\"", "try { await 0; } catch (error) { console.warn(\"Already-known tick\""],
   no99: ["app/quranrevival.html", "const asma = asmaGroupsOfNames(DEFAULT_ASMA_COLLECTIONS, asmaNameInfo, kg.names);", "const asma = asmaGroupsOfNames([], asmaNameInfo, kg.names);"],
   dupcount: ["app/js/known-groups.js", "      if (dup) continue;\n", ""],
-  oldtitle: ["tools/quran-data-pull/output/learn-known-groups.json", "Words in Ebadah (Rituals)", "Words of ʿIbādah and rituals"],
+  oldtitle: ["tools/quran-data-pull/output/learn-known-groups.json", "Words used in Ebadah (Rituals)", "Words of ʿIbādah and rituals"],
   nopanel: ["app/quranrevival.html", "const groupsOn = isWbw && learnNextGroupsOpen && !!knownGroupsData;", "const groupsOn = false;"],
   hudtwice: ["tools/quran-data-pull/output/learn-known-groups.json", '"هُود","صَٰلِح2"', '"هُود","هُود","صَٰلِح2"'],
+  sixwords: ["tools/quran-data-pull/output/learn-known-groups.json", JSON.stringify("\u062f\u0651\u064f\u0646\u0652\u064a\u064e\u0627"), JSON.stringify("\u062f\u0651\u064f\u0646\u0652\u064a\u064e\u0627") + "," + JSON.stringify("حَمْد")],
   smalltick: ["app/quranrevival.html", "  .lnk-w input { width: 22px; height: 22px; margin: 0; }", "  .lnk-w input { width: 14px; height: 14px; margin: 0; }"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -85,16 +87,20 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
   await page.evaluate(() => document.querySelector("#learnNextSheet [data-ln-known-tile]").click());
   await sleep(page, 300);
   p = await panel(page);
-  check(`${tag} the first step opens the six groups in order (Allah's Names, Prophets, Well-known names, Ebadah, Daily life, Your own language)`, p.open && p.groups.map((g) => g.k).join() === "allah,prophets,people,ibadah,daily,language", p.groups.map((g) => g.k).join());
+  // UPDATED IN PLACE (17 Nov 2026, the Owner's seven categories): "Words used in the Names in My Language" (bnnames) is the seventh, after "Words used in My Language".
+  check(`${tag} the first step opens the seven groups in order (Allah's Names & Attributes, Prophet's, Well-Known, Ebadah, Daily Life, My Language, Names in My Language)`, p.open && p.groups.map((g) => g.k).join() === "allah,prophets,people,ibadah,daily,language,bnnames", p.groups.map((g) => g.k).join());
   const byK = Object.fromEntries(p.groups.map((g) => [g.k, g]));
   if (lang === "en") {
-    check(`${tag} the Owner's titles: "Words in Ebadah (Rituals)" and "Words in Your Own Language" with "(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)"`,
-      byK.ibadah?.title === "Words in Ebadah (Rituals)" && byK.language?.title === "Words in Your Own Language" && byK.language?.sub === "(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)", JSON.stringify([byK.ibadah?.title, byK.language?.title, byK.language?.sub]));
+    // UPDATED IN PLACE (17 Nov 2026): the Owner's titles for all seven categories.
+    const wantTitles = { allah: "Allah's Names & Attributes", prophets: "Prophet's Names", people: "Well-Known Names", ibadah: "Words used in Ebadah (Rituals)", daily: "Words used in Daily Life", language: "Words used in My Language", bnnames: "Words used in the Names in My Language" };
+    check(`${tag} the Owner's seven titles, and "(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)" under My Language`,
+      Object.entries(wantTitles).every(([k, w]) => byK[k]?.title === w) && byK.language?.sub === "(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)", JSON.stringify(p.groups.map((g) => g.title)));
+    check(`${tag} Words used in Daily Life no longer holds ism, shāʾa, ḥamd, subḥān, akbar, istaghfara (8 words left)`, KG.groups.find((g) => g.k === "daily").lemmas.length === 8 && !["ٱسْم", "شَا^ءَ", "حَمْد", "سُبْحَٰن", "أَكْبَر", "ٱسْتَغْفَرَ"].some((l) => KG.groups.find((g) => g.k === "daily").lemmas.includes(l)));
   } else {
     check(`${tag} Bangla titles, no English left in the group headings`, p.groups.every((g) => !/[A-Za-z]{3}/.test(`${g.title} ${g.sub} ${g.n}`)), JSON.stringify(p.groups.map((g) => g.title)));
   }
   check(`${tag} Allah's Names is the Asma groups (every group, in its own order), not the 99 list`, JSON.stringify(byK.allah?.subs) === JSON.stringify(DEFAULT_ASMA_COLLECTIONS.map((c) => (lang === "bn" ? (c.title.bn || c.title.en) : c.title.en))), JSON.stringify(byK.allah?.subs?.length));
-  check(`${tag} every word in every group (not only Allah's Names) has a tick box: ${byK.allah?.boxes}/${byK.prophets?.boxes}/${byK.people?.boxes}/${byK.ibadah?.boxes}/${byK.daily?.boxes}`, byK.prophets?.boxes === KG.groups.find((g) => g.k === "prophets").lemmas.length && byK.ibadah?.boxes === KG.groups.find((g) => g.k === "ibadah").lemmas.length && byK.daily?.boxes === 14 && byK.allah?.boxes >= allahLemmas.length, JSON.stringify(p.groups.map((g) => [g.k, g.boxes])));
+  check(`${tag} every word in every group (not only Allah's Names) has a tick box: ${byK.allah?.boxes}/${byK.prophets?.boxes}/${byK.people?.boxes}/${byK.ibadah?.boxes}/${byK.daily?.boxes}`, byK.prophets?.boxes === KG.groups.find((g) => g.k === "prophets").lemmas.length && byK.ibadah?.boxes === KG.groups.find((g) => g.k === "ibadah").lemmas.length && byK.daily?.boxes === 8 && byK.allah?.boxes >= allahLemmas.length, JSON.stringify(p.groups.map((g) => [g.k, g.boxes])));
   // The Owner, 17 Nov 2026 ("Hud is twice"): the dictionary's second Hud (هُود2, 3x, Bangla "Jews") is NOT the prophet and is no
   // longer listed in the Prophets' names. No Arabic word may be listed twice in one group.
   const dupsIn = await page.evaluate(() => { const out = {}; document.querySelectorAll("#learnNextSheet [data-lnk-g]").forEach((g) => { const seen = new Set(), dup = []; g.querySelectorAll(".lnk-w .lnk-ar").forEach((e) => { const k = e.textContent.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, "").trim(); if (seen.has(k)) dup.push(k); seen.add(k); }); out[g.dataset.lnkG] = dup; }); return out; });
