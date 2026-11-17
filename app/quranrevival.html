@@ -23477,8 +23477,10 @@
         const ids = (drillSelectedReciterIds ?? []).filter((id) => RECITERS[id] && reciterSupportsSingleAyah(id) && reciterOffersSurah(id, surah));
         if (!ids.length) { alert(t("Pick a reciter in Listening settings first.")); return; }
         unlockAudio(); warmSegmentedTimestamps();
-        stopDrill(); stopAudio();
-        beginListeningSession();
+        // A run already sounding is stopped AND its listening session settled (what it heard still counts), as Study options' Play does. This
+        // one āyah starts NO listening session of its own: the session snapshots the SELECTED unit, so on another āyah of the flow view it
+        // would be credited to the wrong one, and the old ▶ Play of this menu never started one either (Codex review, 17 Nov 2026).
+        if (isPlaying() || isPaused() || isRunContinuing()) { stopDrill(); stopAudio(); settleListeningSession("stopped"); } else { stopDrill(); stopAudio(); }
         playDrill({ surahNum: surah, fromAyah: ayah, toAyah: ayah, reciterIds: ids, repeatCount: repeat, mode: "each" }).catch(reportPlayFailure).finally(renderReadTransport);
         renderReadTransport();
       });

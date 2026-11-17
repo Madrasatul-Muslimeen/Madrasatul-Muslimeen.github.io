@@ -12,6 +12,8 @@
 //   --mutate=notrap      Tab is not kept inside the card                    -> "Tab stays inside the card" FAILS
 //   --mutate=noheight    the card has no maximum height                      -> "the card never outgrows a short screen" FAILS
 //   --mutate=keeploop    Loop stays on when the card goes back to Each Ayah  -> "Loop is cleared when the card goes back to Each Ayah" FAILS
+//   --mutate=session     the card's Each Ayah starts a listening session of the SELECTED unit again -> "Each Ayah starts no listening session" FAILS
+//   --mutate=nosettle    a run already sounding is not settled before the card's run replaces it   -> "a run already sounding is settled" FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
@@ -24,6 +26,8 @@ const MUT = {
   oldlist: [F, "? reciterOffersSurah(id, currentSurahNum) && (reciterSupportsSingleAyah(id) || !!RECITERS[id].surahUrl)", "? reciterOffersSurah(id, currentSurahNum) && reciterSupportsSingleAyah(id)"],
   boxonly: [F, "drillSelectedReciterIds = [...set];\n          const box", "const box"],
   noheight: [F, "#ayahPlayDlg .ayah-copy-box { max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); }", "#ayahPlayDlg .ayah-copy-box { }"],
+  session: [F, "if (isPlaying() || isPaused() || isRunContinuing()) { stopDrill(); stopAudio(); settleListeningSession(\"stopped\"); } else { stopDrill(); stopAudio(); }\n        playDrill({ surahNum: surah, fromAyah: ayah", "if (isPlaying() || isPaused() || isRunContinuing()) { stopDrill(); stopAudio(); settleListeningSession(\"stopped\"); } else { stopDrill(); stopAudio(); }\n        beginListeningSession();\n        playDrill({ surahNum: surah, fromAyah: ayah"],
+  nosettle: [F, 'stopDrill(); stopAudio(); settleListeningSession("stopped"); } else { stopDrill(); stopAudio(); }\n        playDrill({ surahNum: surah, fromAyah: ayah', 'stopDrill(); stopAudio(); } else { stopDrill(); stopAudio(); }\n        playDrill({ surahNum: surah, fromAyah: ayah'],
   keeploop: [F, 'if (e.target.value === "each" && real("#loopToggle")?.checked) setReal("#loopToggle", "checked", false);', ''],
   notrap: [F, 'if (e.key !== "Tab") return;\n        // Keep Tab inside the card', 'if (true) return;\n        // Keep Tab inside the card'],
   noloop: [F, '${mode === "whole" ? `<label class="ayah-copy-row ayah-play-loop">', '${false ? `<label class="ayah-copy-row ayah-play-loop">'],
@@ -139,6 +143,12 @@ for (const w of [390, 1280]) {
   await page.evaluate(() => document.querySelector("[data-qm-toggle], .ayah-quick-btn, .ayah-quick-badge")?.click()); await sleep(page, 400);
   await page.evaluate(() => document.querySelector("[data-qm-play]")?.click()); await sleep(page, 500);
   check(`${tag} (positive control) a fresh card is open for the last checks`, !!(await page.$("#ayahPlayDlg [data-play-go]")));
+  // ---- Codex review (17 Nov 2026): listening sessions. These two are read from the page's own source as it is SERVED (the session
+  // is internal state the page does not expose), so they are weaker than the behavioural checks above and say so here.
+  const served = await page.evaluate(async () => (await fetch("/app/quranrevival.html")).text());
+  const handler = (/openAyahPlayDialog[\s\S]*?playDrill\(\{ surahNum: surah, fromAyah: ayah/.exec(served) || [""])[0];
+  check(`${tag} Each Ayah starts no listening session (it would be credited to the SELECTED unit, not the clicked ayah)`, handler.length > 500 && !/beginListeningSession\(\)/.test(handler), String(handler.length));
+  check(`${tag} a run already sounding is settled before the card's run replaces it`, /isRunContinuing\(\)\) \{ stopDrill\(\); stopAudio\(\); settleListeningSession\("stopped"\);/.test(handler), "settle call missing");
   // ---- Codex review (17 Nov 2026): Loop is cleared when the card goes back to Each Ayah
   await page.evaluate(() => { const s = document.querySelector("#ayahPlayDlg [data-play-mode]"); if (s) { s.value = "whole"; s.dispatchEvent(new Event("change", { bubbles: true })); } });
   await sleep(page, 250);
