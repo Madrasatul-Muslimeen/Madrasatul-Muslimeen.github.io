@@ -2789,6 +2789,9 @@ export const BN = {
   "Learning this adds {p}% of the Qur'an's words": "এটি শিখলে কুরআনের শব্দের {p}% যোগ হয়",
   "Hide roots I have studied ({n} studied)": "আমার পড়া মূল লুকান ({n}টি পড়া)",
   "Hide families I know ({n} known)": "আমার জানা পরিবার লুকান ({n}টি জানা)",
+  "{n} words left to learn in this range": "এই সীমায় শেখা বাকি {n}টি শব্দ", // ?
+  "{n} roots left to learn in this range": "এই সীমায় শেখা বাকি {n}টি মূল", // ?
+  "{n} families left to learn in this range": "এই সীমায় শেখা বাকি {n}টি পরিবার", // ?
   "Showing {what} · together {p}% of the Qur'an": "দেখানো হচ্ছে {what} · একসাথে কুরআনের {p}%",
   "Which words": "কোন শব্দগুলো",
   "All {n}": "সব {n}টি",
