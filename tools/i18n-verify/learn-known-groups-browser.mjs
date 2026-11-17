@@ -9,6 +9,7 @@
 //   oldtitle   the old group titles                           -> "the Owner's titles"
 //   nopanel    the tile opens nothing                         -> "the first step opens the six groups"
 //   smalltick  a 14px tick box                                -> "tick boxes are 22px or more"
+//   hudtwice   the second Hud is listed in the Prophets again    -> "no Arabic word is listed twice in one group"
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -19,6 +20,7 @@ const MUT = {
   dupcount: ["app/js/known-groups.js", "      if (dup) continue;\n", ""],
   oldtitle: ["tools/quran-data-pull/output/learn-known-groups.json", "Words in Ebadah (Rituals)", "Words of ʿIbādah and rituals"],
   nopanel: ["app/quranrevival.html", "const groupsOn = isWbw && learnNextGroupsOpen && !!knownGroupsData;", "const groupsOn = false;"],
+  hudtwice: ["tools/quran-data-pull/output/learn-known-groups.json", '"هُود","صَٰلِح2"', '"هُود","هُود","صَٰلِح2"'],
   smalltick: ["app/quranrevival.html", "  .lnk-w input { width: 22px; height: 22px; margin: 0; }", "  .lnk-w input { width: 14px; height: 14px; margin: 0; }"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -93,6 +95,10 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
   }
   check(`${tag} Allah's Names is the Asma groups (every group, in its own order), not the 99 list`, JSON.stringify(byK.allah?.subs) === JSON.stringify(DEFAULT_ASMA_COLLECTIONS.map((c) => (lang === "bn" ? (c.title.bn || c.title.en) : c.title.en))), JSON.stringify(byK.allah?.subs?.length));
   check(`${tag} every word in every group (not only Allah's Names) has a tick box: ${byK.allah?.boxes}/${byK.prophets?.boxes}/${byK.people?.boxes}/${byK.ibadah?.boxes}/${byK.daily?.boxes}`, byK.prophets?.boxes === KG.groups.find((g) => g.k === "prophets").lemmas.length && byK.ibadah?.boxes === KG.groups.find((g) => g.k === "ibadah").lemmas.length && byK.daily?.boxes === 14 && byK.allah?.boxes >= allahLemmas.length, JSON.stringify(p.groups.map((g) => [g.k, g.boxes])));
+  // The Owner, 17 Nov 2026 ("Hud is twice"): the dictionary's second Hud (هُود2, 3x, Bangla "Jews") is NOT the prophet and is no
+  // longer listed in the Prophets' names. No Arabic word may be listed twice in one group.
+  const dupsIn = await page.evaluate(() => { const out = {}; document.querySelectorAll("#learnNextSheet [data-lnk-g]").forEach((g) => { const seen = new Set(), dup = []; g.querySelectorAll(".lnk-w .lnk-ar").forEach((e) => { const k = e.textContent.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, "").trim(); if (seen.has(k)) dup.push(k); seen.add(k); }); out[g.dataset.lnkG] = dup; }); return out; });
+  check(`${tag} no Arabic word is listed twice in one group (Hud once in the Prophets' names)`, Object.values(dupsIn).every((d) => d.length === 0) && !KG.groups.find((g) => g.k === "prophets").lemmas.includes("هُود2"), JSON.stringify(dupsIn));
   check(`${tag} no sideways scroll, nothing past the right edge`, p.over <= 0 && p.wide <= p.vw + 1, JSON.stringify([p.over, p.wide, p.vw]));
   check(`${tag} tick boxes are 22px or more and each word row is 44px or more`, p.boxMin >= 22 && p.boxH >= 44, JSON.stringify([p.boxMin, p.boxH]));
 
@@ -109,7 +115,7 @@ for (const [lang, width, height] of [["en", 390, 844], ["en", 320, 640], ["en", 
     // the Word card's own mark writes the lemma document plus the running whole-Qur'an counters (3 writes in the stub), so: at least one write, and the lemma's own document among them
     const wrote = await page.evaluate(([n, l]) => (window.__stubWriteData || []).slice(n).some((w) => JSON.stringify(w).includes(l)), [w0, first]);
     check(`${tag} a tick writes the Word card's own lemma mark (${w1 - w0} writes, one of them this word's own document)`, w1 - w0 >= 1 && wrote, `${w1 - w0} ${wrote}`);
-    check(`${tag} the ticked word shows ticked, the group counts it ("1 of 28 known") and the step shows its share`, p.groups.find((g) => g.k === "prophets").checked === 1 && /^1 of 28 known$/.test(p.groups.find((g) => g.k === "prophets").n) && /[1-9]/.test(p.tileText.replace("Already known", "")), JSON.stringify([p.groups.find((g) => g.k === "prophets").n, p.tileText]));
+    check(`${tag} the ticked word shows ticked, the group counts it ("1 of 27 known") and the step shows its share`, p.groups.find((g) => g.k === "prophets").checked === 1 && /^1 of 27 known$/.test(p.groups.find((g) => g.k === "prophets").n) && /[1-9]/.test(p.tileText.replace("Already known", "")), JSON.stringify([p.groups.find((g) => g.k === "prophets").n, p.tileText]));
     // ---- tick all / clear
     await page.evaluate(() => document.querySelector('#learnNextSheet [data-lnk-all="ibadah"]').click());
     await page.waitForFunction(() => !document.querySelector("#learnNextSheet [data-lnk-busy]"), null, { timeout: 60000 }).catch(() => {});
