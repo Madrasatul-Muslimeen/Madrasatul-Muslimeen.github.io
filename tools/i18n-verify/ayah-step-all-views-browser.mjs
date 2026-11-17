@@ -31,7 +31,9 @@ for (const width of [360, 600, 768, 1280]) {
   // there ◂ ▸ are two tiles of that menu; from 600px, and in the Mushaf, they stay on the bar.
   const inMenu = width < 600;
   const stepReading = async (act, id) => {
-    if (!inMenu) { await page.click(`#${id}`); return; }
+    // UPDATED IN PLACE (17 Nov 2026): this helper opened the ⋮ for ◂ ▸ below 600px, but since 15 Nov they stay on the bar in the Reading View at every width
+    // (the check below asserts it), so the click timed out on a tile that is no longer there (the same crash was on main before this round). Always press the bar's own button.
+    if (true) { await page.click(`#${id}`); return; }
     await page.click("#readBar .ayah-quick-btn"); await page.waitForTimeout(300);
     await page.click(`#readBar [data-qm-act="${act}"]`);
   };

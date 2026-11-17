@@ -2702,6 +2702,7 @@
   @media (min-width: 400px) and (max-width: 899.98px) {
     #readBar:has(.read-unit-chip[data-unit-type="page"]) .read-loc-btn { width: auto; min-width: 40px; padding: 0 0.55rem; }
     #readBar:has(.read-unit-chip[data-unit-type="page"]) .read-loc-page { display: inline; font-size: 0.82rem; font-weight: 700; white-space: nowrap; }
+    #readBar:has(.read-unit-chip[data-unit-type="page"]) .read-loc-page::before { content: attr(data-word) " "; }
     #readBar:has(.read-unit-chip[data-unit-type="page"]) .read-loc-page:empty { display: none; }
     .read-unit-chip[data-unit-type="page"] { display: none; }
   }
@@ -24756,7 +24757,8 @@
       const el = document.querySelector("[data-read-loc-page]");
       if (!el) return;
       const pg = readLocAnchor().page;
-      el.textContent = pg ? t("Page {page}", { page: num(pg) }) : "";
+      el.textContent = pg ? num(pg) : ""; // the number alone; the word "Page" is drawn before it (CSS attr) only where the unit chip is folded into the pin, 400-899px
+      el.dataset.word = t("Page");
     }
     async function renderReadLocList() {
       const list = document.querySelector("[data-read-loc-list]");
