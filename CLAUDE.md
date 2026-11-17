@@ -453,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v15.21 on `main`** (17 Nov 2026 Sydney, shown as "v15.21 - 17.Nov.2026"). **The Play card says when a whole-sūrah-only reciter plays.** #1804 (QR Lead, the follow-up to #1801's last Codex note): under Whole Unit the ⋮ ▸ Play card says "A reciter with only a whole-sūrah recording plays only when no other reciter is ticked." (Study options' own rule, unchanged), in English and Bangla. Checks: see the CHANGELOG entry.
+**Current milestone: v15.22 on `main`** (18 Nov 2026 Sydney, shown as "v15.22 - 18.Nov.2026"). **The Read bar is tidied.** #1807 (QR Lead 47L, from the Owner's 17 Nov "Fix all three views"): the page number sits inside the 📍 button (400–899px, when the unit is a page); the Show items (English, Bangla, Word by Word) move into the ⋮ sheet below 900px; ← ✕ sits on the bar's second line; the start of a sūrah is a gold double-framed banner. Checks: see the CHANGELOG entry.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

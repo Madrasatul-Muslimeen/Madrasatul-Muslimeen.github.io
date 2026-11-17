@@ -14,6 +14,8 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v15.21 on `main`** (17 Nov 2026 Sydney, shown as "v15.21 - 17.Nov.2026"). **The Play card says when a whole-sūrah-only reciter plays.** #1804 (QR Lead, the follow-up to #1801's last Codex note): under Whole Unit the ⋮ ▸ Play card says "A reciter with only a whole-sūrah recording plays only when no other reciter is ticked." (Study options' own rule, unchanged), in English and Bangla. Checks: see the CHANGELOG entry.
+
 **Previous milestone: v15.20 on `main`** (17 Nov 2026 Sydney, shown as "v15.20 - 17.Nov.2026"). **Four QR Lead rounds in one release.** #1797: the Bookmarks list shows every saved Quran bookmark as "Surah - 57:1-6 - 12.Oct.26". #1799: Already known gets the Owner's seven categories and titles. #1801: the ⋮ menu's Play opens a play-options card (reciters, Repeat, Mode, Loop). #1802: Recitation for offline saves the whole Qur'an in one press, and a sūrah downloads as a real MP3 file. Checks: see the CHANGELOG entry.
 
 **Previous milestone: v15.19 on `main`** (17 Nov 2026 Sydney, shown as "v15.19 - 17.Nov.2026"). **Learn next shows how many words are left to learn in the chosen range.** The Owner, 17 Nov (via the QR Lead, PR #1798): beside "Hide words I know" (and its roots/families versions), a count "{n} words left to learn in this range", in English and Bangla, outside the label so a tap on it never toggles the box. Checks: see the CHANGELOG entry.
