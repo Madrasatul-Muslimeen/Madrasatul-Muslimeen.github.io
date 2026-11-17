@@ -1164,3 +1164,4 @@ total). Allocated by the MMSA Architect.
 15.16: PCA J118 rename to MMSA. Allocated by the MMSA Architect.
 15.17: PCA J117 installs for Hadith, Dua, Health + one Install card. Allocated by the MMSA Architect.
 15.18: MMSA icon + Hud once (#1794). Allocated by the MMSA Architect.
+15.19: Learn next words left (#1798). Allocated by the MMSA Architect.
