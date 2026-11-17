@@ -24196,3 +24196,12 @@ Built, measured and released by the Architect 117L (PR #1792).
   - QR built from this source, `qr-verify/run-all.sh`: every suite green except `upgrade-browser` (needs the QR repository checkout, not in this sandbox). `asma-offline-browser` 58/0 (its first run caught the card missing from Asma's offline list: fixed), `asma-store-browser` 85/0, `install-browser` 24/0 (new: "Install Asma" card).
   - **keep1116:** saved on v15.16 (`main`), served v15.17 on the same address and browser profile, reopened Hadith, Dua, Health and Quran Study: every saved key kept (3 → 3, 0 lost, 0 changed), the IndexedDB test value kept.
 - No Rules, key or Firestore change; the only new storage is `mm_install_later:<app id>` in localStorage.
+
+## v15.18 — 17 Nov 2026 (Sydney) — The home-screen icon says MMSA; Hud once in the Prophets' names
+
+Released by the Architect 117L.
+
+- **MMSA icon (PCA J118 follow-up; the Owner, 17 Nov, via the QR Lead: the phone's icon still showed "MSA", circled, "it must change"):** `make-icons.mjs` draws "MMSA" in the same night-navy, gold book design into the same files (`msa-192.png`, `msa-512.png`, `msa-maskable-512.png`; file names unchanged, keep1116). QR's teal "QR" icon and the Hadith, Dua, Health and Asma icons are unchanged. An already installed icon updates when the phone next refreshes the app (Android, usually within a day of opening it); on an iPhone, remove and add it again.
+- **#1794 (QR Lead 47L; the Owner, 17 Nov: "Hud is twice"):** the dictionary's second Hud (`هُود2`, 3x, "Jews", e.g. 2:111) is taken out of the Already-known "The Prophets' names" list (`learn-known-seed.json` → `learn-known-groups.json`): 28 → 27. The word itself, its Word Card and any mark on it are untouched.
+- **Checks (Architect 117L):** `learn-known-groups-browser` 50/0 on this branch; its new mutation `hudtwice` fails 8 checks by name. Icons looked at (maskable mark inside the safe zone). `apps-build-check` and `install-links --check` green. **keep1116:** saved on v15.17 (`main`), reopened on v15.18 on the same address and browser profile (Hadith, Dua, Health, Quran Study): every saved key kept (3 → 3, 0 lost, 0 changed), the IndexedDB test value kept.
+- No Rules, key or storage change.

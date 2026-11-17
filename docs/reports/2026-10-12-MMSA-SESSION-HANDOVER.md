@@ -3364,3 +3364,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v15.15** (2026-11-16): J140 part 5: – ⛶ ✕ on the remaining pop-ups (#1786) + PCA J117: QuranRevival installs as its own app.
 - **v15.16** (2026-11-16): PCA J118 rename to MMSA.
 - **v15.17** (2026-11-16): PCA J117 installs for Hadith, Dua, Health + one Install card.
+- **v15.18** (2026-11-17): MMSA icon + Hud once (#1794).
