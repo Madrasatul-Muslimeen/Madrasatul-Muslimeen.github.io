@@ -27,6 +27,7 @@ const MUT = {
   nofocusafterback: ["js/minimise.js", "    if (pane) setTimeout(() => document.querySelector(`[data-reader-pop=\"${pane}\"]`)?.focus(), 60);", ""],
   // (the hidden twin of ⓘ comes AFTER the bar in the page, so a plain querySelector also finds the visible one today; visibleOne() is defence in depth and its check cannot be failed by a mutation)
   nofullfocus: ["js/hadith-reader.js", "oi.toolFull = !oi.toolFull; oi.toolFullFocus = true;", "oi.toolFull = !oi.toolFull;"],
+  nophonefocus: ["js/minimise.js", " || document.querySelector(`[data-reader-show=\"${pane}\"]`)", ""],
   nowayback: ["js/hadith-reader.js", "    oi.toolFrom = oi.phone !== \"chapters\" ? oi.phone : (oi.toolFrom ?? null);", "    oi.toolFrom = null;"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -167,6 +168,19 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   const inHead = await P.$$eval('.hadith-reader-grid [data-reader-pane="chapters"] .hadith-pane-head [data-reader-tool]', (ns) => ns.map((n) => n.dataset.readerTool));
   check(`${tag} the three icons are in the Chapters pane heading, beside its two size icons`, JSON.stringify(inHead) === JSON.stringify(["choice", "info", "actions"]) && (await visible(P, '[data-reader-pane="chapters"] .hadith-pane-head [data-reader-max], [data-reader-pane="chapters"] .hadith-pane-head [data-reader-pop]')) === 2, JSON.stringify(inHead));
   check(`${tag} the step bar is hidden on a wide screen`, (await rect(P, ".hadith-reader-steps"))?.h === 0 || (await visible(P, ".hadith-reader-steps")) === 0);
+  await ctx.close();
+}
+
+// ---- 4a. a pane floated on a computer, then the window shrinks to a phone: ← Back still leaves focus somewhere real ---------------------
+{
+  const tag = "[en 1280 to 600 floated]";
+  const { ctx, page: P } = await open("en", 1280);
+  await press(P, '[data-reader-pop="chapters"]'); await P.waitForSelector(".hadith-pane-float .mm-back-btn", { timeout: 8000 }).catch(() => {});
+  await P.setViewportSize({ width: 600, height: 900 }); await settle(P, 600);
+  const has = await P.$(".hadith-pane-float .mm-back-btn");
+  check(`${tag} the floated window still has its ← Back on a phone-width screen`, !!has);
+  if (has) { await P.click(".hadith-pane-float .mm-back-btn"); await settle(P, 400); }
+  check(`${tag} after ← Back focus is on the pane's tab in the step bar, not lost to the page`, await P.evaluate(() => { const a = document.activeElement; return !!a && a.matches('[data-reader-show="chapters"]'); }));
   await ctx.close();
 }
 

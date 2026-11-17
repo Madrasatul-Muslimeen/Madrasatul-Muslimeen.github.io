@@ -267,7 +267,7 @@ function addBack(root, spec, close) {
     e.preventDefault(); e.stopPropagation();
     const pane = root.dataset.readerFloat; // a popped-out Hadith pane: once it is docked again, focus goes to its own pop-out button (way-back law)
     close.click();
-    if (pane) setTimeout(() => document.querySelector(`[data-reader-pop="${pane}"]`)?.focus(), 60);
+    if (pane) setTimeout(() => (document.querySelector(`[data-reader-pop="${pane}"]`) || document.querySelector(`[data-reader-show="${pane}"]`))?.focus(), 60); // a phone has no pop-out button: its step-bar tab takes the focus
   });
   bar.insertBefore(b, bar.firstChild);
 }
