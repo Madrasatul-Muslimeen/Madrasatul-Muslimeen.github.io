@@ -4784,6 +4784,7 @@ export const BN = {
   "Subject added.": "পাঠ্য বিষয় যোগ করা হয়েছে।", // ? (J106 S3)
   "The Subject could not be added. Check the connection and try again.": "পাঠ্য বিষয়টি যোগ করা যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।", // ? (J106 S3)
   "Edit names": "নাম সম্পাদনা", // ? (J106 S3 part 2)
+  "Nothing to choose for this book yet.": "এই কিতাবে এখনো বাছাই করার কিছু নেই।", // ? (the Owner's Hadith Books bar, 17 Nov 2026)
   "Only the madrasah's owner or a prime can edit the names.": "শুধু মাদ্রাসার মালিক বা প্রাইম নামগুলো সম্পাদনা করতে পারেন।", // ? (J106 S3 part 2)
   "Sign in to edit the names.": "নাম সম্পাদনা করতে সাইন ইন করুন।", // ? (J106 S3 part 2)
   "Write the name first.": "আগে নামটি লিখুন।", // ? (J106 S3 part 2)

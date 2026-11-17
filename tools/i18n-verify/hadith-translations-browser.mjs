@@ -6,7 +6,7 @@
 //   --mutate=nofold   library cards get no translation  -> the library checks fail
 //   --mutate=bypos    the passage's position is used, not its standard number -> the wording checks fail
 import fs from "node:fs";
-import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo, ensureGoto } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -81,9 +81,11 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the chapter now opens in the three-pane reader on its
   // first sub-chapter, showing one narration; 6578 sits in sub-chapter 2. It is reached with the reader's own "Go to
   // hadith number" box by its standard number, 6306 (on a phone, after the Chapters step button).
+  await ensureGoto(P);
   await P.waitForSelector("[data-openiti-goto-input]", { state: "attached" });
   const chaptersStep = await P.$('[data-reader-show="chapters"]');
   if (chaptersStep && await chaptersStep.isVisible()) await chaptersStep.click();
+  await ensureGoto(P);
   await P.fill("[data-openiti-goto-input]", "6306");
   await P.click("[data-openiti-goto-btn]");
   await P.waitForSelector('[data-openiti-passage="6578"]');

@@ -23,6 +23,7 @@ const MUT = {
   withdownload: ["js/hadith-book-viewer.js", "  if (!shamela) {\n    const dl = bookDownload(book);", "  if (true) {\n    const dl = bookDownload(book);"],
   noescape: ["js/hadith-book-viewer.js", 'if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closePane(); return; }', ""],
   eagerload: ["js/hadith-book-viewer.js", "  const note = el(\"span\", \"book-page-error\");", "  loadBookPage(versionUri, lazy ? 1 : number).catch(() => {});\n  const note = el(\"span\", \"book-page-error\");"],
+  noback: ["js/minimise.js", "  if (!spec.back || root.querySelector(\":scope .mm-back-btn\")) return;", "  return;"],
   shiftedmap: ["MAP", "", ""], // serves each of the three maps with every page index moved on by one
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -123,6 +124,13 @@ for (const [key, B] of Object.entries(BOOKS)) for (const [lang, width] of [["en"
     check(`${tag} there is NO "Download this book" link`, (await P.$("[data-book-page-download]")) === null);
     const geo = await P.evaluate(() => { const r = document.querySelector(".book-page-pane").getBoundingClientRect(); const f = document.querySelector(".book-page-frame").getBoundingClientRect(); const c = document.querySelector(".book-page-close").getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, vw: innerWidth, vh: innerHeight, fh: f.height, cw: c.width, ch: c.height, foot: document.querySelector(".book-page-foot").scrollWidth - document.querySelector(".book-page-foot").clientWidth }; });
     check(`${tag} the pane sits inside the screen, the page area is >= 300px tall, the × is >= 40px, the footer does not overflow`, geo.l >= -0.5 && geo.t >= -0.5 && geo.r <= geo.vw + 0.5 && geo.b <= geo.vh + 0.5 && geo.fh >= 300 && geo.cw >= 40 && geo.ch >= 40 && geo.foot <= 0, JSON.stringify(geo));
+    // The Owner, 17 Nov 2026: every pop-up in the module has ← Back, ⛶ Full screen and ✕.
+    await P.waitForSelector(".book-page-pane .mm-back-btn", { timeout: 5000 }).catch(() => {});
+    const ctl = await P.evaluate(() => { const q = (s) => { const e = document.querySelector(`.book-page-pane ${s}`); if (!e) return null; const r = e.getBoundingClientRect(); return { w: r.width, h: r.height }; }; return { back: q(".mm-back-btn"), full: q(".mm-full-btn"), close: q(".book-page-close") }; });
+    check(`${tag} the pop-up has ← Back, ⛶ Full screen and ✕, each at least 40px`, [ctl.back, ctl.full, ctl.close].every((c) => c && c.w >= 40 && c.h >= 40), JSON.stringify(ctl));
+    await P.click(".book-page-pane .mm-back-btn"); await P.waitForTimeout(150);
+    check(`${tag} ← Back closes it and focus is back on the button`, (await P.$("[data-book-page-pane]")) === null && (await P.evaluate((s) => document.activeElement === document.querySelector(s), BTN)));
+    await btn.click(); await P.waitForSelector("[data-book-page-pane]");
     await P.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/out-${key}-${lang}-${width}.png` });
     await P.keyboard.press("Escape"); await P.waitForTimeout(120);
     check(`${tag} Escape closes the pane, and focus is back on the button (way-back law)`, (await P.$("[data-book-page-pane]")) === null && (await P.evaluate((s) => document.activeElement === document.querySelector(s), BTN)));

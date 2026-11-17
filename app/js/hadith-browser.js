@@ -23,7 +23,7 @@ import { listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterL
 import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
 import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
 import { HADEETHENC_LANGS, HADEETHENC_STRUCTURE_LANG, loadHadeethEncCategories, childCategories, directHadithIds, resolveCategoryTitle, loadHadithRecords, hadithArabicText, hadeethEncSourceUrl } from "./hadeethenc-corpus.js";
-import { hasMyIndex, renderIndexSwitch, renderMyIndex } from "./hadith-myindex.js";
+import { hasMyIndex, loadMyIndex, renderIndexSwitch, renderMyIndex } from "./hadith-myindex.js";
 import { OPENITI_CREDIT_URL, loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber, loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadHadeethEncReferences, loadDuaIndex } from "./openiti-corpus.js";
 import { el, readFailedNote, langNameInProse, loadHadithStudyActions, openitiDisplayTitle, openitiArabicRowName, duaRefLabel, standardTranslationFolds, openitiTranslationFold } from "./hadith-shared-ui.js";
 import { bookPageButton, isShamelaBook, isKeyedByN } from "./hadith-book-viewer.js"; // the original printed page of a hadith (Owner, 11 Nov 2026)
@@ -35,7 +35,7 @@ import { HADITH_COLOURS, getHadithColours, setHadithColours } from "./hadith-col
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 import { settingsHost, addPreviewCue } from "./hadith-menu-settings.js";
 import { mountContinueStrip, parkContinueStrip } from "./hadith-continue-mount.js";
-import { nameLine, primeNames, renderNamesEditor, kysT } from "./hadith-names.js";
+import { nameLine, englishName, primeNames, renderNamesEditor, kysT } from "./hadith-names.js";
 import { primeStatuses, statusBadge, renderStatusRow, renderStatusWheel } from "./hadith-status.js";
 import { bookKey, groupKey } from "./hadith-names-model.js";
 import { subjectAddRow, renderSubjectList, renderSubjectEditor, registerBuiltinSubjects, knownSubjects, loadSubjectChoices, subjectLabel } from "./hadith-subjects.js";
@@ -1295,6 +1295,7 @@ async function renderOpenitiBody(body, oi, localRefresh) {
     hadiths: (pane) => renderReaderHadithList(pane, passages, oi, localRefresh, conc),
     text: (pane, head) => renderReaderText(pane, head, passages, oi, localRefresh, conc, heLinks, duaCtx, versionUri, jumped, subjectRef),
     titles: { chapters: t("Chapters"), hadiths: chapter ? t("Hadith · {n}", { n: num(passages.length) }) : t("Hadith"), text: t("Text") },
+    tools: openitiReaderTools(index, oi, localRefresh, conc, versionUri, found[1]),
   });
   body.appendChild(reader);
   // Opened from the Dua tab, a reference or a link: bring the reader into view.
@@ -1441,10 +1442,13 @@ function renderOpenitiBookList(body, oi, localRefresh) {
   body.appendChild(list);
 }
 
-function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, babs = null, versionUri = null) {
-  // The Owner's alternate index (Bukhari): two buttons at the top; the original index stays exactly as it was.
-  const alt = versionUri && conc && hasMyIndex(versionUri);
-  if (alt) body.appendChild(renderIndexSwitch(oi, localRefresh));
+/**
+ * The three icons of the Chapters bar (the Owner, 17 Nov 2026): ⚙ Settings / choice (which index), ⓘ Info (about this book), ⚡ Actions
+ * (go to a hadith number; edit names). Each panel is drawn only when its icon is open. Pressing Go closes its panel (the reader moves on).
+ */
+function openitiReaderTools(index, oi, localRefresh, conc, versionUri, summary) {
+  const alt = !!(versionUri && conc && hasMyIndex(versionUri));
+  const goTo = (body, ctx) => {
   const goBox = el("div", "openiti-goto");
   const editionNumbers = index.numbering !== "sequential-by-paragraph";
   if (!editionNumbers && !conc) {
@@ -1496,6 +1500,7 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
         }
         oi.chapterId = null;
         oi.focusPassage = n;
+        ctx.done();
         localRefresh();
         return;
       }
@@ -1506,6 +1511,7 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
       }
       oi.chapterId = chapter.id;
       oi.focusNumber = Math.trunc(Number(input.value)); // J106: the reader opens on that hadith, not the chapter's first
+      ctx.done();
       localRefresh();
     };
     goBtn.addEventListener("click", doGo);
@@ -1513,8 +1519,40 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
     goBox.appendChild(goMsg);
   }
   body.appendChild(goBox);
-  renderNamesEditor(body, { versionUri: oi.bookUri, titleAr: index.titleAr, chapters: index.chapters, onChange: localRefresh }); // owner/prime; nothing while the switch is off
+  };
+  return [
+    { id: "choice", label: t("Settings"), render: (body, ctx) => {
+      if (alt) body.appendChild(renderIndexSwitch(oi, () => { ctx.done(); localRefresh(); }));
+      else body.appendChild(el("p", "hadith-note", t("Nothing to choose for this book yet.")));
+    } },
+    { id: "info", label: t("Info"), render: (body) => renderBookInfo(body, index, summary) },
+    { id: "actions", label: t("Actions"), render: (body, ctx) => {
+      goTo(body, ctx);
+      renderNamesEditor(body, { versionUri: oi.bookUri, titleAr: index.titleAr, chapters: index.chapters, onChange: localRefresh }); // owner/prime; nothing while the switch is off
+    } },
+  ];
+}
 
+/** ⓘ Info: what this book is and what the app holds of it. */
+function renderBookInfo(body, index, summary) {
+  const box = el("div", "hadith-bookinfo");
+  const ar = el("p", "hadith-bookinfo-ar", index.titleAr ?? "");
+  ar.lang = "ar"; ar.dir = "rtl";
+  box.append(ar, el("p", "hadith-bookinfo-en", index.titleEn ?? ""));
+  const rows = [];
+  rows.push([t("Chapters"), num(index.chapters.length)]);
+  if (index.numbering === "sequential-by-paragraph") rows.push([t("Passages"), num(index.passageCount)]);
+  else rows.push([t("Hadith"), num(index.hadithCount)]);
+  const list = el("dl", "hadith-bookinfo-list");
+  for (const [k, v] of rows) { list.append(el("dt", null, k), el("dd", null, v)); }
+  box.appendChild(list);
+  box.appendChild(el("p", "hadith-note", t("Source: OpenITI (CC BY-NC-SA 4.0)")));
+  body.appendChild(box);
+}
+
+
+function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, babs = null, versionUri = null) {
+  const alt = versionUri && conc && hasMyIndex(versionUri);
   if (alt && oi.indexMode === "my") { renderMyIndex(body, versionUri, oi, localRefresh, conc); return; }
   const shown = oi.showAllChapters ? index.chapters.length : Math.min(OPENITI_CHAPTER_PAGE, index.chapters.length);
   const list = el("div", "hadith-list");
@@ -1531,6 +1569,9 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
     if (open) row.setAttribute("aria-current", "true");
     const label = openitiChapterLabel(c, index);
     row.appendChild(label.ar ? openitiArabicRowName(label.text) : el("span", "hadith-row-name", label.text));
+    // English beside the Arabic (the Owner, 17 Nov 2026): the madrasah's own English name where one was typed; Bukhari's books also take the Owner's MyIndex English.
+    const ownEn = englishName(groupKey(oi.bookUri, c.id));
+    if (ownEn) { const e = el("span", "hadith-row-en", ownEn); e.dataset.openitiChapterEn = c.id; e.lang = "en"; row.appendChild(e); }
     const ownChapter = nameLine(groupKey(oi.bookUri, c.id));
     if (ownChapter) row.appendChild(ownChapter);
     if (c.firstNumber != null) {
@@ -1557,6 +1598,18 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
     }
   }
   body.appendChild(list);
+  if (alt) { // Bukhari: the Owner's MyIndex carries each book's English name; the kitab rows take it (one small file, read here for the first time a Bukhari chapter list is drawn)
+    loadMyIndex(versionUri).then((data) => {
+      const byFirst = new Map(Object.values(data.books ?? {}).map((b) => [b.first, b]));
+      for (const c of rows) {
+        const b = c.firstNumber != null ? byFirst.get(c.firstNumber) : null;
+        const row = list.querySelector(`[data-openiti-chapter="${c.id}"]`);
+        if (!b?.en || !row || row.querySelector("[data-openiti-chapter-en]")) continue;
+        const e = el("span", "hadith-row-en", b.en); e.dataset.openitiChapterEn = c.id; e.lang = "en";
+        row.insertBefore(e, row.querySelector(".hadith-row-meta"));
+      }
+    }).catch(() => { /* English is a help, not a need: the Arabic row stands */ });
+  }
 
   if (!oi.showAllChapters && index.chapters.length > OPENITI_CHAPTER_PAGE) {
     const more = el("button", "openiti-show-more", t("Show more ({remaining} more)", { remaining: num(index.chapters.length - OPENITI_CHAPTER_PAGE) }));

@@ -8,7 +8,7 @@
 // Run from the repository root, serve.js on :8080.   --mutate=<name> serves one deliberate break; --prove runs them all.
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, ensureGoto } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -68,9 +68,12 @@ async function openBook(P, uri, number) {
   if (!on) await P.click('[data-hadith-tab="books"]');
   await P.waitForSelector(`[data-openiti-book="${uri}"]`, { timeout: 25000 });
   await P.click(`[data-openiti-book="${uri}"]`);
+  await ensureGoto(P);
   await P.waitForSelector("[data-openiti-goto-input]", { timeout: 15000 });
+  await ensureGoto(P);
   const mode = await P.$("[data-openiti-goto-mode]"); // the book's OWN numbers, not the standard concordance ones
   if (mode) await mode.selectOption("edition");
+  await ensureGoto(P);
   await P.fill("[data-openiti-goto-input]", String(number)); await P.click("[data-openiti-goto-btn]");
 }
 for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280], ["bn", 360], ["en", 1440], ["en", 195]]) {

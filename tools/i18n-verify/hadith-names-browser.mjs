@@ -82,7 +82,9 @@ async function openBukhari(p) {
   await p.waitForSelector('[data-openiti-chapter="ch-3"]', { state: "attached" });
   await settle(p, 400);
 }
-const openEditor = async (p) => { await tap(p, "[data-hadith-names-open]"); await p.waitForSelector("[data-hadith-names-row]", { state: "attached" }); await settle(p, 250); };
+// 17 Nov 2026 (the Owner's Hadith Books bar): "Edit names" lives behind the bar's ⚡ Actions icon.
+const openActions = async (p) => { if (!(await p.$('[data-tool-panel="actions"]'))) await tap(p, '[data-reader-tool="actions"]'); await p.waitForSelector('[data-tool-panel="actions"]', { timeout: 8000 }).catch(() => {}); await settle(p, 200); };
+const openEditor = async (p) => { await openActions(p); await tap(p, "[data-hadith-names-open]"); await p.waitForSelector("[data-hadith-names-row]", { state: "attached" }); await settle(p, 250); };
 const msgOf = (p) => p.$eval(".hadith-names-panel [data-hadith-names-msg]", (n) => ({ text: n.textContent, failed: "hadithNamesFailed" in n.dataset })).catch(() => null);
 const own = (p, key) => p.$eval(`[data-hadith-own-name="${key}"]`, (n) => n.textContent).catch(() => null);
 
@@ -93,7 +95,8 @@ const own = (p, key) => p.$eval(`[data-hadith-own-name="${key}"]`, (n) => n.text
   const seed = `DATA.hadithNames = [{ _id: "t1", tenantId: "t1", schemaVersion: 1, createdBy: "test-uid", names: { "${CH3}": { bn: "সিডেড", en: "Seeded", status: "active" } } }];`;
   const { ctx, page: P } = await open("en", 1280, { on: false, extraSeedJs: seed });
   await openBukhari(P);
-  check(`${tag} no editor is drawn`, !(await P.$("[data-hadith-names-open]")));
+  await openActions(P);
+  check(`${tag} no editor is drawn (the Actions panel is open, so this is not vacuous)`, !!(await P.$('[data-tool-panel="actions"] [data-openiti-goto-input]')) && !(await P.$("[data-hadith-names-open]")));
   check(`${tag} the collection is never read`, (await reads(P)) === 0, `${await reads(P)} reads`);
   check(`${tag} a stored name is not shown`, (await own(P, CH3)) === null);
   check(`${tag} nothing is written`, (await writes(P)).length === 0);
@@ -106,7 +109,8 @@ for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
   console.log(`\n===== hadith names ${tag} =====`);
   const { ctx, page: P, errors } = await open(lang, width);
   await openBukhari(P);
-  check(`${tag} the owner sees "Edit names" in the open book`, !!(await P.$("[data-hadith-names-open]")));
+  await openActions(P);
+  check(`${tag} the owner sees "Edit names" in the open book's Actions panel`, !!(await P.$('[data-tool-panel="actions"] [data-hadith-names-open]')));
   check(`${tag} the madrasah's names are read ONCE (one document, after first paint)`, (await reads(P)) === 1, `${await reads(P)} reads`);
   await openEditor(P);
   const rows = await P.$$eval("[data-hadith-names-row]", (ns) => ns.map((n) => n.dataset.hadithNamesRow));
@@ -120,13 +124,18 @@ for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
   check(lang === "bn" ? `${tag} a Bangla reader sees the name under the chapter` : `${tag} an English reader is not shown a Bangla name`, lang === "bn" ? shown === "ঈমানের কিতাব" : shown === null, String(shown));
   const m = await msgOf(P);
   check(`${tag} it says the name was saved`, !!m && !m.failed && m.text.length > 0, JSON.stringify(m));
+  // an English name beside the Arabic (the Owner, 17 Nov 2026): shown under the chapter whatever the reader's language
+  await P.waitForSelector(`[data-hadith-names-en="${CH3}"]`, { timeout: 8000 });
+  await P.fill(`[data-hadith-names-en="${CH3}"]`, "Book of Faith");
+  await tap(P, `[data-hadith-names-save="${CH3}"]`); await settle(P, 600);
+  check(`${tag} an English name typed beside it shows under the Arabic chapter, in either language`, (await P.$eval('[data-openiti-chapter-en="ch-3"]', (n) => n.textContent).catch(() => null)) === "Book of Faith");
   // retire
   await P.waitForSelector(`[data-hadith-names-remove="${CH3}"]`, { timeout: 8000 });
   await tap(P, `[data-hadith-names-remove="${CH3}"]`); await settle(P, 600);
   w = await writes(P);
   const last = w[w.length - 1];
   check(`${tag} Remove is an UPDATE that keeps the entry, marked retired (nothing deleted)`, last?.kind === "update" && JSON.stringify(last.data).includes('"status":"retired"') && JSON.stringify(last.data).includes("ঈমানের কিতাব"), JSON.stringify(last?.data).slice(0, 240));
-  check(`${tag} ...and the name stops showing`, (await own(P, CH3)) === null);
+  check(`${tag} ...and the name stops showing`, (await own(P, CH3)) === null && (await P.$eval('[data-openiti-chapter-en="ch-3"]', (n) => n.textContent).catch(() => null)) !== "Book of Faith" /* Bukhari's own MyIndex English ("Knowledge") may stand in its place */);
   check(`${tag} no page errors from this round`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|quran\.com/i.test(String(e))).length === 0, JSON.stringify(errors.slice(0, 3)));
   await ctx.close();
 }
@@ -152,6 +161,7 @@ for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
   console.log(`\n===== hadith names ${tag} =====`);
   const { ctx, page: P } = await open("en", 1280, { viewAs: "teacher" });
   await openBukhari(P);
+  await openActions(P);
   await tap(P, "[data-hadith-names-open]"); await settle(P, 500);
   check(`${tag} the panel says editing is for the owner or a prime`, !!(await P.$('.hadith-names-panel [data-hadith-names-why="notAdmin"]')));
   check(`${tag} ...and offers no field or button`, (await P.$$eval(".hadith-names-panel input, .hadith-names-panel button", (n) => n.length)) === 0);

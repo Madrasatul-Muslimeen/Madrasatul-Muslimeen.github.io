@@ -105,6 +105,8 @@ const settle = (p) => p.waitForTimeout(150);
 // A tap that cannot happen (a broken control, a missing pane) is reported and the run goes on, so the checks after it
 // fail by name instead of the whole run stopping on one timeout.
 const tap = (p, sel) => p.click(sel, { timeout: 8000 }).catch(() => console.log(`  note: could not tap ${sel}`));
+// 17 Nov 2026 (the Owner's Hadith Books bar): "Go to hadith number" lives behind the bar's ⚡ Actions icon; pressing Go closes that panel.
+const openGoto = async (P) => { if (!(await P.$('[data-tool-panel="actions"]'))) await tap(P, '[data-reader-tool="actions"]'); };
 const shown = (p, sel) => p.$eval(sel, (n) => { const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(n).display !== "none"; }).catch(() => false);
 const card = (p) => p.evaluate(() => {
   const c = document.querySelector("[data-openiti-passage]");
@@ -343,6 +345,7 @@ for (const [lang, width] of [["en", 1280], ["bn", 390]]) {
     const { ctx, page: P, errors } = await open(lang, width, "/app/hadith-study.html");
     await P.waitForSelector(`[data-openiti-book="${BUKHARI}"]`);
     await tap(P, `[data-openiti-book="${BUKHARI}"]`);
+    await openGoto(P);
     await P.waitForSelector("[data-openiti-goto-input]");
     await P.fill("[data-openiti-goto-input]", "6306");
     await tap(P, "[data-openiti-goto-btn]");
@@ -352,6 +355,7 @@ for (const [lang, width] of [["en", 1280], ["bn", 390]]) {
     await acheck(`${tag} Go to this edition's number 5000 opens hadith 5000 itself`, async () => {
       await tap(P, "[data-openiti-crumbs] .openiti-crumb >> nth=1");
       await showPane(P, "chapters");
+      await openGoto(P);
       await P.waitForSelector("[data-openiti-goto-mode]");
       await P.selectOption("[data-openiti-goto-mode]", "edition");
       await P.fill("[data-openiti-goto-input]", "5000");
@@ -365,6 +369,7 @@ for (const [lang, width] of [["en", 1280], ["bn", 390]]) {
     await acheck(`${tag} a narration's "Also narrated in" opens the other book's narration, with ← Back to it`, async () => {
       await tap(P, "[data-openiti-crumbs] .openiti-crumb >> nth=1");
       await showPane(P, "chapters");
+      await openGoto(P);
       await P.waitForSelector("[data-openiti-goto-mode]");
       await P.selectOption("[data-openiti-goto-mode]", "standard");
       await P.fill("[data-openiti-goto-input]", "6306");

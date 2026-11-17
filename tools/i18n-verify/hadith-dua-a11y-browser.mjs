@@ -12,7 +12,7 @@
 //   node tools/i18n-verify/hadith-dua-a11y-browser.mjs
 //   --page=hadith|dua  --width=390  --lang=bn  --views=a,b  --list (every finding)  --shots  --mutate=noring|nosvgring|lowlabel (each must FAIL; nosvgring hides only the wheel ring)  --no-surfaces
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, ensureGoto } from "./harness.mjs";
 import { tabClick, reveal } from "./dua-tab-reveal.mjs";
 
 let pass = 0, fail = 0;
@@ -248,8 +248,8 @@ const hTab = async (P, v) => {
   return P.click(`[data-hadith-menu="menu"] [data-hadith-tab="${v}"]`);
 };
 const hShelf = (P) => wait(P, `[data-openiti-book="${BUKHARI}"]`);
-const hOpenBukhari = async (P) => { await hShelf(P); await P.click(`[data-openiti-book="${BUKHARI}"]`); await wait(P, "[data-openiti-goto-input]", 15000); };
-const hGoto = async (P) => { await hOpenBukhari(P); await P.fill("[data-openiti-goto-input]", "6306"); await P.click("[data-openiti-goto-btn]"); await wait(P, '[data-openiti-passage="6578"]', 20000); };
+const hOpenBukhari = async (P) => { await hShelf(P); await P.click(`[data-openiti-book="${BUKHARI}"]`); await ensureGoto(P); };
+const hGoto = async (P) => { await hOpenBukhari(P); await ensureGoto(P); await P.fill("[data-openiti-goto-input]", "6306"); await P.click("[data-openiti-goto-btn]"); await wait(P, '[data-openiti-passage="6578"]', 20000); };
 const hHadeeth = async (P) => { await hTab(P, "collections"); await wait(P, '[data-hadeethenc-category="3"]', 20000); await P.click('[data-hadeethenc-category="3"]'); await wait(P, '[data-hadeethenc-hadith="4563"]', 15000); await P.click('[data-hadeethenc-hadith="4563"]'); await wait(P, '[data-hadeethenc-card="4563"]', 15000); await P.waitForTimeout(800); };
 const hDua = async (P) => { await hTab(P, "dua"); await wait(P, "[data-dua-card]", 20000); await P.waitForTimeout(600); };
 // RETIRED from the Hadith page 15 Nov 2026 (Hadith Lead 15L, test-only): Dua left the Hadith pages in v14.38 (PCF MSA J106 tick 4A/7A).

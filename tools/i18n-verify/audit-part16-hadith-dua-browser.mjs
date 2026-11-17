@@ -15,7 +15,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage, hadithGo, hadithMenuOpen } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo, hadithMenuOpen, ensureGoto } from "./harness.mjs";
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
   if (ok && typeof ok.then === "function") throw new Error(`check "${name}" was handed a promise`);
@@ -138,6 +138,7 @@ async function openBukhari(page) {
   await toBooks(page);
   await page.waitForSelector(`[data-openiti-book="${BUKHARI}"]`, { timeout: 25000 });
   await page.click(`[data-openiti-book="${BUKHARI}"]`);
+  await ensureGoto(page);
   await page.waitForSelector("[data-openiti-goto-input]", { timeout: 15000 });
 }
 async function duaTab(page) {
@@ -182,6 +183,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const modes = await ev(page, () => [...document.querySelectorAll("[data-openiti-goto-mode] option")].map((o) => o.value));
     check(`${t}: POSITIVE CONTROL Bukhari's chapter list offers Go to hadith number with Standard / This edition's number`, modes.join() === "standard,edition", modes.join());
     // Standard 6306 = Sayyid al-Istighfar, passage 6578 (edition number 5947).
+    await ensureGoto(page);
     await page.fill("[data-openiti-goto-input]", "6306");
     await page.click("[data-openiti-goto-btn]");
     await page.waitForSelector('[data-openiti-passage="6578"]', { timeout: 20000 }).catch(() => {});
@@ -196,7 +198,9 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   await flow("openiti-edition", lang, width, async (t, page, ctx, errors) => {
     await openBukhari(page);
     // This edition's number 5947 is the same narration.
+    await ensureGoto(page);
     await page.selectOption("[data-openiti-goto-mode]", "edition");
+    await ensureGoto(page);
     await page.fill("[data-openiti-goto-input]", "5947");
     await page.click("[data-openiti-goto-btn]");
     await page.waitForSelector('[data-openiti-passage="6578"]', { timeout: 20000 }).catch(() => {});
@@ -210,6 +214,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   await flow("openiti-missing", lang, width, async (t, page, ctx, errors) => {
     await openBukhari(page);
     // A number that does not exist says so in words.
+    await ensureGoto(page);
     await page.fill("[data-openiti-goto-input]", "99999");
     await page.click("[data-openiti-goto-btn]");
     await settle(page, 300);
@@ -220,6 +225,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   await flow("openiti-translation", lang, width, async (t, page, ctx, errors) => {
     await openBukhari(page);
     // The English / Bangla translation fold on the narration.
+    await ensureGoto(page);
     await page.fill("[data-openiti-goto-input]", "6306");
     await page.click("[data-openiti-goto-btn]");
     await page.waitForSelector('[data-openiti-passage="6578"] [data-standard-translation="en"]', { timeout: 20000 });
@@ -306,6 +312,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     const gone = await ev(page, () => ({ soon: !!document.querySelector("#openitiSection .openiti-study-soon"), h2: !!document.querySelector("#openitiSection > h2") }));
     check(`${t}: the shelf no longer carries the "not enabled here yet" note or the "Hadith Books" heading`, !gone.soon && !gone.h2, JSON.stringify(gone));
     await openBukhari(page);
+    await ensureGoto(page);
     await page.fill("[data-openiti-goto-input]", "6306");
     await page.click("[data-openiti-goto-btn]");
     await page.waitForSelector('[data-openiti-passage="6578"]', { timeout: 20000 });
@@ -520,6 +527,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     await settle(page, 300);
     await scan("hadeethenc card", ".hadeethenc-section"); // the pilot list below it is synthetic development data, a separate, Owner-held question
     await openBukhari(page);
+    await ensureGoto(page); // 17 Nov 2026: the Go box is in the bar's ⚡ Actions panel; scan it open
     await scan("openiti chapter list", "#openitiSection .openiti-goto");
     await page.fill("[data-openiti-goto-input]", "6306");
     await page.click("[data-openiti-goto-btn]");

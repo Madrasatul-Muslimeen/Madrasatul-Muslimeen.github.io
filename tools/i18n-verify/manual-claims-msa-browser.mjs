@@ -12,7 +12,7 @@
 //        modules    removes Track my progress (topic and routine), the topic's bookmark star and the Continue chip
 //        hadith     breaks one claim per entry: Text language, Go to number, Studied, Next ›, a progress stage, ✓ Check this dua
 import fs from "node:fs";
-import { chromium, newContext, openPage, BASE as BASE_URL } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE as BASE_URL, ensureGoto } from "./harness.mjs";
 import { clickAyahTile, hadithGo, hadithMenuOpen } from "./harness.mjs"; // phone layout part 2: the tiles sit behind ⋮
 
 let pass = 0, fail = 0, skip = 0;
@@ -1242,8 +1242,11 @@ if (want("hadith")) {
   const gotoBukhari = async (page, n = "6306") => {
     await page.waitForSelector(`[data-openiti-book="${BUKHARI}"]`, { timeout: 25000 });
     await page.click(`[data-openiti-book="${BUKHARI}"]`);
+    await ensureGoto(page);
     await page.waitForSelector("[data-openiti-goto-input]", { timeout: 15000 });
+    await ensureGoto(page);
     gotoOpts = await page.evaluate(() => [...document.querySelectorAll("[data-openiti-goto-mode] option")].map((o) => o.textContent.trim()));
+    await ensureGoto(page);
     await page.fill("[data-openiti-goto-input]", n);
     await mut(page, "[data-openiti-goto-btn]");
     await page.click("[data-openiti-goto-btn]", { timeout: 4000 });
@@ -1305,8 +1308,11 @@ if (want("hadith")) {
       // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the page opens on Hadith Books, the shelf of every book.
       await page.waitForSelector(`[data-openiti-book="${BUKHARI}"]`, { timeout: 25000 });
       await page.click(`[data-openiti-book="${BUKHARI}"]`);
+      await ensureGoto(page);
       await page.waitForSelector("[data-openiti-goto-input]", { timeout: 15000 });
+      await ensureGoto(page);
       await page.selectOption("[data-openiti-goto-mode]", "edition");
+      await ensureGoto(page);
       await page.fill("[data-openiti-goto-input]", "5947");
       await page.click("[data-openiti-goto-btn]");
       await page.waitForSelector('[data-openiti-passage="6578"]', { timeout: 20000 }).catch(() => {});

@@ -8,7 +8,7 @@
 //   --mutate=<name> serves one deliberate break (the run must FAIL); --prove runs them all.
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
-import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo, ensureGoto } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -104,9 +104,11 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await P.click(`[data-dua-book="${BUK}"]`);
   await P.waitForSelector("[data-dua-chapter]");
   await P.click("[data-dua-chapter]");
+  await ensureGoto(P);
   await P.waitForSelector("[data-openiti-goto-input]", { state: "attached" });
   const chaptersStep = await P.$('[data-reader-show="chapters"]');
   if (chaptersStep && await chaptersStep.isVisible()) await chaptersStep.click();
+  await ensureGoto(P);
   await P.fill("[data-openiti-goto-input]", "6306");
   await P.click("[data-openiti-goto-btn]");
   await P.waitForSelector('[data-openiti-passage="6578"]');
@@ -160,8 +162,10 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   await P.goto(P.url()); await P.waitForSelector('[data-hadith-tab=\"books\"]');
   await hadithGo(P, "dua"); await P.click('[data-dua-mode="chapters"]'); await P.waitForSelector("[data-dua-book]");
   await P.click('[data-dua-book="0261Muslim.Sahih.Shamela0001727-ara1"]'); await P.waitForSelector("[data-dua-chapter]"); await P.click("[data-dua-chapter]");
+  await ensureGoto(P);
   await P.waitForSelector("[data-openiti-goto-input]", { state: "attached" });
   const step2 = await P.$('[data-reader-show="chapters"]'); if (step2 && await step2.isVisible()) await step2.click();
+  await ensureGoto(P);
   await P.fill("[data-openiti-goto-input]", "331"); await P.click("[data-openiti-goto-btn]");
   const MB = '[data-book-page-button="331"]';
   await P.waitForSelector(MB, { timeout: 15000 }).catch(() => {});
