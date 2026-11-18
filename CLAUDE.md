@@ -453,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v15.21 on `main`** (17 Nov 2026 Sydney, shown as "v15.21 - 17.Nov.2026"). **The Play card says when a whole-sūrah-only reciter plays.** #1804 (QR Lead, the follow-up to #1801's last Codex note): under Whole Unit the ⋮ ▸ Play card says "A reciter with only a whole-sūrah recording plays only when no other reciter is ticked." (Study options' own rule, unchanged), in English and Bangla. Checks: see the CHANGELOG entry.
+**Current milestone: v15.23 on `main`** (18 Nov 2026 Sydney, shown as "v15.23 - 18.Nov.2026"). **Hadith Books has one bar and three icons.** #1808 (Hadith Lead 16L, MSA J106, the Owner's 17 Nov asks): tighter gaps; one bar (Chapters | Hadith | Text) with ⚙ Settings, ⓘ Info and ⚡ Actions, each opening a panel with ← Back, ⛶ and ✕; English chapter names beside the Arabic (Bukhari from MyIndex; any book through an English box in Edit names); ← Back on the original-page pop-up and popped-out pane. Checks: see the CHANGELOG entry.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

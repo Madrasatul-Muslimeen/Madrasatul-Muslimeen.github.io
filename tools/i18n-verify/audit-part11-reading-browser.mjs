@@ -198,9 +198,11 @@ for (const lang of ["en", "bn"]) for (const width of WIDTHS) {
     check(`${t}: POSITIVE CONTROL Meaning starts off`, (await pressed()) === "false");
     const base = await readLen(page);
     await ev(page, () => document.getElementById("readOnCheck").click());
-    await page.waitForFunction(() => document.getElementById("readMeaningLayersSlot").getBoundingClientRect().width > 0, null, { timeout: 5000 }).catch(() => {});
+    // UPDATED IN PLACE (17 Nov 2026, Read bar tidy): below 900px the layer switches are the Show group of the ⋮ sheet, so the real slot is not
+    // hidden but is parked out of sight (width 0); from 900px it stands open on the bar. Wait for "not hidden", then assert each width's own state.
+    await page.waitForFunction(() => !document.getElementById("readMeaningLayersSlot").hidden, null, { timeout: 5000 }).catch(() => {});
     const on = await ev(page, () => ({ slot: !document.getElementById("readMeaningLayersSlot").hidden, w: document.getElementById("readMeaningLayersSlot").getBoundingClientRect().width }));
-    check(`${t}: 📖 Meaning turns on (pressed, layer switches shown)`, (await pressed()) === "true" && on.slot && on.w > 0, JSON.stringify(on));
+    check(`${t}: 📖 Meaning turns on (pressed, layer switches shown)`, (await pressed()) === "true" && on.slot && (width >= 900 ? on.w > 0 : on.w === 0), JSON.stringify(on));
     await ev(page, () => document.getElementById("readOnCheck").click()); await settle(page, 500);
     check(`${t}: pressing it again turns Meaning off and the layer switches go`, (await pressed()) === "false" && await ev(page, () => document.getElementById("readMeaningLayersSlot").hidden || document.getElementById("readMeaningLayersSlot").getBoundingClientRect().width === 0));
     check(`${t}: the Read view is as before (${base} -> ${await readLen(page)})`, (await readLen(page)) === base);

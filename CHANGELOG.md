@@ -24232,3 +24232,20 @@ Built by the QR Lead 47L (#1804); reviewed and released by the Architect 117L.
 - **#1804 (the follow-up to #1801's last Codex note):** under Whole Unit, the ⋮ ▸ ▶ Play card says "A reciter with only a whole-sūrah recording plays only when no other reciter is ticked." That is Study options' existing rule (`playbackReciterIds()`), unchanged; the card now says it in words. Bangla draft marked `// ?` in `bn.js`.
 - **Checks (Architect 117L, on this branch over `main` v15.20):** `ayah-play-options-browser` 42/0; its new mutation `nonote` fails the new check by name at 390px and 1280px. `ayah-menu-sheet-browser` 87/0. `apps-build-check` 59/0. `app/offline-files.json` matches. **keep1116:** saved on v15.20 (`main`), reopened on v15.21 on the same address and browser profile: every saved key kept (3 → 3, 0 lost, 0 changed), the IndexedDB test value kept.
 - No Rules, key or storage change.
+
+## v15.22 — 18 Nov 2026 (Sydney) — Read bar tidy (#1807)
+
+Built by the QR Lead 47L (#1807); reviewed and released by the Architect 118L.
+
+- **#1807 (the Owner, 17 Nov, "Fix all three views"):** the page number sits inside the 📍 button (400–899px, only when the unit is a page); Show (English, Bangla, Word by Word) moves into the ⋮ sheet below 900px, and stays open on the bar from 900px; ← ✕ moves to the bar's second line (🔍 gives way below 380px while it shows); the start of a sūrah is a gold double-framed banner (Bangla মাক্কী / মাদানী added).
+- **Checks (Architect 118L, on the merged branch over `main` v15.21):** `read-bar-tidy-browser` 56/0; all six mutations (`chipstay`, `noword`, `noshow`, `showslot`, `plainbanner`, `nosearchhide`) each fail by name. `apps-build-check` 59/0. `brief-integrity` 14/2: the two failures are the missing `phase4-wiring` remote branch in this clone, identical on `main`. The QR Lead reported `ayah-step` and the mushaf full-screen "no line added" at ≤390px failing identically on `main`. **keep1116:** the diff touches no storage call (no localStorage, IndexedDB, key or Rules change), so nothing saved can be cleared; the full save/reopen script was not re-run.
+- No Rules, key or storage change.
+
+## v15.23 — 18 Nov 2026 (Sydney) — Hadith Books: one bar, three icons, English chapter names (#1808, MSA J106)
+
+Built by the Hadith Lead 16L (#1808); reviewed and released by the Architect 118L.
+
+- **#1808 (the Owner, 17 Nov):** tighter gaps on the Hadith Study page; on a phone one bar (Chapters | Hadith | Text) with three icons, ⚙ Settings (Original index | My index), ⓘ Info (names, counts, source) and ⚡ Actions (Go to hadith number, Edit names), each opening a panel with ← Back, ⛶ and ✕; Bukhari's 97 books show the MyIndex English name under the Arabic, and any book takes an English name in Edit names; ← Back on the original-page pop-up and the popped-out reader pane (`minimise.js` gains one `back` option). Bukhari's chapter list now reads the 30 KB `myindex/bukhari.json` once (I9, a book view, not startup). The ⤢ and ⧉ icons are not shown on a phone.
+- **Checks (Architect 118L, on the branch merged over `main` v15.22):** `hadith-books-bar-browser` 136/0; `--prove` caught 15 of 16 at first: `nofocusafterback` was MISSED because the Lead's last Codex-fix commit changed the line its anchor named (the anchor is reported as missing, not as caught). Re-anchored in this release; now 16 of 16 caught. `hadith-study-reader` 116/0, `hadith-names` 34/0, `hadith-myindex` 59/0, `hadith-book-pages` 109/0, `apps-build-check` 59/0, `stub-parity` 4/0. `large-text-hadith-study` is the known baseline failure. **keep1116:** UI and layout only; the names editor writes the same `hadithNames` entries it always did; no storage call changed.
+- Open for the Owner (PCF MSA J106): English chapter names for the other 14 books have no source in the data.
+- No Rules, key or storage change.

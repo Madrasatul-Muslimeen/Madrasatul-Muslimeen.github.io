@@ -24,7 +24,7 @@ const MUT = {
   wideheadings: ["css/hadith.css", ".hadith-crumbs { margin: 0.25rem 0 0.2rem; }", ".hadith-crumbs { margin: 1.4rem 0 1.4rem; }"],
   noenter: ["js/hadith-reader.js", "oi.toolEnter = true; // focus moves into the panel once it is drawn", "oi.toolEnter = false;"],
   nofloattools: ["js/hadith-reader.js", "if (def) tools.appendChild(toolButton(def, opts)); } // also in a popped-out pane", "if (def && !oi.float[key]) tools.appendChild(toolButton(def, opts)); } // also in a popped-out pane"],
-  nofocusafterback: ["js/minimise.js", "    if (pane) setTimeout(() => document.querySelector(`[data-reader-pop=\"${pane}\"]`)?.focus(), 60);", ""],
+  nofocusafterback: ["js/minimise.js", "    if (pane) setTimeout(() => (document.querySelector(`[data-reader-pop=\"${pane}\"]`) || document.querySelector(`[data-reader-show=\"${pane}\"]`))?.focus(), 60);", ""],
   // (the hidden twin of ⓘ comes AFTER the bar in the page, so a plain querySelector also finds the visible one today; visibleOne() is defence in depth and its check cannot be failed by a mutation)
   nofullfocus: ["js/hadith-reader.js", "oi.toolFull = !oi.toolFull; oi.toolFullFocus = true;", "oi.toolFull = !oi.toolFull;"],
   nophonefocus: ["js/minimise.js", " || document.querySelector(`[data-reader-show=\"${pane}\"]`)", ""],
