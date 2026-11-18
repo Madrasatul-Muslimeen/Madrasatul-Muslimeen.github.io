@@ -29,7 +29,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo, ensureGoto } from "./harness.mjs";
 
 const EXE = process.env.CHROMIUM_PATH || undefined;
 const LANG = process.argv[2] === "bn" ? "bn" : "en";
@@ -138,7 +138,9 @@ async function runAtWidth(width) {
   // Updated in place 8 Oct 2026 (round H-DB2): the box now reads the STANDARD number by default; this check is
   // about the edition's own number, so it chooses "This edition's number" first (hadith-concordance.mjs checks the
   // standard path).
+  await ensureGoto(page);
   await page.selectOption("[data-openiti-goto-mode]", "edition");
+  await ensureGoto(page);
   await page.fill("[data-openiti-goto-input]", "5000");
   await page.click("[data-openiti-goto-btn]");
   await settle();
@@ -252,6 +254,7 @@ async function runAtWidth(width) {
   // Updated in place 8 Oct 2026 (round H-DB2): Muslim has no numbers of its own, but now has standard numbers
   // (Abdul-Baqi's, matched by words), so it offers the box -- by the standard number only, said in words, with no
   // choice of numbering to make.
+  await ensureGoto(page); // 17 Nov 2026: the box is in the bar's ⚡ Actions panel
   check("Sahih Muslim's chapter list offers 'Go to hadith number' by the standard number (its edition has none)",
     !!(await page.$("[data-openiti-goto-input]")) && !(await page.$("[data-openiti-goto-mode]")));
   const muslimGotoMsg = await page.evaluate(() => document.querySelector(".openiti-goto-hint")?.textContent ?? "");

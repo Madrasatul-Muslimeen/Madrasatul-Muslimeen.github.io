@@ -5,6 +5,9 @@
 //   - ⧉ pops a pane out as a window that moves by its title bar and resizes from every side and corner (the app's
 //     own float-window.js, as the Mapping My Journey tray and the Note windows use); ✕ puts it back in its place.
 //   - On a phone (answer 2A) one pane shows at a time, with Chapters › Hadith › Text buttons above it.
+//   - ONE bar on a phone (the Owner, 17 Nov 2026): Chapters | Hadith | Text and the pane's own buttons share a single row; the pane's
+//     own heading row is gone. Three icons sit in it -- ⚙ Settings/choice, ⓘ Info, ⚡ Actions -- each opening a small panel with
+//     ← Back, ⛶ Full screen and ✕ (the panels hold what used to sprawl above the chapter list).
 // Pure UI: the caller fills each pane, keeps the state in `oi` and re-renders through `localRefresh`.
 import { t } from "./i18n.js";
 import { HANDLES, handleCss, startDrag } from "./float-window.js";
@@ -12,7 +15,11 @@ import { HANDLES, handleCss, startDrag } from "./float-window.js";
 const PANES = ["chapters", "hadiths", "text"];
 const WIDTHS_KEY = "mmsa-hadith-reader-widths";
 const LIMITS = { minW: 260, minH: 180, bar: 44 };
+const PHONE_MQ = "(max-width: 720px)"; // the same breakpoint hadith.css uses for the one-pane layout
+const isPhone = () => typeof matchMedia === "function" && matchMedia(PHONE_MQ).matches;
 let cssDone = false;
+let latestRefresh = null;
+let mqBound = false;
 
 function el(tag, cls, text) {
   const n = document.createElement(tag);
@@ -47,6 +54,12 @@ export function hadithReader(opts) {
     cssDone = true;
   }
   removeReaderWindows();
+  latestRefresh = localRefresh;
+  if (!mqBound && typeof matchMedia === "function") {
+    mqBound = true; // crossing the phone breakpoint redraws the reader once, so the bar and the pane headings are rebuilt for the new layout
+    matchMedia(PHONE_MQ).addEventListener("change", () => { if (document.querySelector(".hadith-reader")) latestRefresh?.(); });
+  }
+  const phone = isPhone();
   if (!PANES.includes(oi.phone)) oi.phone = oi.chapterId ? (oi.passageN != null ? "text" : "hadiths") : "chapters";
   if (!oi.float) oi.float = {};
   if (oi.max && oi.float[oi.max]) oi.max = null;
@@ -75,7 +88,7 @@ export function hadithReader(opts) {
   root.appendChild(grid);
 
   PANES.forEach((key, i) => {
-    const pane = buildPane(key, opts);
+    const pane = buildPane(key, opts, phone);
     if (oi.float[key]) {
       const stub = el("section", "hadith-pane hadith-pane-stub");
       stub.dataset.readerPane = key;
@@ -95,11 +108,83 @@ export function hadithReader(opts) {
     }
     if (i < 2) grid.appendChild(splitter(grid, i));
   });
+  // ONE bar on a phone: the open pane's own buttons (and its tool icons) move into the Chapters | Hadith | Text row; the heading row is dropped.
+  if (phone) {
+    const head = grid.querySelector(`[data-reader-pane="${oi.phone}"] .hadith-pane-head`);
+    if (head) {
+      const tools = el("span", "hadith-reader-steps-tools");
+      for (const c of [...head.children]) if (!c.classList.contains("hadith-pane-title")) tools.append(...(c.classList.contains("hadith-pane-tools") ? [...c.children] : [c]));
+      steps.appendChild(tools);
+      head.remove();
+    }
+  }
   return root;
 }
 
-function buildPane(key, opts) {
+const TOOL_ICONS = { choice: "⚙", info: "ⓘ", actions: "⚡" };
+
+/** Which tool icons a pane carries: all three on Chapters (and, on a phone, on Hadith too, where the one bar is shared); only Info beside ‹ › on Text; none on a wide screen's other panes. */
+function toolIdsFor(key, phone) {
+  if (phone) return key === "text" ? ["info"] : ["choice", "info", "actions"];
+  return key === "chapters" ? ["choice", "info", "actions"] : [];
+}
+
+function toolButton(def, opts) {
+  const { oi, localRefresh } = opts;
+  const on = oi.tool === def.id;
+  const b = el("button", `hadith-pane-btn hadith-tool-btn${on ? " on" : ""}`, TOOL_ICONS[def.id]);
+  b.type = "button";
+  b.dataset.readerTool = def.id;
+  b.title = def.label;
+  b.setAttribute("aria-label", def.label);
+  b.setAttribute("aria-expanded", String(on));
+  b.addEventListener("click", () => {
+    if (on) { oi.tool = null; oi.toolFull = false; if (oi.toolFrom) oi.phone = oi.toolFrom; oi.toolFrom = null; localRefresh(); return; }
+    oi.toolFrom = oi.phone !== "chapters" ? oi.phone : (oi.toolFrom ?? null); // the way back: Back returns to the tab it was opened from
+    oi.tool = def.id; oi.toolFull = false; oi.toolEnter = true; // focus moves into the panel once it is drawn
+    oi.phone = "chapters"; // the panel lives at the top of the Chapters pane
+    localRefresh();
+  });
+  return b;
+}
+
+/** The small panel a tool icon opens (inline at the top of the Chapters pane): ← Back, the name, ⛶ Full screen and ✕. */
+function toolPanel(def, opts) {
+  const { oi, localRefresh } = opts;
+  const panel = el("section", `hadith-toolpanel${oi.toolFull ? " is-full" : ""}`);
+  panel.dataset.toolPanel = def.id;
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-label", def.label);
+  const head = el("div", "hadith-toolpanel-head");
+  const close = (back) => {
+    oi.tool = null; oi.toolFull = false;
+    if (back && oi.toolFrom) oi.phone = oi.toolFrom;
+    oi.toolFrom = null; oi.toolFocus = def.id;
+    localRefresh();
+  };
+  const backBtn = el("button", "hadith-pane-btn hadith-toolpanel-back", "←");
+  backBtn.type = "button"; backBtn.dataset.toolBack = ""; backBtn.title = t("Back"); backBtn.setAttribute("aria-label", t("Back"));
+  backBtn.addEventListener("click", () => close(true));
+  const title = el("span", "hadith-toolpanel-title", def.label);
+  const full = el("button", "hadith-pane-btn", oi.toolFull ? "⤡" : "⛶");
+  full.type = "button"; full.dataset.toolFull = ""; full.title = oi.toolFull ? t("Back to three panes") : t("Full screen"); full.setAttribute("aria-label", full.title);
+  full.setAttribute("aria-pressed", String(!!oi.toolFull));
+  full.addEventListener("click", () => { oi.toolFull = !oi.toolFull; oi.toolFullFocus = true; localRefresh(); });
+  const x = el("button", "hadith-pane-btn", "✕");
+  x.type = "button"; x.dataset.toolClose = ""; x.title = t("Close"); x.setAttribute("aria-label", t("Close"));
+  x.addEventListener("click", () => close(false));
+  head.append(backBtn, title, full, x);
+  panel.appendChild(head);
+  panel.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(true); } });
+  const body = el("div", "hadith-toolpanel-body");
+  panel.appendChild(body);
+  def.render(body, { done: () => { oi.tool = null; oi.toolFull = false; oi.toolFrom = null; }, refresh: localRefresh });
+  return panel;
+}
+
+function buildPane(key, opts, phone = false) {
   const { oi, localRefresh, titles } = opts;
+  const toolDefs = opts.tools ?? [];
   const pane = el("section", "hadith-pane");
   pane.dataset.readerPane = key;
   pane.setAttribute("aria-label", titles[key]);
@@ -108,7 +193,8 @@ function buildPane(key, opts) {
   title.title = titles[key]; // a narrow pane cuts its heading with large text (audit part 136 H2)
   head.appendChild(title);
   const tools = el("span", "hadith-pane-tools");
-  if (!oi.float[key]) {
+  for (const id of toolIdsFor(key, phone)) { const def = toolDefs.find((d) => d.id === id); if (def) tools.appendChild(toolButton(def, opts)); } // also in a popped-out pane, where the controls would otherwise be out of reach
+  if (!oi.float[key] && !phone) {
     const maxed = oi.max === key;
     const max = el("button", "hadith-pane-btn", maxed ? "⤡" : "⤢");
     max.type = "button";
@@ -124,7 +210,7 @@ function buildPane(key, opts) {
     pop.setAttribute("aria-label", pop.title);
     pop.addEventListener("click", () => { oi.float[key] = defaultRect(key); if (oi.max === key) oi.max = null; localRefresh(); });
     tools.append(max, pop);
-  } else {
+  } else if (oi.float[key]) {
     const close = el("button", "hadith-pane-btn", "✕");
     close.type = "button";
     close.dataset.readerDock = key;
@@ -137,8 +223,27 @@ function buildPane(key, opts) {
   pane.appendChild(head);
   const body = el("div", "hadith-pane-body");
   pane.appendChild(body);
+  const openDef = key === "chapters" && oi.tool ? toolDefs.find((d) => d.id === oi.tool) : null;
+  if (openDef) body.appendChild(toolPanel(openDef, opts));
   opts[key](body, head);
+  if (oi.toolEnter && openDef) { // a keyboard or screen-reader user who opened a tool lands inside its panel, on ← Back
+    oi.toolEnter = false;
+    queueMicrotask(() => setTimeout(() => document.querySelector(`[data-tool-panel="${openDef.id}"] [data-tool-back]`)?.focus(), 0));
+  }
+  if (oi.toolFocus) { // after a panel closes, focus goes back to the icon that opened it (way-back law)
+    const id = oi.toolFocus; oi.toolFocus = null;
+    queueMicrotask(() => setTimeout(() => visibleOne(`[data-reader-tool="${id}"]`)?.focus(), 0)); // on a phone the same icon also sits, hidden, in the Chapters pane
+  }
+  if (oi.toolFullFocus && openDef) { // ⛶ / ⤡ redraws the panel: keep the keyboard user inside it, on the new full-screen button
+    oi.toolFullFocus = false;
+    queueMicrotask(() => setTimeout(() => visibleOne(`[data-tool-panel="${openDef.id}"] [data-tool-full]`)?.focus(), 0));
+  }
   return pane;
+}
+
+/** The first element matching `sel` that is really on screen (a hidden duplicate cannot take focus). */
+function visibleOne(sel) {
+  return [...document.querySelectorAll(sel)].find((n) => n.getClientRects().length > 0) || null;
 }
 
 function defaultRect(key) {

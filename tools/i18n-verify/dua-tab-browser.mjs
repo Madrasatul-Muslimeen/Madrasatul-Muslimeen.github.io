@@ -7,7 +7,7 @@
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/dua-tab-browser.mjs
 import fs from "node:fs";
 import path from "node:path";
-import { chromium, newContext, openPage, hadithGo } from "./harness.mjs";
+import { chromium, newContext, openPage, hadithGo, ensureGoto } from "./harness.mjs";
 import { groupNarrations, assignDuaNumbers } from "../hadith-data-pull/dua-index.mjs";
 
 const EXE = process.env.CHROMIUM_PATH || undefined;
@@ -160,6 +160,7 @@ for (const [lang, width, look] of [["bn", 390, "light"], ["en", 1280, "night"], 
     if (!r.back.includes(lang === "bn" ? "দুআয়" : "Back to Dua") || !r.inView) throw new Error(JSON.stringify(r));
     const step = await page.$('[data-reader-show="chapters"]');
     if (step && await step.isVisible()) await step.click();
+    await ensureGoto(page);
     await page.fill("[data-openiti-goto-input]", "6306");
     await page.click("[data-openiti-goto-btn]");
     await page.waitForSelector('[data-openiti-passage="6578"]');

@@ -482,7 +482,7 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .hadith-reader-steps { display: none; gap: 0.3rem; margin-bottom: 0.4rem; }
 .hadith-reader-step { flex: 1; min-height: 40px; border: 1px solid var(--hadith-rule); background: #fff; border-radius: 0.5rem; cursor: pointer; color: var(--hadith-ink); font: inherit; font-size: 0.88rem; }
 .hadith-reader-step.on { border-color: var(--hadith-gold); background: #f3ead6; font-weight: 600; }
-.hadith-reader-grid { display: grid; grid-template-columns: var(--c1, 26%) 8px var(--c2, 30%) 8px minmax(0, 1fr); height: min(76vh, 50rem); min-height: 22rem;
+.hadith-reader-grid { display: grid; grid-template-columns: minmax(14.5rem, var(--c1, 26%)) 8px var(--c2, 30%) 8px minmax(0, 1fr); /* 14.5rem: the Chapters heading holds its title, three tool icons and two size icons (17 Nov 2026) */ height: min(76vh, 50rem); min-height: 22rem;
   border: 1px solid var(--hadith-rule); border-radius: 0.6rem; overflow: hidden; background: #fff; }
 .hadith-reader-grid[data-max] { grid-template-columns: minmax(0, 1fr); }
 .hadith-reader-grid[data-max] > .hadith-pane:not(.is-max), .hadith-reader-grid[data-max] > .hadith-splitter { display: none; }
@@ -785,3 +785,45 @@ body.book-page-open { overflow: hidden; }
 .hadith-kys-editor[hidden] { display: none; }
 .hadith-kys-box { resize: vertical; min-height: 3.2rem; line-height: 1.5; }
 .hadith-kys-editor .hadith-names-ar, [data-card-look="night"] .hadith-kys-editor .hadith-names-ar { font-size: 0.9rem; font-weight: 600; color: var(--hadith-ink, #1d2a3a); } /* the Know Your Status page is on the light page, not inside a night card: the English line is dark ink either way */
+
+/* ---- The Hadith Books bar (the Owner, 17 Nov 2026): one bar on a phone, three icons, tighter gaps, English beside the Arabic ---- */
+.hadith-crumbs { margin: 0.25rem 0 0.2rem; }
+.hadith-reader { margin-top: 0.2rem; }
+.hadith-reader-steps { margin-bottom: 0.25rem; align-items: stretch; }
+.hadith-reader-steps-tools { display: flex; gap: 0.15rem; flex: 0 0 auto; }
+.hadith-reader-steps .hadith-pane-btn { width: 40px; height: 40px; flex: 0 0 40px; border: 1px solid var(--hadith-rule); background: #fff; color: var(--hadith-ink); }
+.hadith-reader-steps .hadith-reader-step { min-width: 0; padding-inline: 0.2rem; }
+.hadith-pane-btn.hadith-tool-btn.on { border-color: var(--hadith-gold); background: #f3ead6; color: var(--hadith-ink); }
+.hadith-toolpanel { border: 1px solid var(--hadith-gold); border-radius: 0.5rem; background: #fff; margin: 0 0 0.4rem; }
+.hadith-toolpanel-head { display: flex; align-items: center; gap: 0.2rem; padding: 0.15rem 0.25rem; border-bottom: 1px solid var(--hadith-rule); background: #f3ead6; }
+.hadith-toolpanel-title { flex: 1; min-width: 0; font-weight: 600; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hadith-toolpanel-body { padding: 0.4rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.hadith-toolpanel.is-full { position: fixed; inset: 0; z-index: 70; margin: 0; border-radius: 0; overflow: auto; }
+.hadith-toolpanel-head .hadith-pane-btn { color: var(--hadith-ink); }
+.hadith-bookinfo-ar { font-family: 'Amiri', 'Noto Naskh Arabic', serif; font-size: 1.3rem; margin: 0; }
+.hadith-bookinfo-en { font-weight: 600; margin: 0; }
+.hadith-bookinfo-list { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.8rem; margin: 0; }
+.hadith-bookinfo-list dt { color: var(--hadith-muted); } .hadith-bookinfo-list dd { margin: 0; font-weight: 600; }
+.hadith-row-en { display: block; font-size: 0.82rem; color: var(--hadith-muted); }
+[data-card-look="night"] .hadith-toolpanel { background: var(--card-bg-inset); border-color: var(--card-heading); color: var(--card-text); }
+[data-card-look="night"] .hadith-toolpanel-head { background: var(--card-bg-inset); border-color: var(--card-line); }
+[data-card-look="night"] .hadith-toolpanel-head .hadith-pane-btn, [data-card-look="night"] .hadith-toolpanel-title, [data-card-look="night"] .hadith-bookinfo-en { color: var(--card-text); }
+[data-card-look="night"] .hadith-reader-steps .hadith-pane-btn { background: var(--card-bg-inset); border-color: var(--card-line); color: var(--card-text-muted); }
+[data-card-look="night"] .hadith-pane-btn.hadith-tool-btn.on { background: var(--card-bg-inset); border-color: var(--card-heading); color: var(--card-heading); }
+[data-card-look="night"] .hadith-row-en, [data-card-look="night"] .hadith-bookinfo-list dt { color: var(--card-text-muted); }
+[data-card-look="night"] .hadith-bookinfo-ar { color: var(--card-text); }
+@media (max-width: 720px) {
+  .hadith-reader-grid .hadith-pane-head { display: none; } /* the pane's own buttons have moved into the one bar */
+  .hadith-reader-steps .hadith-reader-step { font-size: 0.82rem; }
+}
+@media (max-width: 380px) { .hadith-reader-steps { gap: 0.15rem; } .hadith-reader-steps .hadith-reader-step { font-size: 0.76rem; padding-inline: 0.1rem; } }
+@media (max-width: 345px) { .hadith-reader-steps .hadith-reader-step { font-size: 0.7rem; letter-spacing: -0.01em; } }
+/* The ← Back added beside ⛶ – ✕ (17 Nov 2026): on a very narrow screen the heading keeps one line (cut with …) so the bar never grows taller and takes the page's room. */
+@media (max-width: 360px) {
+  .book-page-head { gap: 0.1rem; padding-left: 0.3rem; }
+  .book-page-title, .hwc-title, .hadith-pane-float .hadith-pane-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; min-width: 0; flex: 1 1 0; }
+}
+@media (min-width: 721px) and (max-width: 1100px) { /* a tablet: the Chapters heading is all buttons; its name would be cut to "…" */
+  .hadith-reader-grid > [data-reader-pane="chapters"] .hadith-pane-title { display: none; }
+  .hadith-reader-grid > [data-reader-pane="chapters"] .hadith-pane-tools { margin-inline-start: auto; }
+}

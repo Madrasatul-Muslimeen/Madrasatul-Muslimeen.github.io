@@ -11,6 +11,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { linkHadith } from "../hadith-data-pull/hadeethenc-openiti-links.mjs";
+// 17 Nov 2026 (the Owner's Hadith Books bar): "Go to hadith number" lives in the bar's ⚡ Actions panel, closed by default and closed again by Go.
+async function ensureGoto(page) { await page.waitForSelector('[data-reader-tool="actions"]', { state: "attached", timeout: 30000 }); if (!(await page.$('[data-tool-panel="actions"]'))) await page.$eval('[data-reader-tool="actions"]', (e) => { e.scrollIntoView({ block: "center" }); e.click(); }); await page.waitForSelector("[data-openiti-goto-input]", { state: "attached", timeout: 15000 }).catch(() => {}); }
 
 const root = process.cwd();
 const LINKS = path.join(root, "tools", "hadith-data-pull", "output", "hadeethenc-links");
@@ -133,7 +135,9 @@ if (!process.argv.includes("--data")) {
     // the shelf is already open; it no longer lives under Collections (now "Encyclopedia").
     await page.waitForSelector("[data-openiti-book]");
     await page.click('[data-openiti-book="0256Bukhari.Sahih.JK000110-ara1"]');
+    await ensureGoto(page);
     await page.waitForSelector("[data-openiti-goto-input]");
+    await ensureGoto(page);
     await page.fill("[data-openiti-goto-input]", String(stdByN.get(WITH_BN[0])));
     await page.click("[data-openiti-goto-btn]");
     await page.waitForSelector("[data-openiti-focused]");
@@ -173,7 +177,9 @@ if (!process.argv.includes("--data")) {
     if (lang === "bn") {
       await acheck(`Bukhari ${stdByN.get(WITHOUT_BN[0])}, whose HadeethEnc hadith has no Bangla, says so and shows English`, async () => {
         await page.click("[data-openiti-crumbs] button:nth-of-type(2)");
+        await ensureGoto(page);
         await page.waitForSelector("[data-openiti-goto-input]");
+        await ensureGoto(page);
         await page.fill("[data-openiti-goto-input]", String(stdByN.get(WITHOUT_BN[0])));
         await page.click("[data-openiti-goto-btn]");
         await page.waitForSelector("[data-openiti-focused] [data-openiti-translation] summary");

@@ -46,6 +46,12 @@ export function nameLine(key) {
   return line;
 }
 
+/** The madrasah's own ENGLISH name for `key` whatever the reader's language (the chapter rows show English beside the Arabic, the Owner, 17 Nov 2026), or null. */
+export function englishName(key) {
+  if (!namesEnabled()) return null;
+  return nameOf(known, key, "en");
+}
+
 /** Reads the madrasah's names once (signed-in only) and calls `onChanged()` when that changed what rows show. */
 export function primeNames(onChanged) {
   if (!namesEnabled()) return;
@@ -119,9 +125,15 @@ export function renderNamesEditor(box, { versionUri, titleAr, chapters, onChange
       input.dataset.hadithNamesBn = r.key;
       input.placeholder = t("Bangla name");
       input.setAttribute("aria-label", t("Bangla name"));
+      const inputEn = el("input", "hadith-subject-edit-name");
+      inputEn.type = "text"; inputEn.maxLength = 160; inputEn.lang = "en";
+      inputEn.value = cur ? cur.en : ""; // a retired name keeps its English words, so saving a new Bangla one cannot wipe them
+      inputEn.dataset.hadithNamesEn = r.key;
+      inputEn.placeholder = t("English name");
+      inputEn.setAttribute("aria-label", t("English name"));
       const save = button("hadith-subject-btn", t("Save name"));
       save.dataset.hadithNamesSave = r.key;
-      save.addEventListener("click", () => { save.disabled = true; apply(() => setName(data.names, r.key, { bn: input.value, en: cur?.en ?? "" }, ctx()), t("Name saved."), t("The name could not be saved. Check the connection and try again.")); });
+      save.addEventListener("click", () => { save.disabled = true; apply(() => setName(data.names, r.key, { bn: input.value, en: inputEn.value }, ctx()), t("Name saved."), t("The name could not be saved. Check the connection and try again.")); });
       const actions2 = el("div", "hadith-subject-edit-actions hadith-names-actions");
       actions2.appendChild(save);
       if (cur && cur.status !== "retired") {
@@ -130,7 +142,7 @@ export function renderNamesEditor(box, { versionUri, titleAr, chapters, onChange
         rm.addEventListener("click", () => { rm.disabled = true; apply(() => retireName(data.names, r.key, ctx()), t("Name removed."), t("It could not be saved. Check the connection and try again.")); });
         actions2.appendChild(rm);
       }
-      row.append(ar, input, actions2);
+      row.append(ar, input, inputEn, actions2);
       panel.appendChild(row);
     }
     panel.appendChild(msg);

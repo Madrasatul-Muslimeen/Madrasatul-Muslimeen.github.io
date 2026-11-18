@@ -180,3 +180,11 @@ export async function hadithMenuRow(page, view) {
   await hadithMenuOpen(page);
   await page.click(`#hadithMenu-menu [data-hadith-tab="${view}"]`);
 }
+
+/** The Hadith Books bar (the Owner, 17 Nov 2026): "Go to hadith number" lives in the bar's ⚡ Actions panel, closed by default and closed again by Go.
+ *  Opens it when it is not already open, so a suite that drives the Go box does not depend on what the panel did last. */
+export async function ensureGoto(page) {
+  await page.waitForSelector('[data-reader-tool="actions"]', { state: "attached", timeout: 30000 });
+  if (!(await page.$('[data-tool-panel="actions"]'))) await page.$eval('[data-reader-tool="actions"]', (e) => { e.scrollIntoView({ block: "center" }); e.click(); });
+  await page.waitForSelector("[data-openiti-goto-input]", { state: "attached", timeout: 15000 }).catch(() => {});
+}

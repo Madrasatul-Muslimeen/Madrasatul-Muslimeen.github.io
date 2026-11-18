@@ -64,12 +64,17 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280], ["bn", 360]
   await P.click('[data-hadith-tab="books"]');
   await P.waitForSelector(`[data-openiti-book="${BUK}"]`, { timeout: 25000 });
   await press(`[data-openiti-book="${BUK}"]`);
+  // 17 Nov 2026 (the Owner's Hadith Books bar): the two index buttons live behind the bar's ⚙ Settings icon.
+  await P.waitForSelector("[data-openiti-chapter]", { state: "attached", timeout: 20000 });
+  await press('[data-reader-tool="choice"]');
   await P.waitForSelector("[data-myindex-switch]", { timeout: 20000 }).catch(() => {});
   const sw = await P.$$eval("[data-myindex-mode]", (bs) => bs.map((b) => [b.dataset.myindexMode, b.textContent, b.getAttribute("aria-pressed"), b.getBoundingClientRect().height]));
   check(`${tag} Bukhari's Chapters pane has two buttons, original first, original pressed, each >= 40px tall`, sw.length === 2 && sw[0][0] === "original" && sw[0][2] === "true" && sw[1][2] === "false" && sw.every((s) => s[3] >= 40), JSON.stringify(sw));
   check(`${tag} ...worded in the reader's language`, sw.length === 2 && sw[0][1] === (lang === "bn" ? "মূল সূচি" : "Original index") && sw[1][1] === (lang === "bn" ? "আমার সূচি" : "My index"), JSON.stringify(sw.map((s) => s[1])));
   check(`${tag} the original index is untouched: its chapter list shows and My index does not`, (await P.$("[data-openiti-chapter]")) !== null && (await P.$("[data-myindex]")) === null);
-  check(`${tag} I9: the index file was not fetched before My index was pressed`, fetched.length === 0, fetched.join());
+  // UPDATED IN PLACE 17 Nov 2026: Bukhari's kitab rows now show the Owner's MyIndex English names, so the (30 KB) file is read once when Bukhari's
+  // chapter list is drawn (a book view, never startup); pressing My index must not read it again.
+  check(`${tag} I9: the index file was read once, for the English names, before My index was pressed`, fetched.join() === "bukhari.json", fetched.join());
   if (sw.length === 2) {
     await press('[data-myindex-mode="my"]');
     await P.waitForSelector("[data-myindex-group]", { timeout: 10000 });
@@ -125,7 +130,9 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280], ["bn", 360]
   await P.waitForSelector(`[data-openiti-book="${MUS}"]`, { timeout: 25000 });
   await P.$eval(`[data-openiti-book="${MUS}"]`, (e) => { e.scrollIntoView({ block: "center" }); e.click(); });
   await P.waitForSelector("[data-openiti-chapter]", { timeout: 20000 });
-  check("Sahih Muslim's Chapters pane has no index switch (only Bukhari has My index)", (await P.$("[data-myindex-switch]")) === null);
+  await P.$eval('[data-reader-tool="choice"]', (e) => { e.scrollIntoView({ block: "center" }); e.click(); });
+  await P.waitForSelector('[data-tool-panel="choice"]', { timeout: 10000 });
+  check("Sahih Muslim's Settings panel has no index switch (only Bukhari has My index) and says there is nothing to choose", (await P.$("[data-myindex-switch]")) === null && /Nothing to choose/.test(await P.$eval('[data-tool-panel="choice"]', (n) => n.textContent)));
   await ctx.close();
 }
 await browser.close();

@@ -1168,3 +1168,4 @@ total). Allocated by the MMSA Architect.
 15.20: four QR Lead rounds (#1797 bookmark captions, #1799 Already-known categories, #1801 Play card, #1802 whole-Quran offline + MP3). Allocated by the MMSA Architect.
 15.21: Play card Whole Unit note (#1804). Allocated by the MMSA Architect.
 15.22: the Read bar tidy (#1807). Allocated by the MMSA Architect.
+15.23: the Hadith Books one bar (#1808). Allocated by the MMSA Architect.
