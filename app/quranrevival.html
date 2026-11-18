@@ -4463,6 +4463,21 @@
   .lnk-t { flex: 1 1 14rem; min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
   .lnk-t small { display: block; font-weight: 400; color: #5d5478; font-size: 0.78rem; }
   .lnk-n { font-size: 0.82rem; color: #5d5478; }
+  /* The Owner, 17-18 Nov 2026 (Tidy A, the Vocab List window): each group is ONE short line (title, the Bangla line beside it, the count, the share). */
+  .lnk-g > summary { align-items: center; min-height: 40px; padding: 0.3rem 0.7rem; }
+  .lnk-t small { display: inline; margin-inline-start: 0.5rem; }
+  .ln-levels { margin: 0 0 0.4rem; } .ln-level { min-height: 34px; }
+  /* The Owner, 18 Nov 2026: the Word card's "Already Known" group has the Vocab List's categories, which are long ("Words used in the Names in My Language"), so its chips wrap at their own width, not six in a row. */
+  .quran-word-card .kg-row .we-buttons { display: flex; flex-wrap: wrap; gap: 0.3rem; grid-template-columns: none; }
+  .quran-word-card .kg-row .we-btn { flex: 0 1 auto; width: auto; min-width: 0; min-height: 40px; padding: 0.25rem 0.65rem; font-size: 0.78rem; line-height: 1.2; overflow-wrap: normal; text-align: center; }
+  .quran-word-card .kg-row .kg-show { border-style: dashed; cursor: default; }
+  .lnk-own { display: inline-flex; gap: 0.1rem; flex: 0 0 auto; }
+  .lnk-ib { min-width: 36px; min-height: 36px; padding: 0 0.4rem; border: 0; border-radius: 0.4rem; background: transparent; color: #5d5478; font: inherit; font-size: 0.95rem; cursor: pointer; }
+  .lnk-ib:hover, .lnk-ib:focus-visible { background: #f1e9fb; color: #4b2a85; }
+  .lnk-title-in { width: 100%; min-height: 36px; padding: 0.2rem 0.5rem; border: 2px solid #4b2a85; border-radius: 0.4rem; font: inherit; font-weight: 700; color: #2a1f45; background: #fff; }
+  .lnk-hidden { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #5d5478; }
+  .lnk-show { min-height: 36px; padding: 0 0.7rem; border: 1px dashed #a98bdc; border-radius: 1rem; background: #fff; color: #4b2a85; font: inherit; font-size: 0.8rem; cursor: pointer; }
+
   .lnk-p { font-weight: 800; color: var(--lnk-c, #6b3fb5); min-width: 3.4em; text-align: end; }
   .lnk-body { display: grid; gap: 0.5rem; padding: 0 0.7rem 0.7rem; }
   .lnk-tools { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
@@ -4547,6 +4562,25 @@
   .vo-reveal { font-size: 1.05rem; text-align: center; margin: 0.4rem 0; }
   .vo-score { font-size: 1.4rem; font-weight: 800; color: #4b2a85; text-align: center; }
   .ln-review { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; margin: 0 0 0.6rem; }
+  /* The Owner, 17 Nov 2026 (Tidy A, the Vocab List window): "Due today" and "Review now" sit in the title row, between the title and the window
+     icons; the ✕ stays in that row. When the window is narrow the Back word folds to its arrow, "Review now" to "Review", and if even that cannot fit the
+     review strip drops to a line of its own UNDER the title row (the ✕ never leaves the title row). A message that is not "due" (nothing due today, still
+     loading) is a whole line, so it always takes that second line. */
+  #learnNextSheet .ln-head { container-type: inline-size; flex-wrap: wrap; row-gap: 0.25rem; }
+  #learnNextSheet .ln-head .ln-review { margin: 0; flex: 0 1 auto; min-width: 0; flex-wrap: nowrap; gap: 0.5rem; }
+  #learnNextSheet .ln-head .ln-review:has(.ln-review-msg:not(.ln-due)) { order: 9; flex: 1 0 100%; flex-wrap: wrap; }
+  #learnNextSheet .ln-head .ln-due { flex: 0 1 auto; font-size: 0.86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #learnNextSheet .ln-head .ln-review-go { flex: 0 0 auto; min-height: 40px; padding: 0 0.8rem; }
+  @container (max-width: 640px) {
+    #learnNextSheet .ln-back-w { display: none; }
+    #learnNextSheet .ln-head .ln-review-go { font-size: 0; }
+    #learnNextSheet .ln-head .ln-review-go::after { content: attr(data-short); font-size: 0.86rem; }
+  }
+  @container (max-width: 470px) {
+    #learnNextSheet .ln-head .ln-close { order: 4; }
+    #learnNextSheet .ln-head .ln-review { order: 5; flex: 1 0 100%; justify-content: space-between; }
+  }
+
   .ln-review:empty { display: none; }
   .ln-review-msg { margin: 0; color: #4b2a85; font-size: 0.9rem; flex: 1 1 12rem; min-width: 0; }
   .ln-review-err, .ln-review-err b { color: #7a1f1f; }
@@ -8242,6 +8276,9 @@
     import { loadLearnNext, loadLearnNextLevels, rowsForLevel, unitOfLevel, LEARN_NEXT_LEVELS, firstUnknownRow, milestoneFigures, visibleRows, placeOfRow, stepRange, wordShare, formatShare, LEARN_NEXT_PAGE, vocabBadgeFigures, vocabStepFill } from "./js/learn-next.js";
     // The Owner, 15 Nov 2026 (Learn next demo): "Words you already know", the sheet's first step -- every group ticked by the reader.
     import { loadKnownGroups, asmaGroupsOfNames, lemmasOfAsmaGroups, knownGroupFigures, KNOWN_LANGUAGE_GROUP, knownGroupLemmas, excludedFromSteps, stepRowsExcluding } from "./js/known-groups.js";
+    import { knownGroupSettingsFromTenantDoc, knownTitleFor, knownTitleIsMine, withKnownTitle, withKnownGroupHidden, isKnownGroupHidden, visibleKnownGroupKeys, saveKnownGroupSettings, KNOWN_HEADING_KEY, KNOWN_SETTINGS_FIELD } from "./js/known-group-settings.js";
+    import { knownGroupLemmas as knownGroupLemmasWithMarks, knownGroupMarks } from "./js/known-groups-sync.js";
+    import { updateDocument } from "./js/envelope.js";
     import { DEFAULT_ASMA_COLLECTIONS, DEFAULT_EXTRA_ASMA_NAMES } from "./js/asma-collections-data.js";
     // J53: a lemma is a KEY (Buckwalter marks like ^ kept as Latin); lemmaText() is how a reader sees it.
     import { lemmaText } from "./js/lemma-text.js";
@@ -8305,7 +8342,7 @@
     // PCF MSA J119 -- words the Qur'an shares with Bangla (Word Card button + list; marks stay on this device until the Rules are published).
     import { loadBanglaState, saveBanglaState, setBanglaWord, toggleBanglaKind, setBanglaWheel, banglaWheelPlan, activeBanglaSet, banglaFigures, banglaListPayload, withBanglaList, devicePrefsState, replayBanglaChange } from "./js/bangla-words.js";
     import { isBanglaWordsPersistenceReady } from "./js/bangla-words-readiness.js";
-    import { banglaBlockHtml, wireBanglaBlock, banglaMarkRowHtml, wireBanglaMarkRow, banglaWheelSwitchesHtml, wireBanglaWheelSwitches, BANGLA_CSS } from "./js/bangla-words-ui.js";
+    import { banglaBlockHtml, wireBanglaBlock, banglaMarkRowHtml, knownMarksRowHtml, wireBanglaMarkRow, banglaWheelSwitchesHtml, wireBanglaWheelSwitches, BANGLA_CSS } from "./js/bangla-words-ui.js";
     import { TITLE_LINE_CSS } from "./js/title-line.js";
     import { marksRowHtml, wireMarksRow, wheelPieces, marksWheelHtml, wireMarksWheel, marksLegendHtml, MARKS_CSS, MARKS_WHEEL_VIEWS } from "./js/marks-ui.js";
     import { loadAyahHadithHits, describeHit, pickHits, hadithHitHref } from "./js/ayah-hadith.js";
@@ -21020,6 +21057,7 @@
     // J47: the open step tile (null = the whole list) and its "only the new ones" switch.
     let learnNextStep = null, learnNextOnlyNew = false;
     let knownGroupsData = null, learnNextGroupsOpen = false, knownBusy = "";
+    let knownGroupsLoading = null;
     const knownOpen = new Set(["allah"]);
 
     async function ensureLearnNext({ tenantId, personId, confirmationRequired }) {
@@ -21101,22 +21139,49 @@
       const x = DEFAULT_EXTRA_ASMA_NAMES.find((e) => e.number === number);
       return x ? { arabic: x.arabic, transliteration: x.transliteration, meaning: getAppLang() === "bn" ? (x.bn ?? "") : "" } : null;
     }
-    function knownLists() {
+    /** The Already known groups as lemma lists, in the Vocab List's order, WITHOUT figures (the Word card needs only these). A group's words are the curated
+        ones plus the words the reader marked on the Word card with that group's kind (known-groups-sync.js); the owner's hidden groups leave. */
+    function knownGroupsBase() {
       const kg = knownGroupsData;
       if (!kg) return null;
       const asma = asmaGroupsOfNames(DEFAULT_ASMA_COLLECTIONS, asmaNameInfo, kg.names);
       // The Owner, 17 Nov 2026: seven groups in this order; "Words used in the Names in My Language" (bnnames) comes AFTER "Words used in My Language".
       const after = kg.groups.filter((g) => g.k === "bnnames"), before = kg.groups.filter((g) => g.k !== "bnnames");
-      const lists = [{ k: "allah", lemmas: lemmasOfAsmaGroups(asma) }, ...before.map((g) => ({ k: g.k, lemmas: g.lemmas })), { k: KNOWN_LANGUAGE_GROUP, lemmas: [...activeBanglaSet(banglaState)] }, ...after.map((g) => ({ k: g.k, lemmas: g.lemmas }))];
-      return { asma, lists, figures: knownGroupFigures(lists, { rowOf: knownRowOf, isKnown: (lemma) => learnNextIsKnown({ l: lemma }), total: learnNextCtx.data.total }) };
+      const withMarks = (k, lemmas) => ({ k, lemmas: [...knownGroupLemmasWithMarks(k, lemmas, banglaState)] });
+      const all = [{ k: "allah", lemmas: lemmasOfAsmaGroups(asma) }, ...before.map((g) => withMarks(g.k, g.lemmas)), { k: KNOWN_LANGUAGE_GROUP, lemmas: [...activeBanglaSet(banglaState)] }, ...after.map((g) => withMarks(g.k, g.lemmas))];
+      const settings = knownSettings();
+      return { asma, lists: all.filter((l) => !isKnownGroupHidden(settings, l.k)) };
+    }
+    function knownLists() {
+      const base = knownGroupsBase();
+      if (!base) return null;
+      return { ...base, figures: knownGroupFigures(base.lists, { rowOf: knownRowOf, isKnown: (lemma) => learnNextIsKnown({ l: lemma }), total: learnNextCtx.data.total }) };
+    }
+    /** The owner's own wording for the titles, and the groups they have hidden: ONE field of the tenant document, the same on every device. */
+    function knownSettings() { return knownGroupSettingsFromTenantDoc(currentTenantDoc); }
+    function knownCanEdit() { return canAdminCatalogueClientSide(); }
+    async function saveKnownSettings(next) {
+      const { tenantId } = wordProgressActor();
+      if (!tenantId || !knownCanEdit()) return;
+      try {
+        const clean = await saveKnownGroupSettings(db, tenantId, next, updateDocument);
+        currentTenantDoc = { ...(currentTenantDoc ?? {}), [KNOWN_SETTINGS_FIELD]: clean };
+      } catch (error) { reportWriteFailure(error, { what: "save the Already Known titles" }); } // I15
+      renderLearnNextSheet(true);
+      if (quranWordCardState?.open) renderPersistentWordCard();
     }
     function knownGroupTitle(k) {
       const g = knownGroupsData?.groups?.find((x) => x.k === k);
       const bn = getAppLang() === "bn";
-      if (k === "allah") return { main: t("Allah's Names & Attributes"), sub: t("From the Asma groups") };
-      if (k === KNOWN_LANGUAGE_GROUP) return { main: t("Words used in My Language"), sub: t("(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)") };
-      return g ? { main: bn ? g.bn : g.en, sub: bn ? "" : g.bn } : { main: k, sub: "" };
+      let ti;
+      if (k === "allah") ti = { main: t("Allah's Names & Attributes"), sub: t("From the Asma groups") };
+      else if (k === KNOWN_LANGUAGE_GROUP) ti = { main: t("Words used in My Language"), sub: t("(For Bangladeshi Muslims, Bangla, Pakistani Muslims, Urdu and so on.)") };
+      else ti = g ? { main: bn ? g.bn : g.en, sub: bn ? "" : g.bn } : { main: k, sub: "" };
+      // The Owner, 18 Nov 2026: the owner's own wording (any device) replaces the app's, in the language it was typed in.
+      return { ...ti, main: knownTitleFor(knownSettings(), k, getAppLang(), ti.main), mine: knownTitleIsMine(knownSettings(), k, getAppLang()), original: ti.main };
     }
+    /** The heading "Already known" itself (the tile, the panel, the Word card's group): the owner's wording if they typed one. */
+    function knownHeadingText() { return knownTitleFor(knownSettings(), KNOWN_HEADING_KEY, getAppLang(), t("Already known")); }
     const KNOWN_COLOURS = { allah: "#b8860b", prophets: "#2e7d6b", people: "#7a4fb5", ibadah: "#1f6fb2", daily: "#c0563b", [KNOWN_LANGUAGE_GROUP]: "#5c8a1e", bnnames: "#8a4f1e" };
     function knownWordHtml(w, { meaningOverride, nameLine, lang = false } = {}) {
       const r = w.row, own = knownOwn(w.lemma), via = w.known && !own && !lang;
@@ -21152,9 +21217,11 @@
             `<div class="lnk-words">${g.words.map((w) => knownWordHtml(w, { lang })).join("") || `<p class="lnk-note">${escapeHtml(t("No words here yet."))}</p>`}</div>`;
         }
         const tools = lang ? "" : `<div class="lnk-tools"><button type="button" data-lnk-all="${g.k}"${knownBusy ? " disabled" : ""}>${escapeHtml(t("Tick all"))}</button><button type="button" data-lnk-none="${g.k}"${knownBusy ? " disabled" : ""}>${escapeHtml(t("Clear"))}</button></div>`;
-        return `<details class="lnk-g" data-lnk-g="${g.k}" style="--lnk-c:${colour}"${knownOpen.has(g.k) ? " open" : ""}><summary><span class="lnk-t">${escapeHtml(ti.main)}${ti.sub ? `<small>${escapeHtml(ti.sub)}</small>` : ""}</span><span class="lnk-n">${escapeHtml(t("{k} of {n} known", { k: num(g.knownCount), n: num(g.total) }))}</span><span class="lnk-p">${escapeHtml(g.knownN ? num(formatShare(100 * g.knownN / learnNextCtx.data.total)) + "%" : num("0.0") + "%")}</span></summary><div class="lnk-body">${tools}${body}</div></details>`;
+        return `<details class="lnk-g" data-lnk-g="${g.k}" style="--lnk-c:${colour}"${knownOpen.has(g.k) ? " open" : ""}><summary><span class="lnk-t" data-lnk-title="${g.k}">${escapeHtml(ti.main)}${ti.sub ? `<small>${escapeHtml(ti.sub)}</small>` : ""}</span>${knownCanEdit() ? `<span class="lnk-own"><button type="button" class="lnk-ib" data-lnk-edit="${g.k}" aria-label="${escapeHtml(t("Edit the title"))}" title="${escapeHtml(t("Edit the title"))}">✎</button>${ti.mine ? `<button type="button" class="lnk-ib" data-lnk-reset="${g.k}" aria-label="${escapeHtml(t("Back to the original title"))}" title="${escapeHtml(t("Back to the original title"))}">↺</button>` : ""}<button type="button" class="lnk-ib" data-lnk-hide="${g.k}" aria-label="${escapeHtml(t("Hide this group"))}" title="${escapeHtml(t("Hide this group"))}">🗑</button></span>` : ""}<span class="lnk-n">${escapeHtml(t("{k} of {n} known", { k: num(g.knownCount), n: num(g.total) }))}</span><span class="lnk-p">${escapeHtml(g.knownN ? num(formatShare(100 * g.knownN / learnNextCtx.data.total)) + "%" : num("0.0") + "%")}</span></summary><div class="lnk-body">${tools}${body}</div></details>`;
       }).join("");
-      return `<div class="lnk" data-lnk>${head}${groups}</div>`;
+      const hiddenKeys = knownCanEdit() ? knownSettings().hidden : [];
+      const restore = hiddenKeys.length ? `<div class="lnk-hidden" data-lnk-hidden><span>${escapeHtml(t("Hidden groups: {n}", { n: num(hiddenKeys.length) }))}</span>${hiddenKeys.map((k) => `<button type="button" class="lnk-show" data-lnk-unhide="${k}">${escapeHtml(t("Show again"))}: ${escapeHtml(knownGroupTitle(k).main)}</button>`).join("")}</div>` : "";
+      return `<div class="lnk" data-lnk>${head}${groups}${restore}</div>`;
     }
     /** Tick (on) or clear (off) these dictionary words through the Word card's own WbW mark. */
     async function knownTick(lemmas, on) {
@@ -21205,6 +21272,31 @@
           if (lvl) { setLearnNextLevel(lvl.dataset.lnLevel); return; }
           const kTile = e.target.closest("[data-ln-known-tile]");
           if (kTile) { learnNextGroupsOpen = !learnNextGroupsOpen; if (learnNextGroupsOpen) learnNextStep = null; renderLearnNextSheet(); return; }
+          // The Owner, 18 Nov 2026: the owner edits the group titles (✎, ↺) and hides a group (🗑, then Show again), the same on every device. Nothing is deleted (I4).
+          const own = e.target.closest("[data-lnk-edit], [data-lnk-reset], [data-lnk-hide], [data-lnk-unhide]");
+          if (own) {
+            e.preventDefault(); e.stopPropagation();
+            if (!knownCanEdit()) return;
+            const lang = getAppLang(), cur = knownSettings();
+            if (own.dataset.lnkReset) { saveKnownSettings(withKnownTitle(cur, own.dataset.lnkReset, lang, "")); return; }
+            if (own.dataset.lnkUnhide) { saveKnownSettings(withKnownGroupHidden(cur, own.dataset.lnkUnhide, false)); return; }
+            if (own.dataset.lnkHide) {
+              if (own.dataset.armed !== "1") { own.dataset.armed = "1"; own.textContent = t("Tap again to hide"); setTimeout(() => { if (own.isConnected) { own.dataset.armed = ""; own.textContent = "🗑"; } }, 3500); return; }
+              saveKnownSettings(withKnownGroupHidden(cur, own.dataset.lnkHide, true)); return;
+            }
+            const k = own.dataset.lnkEdit, host = own.closest("summary")?.querySelector("[data-lnk-title]");
+            if (!host || host.querySelector("input")) return;
+            const input = document.createElement("input"); input.type = "text"; input.className = "lnk-title-in"; input.maxLength = 80; input.value = knownGroupTitle(k).main;
+            input.setAttribute("aria-label", t("Edit the title"));
+            host.replaceChildren(input); input.focus(); input.select();
+            let done = false;
+            const finish = (ok) => { if (done) return; done = true; if (ok && input.value.trim() && input.value.trim() !== knownGroupTitle(k).main) saveKnownSettings(withKnownTitle(cur, k, lang, input.value)); else renderLearnNextSheet(true); };
+            input.addEventListener("keydown", (ev) => { ev.stopPropagation(); if (ev.key === "Enter") { ev.preventDefault(); finish(true); } else if (ev.key === "Escape") { ev.preventDefault(); finish(false); } else if (ev.key === " ") ev.stopPropagation(); });
+            input.addEventListener("keyup", (ev) => ev.stopPropagation());
+            input.addEventListener("click", (ev) => { ev.preventDefault(); ev.stopPropagation(); });
+            input.addEventListener("blur", () => finish(true));
+            return;
+          }
           const kAll = e.target.closest("[data-lnk-all]"), kNone = e.target.closest("[data-lnk-none]");
           if (kAll || kNone) { knownTick(knownListLemmas((kAll ?? kNone).dataset.lnkAll ?? (kAll ?? kNone).dataset.lnkNone), !!kAll); return; }
           const tile = e.target.closest("[data-ln-tile]");
@@ -21255,7 +21347,7 @@
       let knownTile = "";
       if (isWbw && knownGroupsData) {
         const kf = knownLists()?.figures;
-        knownTile = `<button type="button" class="ln-tile ln-tile-known" data-ln-known-tile aria-pressed="${groupsOn}"><span class="ln-tile-n">${escapeHtml(t("Already known"))}</span><b class="ln-tile-p">${escapeHtml(num(kf?.percent ? formatShare(kf.percent) : "0.0"))}%</b></button>`;
+        knownTile = `<button type="button" class="ln-tile ln-tile-known" data-ln-known-tile aria-pressed="${groupsOn}"><span class="ln-tile-n">${escapeHtml(knownHeadingText())}</span><b class="ln-tile-p">${escapeHtml(num(kf?.percent ? formatShare(kf.percent) : "0.0"))}%</b></button>`;
       }
       // J47: every tile is a toggle that opens the words in its step; tapping the open one closes it.
       const tiles = knownTile + milestoneFigures(rows).map((m) => `<button type="button" class="ln-tile" data-ln-tile="${m.n}" aria-pressed="${learnNextStep === m.n && !(isWbw && learnNextGroupsOpen && knownGroupsData)}"><span class="ln-tile-n">${escapeHtml(t("First {n}", { n: grouped(m.n) }))}</span><b class="ln-tile-p">${escapeHtml(num(m.percent.toFixed(1)))}%</b></button>`).join("");
@@ -21283,12 +21375,11 @@
       }).join("");
       const more = view.total > view.rows.length ? `<button type="button" class="ln-more" data-ln-more>${escapeHtml(t("Show 100 more"))}</button>` : "";
       el.setAttribute("aria-label", t("Learn next"));
-      el.innerHTML = `<div class="ln-head"><button type="button" class="ln-back" data-ln-back>← ${escapeHtml(t("Back"))}</button><h2 class="ln-title">${escapeHtml(t("Learn next"))}</h2><button type="button" class="ln-close" data-ln-back aria-label="${escapeHtml(t("Close"))}" title="${escapeHtml(t("Close"))}">✕</button></div>
+      el.innerHTML = `<div class="ln-head"><button type="button" class="ln-back" data-ln-back>←<span class="ln-back-w"> ${escapeHtml(t("Back"))}</span></button><h2 class="ln-title">${escapeHtml(t("Learn next"))}</h2>${isWbw ? `<div class="ln-review" data-ln-review>${learnNextReviewHtml()}</div>` : ""}<button type="button" class="ln-close" data-ln-back aria-label="${escapeHtml(t("Close"))}" title="${escapeHtml(t("Close"))}">✕</button></div>
         <div class="ln-body" data-ln-scroll>
           ${levelSwitch}
           ${isWbw ? vocabBadgeHtml() : ""}
           <p class="ln-note">${escapeHtml(t("The words that occur most often come first. Learn these and you will meet them everywhere in the Qur'an."))}</p>
-          ${isWbw ? `<div class="ln-review" data-ln-review>${learnNextReviewHtml()}</div>` : ""}
           <div class="ln-tiles" role="group" aria-label="${escapeHtml(t("Steps"))}">${tiles}</div>
           ${groupsOn ? knownPanelHtml() : showing}
           ${groupsOn ? "" : `<div class="ln-hide-row"><label class="ln-hide"><input type="checkbox" data-ln-hide${learnNextHide ? " checked" : ""}> <span>${escapeHtml(unit === "word" ? t("Hide words I know ({n} known)", { n: grouped(knownTotal) }) : unit === "root" ? t("Hide roots I have studied ({n} studied)", { n: grouped(knownTotal) }) : t("Hide families I know ({n} known)", { n: grouped(knownTotal) }))}</span></label>${range ? (() => { const left = rows.reduce((n, r) => n + (r.r >= range.from && r.r <= range.to && !lnIsKnown(r) ? 1 : 0), 0); return `<span class="ln-left" data-ln-left>${escapeHtml(unit === "root" ? t("{n} roots left to learn in this range", { n: grouped(left) }) : unit === "family" ? t("{n} families left to learn in this range", { n: grouped(left) }) : t("{n} words left to learn in this range", { n: grouped(left) }))}</span>`; })() : ""}</div>`}
@@ -21499,7 +21590,7 @@
       if (r.failed) return `<p class="ln-review-msg ln-review-err">${escapeHtml(t("Your review schedule could not be loaded. Check the connection and open Learn next again."))}</p>`;
       const today = dayOf(new Date()), s = vocabReviewSummary(r.words, today);
       const due = reviewDeck(c.data.rows, r.words, today, Infinity).length;
-      if (due) return `<p class="ln-review-msg"><b>${escapeHtml(t("Due today: {n} words", { n: num(due.toLocaleString("en-US")) }))}</b></p><button type="button" class="ln-vbtn ln-review-go" data-ln-review-go>${escapeHtml(t("Review now"))}</button>`;
+      if (due) return `<p class="ln-review-msg ln-due"><b>${escapeHtml(t("Due today: {n} words", { n: num(due.toLocaleString("en-US")) }))}</b></p><button type="button" class="ln-vbtn ln-review-go" data-ln-review-go data-short="${escapeHtml(t("Review"))}">${escapeHtml(t("Review now"))}</button>`;
       if (s.later && s.next === addDays(today, 1)) return `<p class="ln-review-msg" data-ln-review-next="${s.next}">${escapeHtml(t("Nothing due today. Next review: tomorrow."))}</p>`;
       if (s.later) {
         const day = new Date(`${s.next}T12:00:00`).toLocaleDateString(getAppLang() === "bn" ? "bn-BD" : "en-GB", { weekday: "short", day: "numeric", month: "short" });
@@ -25016,11 +25107,15 @@
     function banglaMarkHtmlFor(word) {
       const lemma = word?.morphology?.lemma;
       if (!lemma) return "";
-      const language = t("Bangla");
-      return banglaMarkRowHtml({
-        state: banglaState, lemma, canAdmin: canAdminCatalogueClientSide(), language,
-        text: { title: t("Quranic/ Arabic word in {language} Language:"), names: t("In {language} Names"), rituals: t("In Rituals"), bangla: t("In Daily Use"), readOnly: t("These marks go in the Admin's list, which only an admin can change. Choose Mine in the ☰ menu to mark for yourself.") },
-      });
+      // The Owner, 18 Nov 2026: the marking is the group "Already Known", with the Vocab List's own categories (known-groups-sync.js), the owner's titles
+      // and hidden groups included. The groups' words come from a data file the Vocab List loads; the first time, load it and draw this again.
+      if (!knownGroupsData) {
+        if (!knownGroupsLoading) knownGroupsLoading = loadKnownGroups().then((d) => { knownGroupsData = d; if (quranWordCardState?.open) renderPersistentWordCard(); }).catch((error) => console.warn("Already-known groups unavailable", error)).finally(() => { knownGroupsLoading = null; });
+        return "";
+      }
+      const base = knownGroupsBase();
+      const marks = knownGroupMarks({ groups: base.lists, state: banglaState, lemma }).map((m) => ({ ...m, title: knownGroupTitle(m.k).main }));
+      return knownMarksRowHtml({ lemma, heading: knownHeadingText(), marks, state: banglaState, canAdmin: canAdminCatalogueClientSide(), readOnly: t("These marks go in the Admin's list, which only an admin can change. Choose Mine in the ☰ menu to mark for yourself.") });
     }
     /** A Bangla word counts as known, so a mark here changes "You already know N words" and may change the next word: the bar is read again. */
     async function refreshLearnNextBar() {

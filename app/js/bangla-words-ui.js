@@ -69,6 +69,20 @@ export function banglaMarkRowHtml({ state, lemma, canAdmin = false, text = {}, l
   const chips = BANGLA_KINDS.map((k) => `<button type="button" class="we-btn bnk-btn bnk-${k}" data-bangla-kind="${k}" aria-pressed="${on.has(k)}"${editable ? "" : " disabled"}><span class="we-name">${esc(fill(T[k], { language: lang }))}</span></button>`).join("");
   return `<div class="we-row bnk-row" data-bangla-marks data-bangla-lemma="${esc(lemma)}" role="group" aria-label="${esc(title)}"><span class="we-label" data-bangla-marks-title>${esc(title)}</span><div class="we-buttons">${chips}</div>${editable ? "" : `<p class="we-note" role="status" data-bangla-marks-note>${esc(T.readOnly)}</p>`}</div>`;
 }
+/**
+ * The Owner, 18 Nov 2026: the Word card's marking is the group "Already Known", with the SAME categories as the Vocab List's "Already known"
+ * (the owner's own titles and hidden groups included), and synced with it. `marks` = [{ k, title, on, kind }] from known-groups-sync.js:
+ * a chip with a `kind` is tapped (it switches that stored kind, exactly as the three old chips did: same data-bangla-kind, same handler); a chip
+ * without one is shown only (the curated Names, and "My Language", which follows from the others). `title` = the group's title, `heading` = "Already Known".
+ */
+export function knownMarksRowHtml({ lemma, heading, marks = [], canAdmin = false, state, readOnly = "" } = {}) {
+  if (!state || !lemma || !marks.length) return "";
+  const editable = canEditList(state.list, canAdmin);
+  const chips = marks.map((m) => m.kind
+    ? `<button type="button" class="we-btn bnk-btn kg-chip bnk-${esc(m.kind)}" data-bangla-kind="${esc(m.kind)}" data-known-group="${esc(m.k)}" aria-pressed="${m.on}"${editable ? "" : " disabled"}><span class="we-name">${esc(m.title)}</span></button>`
+    : `<span class="we-btn kg-chip kg-show" data-known-group="${esc(m.k)}" aria-pressed="${m.on}" role="img" aria-label="${esc(`${m.title}: ${m.on ? "✓" : "–"}`)}"><span class="we-name">${esc(m.title)}</span></span>`).join("");
+  return `<div class="we-row bnk-row kg-row" data-bangla-marks data-known-marks data-bangla-lemma="${esc(lemma)}" role="group" aria-label="${esc(heading)}"><span class="we-label" data-bangla-marks-title>${esc(heading)}</span><div class="we-buttons">${chips}</div>${editable ? "" : `<p class="we-note" role="status" data-bangla-marks-note>${esc(readOnly)}</p>`}</div>`;
+}
 /** Delegated wiring: `onKind(lemma, kind)` on a tap of an enabled chip. */
 export function wireBanglaMarkRow(root, onKind) {
   root?.querySelectorAll?.("[data-bangla-marks]").forEach((row) => row.addEventListener("click", (e) => {
