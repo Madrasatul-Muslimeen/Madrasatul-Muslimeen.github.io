@@ -132,6 +132,7 @@ export function renderNamesEditor(box, { versionUri, titleAr, chapters, onChange
       const draft = r.id ? draftNameOf(versionUri, r.id) : null;
       inputEn.value = cur?.en || draft || ""; // a retired name keeps its English words; with none, the draft starts the box (correct it, Save = your own name)
       if (!cur?.en && draft) inputEn.dataset.hadithNamesDraft = "";
+      inputEn.addEventListener("input", () => { delete inputEn.dataset.hadithNamesDraft; }); // typing in the box, even the same words, makes the name the owner's own
       inputEn.dataset.hadithNamesEn = r.key;
       inputEn.placeholder = t("English name");
       inputEn.setAttribute("aria-label", t("English name"));
