@@ -3370,3 +3370,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v15.21** (2026-11-17): Play card Whole Unit note (#1804).
 - **v15.22** (2026-11-17): the Read bar tidy (#1807).
 - **v15.23** (2026-11-18): the Hadith Books one bar (#1808).
+- **v15.24** (2026-11-18): the Vocab List tidy (#1812).
