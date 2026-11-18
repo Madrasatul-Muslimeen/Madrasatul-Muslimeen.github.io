@@ -23,7 +23,7 @@ const MUT = {
   longlabel: [PAGE, "    #learnNextSheet .ln-head .ln-review-go { font-size: 0; }\n    #learnNextSheet .ln-head .ln-review-go::after { content: attr(data-short); font-size: 0.86rem; }\n", ""],
   tallrows: [PAGE, "  .lnk-t small { display: inline; margin-inline-start: 0.5rem; }", "  .lnk-t small { display: block; }"],
   everyone: [PAGE, "${knownCanEdit() ? `<span class=\"lnk-own\">", "${true ? `<span class=\"lnk-own\">"],
-  nosave: [PAGE, "const clean = await saveKnownGroupSettings(db, tenantId, next, updateDocument);", "const clean = knownGroupSettingsFromTenantDoc({ [KNOWN_SETTINGS_FIELD]: next });"],
+  nosave: [PAGE, "const clean = await saveKnownGroupSettings(db, tenantId, change(knownGroupSettingsFromTenantDoc(fresh)), updateDocument);", "const clean = change(knownGroupSettingsFromTenantDoc(fresh));"],
   nohide: [PAGE, "return { asma, lists: all.filter((l) => !isKnownGroupHidden(settings, l.k)) };", "return { asma, lists: all };"],
   stale: [PAGE, "if (snap.exists()) fresh = snap.data();", ""],
   noheading: [PAGE, "const heading = knownCanEdit() ? `<div class=\"lnk-heading\">", "const heading = false ? `<div class=\"lnk-heading\">"],
