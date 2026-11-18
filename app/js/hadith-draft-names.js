@@ -1,17 +1,18 @@
 // Draft English names for the chapters of the Hadith Books (the Owner, 18 Nov 2026: "You draft the chapter names, make it editable by me. For all books").
 // One small file per book (chapter id -> English), written by the Lead from the Arabic titles and marked "draft, to be checked" wherever it shows.
 // It is only a fallback: a name the madrasah typed (hadithNames) always wins, and the names editor starts from the draft so the Owner corrects it
-// and saves it as their own. Read only when a book's chapter list is first drawn (I9: nothing at startup). Bukhari's books keep the MyIndex English.
+// and saves it as their own. Read only when a book's chapter list is first drawn (I9: nothing at startup). Bukhari's Sahih rows that start where an entry of the Owner's MyIndex starts take that English instead (the two numberings differ elsewhere).
 const BASE_URL = "../tools/hadith-data-pull/output/chapter-names-en/";
 const cache = new Map();   // versionUri -> Promise<{id: english}>
 const loaded = new Map();  // versionUri -> {id: english}   (sync read once loaded)
 
-/** The books that have a draft file (Bukhari's Sahih has MyIndex English instead). Bound to the files by a check. */
+/** The books that have a draft file. Bound to the files by a check. */
 export const DRAFT_NAME_BOOKS = new Set([
   "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1",
   "0241IbnHanbal.Musnad.Shamela0025794-ara1",
   "0255CabdAllahDarimi.Sunan.JK000842-ara1",
   "0256Bukhari.AdabMufrad.JK000011-ara1",
+  "0256Bukhari.Sahih.JK000110-ara1",
   "0261Muslim.Sahih.Shamela0001727-ara1",
   "0273IbnMaja.Sunan.JK000141-ara1",
   "0275AbuDawudSijistani.Sunan.JK000142-ara1",

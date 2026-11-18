@@ -1409,7 +1409,7 @@ function openitiCrumbs(oi, index, localRefresh) {
       bar.appendChild(cur);
     }
   };
-  add(t("Hadith Books"), () => { oi.bookUri = null; oi.chapterId = null; oi.showAllChapters = false; localRefresh(); });
+  add(t("Hadith Books"), () => { oi.bookUri = null; oi.chapterId = null; endTool(oi); oi.showAllChapters = false; localRefresh(); });
   if (index) {
     add(index.titleEn, oi.chapterId ? () => { oi.chapterId = null; localRefresh(); } : null);
     if (oi.chapterId) {
@@ -1437,7 +1437,7 @@ function renderOpenitiBookList(body, oi, localRefresh) {
       ? t("{n} passages (this edition has no hadith numbers)", { n: num(index.passageCount) })
       : t("{n} hadith", { n: num(index.hadithCount) });
     row.appendChild(el("span", "hadith-row-meta", count));
-    row.addEventListener("click", () => { oi.bookUri = versionUri; oi.chapterId = null; oi.showAllChapters = false; localRefresh(); });
+    row.addEventListener("click", () => { oi.bookUri = versionUri; oi.chapterId = null; endTool(oi); oi.showAllChapters = false; localRefresh(); });
     list.appendChild(row);
   }
   body.appendChild(list);
@@ -1552,6 +1552,9 @@ function renderBookInfo(body, index, summary) {
 }
 
 
+/** Leaving a book: its open tool panel (and the way back from it) belongs to that book, not the next. */
+function endTool(oi) { oi.tool = null; oi.toolFrom = null; oi.toolFull = false; oi.toolEnter = false; }
+
 function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, babs = null, versionUri = null) {
   const alt = versionUri && conc && hasMyIndex(versionUri);
   if (alt && oi.indexMode === "my") { renderMyIndex(body, versionUri, oi, localRefresh, conc); return; }
@@ -1607,7 +1610,7 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
         if (!d || !row || row.querySelector("[data-openiti-chapter-en]")) continue;
         const e = el("span", "hadith-row-en hadith-row-draft", d); e.dataset.openitiChapterEn = c.id; e.dataset.draft = ""; e.lang = "en";
         e.title = t("Draft English name, to be checked");
-        const mark = el("span", "hadith-draft-mark", t("draft")); mark.setAttribute("aria-hidden", "true");
+        const mark = el("span", "hadith-draft-mark", t("draft")); // read aloud too: a screen-reader user must hear that the name is unchecked
         e.appendChild(mark);
         row.insertBefore(e, row.querySelector(".hadith-row-meta"));
       }
@@ -1621,7 +1624,9 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
       for (const c of rows) {
         const b = c.firstNumber != null ? byFirst.get(c.firstNumber) : null;
         const row = list.querySelector(`[data-openiti-chapter="${c.id}"]`);
-        if (!b?.en || !row || row.querySelector("[data-openiti-chapter-en]")) continue;
+        if (!b?.en || !row) continue;
+        row.querySelector("[data-draft]")?.remove(); // the Owner's own MyIndex English replaces the Lead's draft
+        if (row.querySelector("[data-openiti-chapter-en]")) continue;
         const e = el("span", "hadith-row-en", b.en); e.dataset.openitiChapterEn = c.id; e.lang = "en";
         row.insertBefore(e, row.querySelector(".hadith-row-meta"));
       }
@@ -1754,7 +1759,7 @@ function duaAlsoNarrated(h, group, { dua, oi, localRefresh, chapterId, versionUr
     b.dataset.duaRef = `${m.versionUri}:${m.n}`;
     b.addEventListener("click", () => {
       oi.trail = [...(oi.trail ?? []), { bookUri: versionUri, chapterId, focusPassage: h.n, label: t("← Back to {ref}", { ref: here }) }];
-      oi.bookUri = m.versionUri; oi.chapterId = null; oi.focusPassage = m.n; oi.showAllChapters = false;
+      oi.bookUri = m.versionUri; oi.chapterId = null; endTool(oi); oi.focusPassage = m.n; oi.showAllChapters = false;
       localRefresh();
     });
     return b;

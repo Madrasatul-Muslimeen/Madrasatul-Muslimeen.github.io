@@ -12,6 +12,8 @@ const MUT = {
   nomark: ["js/hadith-browser.js", "        e.appendChild(mark);\n", ""],
   noprefill: ["js/hadith-names.js", "inputEn.value = cur?.en || draft || \"\";", "inputEn.value = cur?.en || \"\";"],
   confirmdraft: ["js/hadith-names.js", "(inputEn.dataset.hadithNamesDraft != null && inputEn.value === draft && input.value.trim()) ? \"\" : inputEn.value", "inputEn.value"],
+  noawait: ["js/hadith-names.js", "await loadDraftNames(versionUri).catch(() => {});", ""],
+  nohear: ["js/hadith-browser.js", "mark = el(\"span\", \"hadith-draft-mark\", t(\"draft\")); // read aloud too", "mark = el(\"span\", \"hadith-draft-mark\", t(\"draft\")); mark.setAttribute(\"aria-hidden\", \"true\"); // read aloud too"],
   ownlose: ["js/hadith-browser.js", "if (!d || !row || row.querySelector(\"[data-openiti-chapter-en]\")) continue;", "if (!d || !row) continue;"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -33,12 +35,12 @@ const check = (name, ok, detail = "") => {
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name} ${detail}`); }
 };
 
-// ---- 1. the data: every titled chapter of every book (but Bukhari's Sahih, which has MyIndex English) has a draft ---------------
+// ---- 1. the data: every titled chapter of every book has a draft ---------------
 {
   const split = "tools/hadith-data-pull/output/openiti-release/split/", out = "tools/hadith-data-pull/output/chapter-names-en/";
   const src = fs.readFileSync("app/js/hadith-draft-names.js", "utf8");
   const listed = [...src.matchAll(/^  "(0[^"]+)",$/gm)].map((m) => m[1]);
-  const books = fs.readdirSync(split).filter((b) => b.startsWith("0") && !b.includes("Bukhari.Sahih"));
+  const books = fs.readdirSync(split).filter((b) => b.startsWith("0"));
   check(`the app's list names exactly the ${books.length} books that have a draft file`, JSON.stringify([...listed].sort()) === JSON.stringify([...books].sort()), `${listed.length} listed`);
   let bad = [];
   for (const b of books) {
@@ -55,16 +57,17 @@ const check = (name, ok, detail = "") => {
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const MUS = "0261Muslim.Sahih.Shamela0001727-ara1";
-async function open(lang, width, seedJs = "") {
+async function open(lang, width, seedJs = "", { book = MUS, delayDrafts = 0 } = {}) {
   const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 900 }, extraSeedJs: "window.__stubApplyUpdates = true;" + seedJs });
   if (MUTATE) {
     const [file, a, b] = MUT[MUTATE];
     if (!fs.readFileSync(`app/${file}`, "utf8").includes(a)) { console.log(`  FAIL  mutation anchor missing: ${MUTATE}`); process.exit(1); }
     await ctx.route(`**/app/${file}*`, (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: fs.readFileSync(`app/${file}`, "utf8").split(a).join(b) }));
   }
+  if (delayDrafts) await ctx.route("**/chapter-names-en/*.json", async (r) => { await new Promise((ok) => setTimeout(ok, delayDrafts)); await r.continue(); });
   const { page, errors } = await openPage(ctx, "/app/hadith-study.html");
-  await page.waitForSelector(`[data-openiti-book="${MUS}"]`, { state: "attached" });
-  await page.click(`[data-openiti-book="${MUS}"]`);
+  await page.waitForSelector(`[data-openiti-book="${book}"]`, { state: "attached" });
+  await page.click(`[data-openiti-book="${book}"]`);
   await page.waitForSelector("[data-openiti-chapter]", { state: "attached" });
   await page.waitForTimeout(900);
   return { ctx, page, errors };
@@ -102,6 +105,35 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   }
   await ctx.close();
 }
+// ---- 3b. the editor opened before the draft file arrived still starts from the draft ----------------------------------------------------
+{
+  const tag = "[en 1280 slow draft]";
+  const { ctx, page: P } = await open("en", 1280, "", { delayDrafts: 1500 });
+  await press(P, '[data-reader-tool="actions"]'); await P.waitForSelector("[data-hadith-names-open]", { timeout: 8000 }).catch(() => {});
+  await press(P, "[data-hadith-names-open]"); await P.waitForSelector("[data-hadith-names-row] [data-hadith-names-draft]", { state: "attached", timeout: 12000 }).catch(() => {});
+  const v = await P.evaluate(() => { const e = document.querySelector("[data-hadith-names-row] [data-hadith-names-draft]"); return e ? e.value : null; });
+  check(`${tag} opening Edit names while the draft file is still on its way: the English box still starts from the draft`, !!v && v.length > 3, String(v));
+  await ctx.close();
+}
+// ---- 3c. a screen reader hears the draft tag ----------------------------------------------------------------------------------------------
+{
+  const tag = "[en 390 a11y]";
+  const { ctx, page: P } = await open("en", 390);
+  const hid = await P.evaluate(() => { const m = document.querySelector(".hadith-draft-mark"); return m ? { text: m.textContent, hidden: !!m.closest("[aria-hidden='true']") } : null; });
+  check(`${tag} the "draft" tag is in the accessibility tree (not aria-hidden)`, !!hid && hid.text.length > 0 && !hid.hidden, JSON.stringify(hid));
+  await ctx.close();
+}
+// ---- 3d. Bukhari's Sahih: its rows have English drafts on the Original index too (the exact-start MyIndex lookup only matched 5 of 100) ----------
+{
+  const tag = "[en 1280 Bukhari]";
+  const { ctx, page: P } = await open("en", 1280, "", { book: "0256Bukhari.Sahih.JK000110-ara1" });
+  await settle(P, 800);
+  const r = await P.evaluate(() => { const rows = [...document.querySelectorAll("[data-openiti-chapter]")]; const en = rows.map((x) => x.querySelector("[data-openiti-chapter-en]")?.textContent ?? ""); return { rows: rows.length, withEn: en.filter(Boolean).length, ghusl: en[rows.findIndex((x) => /الغسل/.test(x.textContent))] ?? null }; });
+  check(`${tag} (nearly) every chapter row has an English name`, r.rows > 20 && r.withEn >= r.rows - 1, JSON.stringify(r));
+  check(`${tag} the Ghusl chapter (which starts at 245 in this index, 248 in MyIndex) reads as the full bath`, /Full Bath/i.test(r.ghusl ?? ""), JSON.stringify(r));
+  await ctx.close();
+}
+
 // ---- 4. a name the madrasah typed beats the draft (no second English line, no draft tag on that row) -----------------------------------
 {
   const tag = "[en 1280 own name]";

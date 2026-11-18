@@ -7,7 +7,7 @@
  * in the Hadith Books view; one document read, flagged in the PR) and patched in memory after each write.
  * The pure half is hadith-names-model.js; the read and the write live in hadith-study-actions.js (loaded on first use, I9).
  */
-import { draftNameOf } from "./hadith-draft-names.js";
+import { draftNameOf, loadDraftNames } from "./hadith-draft-names.js";
 import { t } from "./i18n.js";
 import { getAppLang } from "./prefs.js";
 import { el, readFailedNote, loadHadithStudyActions } from "./hadith-shared-ui.js";
@@ -89,6 +89,7 @@ export function renderNamesEditor(box, { versionUri, titleAr, chapters, onChange
     panel.appendChild(el("p", "hadith-note", t("Loading…")));
     let shared;
     try { shared = await loadShared(); } catch (err) { panel.textContent = ""; panel.appendChild(readFailedNote(err, draw)); return; }
+    await loadDraftNames(versionUri).catch(() => {}); // the boxes start from the draft, so it must be read before they are drawn
     panel.textContent = "";
     const { session, actions, data } = shared;
     if (!session || !session.canManage) {

@@ -28,6 +28,8 @@ const MUT = {
   // (the hidden twin of ⓘ comes AFTER the bar in the page, so a plain querySelector also finds the visible one today; visibleOne() is defence in depth and its check cannot be failed by a mutation)
   nofullfocus: ["js/hadith-reader.js", "oi.toolFull = !oi.toolFull; oi.toolFullFocus = true;", "oi.toolFull = !oi.toolFull;"],
   nophonefocus: ["js/minimise.js", " || document.querySelector(`[data-reader-show=\"${pane}\"]`)", ""],
+  keeptool: ["js/hadith-browser.js", "function endTool(oi) { oi.tool = null; oi.toolFrom = null; oi.toolFull = false; oi.toolEnter = false; }", "function endTool(oi) { }"],
+  notoggleFocus: ["js/hadith-reader.js", "oi.toolFrom = null; oi.toolFocus = def.id; localRefresh(); return; }", "oi.toolFrom = null; localRefresh(); return; }"],
   nowayback: ["js/hadith-reader.js", "    oi.toolFrom = oi.phone !== \"chapters\" ? oi.phone : (oi.toolFrom ?? null);", "    oi.toolFrom = null;"],
 };
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || "").slice(k.length + 3);
@@ -158,6 +160,21 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   check(`${tag} ← Back returns to the Text tab it was opened from (the way-back law)`, (await P.$eval('[data-reader-show="text"]', (n) => n.getAttribute("aria-pressed"))) === "true" && (await P.$('[data-tool-panel="info"]')) === null);
   // the Chapters pane keeps a hidden copy of ⓘ that comes first in the page: focus must land on the one in the bar
   check(`${tag} ...and focus is on the visible ⓘ in the bar, not its hidden twin`, await P.evaluate(() => { const a = document.activeElement; return !!a && a.matches('[data-reader-tool="info"]') && a.getClientRects().length > 0; }));
+  await ctx.close();
+}
+
+// ---- 3b. a tool toggled shut with the keyboard keeps focus on its icon; leaving the book closes the tool ------------------------------------
+{
+  const tag = "[en 390 toggle and leave]";
+  const { ctx, page: P } = await open("en", 390);
+  await P.focus('[data-reader-tool="info"]'); await P.keyboard.press("Enter"); await P.waitForSelector('[data-tool-panel="info"]', { timeout: 8000 }).catch(() => {}); await settle(P, 300);
+  await P.focus('[data-reader-tool="info"]'); await P.keyboard.press("Enter"); await settle(P, 500);
+  check(`${tag} pressing the open ⓘ again closes the panel and focus stays on ⓘ`, (await P.$('[data-tool-panel="info"]')) === null && (await P.evaluate(() => document.activeElement?.matches('[data-reader-tool="info"]') && document.activeElement.getClientRects().length > 0)));
+  await press(P, '[data-reader-tool="info"]'); await P.waitForSelector('[data-tool-panel="info"]', { timeout: 8000 }).catch(() => {}); await settle(P, 300);
+  await P.evaluate(() => [...document.querySelectorAll(".hadith-crumbs button, .hadith-crumbs a")].find((n) => /Hadith Books/.test(n.textContent))?.click());
+  await P.waitForSelector("[data-openiti-book]", { timeout: 8000 }); await settle(P, 300);
+  await P.click(`[data-openiti-book="${MUS}"]`); await P.waitForSelector("[data-openiti-chapter]", { state: "attached", timeout: 8000 }); await settle(P, 600);
+  check(`${tag} choosing another book does not reopen the last book's tool panel`, (await P.$("[data-tool-panel]")) === null);
   await ctx.close();
 }
 

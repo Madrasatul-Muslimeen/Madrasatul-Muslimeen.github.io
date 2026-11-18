@@ -15,11 +15,13 @@ def main(parts):
     os.makedirs(OUT, exist_ok=True)
     total = 0
     for book in sorted(os.listdir(SPLIT)):
-        if not book.startswith("0") or "Bukhari.Sahih" in book:
+        if not book.startswith("0"):
             continue
         idx = json.load(open(os.path.join(SPLIT, book, "index.json"), encoding="utf-8"))
         want = {c["id"] for c in idx["chapters"] if str(c.get("title") or "").strip()}
         stem = "_".join(book.split(".")[:2])
+        if not glob.glob(os.path.join(parts, stem + "_*.json")):
+            continue
         got = {}
         for f in sorted(glob.glob(os.path.join(parts, stem + "_*.json"))):
             got.update(json.load(open(f, encoding="utf-8")))
