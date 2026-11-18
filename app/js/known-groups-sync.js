@@ -29,11 +29,15 @@ export function knownGroupLemmas(key, staticLemmas, banglaState) {
  * Returns [{ k, on, kind }]: `on` = the word is in that group; `kind` = the stored kind a tap switches, or null when the chip is shown only.
  */
 export function knownGroupMarks({ groups, state, lemma }) {
+  // Codex P2s on #1812: a tappable chip shows the STORED kind it toggles (so a tap always flips what it shows, also while the list is switched off),
+  // and `member` says the word is in that group by the curated list or by a mark; the curated membership is shown, never mistaken for the tap's own state.
   const mine = new Set(banglaKindsOf(state, lemma));
+  const inList = activeBanglaSet(state).has(lemma);
   return (groups ?? []).map(({ k, lemmas }) => {
     const kind = KIND_OF_GROUP[k] ?? null;
     const inStatic = Array.isArray(lemmas) && lemmas.includes(lemma);
-    const on = k === "language" ? mine.size > 0 && activeBanglaSet(state).has(lemma) || inStatic : inStatic || (kind ? mine.has(kind) && activeBanglaSet(state).has(lemma) : false);
-    return { k, on, kind };
+    if (kind) return { k, on: mine.has(kind), member: inStatic || (mine.has(kind) && inList), kind };
+    const on = k === "language" ? inList || inStatic : inStatic;
+    return { k, on, member: on, kind: null };
   });
 }

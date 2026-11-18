@@ -4471,6 +4471,8 @@
   .quran-word-card .kg-row .we-buttons { display: flex; flex-wrap: wrap; gap: 0.3rem; grid-template-columns: none; }
   .quran-word-card .kg-row .we-btn { flex: 0 1 auto; width: auto; min-width: 0; min-height: 40px; padding: 0.25rem 0.65rem; font-size: 0.78rem; line-height: 1.2; overflow-wrap: normal; text-align: center; }
   .quran-word-card .kg-row .kg-show { border-style: dashed; cursor: default; }
+  .lnk-heading { display: flex; align-items: center; gap: 0.4rem; font-size: 1rem; color: #4b2a85; }
+  .lnk-heading b { flex: 1 1 auto; min-width: 0; }
   .lnk-own { display: inline-flex; gap: 0.1rem; flex: 0 0 auto; }
   .lnk-ib { min-width: 36px; min-height: 36px; padding: 0 0.4rem; border: 0; border-radius: 0.4rem; background: transparent; color: #5d5478; font: inherit; font-size: 0.95rem; cursor: pointer; }
   .lnk-ib:hover, .lnk-ib:focus-visible { background: #f1e9fb; color: #4b2a85; }
@@ -21160,15 +21162,23 @@
     /** The owner's own wording for the titles, and the groups they have hidden: ONE field of the tenant document, the same on every device. */
     function knownSettings() { return knownGroupSettingsFromTenantDoc(currentTenantDoc); }
     function knownCanEdit() { return canAdminCatalogueClientSide(); }
-    async function saveKnownSettings(next) {
-      const { tenantId } = wordProgressActor();
-      if (!tenantId || !knownCanEdit()) return;
-      try {
-        const clean = await saveKnownGroupSettings(db, tenantId, next, updateDocument);
-        currentTenantDoc = { ...(currentTenantDoc ?? {}), [KNOWN_SETTINGS_FIELD]: clean };
-      } catch (error) { reportWriteFailure(error, { what: "save the Already Known titles" }); } // I15
-      renderLearnNextSheet(true);
-      if (quranWordCardState?.open) renderPersistentWordCard();
+    // One save at a time on this device, and each applies its change to the settings read FRESH from the tenant document, so two owners (or two taps)
+    // editing different groups do not undo each other (Codex P2 on #1812). `change(settings)` returns the new settings.
+    let knownSaveChain = Promise.resolve();
+    function saveKnownSettings(change) {
+      knownSaveChain = knownSaveChain.then(async () => {
+        const { tenantId } = wordProgressActor();
+        if (!tenantId || !knownCanEdit()) return;
+        try {
+          let fresh = currentTenantDoc;
+          try { const snap = await getDoc(doc(db, "tenants", tenantId)); if (snap.exists()) fresh = snap.data(); } catch (error) { console.warn("Already Known settings read again failed; using the copy in the page", error); }
+          const clean = await saveKnownGroupSettings(db, tenantId, change(knownGroupSettingsFromTenantDoc(fresh)), updateDocument);
+          currentTenantDoc = { ...(currentTenantDoc ?? {}), ...(fresh ?? {}), [KNOWN_SETTINGS_FIELD]: clean };
+        } catch (error) { reportWriteFailure(error, { what: "save the Already Known titles" }); } // I15
+        renderLearnNextSheet(true);
+        if (quranWordCardState?.open) renderPersistentWordCard();
+      });
+      return knownSaveChain;
     }
     function knownGroupTitle(k) {
       const g = knownGroupsData?.groups?.find((x) => x.k === k);
@@ -21221,7 +21231,10 @@
       }).join("");
       const hiddenKeys = knownCanEdit() ? knownSettings().hidden : [];
       const restore = hiddenKeys.length ? `<div class="lnk-hidden" data-lnk-hidden><span>${escapeHtml(t("Hidden groups: {n}", { n: num(hiddenKeys.length) }))}</span>${hiddenKeys.map((k) => `<button type="button" class="lnk-show" data-lnk-unhide="${k}">${escapeHtml(t("Show again"))}: ${escapeHtml(knownGroupTitle(k).main)}</button>`).join("")}</div>` : "";
-      return `<div class="lnk" data-lnk>${head}${groups}${restore}</div>`;
+      // the heading "Already known" itself (the tile, this panel, the Word card's group) is editable by the owner too (Codex P2 on #1812)
+      const headingMine = knownTitleIsMine(knownSettings(), KNOWN_HEADING_KEY, getAppLang());
+      const heading = knownCanEdit() ? `<div class="lnk-heading"><b data-lnk-title="${KNOWN_HEADING_KEY}">${escapeHtml(knownHeadingText())}</b><span class="lnk-own"><button type="button" class="lnk-ib" data-lnk-edit="${KNOWN_HEADING_KEY}" aria-label="${escapeHtml(t("Edit the title"))}" title="${escapeHtml(t("Edit the title"))}">✎</button>${headingMine ? `<button type="button" class="lnk-ib" data-lnk-reset="${KNOWN_HEADING_KEY}" aria-label="${escapeHtml(t("Back to the original title"))}" title="${escapeHtml(t("Back to the original title"))}">↺</button>` : ""}</span></div>` : "";
+      return `<div class="lnk" data-lnk>${heading}${head}${groups}${restore}</div>`;
     }
     /** Tick (on) or clear (off) these dictionary words through the Word card's own WbW mark. */
     async function knownTick(lemmas, on) {
@@ -21277,20 +21290,21 @@
           if (own) {
             e.preventDefault(); e.stopPropagation();
             if (!knownCanEdit()) return;
-            const lang = getAppLang(), cur = knownSettings();
-            if (own.dataset.lnkReset) { saveKnownSettings(withKnownTitle(cur, own.dataset.lnkReset, lang, "")); return; }
-            if (own.dataset.lnkUnhide) { saveKnownSettings(withKnownGroupHidden(cur, own.dataset.lnkUnhide, false)); return; }
+            const lang = getAppLang();
+            if (own.dataset.lnkReset) { saveKnownSettings((c) => withKnownTitle(c, own.dataset.lnkReset, lang, "")); return; }
+            if (own.dataset.lnkUnhide) { saveKnownSettings((c) => withKnownGroupHidden(c, own.dataset.lnkUnhide, false)); return; }
             if (own.dataset.lnkHide) {
               if (own.dataset.armed !== "1") { own.dataset.armed = "1"; own.textContent = t("Tap again to hide"); setTimeout(() => { if (own.isConnected) { own.dataset.armed = ""; own.textContent = "🗑"; } }, 3500); return; }
-              saveKnownSettings(withKnownGroupHidden(cur, own.dataset.lnkHide, true)); return;
+              saveKnownSettings((c) => withKnownGroupHidden(c, own.dataset.lnkHide, true)); return;
             }
-            const k = own.dataset.lnkEdit, host = own.closest("summary")?.querySelector("[data-lnk-title]");
+            const k = own.dataset.lnkEdit, host = el.querySelector(`[data-lnk-title="${k}"]`);
+            const currentTitle = () => (k === KNOWN_HEADING_KEY ? knownHeadingText() : knownGroupTitle(k).main);
             if (!host || host.querySelector("input")) return;
-            const input = document.createElement("input"); input.type = "text"; input.className = "lnk-title-in"; input.maxLength = 80; input.value = knownGroupTitle(k).main;
+            const input = document.createElement("input"); input.type = "text"; input.className = "lnk-title-in"; input.maxLength = 80; input.value = currentTitle();
             input.setAttribute("aria-label", t("Edit the title"));
             host.replaceChildren(input); input.focus(); input.select();
             let done = false;
-            const finish = (ok) => { if (done) return; done = true; if (ok && input.value.trim() && input.value.trim() !== knownGroupTitle(k).main) saveKnownSettings(withKnownTitle(cur, k, lang, input.value)); else renderLearnNextSheet(true); };
+            const finish = (ok) => { if (done) return; done = true; if (ok && input.value.trim() && input.value.trim() !== currentTitle()) saveKnownSettings((c) => withKnownTitle(c, k, lang, input.value)); else renderLearnNextSheet(true); };
             input.addEventListener("keydown", (ev) => { ev.stopPropagation(); if (ev.key === "Enter") { ev.preventDefault(); finish(true); } else if (ev.key === "Escape") { ev.preventDefault(); finish(false); } else if (ev.key === " ") ev.stopPropagation(); });
             input.addEventListener("keyup", (ev) => ev.stopPropagation());
             input.addEventListener("click", (ev) => { ev.preventDefault(); ev.stopPropagation(); });

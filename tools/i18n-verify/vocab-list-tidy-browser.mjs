@@ -11,6 +11,8 @@
 //   --mutate=everyone    every reader gets the edit/hide buttons                  -> "a reader who cannot manage sees no ✎ 🗑" FAILS
 //   --mutate=nosave      the title is changed on screen only                     -> "saved on the tenant document" FAILS
 //   --mutate=nohide      hiding does nothing                                      -> "hiding a group takes it out" FAILS
+//   --mutate=stale       a save ignores what another device saved meanwhile    -> "a save keeps what another device saved meanwhile" FAILS
+//   --mutate=noheading   the heading Already known has no editor               -> "the owner edits the heading" FAILS
 //   --mutate=cardkeeps   the Word card ignores the hidden group                   -> "the Word card follows" FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -23,6 +25,8 @@ const MUT = {
   everyone: [PAGE, "${knownCanEdit() ? `<span class=\"lnk-own\">", "${true ? `<span class=\"lnk-own\">"],
   nosave: [PAGE, "const clean = await saveKnownGroupSettings(db, tenantId, next, updateDocument);", "const clean = knownGroupSettingsFromTenantDoc({ [KNOWN_SETTINGS_FIELD]: next });"],
   nohide: [PAGE, "return { asma, lists: all.filter((l) => !isKnownGroupHidden(settings, l.k)) };", "return { asma, lists: all };"],
+  stale: [PAGE, "if (snap.exists()) fresh = snap.data();", ""],
+  noheading: [PAGE, "const heading = knownCanEdit() ? `<div class=\"lnk-heading\">", "const heading = false ? `<div class=\"lnk-heading\">"],
   cardkeeps: [PAGE, "const marks = knownGroupMarks({ groups: base.lists,", "const marks = knownGroupMarks({ groups: [...base.lists, ...knownGroupsData.groups.filter((g) => !base.lists.some((l) => l.k === g.k)).map((g) => ({ k: g.k, lemmas: g.lemmas }))],"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -42,7 +46,7 @@ const writes = (page) => page.evaluate(() => (window.__stubWriteData || []).map(
 
 for (const [lang, width, height, reader] of [["en", 1280, 900, false], ["en", 390, 844, false], ["bn", 390, 844, false], ["en", 1280, 900, true]]) {
   const tag = `[${lang} ${width}${reader ? " reader" : ""}]`;
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height }, extraSeedJs: reader ? READER : null });
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height }, extraSeedJs: (reader ? READER : "") + " window.__tenantDoc = DATA.tenants[0];" });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) { const [file, a, b] = MUT[MUTATE]; await ctx.route(`**/${file}*`, async (r) => { const src = fs.readFileSync(file, "utf8"); if (src.split(a).length !== 2) throw new Error(`mutation anchor missing or not unique: ${MUTATE}`); await r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src.split(a).join(b) }); }); }
   const { page } = await openPage(ctx, "/app/quranrevival.html");
@@ -76,8 +80,10 @@ for (const [lang, width, height, reader] of [["en", 1280, 900, false], ["en", 39
     // ---- 3. the owner's own titles and the hide button -----------------------------------------------------------
     const bn = lang === "bn";
     const own = await page.evaluate(() => ({ edit: document.querySelectorAll("#learnNextSheet [data-lnk-edit]").length, hide: document.querySelectorAll("#learnNextSheet [data-lnk-hide]").length, reset: document.querySelectorAll("#learnNextSheet [data-lnk-reset]").length, small: [...document.querySelectorAll("#learnNextSheet .lnk-ib")].every((b) => b.getBoundingClientRect().width >= 34 && b.getBoundingClientRect().height >= 34) }));
-    check(`${tag} the owner sees ✎ and 🗑 on all seven groups (≥ 34px), and ↺ only after a change`, own.edit === 7 && own.hide === 7 && own.reset === 0 && own.small, JSON.stringify(own));
+    check(`${tag} the owner sees ✎ on all seven groups and on the heading, 🗑 on all seven groups (≥ 34px), and ↺ only after a change`, own.edit === 8 && own.hide === 7 && own.reset === 0 && own.small, JSON.stringify(own));
     await page.evaluate(() => { sessionStorage.setItem("__stubWrites", "[]"); window.__stubWriteData = []; });
+    // another device hides Daily Life while this page still holds the old settings; this page then edits a title: the save must keep that hide
+    await page.evaluate(() => { window.__tenantDoc.learnNextKnownGroups = { titles: {}, hidden: ["daily"] }; });
     await page.evaluate(() => document.querySelector('#learnNextSheet [data-lnk-edit="prophets"]').click()); await sleep(page, 200);
     const inp = await page.evaluate(() => { const i = document.querySelector("#learnNextSheet [data-lnk-title='prophets'] input"); return i ? { v: i.value, focused: document.activeElement === i } : null; });
     check(`${tag} ✎ opens the title in a box, focused, holding the current words`, !!inp && inp.v.length > 2 && inp.focused, JSON.stringify(inp));
@@ -87,19 +93,27 @@ for (const [lang, width, height, reader] of [["en", 1280, 900, false], ["en", 39
     const w = await writes(page);
     const tw = w.find((x) => x.col === "tenants" && JSON.stringify(x.data).includes("learnNextKnownGroups"));
     check(`${tag} saved on the tenant document (field learnNextKnownGroups, titles.prophets.${bn ? "bn" : "en"}), so every device reads it`, !!tw && tw.data.learnNextKnownGroups?.titles?.prophets?.[bn ? "bn" : "en"] === (bn ? "নবীগণ" : "The Prophets"), JSON.stringify(w.slice(0, 3)));
+    check(`${tag} a save keeps what another device saved meanwhile (Daily Life stays hidden, the new title is there too)`, !!tw && (tw.data.learnNextKnownGroups?.hidden ?? []).join() === "daily" && tw.data.learnNextKnownGroups?.titles?.prophets?.[bn ? "bn" : "en"] === (bn ? "নবীগণ" : "The Prophets"), JSON.stringify(tw?.data));
     check(`${tag} ↺ is offered for the changed title`, await page.evaluate(() => !!document.querySelector('#learnNextSheet [data-lnk-reset="prophets"]')));
     await page.evaluate(() => document.querySelector('#learnNextSheet [data-lnk-reset="prophets"]').click()); await sleep(page, 600);
     const t2 = await page.evaluate(() => document.querySelector("#learnNextSheet [data-lnk-g='prophets'] .lnk-t")?.childNodes[0]?.textContent.trim());
     check(`${tag} ↺ puts the app's own title back`, t2 !== (bn ? "নবীগণ" : "The Prophets") && !!t2, String(t2));
+    // the heading "Already known" itself (tile, panel, Word card) is editable too
+    await page.evaluate(() => document.querySelector('#learnNextSheet [data-lnk-edit="_known"]')?.click()); await sleep(page, 200);
+    await page.fill("#learnNextSheet [data-lnk-title='_known'] input", bn ? "জানা শব্দ" : "Known words"); await page.keyboard.press("Enter"); await sleep(page, 600);
+    const hd = await page.evaluate(() => ({ head: document.querySelector("#learnNextSheet [data-lnk-title='_known']")?.textContent.trim(), tile: document.querySelector("#learnNextSheet [data-ln-known-tile] .ln-tile-n")?.textContent.trim() }));
+    const hw = (await writes(page)).find((x) => x.col === "tenants" && x.data.learnNextKnownGroups?.titles?._known);
+    check(`${tag} the owner edits the heading "Already known": the panel and the tile carry the new words, saved as titles._known`, hd.head === (bn ? "জানা শব্দ" : "Known words") && hd.tile === hd.head && !!hw, JSON.stringify({ hd, hw: hw?.data }));
+    await page.evaluate(() => document.querySelector('#learnNextSheet [data-lnk-reset="_known"]')?.click()); await sleep(page, 600);
     // hide: a first tap only arms it, a second hides
     await page.evaluate(() => document.querySelector('#learnNextSheet [data-lnk-hide="people"]').click()); await sleep(page, 200);
     const armed = await page.evaluate(() => ({ still: !!document.querySelector("#learnNextSheet [data-lnk-g='people']"), armed: document.querySelector('#learnNextSheet [data-lnk-hide="people"]')?.dataset.armed }));
     check(`${tag} the first tap on 🗑 only asks ("Tap again to hide"); nothing is hidden yet`, armed.still && armed.armed === "1", JSON.stringify(armed));
     await page.evaluate(() => document.querySelector('#learnNextSheet [data-lnk-hide="people"]').click()); await sleep(page, 600);
     const afterHide = await page.evaluate(() => ({ keys: [...document.querySelectorAll("#learnNextSheet [data-lnk-g]")].map((g) => g.dataset.lnkG), restore: !!document.querySelector("#learnNextSheet [data-lnk-unhide='people']") }));
-    check(`${tag} hiding a group takes it out of the list (six left) and offers "Show again"`, afterHide.keys.join() === "allah,prophets,ibadah,daily,language,bnnames" && afterHide.restore, JSON.stringify(afterHide));
+    check(`${tag} hiding a group takes it out of the list (five left: Daily Life was hidden from the other device) and offers "Show again"`, afterHide.keys.join() === "allah,prophets,ibadah,language,bnnames" && afterHide.restore, JSON.stringify(afterHide));
     const w2 = await writes(page);
-    check(`${tag} hiding is saved on the tenant document (hidden: [people]); nothing is deleted`, w2.some((x) => x.col === "tenants" && (x.data.learnNextKnownGroups?.hidden ?? []).includes("people")) && !w2.some((x) => /delete/i.test(JSON.stringify(x))), JSON.stringify(w2.slice(-2)));
+    check(`${tag} hiding is saved on the tenant document (hidden: [people]); nothing is deleted`, w2.some((x) => x.col === "tenants" && (x.data.learnNextKnownGroups?.hidden ?? []).join() === "people,daily" || (x.data.learnNextKnownGroups?.hidden ?? []).join() === "daily,people") && !w2.some((x) => /delete/i.test(JSON.stringify(x))), JSON.stringify(w2.slice(-2)));
     // ---- 4. the Word card follows ----------------------------------------------------------------------------------
     await page.evaluate(() => document.querySelector("#learnNextSheet [data-ln-back]")?.click()); await sleep(page, 300);
     await page.evaluate(() => { const t = document.getElementById("wbwShowToggle"); if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); } });
@@ -110,7 +124,7 @@ for (const [lang, width, height, reader] of [["en", 1280, 900, false], ["en", 39
     await page.evaluate((i) => document.querySelector(`#readView [data-word-occurrence="${i}"]`)?.click(), occ);
     await page.waitForSelector("[data-known-marks]", { timeout: 15000 }).catch(() => {});
     const card = await page.evaluate(() => ({ keys: [...document.querySelectorAll("[data-known-marks] [data-known-group]")].map((b) => b.dataset.knownGroup) }));
-    check(`${tag} the Word card follows: the hidden group (Well-Known Names) is not among its categories`, card.keys.length > 0 && !card.keys.includes("people") && card.keys.join() === "allah,prophets,ibadah,daily,language,bnnames", JSON.stringify(card));
+    check(`${tag} the Word card follows: the hidden group (Well-Known Names) is not among its categories`, card.keys.length > 0 && !card.keys.includes("people") && card.keys.join() === "allah,prophets,ibadah,language,bnnames", JSON.stringify(card));
   } else {
     // a reader who cannot manage
     const own = await page.evaluate(() => ({ groups: document.querySelectorAll("#learnNextSheet [data-lnk-g]").length, buttons: document.querySelectorAll("#learnNextSheet [data-lnk-edit], #learnNextSheet [data-lnk-hide], #learnNextSheet [data-lnk-reset], #learnNextSheet [data-lnk-unhide]").length }));

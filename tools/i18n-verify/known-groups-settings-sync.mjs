@@ -4,6 +4,7 @@
 //   --mutate=nolang     a title in one language shows in the other  -> "a Bangla title does not show in English" FAILS
 //   --mutate=hidemine   hiding drops the owner's titles             -> "hiding keeps the owner's titles (nothing is deleted)" FAILS
 //   --mutate=nomarks    marks of a kind do not reach their group    -> "a word marked Rituals is in the Ebadah group" FAILS
+//   --mutate=staticpress  a curated list presses a tappable chip   -> "a tappable chip is NOT pressed by a curated list alone" FAILS
 //   --mutate=langonly   My Language holds only the curated list     -> "My Language holds every marked word" FAILS
 import fs from "node:fs";
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
@@ -12,6 +13,7 @@ const MUT = {
   nolang: ["app/js/known-group-settings.js", 'settings?.titles?.[key]?.[lang === "bn" ? "bn" : "en"] || original', "(settings?.titles?.[key]?.en || settings?.titles?.[key]?.bn) || original"],
   hidemine: ["app/js/known-group-settings.js", "return { ...s, hidden: KNOWN_GROUP_KEYS.filter((k) => set.has(k)) };", "return { titles: {}, hidden: KNOWN_GROUP_KEYS.filter((k) => set.has(k)) };"],
   nomarks: ["app/js/known-groups-sync.js", "if (kind) for (const l of banglaWordsOfKind(banglaState, kind)) out.add(l);", ""],
+  staticpress: ["app/js/known-groups-sync.js", "if (kind) return { k, on: mine.has(kind), member:", "if (kind) return { k, on: mine.has(kind) || inStatic, member:"],
   langonly: ["app/js/known-groups-sync.js", 'if (key === "language") return new Set([...out, ...activeBanglaSet(banglaState)]);', 'if (key === "language") return out;'],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -57,8 +59,11 @@ check("the curated Names groups never take a mark", !Y.knownGroupLemmas("allah",
 const groups = [{ k: "allah", lemmas: ["a1"] }, { k: "ibadah", lemmas: [] }, { k: "daily", lemmas: [] }, { k: "language", lemmas: [] }, { k: "bnnames", lemmas: [] }];
 const m1 = Y.knownGroupMarks({ groups, state: b, lemma: "w1" });
 check("the Word card chips for a Rituals word: Ebadah and My Language lit, only the three kinds can be tapped", m1.filter((x) => x.on).map((x) => x.k).join() === "ibadah,language" && m1.filter((x) => x.kind).map((x) => x.k).join() === "ibadah,daily,bnnames", JSON.stringify(m1));
+// Codex P2s on #1812: a tappable chip shows the STORED kind it toggles, also while the list is off; curated membership is "member", not "on"
+check("a tappable chip is NOT pressed by a curated list alone (the tap would not change what it shows); it is marked as a member", (() => { const g2 = [{ k: "ibadah", lemmas: ["c9"] }]; const m = Y.knownGroupMarks({ groups: g2, state: b, lemma: "c9" })[0]; return m.on === false && m.member === true && m.kind === "rituals"; })());
+check("with the list switched off a stored mark still shows pressed, so a tap on a pressed chip removes it and a tap on an unpressed chip adds one", (() => { const off = { ...b, on: false }; const m = Y.knownGroupMarks({ groups, state: off, lemma: "w1" }).find((x) => x.k === "ibadah"); return m.on === true && m.member === false; })());
 check("a curated Name is lit by its list, not by a mark", Y.knownGroupMarks({ groups, state: b, lemma: "a1" }).find((x) => x.k === "allah").on === true);
 check("an unmarked word lights nothing", Y.knownGroupMarks({ groups, state: b, lemma: "zz" }).every((x) => !x.on));
-check("switching the whole list off empties the marked groups", (() => { const off = { ...b, on: false }; return !Y.knownGroupLemmas("ibadah", [], off).has("w1") && Y.knownGroupMarks({ groups, state: off, lemma: "w1" }).every((x) => !x.on); })());
+check("switching the whole list off empties the marked groups (the group lists and My Language), while the chip keeps the stored kind", (() => { const off = { ...b, on: false }; const ms = Y.knownGroupMarks({ groups, state: off, lemma: "w1" }); return !Y.knownGroupLemmas("ibadah", [], off).has("w1") && !Y.knownGroupLemmas("language", [], off).has("w1") && ms.find((x) => x.k === "language").on === false; })());
 console.log(`\n==== Known groups: owner titles, hide, Word card sync${MUTATE ? ` [MUTATE=${MUTATE}]` : ""}: ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);

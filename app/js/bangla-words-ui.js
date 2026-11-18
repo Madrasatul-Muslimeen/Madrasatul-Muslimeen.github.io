@@ -79,7 +79,7 @@ export function knownMarksRowHtml({ lemma, heading, marks = [], canAdmin = false
   if (!state || !lemma || !marks.length) return "";
   const editable = canEditList(state.list, canAdmin);
   const chips = marks.map((m) => m.kind
-    ? `<button type="button" class="we-btn bnk-btn kg-chip bnk-${esc(m.kind)}" data-bangla-kind="${esc(m.kind)}" data-known-group="${esc(m.k)}" aria-pressed="${m.on}"${editable ? "" : " disabled"}><span class="we-name">${esc(m.title)}</span></button>`
+    ? `<button type="button" class="we-btn bnk-btn kg-chip bnk-${esc(m.kind)}" data-bangla-kind="${esc(m.kind)}" data-known-group="${esc(m.k)}" aria-pressed="${m.on}"${m.member && !m.on ? ' data-in-group="true"' : ""}${editable ? "" : " disabled"}><span class="we-name">${esc(m.title)}</span></button>`
     : `<span class="we-btn kg-chip kg-show" data-known-group="${esc(m.k)}" aria-pressed="${m.on}" role="img" aria-label="${esc(`${m.title}: ${m.on ? "✓" : "–"}`)}"><span class="we-name">${esc(m.title)}</span></span>`).join("");
   return `<div class="we-row bnk-row kg-row" data-bangla-marks data-known-marks data-bangla-lemma="${esc(lemma)}" role="group" aria-label="${esc(heading)}"><span class="we-label" data-bangla-marks-title>${esc(heading)}</span><div class="we-buttons">${chips}</div>${editable ? "" : `<p class="we-note" role="status" data-bangla-marks-note>${esc(readOnly)}</p>`}</div>`;
 }
