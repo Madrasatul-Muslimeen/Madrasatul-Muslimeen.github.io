@@ -35,6 +35,7 @@ import { HADITH_COLOURS, getHadithColours, setHadithColours } from "./hadith-col
 import { hadithReader, removeReaderWindows } from "./hadith-reader.js";
 import { settingsHost, addPreviewCue } from "./hadith-menu-settings.js";
 import { mountContinueStrip, parkContinueStrip } from "./hadith-continue-mount.js";
+import { hasDraftNames, loadDraftNames, draftNameOf } from "./hadith-draft-names.js";
 import { nameLine, englishName, primeNames, renderNamesEditor, kysT } from "./hadith-names.js";
 import { primeStatuses, statusBadge, renderStatusRow, renderStatusWheel } from "./hadith-status.js";
 import { bookKey, groupKey } from "./hadith-names-model.js";
@@ -1598,6 +1599,22 @@ function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null, ba
     }
   }
   body.appendChild(list);
+  if (hasDraftNames(versionUri)) { // the Lead's draft English names (marked "draft"), only where the madrasah has not typed its own; one small file per book
+    const putDrafts = () => {
+      for (const c of rows) {
+        const d = draftNameOf(versionUri, c.id);
+        const row = list.querySelector(`[data-openiti-chapter="${c.id}"]`);
+        if (!d || !row || row.querySelector("[data-openiti-chapter-en]")) continue;
+        const e = el("span", "hadith-row-en hadith-row-draft", d); e.dataset.openitiChapterEn = c.id; e.dataset.draft = ""; e.lang = "en";
+        e.title = t("Draft English name, to be checked");
+        const mark = el("span", "hadith-draft-mark", t("draft")); mark.setAttribute("aria-hidden", "true");
+        e.appendChild(mark);
+        row.insertBefore(e, row.querySelector(".hadith-row-meta"));
+      }
+    };
+    if (draftNameOf(versionUri, rows[0]?.id) != null || rows.some((c) => draftNameOf(versionUri, c.id))) putDrafts();
+    else loadDraftNames(versionUri).then(putDrafts).catch(() => { /* a help, not a need */ });
+  }
   if (alt) { // Bukhari: the Owner's MyIndex carries each book's English name; the kitab rows take it (one small file, read here for the first time a Bukhari chapter list is drawn)
     loadMyIndex(versionUri).then((data) => {
       const byFirst = new Map(Object.values(data.books ?? {}).map((b) => [b.first, b]));
