@@ -34,9 +34,9 @@ const WINDOWS = [
   { id: "vocab", root: "#vocabSheet:not([hidden])", close: ".vo-close", title: ".vo-title", bar: ".vo-head" },
   { id: "wordform", root: ".word-card-dpop-box", hide: ".word-card-dpop", close: ".word-card-dpop-close", title: ".word-card-dpop-title", bar: ".word-card-dpop-head" },
   // J140 part 3: Hadith
-  { id: "hadithpane", own: true, root: ".hadith-pane-float", close: "[data-reader-dock]", title: ".hadith-pane-title" }, // a popped-out reader pane (hadith-reader.js drags and resizes it itself)
+  { id: "hadithpane", own: true, back: true, root: ".hadith-pane-float", close: "[data-reader-dock]", title: ".hadith-pane-title", bar: ".hadith-pane-head" }, // a popped-out reader pane (hadith-reader.js drags and resizes it itself)
   { id: "hadithword", root: ".hwc-sheet", hide: ".hwc-overlay", close: ".hwc-close", title: ".hwc-title", bar: ".hwc-head" }, // Hadith Word Card
-  { id: "bookpage", root: ".book-page-pane", hide: ".book-page-overlay", close: ".book-page-close", title: ".book-page-title", bar: ".book-page-head" }, // original book page
+  { id: "bookpage", back: true, root: ".book-page-pane", hide: ".book-page-overlay", close: ".book-page-close", title: ".book-page-title", bar: ".book-page-head" }, // original book page
   // J140 part 3: Notes / writing -- the word pop-out (it keeps its own ⛶, wp-full)
   { id: "wordpopout", noFull: true, root: ".wp-win", hide: ".wp", close: "[data-wp='close']", title: "[data-wp-mode][aria-pressed='true']" },
   // J140 part 3: Dua
@@ -65,6 +65,9 @@ const CSS = `
 [${ATTR}] { display: none !important; }
 .mm-full-btn + .mm-min-btn { margin-inline-start: 0; }
 .mm-full-btn[aria-pressed="true"] { background: rgba(201, 162, 75, 0.35); }
+.mm-back-btn { flex: 0 0 auto; min-width: 40px; min-height: 40px; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: 1.4rem; font-weight: 700; line-height: 1; cursor: pointer; border-radius: 0.5rem; }
+.mm-back-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.mm-back-btn:focus-visible { outline: 3px solid #c9a24b; outline-offset: 1px; }
 .mm-min-btn, .mm-full-btn { flex: 0 0 auto; margin-inline-start: auto; min-width: 40px; min-height: 40px; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: 1.5rem; font-weight: 700; line-height: 1; cursor: pointer; border-radius: 0.5rem; }
 ${handleCss("mm-h")}
 body.jt-dragging { user-select: none; }
@@ -247,7 +250,29 @@ function toggleFull(root) {
   }
   root.querySelectorAll(".mm-full-btn").forEach((b) => b.setAttribute("aria-pressed", String(st.full)));
 }
+/** The Owner, 17 Nov 2026: every Hadith pop-up has ← Back, ⛶ and ✕. ← Back puts the pop-up away by its own ✕, which already returns focus to what opened it (the way-back law). */
+function addBack(root, spec, close) {
+  if (!spec.back || root.querySelector(":scope .mm-back-btn")) return;
+  const bar = (spec.bar ? root.querySelector(spec.bar) : null) ?? close.parentElement;
+  if (!bar) return;
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "mm-back-btn";
+  b.dataset.mmBackBtn = spec.id;
+  b.textContent = "←";
+  b.setAttribute("aria-label", t("Back"));
+  b.title = t("Back");
+  b.addEventListener("pointerdown", (e) => e.stopPropagation());
+  b.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const pane = root.dataset.readerFloat; // a popped-out Hadith pane: once it is docked again, focus goes to its own pop-out button (way-back law)
+    close.click();
+    if (pane) setTimeout(() => (document.querySelector(`[data-reader-pop="${pane}"]`) || document.querySelector(`[data-reader-show="${pane}"]`))?.focus(), 60); // a phone has no pop-out button: its step-bar tab takes the focus
+  });
+  bar.insertBefore(b, bar.firstChild);
+}
 function enhance(root, spec, close) {
+  addBack(root, spec, close);
   if (!spec.noFull && !root.querySelector(".mm-full-btn")) { // read-window.js has its own full-screen button
     const f = document.createElement("button");
     f.type = "button";

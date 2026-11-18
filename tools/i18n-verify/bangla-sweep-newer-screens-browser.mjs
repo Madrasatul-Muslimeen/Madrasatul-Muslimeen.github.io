@@ -13,7 +13,7 @@
 // Run from the repository root with node serve.js on 8080:  node tools/i18n-verify/bangla-sweep-newer-screens-browser.mjs
 // Mutation: --mutate="<English phrase>" makes the page's bn lookup miss that phrase (proves the sweep names it).
 import fs from "node:fs";
-import { chromium, newContext, openPage, BASE, hadithGo } from "./harness.mjs";
+import { chromium, newContext, openPage, BASE, hadithGo, ensureGoto } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -157,8 +157,10 @@ async function mk(lang, width = 390) {
   await P.click("[data-dua-chapter]");
   // Updated in place 28 Oct 2026 (PCF MSA J106 round 1): the chapter opens in the three-pane reader on its first
   // narration; 6578 (standard 6306) is reached with the reader's own "Go to hadith number" box.
+  await ensureGoto(P);
   await P.waitForSelector("[data-openiti-goto-input]", { state: "attached" });
   { const step = await P.$('[data-reader-show="chapters"]'); if (step && await step.isVisible()) await step.click(); }
+  await ensureGoto(P);
   await P.fill("[data-openiti-goto-input]", "6306");
   await P.click("[data-openiti-goto-btn]");
   await P.waitForSelector('[data-openiti-passage="6578"]');

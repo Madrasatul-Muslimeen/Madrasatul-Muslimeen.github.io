@@ -12,7 +12,7 @@
 //   --width=360  --lang=bn  --views=a,b   filters (run in parts)   --shots  save 200% screenshots to tools/i18n-verify/out/large-text-hadith/
 //   --no-reach  skip the reach pass   --list  print every finding
 import fs from "node:fs";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, ensureGoto } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -230,8 +230,8 @@ const INJECT = () => {
 const tab = (P, v) => P.click(`[data-hadith-tab="${v}"]`);
 const wait = (P, sel, ms = 25000) => P.waitForSelector(sel, { timeout: ms });
 const shelf = async (P) => wait(P, `[data-openiti-book="${BUKHARI}"]`);
-const openBukhari = async (P) => { await shelf(P); await P.click(`[data-openiti-book="${BUKHARI}"]`); await wait(P, "[data-openiti-goto-input]", 15000); };
-const gotoNarration = async (P) => { await openBukhari(P); await P.fill("[data-openiti-goto-input]", "6306"); await P.click("[data-openiti-goto-btn]"); await wait(P, '[data-openiti-passage="6578"]', 20000); };
+const openBukhari = async (P) => { await shelf(P); await P.click(`[data-openiti-book="${BUKHARI}"]`); await ensureGoto(P); };
+const gotoNarration = async (P) => { await openBukhari(P); await ensureGoto(P); await P.fill("[data-openiti-goto-input]", "6306"); await P.click("[data-openiti-goto-btn]"); await wait(P, '[data-openiti-passage="6578"]', 20000); };
 const hadeeth = async (P) => { await tab(P, "collections"); await wait(P, '[data-hadeethenc-category="3"]', 20000); await P.click('[data-hadeethenc-category="3"]'); await wait(P, '[data-hadeethenc-hadith="4563"]', 15000); await P.click('[data-hadeethenc-hadith="4563"]'); await wait(P, '[data-hadeethenc-card="4563"]', 15000); await P.waitForTimeout(800); };
 const VIEWS = [
   { id: "books-shelf", label: "Hadith Books: the shelf of every book", go: shelf },

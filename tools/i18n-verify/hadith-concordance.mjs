@@ -16,6 +16,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { matchBook, fixJoins } from "../hadith-data-pull/hadith-concordance.mjs";
+// 17 Nov 2026 (the Owner's Hadith Books bar): "Go to hadith number" lives in the bar's ⚡ Actions panel, closed by default and closed again by Go.
+async function ensureGoto(page) { await page.waitForSelector('[data-reader-tool="actions"]', { state: "attached", timeout: 30000 }); if (!(await page.$('[data-tool-panel="actions"]'))) await page.$eval('[data-reader-tool="actions"]', (e) => { e.scrollIntoView({ block: "center" }); e.click(); }); await page.waitForSelector("[data-openiti-goto-input]", { state: "attached", timeout: 15000 }).catch(() => {}); }
 
 const root = process.cwd();
 const CONC = path.join(root, "tools", "hadith-data-pull", "output", "concordance");
@@ -182,15 +184,19 @@ if (!process.argv.includes("--data")) {
     const digits = (s) => lang === "bn" ? String(s).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]) : String(s);
 
     await page.click('[data-openiti-book="0256Bukhari.Sahih.JK000110-ara1"]');
+    await ensureGoto(page);
     await page.waitForSelector("[data-openiti-goto-input]");
     await acheck("Bukhari offers the numbering choice, standard first", async () => {
+      await ensureGoto(page);
       const v = await page.$eval("[data-openiti-goto-mode]", (s) => [s.value, s.options.length, s.getBoundingClientRect().width > 0]);
       if (v[0] !== "standard" || v[1] !== 2 || !v[2]) throw new Error(JSON.stringify(v));
     });
     await acheck("the Go row stays inside the screen", async () => {
+      await ensureGoto(page);
       const r = await page.$eval(".openiti-goto", (n) => [...n.children].map((c) => c.getBoundingClientRect().right));
       if (Math.max(...r) > width) throw new Error(JSON.stringify(r));
     });
+    await ensureGoto(page);
     await page.fill("[data-openiti-goto-input]", "6306");
     await page.click("[data-openiti-goto-btn]");
     await page.waitForSelector("[data-openiti-focused]");
@@ -225,8 +231,11 @@ if (!process.argv.includes("--data")) {
     });
     await acheck("This edition's number still works: 5000 opens the chapter holding it", async () => {
       await page.click("[data-openiti-crumbs] button:nth-of-type(2)");
+      await ensureGoto(page);
       await page.waitForSelector("[data-openiti-goto-mode]");
+      await ensureGoto(page);
       await page.selectOption("[data-openiti-goto-mode]", "edition");
+      await ensureGoto(page);
       await page.fill("[data-openiti-goto-input]", "5000");
       await page.click("[data-openiti-goto-btn]");
       await page.waitForSelector("[data-openiti-passage]");
@@ -236,9 +245,11 @@ if (!process.argv.includes("--data")) {
 
     await page.click("[data-openiti-crumbs] button");
     await page.click('[data-openiti-book="0261Muslim.Sahih.Shamela0001727-ara1"]');
-    await page.waitForSelector(".openiti-goto");
+    await ensureGoto(page);
     await acheck("Muslim, which has no numbers of its own, can now be jumped by Abdul-Baqi's number", async () => {
+      await ensureGoto(page);
       if (!(await page.$("[data-openiti-goto-input]"))) throw new Error("no input");
+      await ensureGoto(page);
       await page.fill("[data-openiti-goto-input]", "91");
       await page.click("[data-openiti-goto-btn]");
       await page.waitForSelector("[data-openiti-focused]");
@@ -247,7 +258,9 @@ if (!process.argv.includes("--data")) {
     });
     await acheck("an unknown standard number says so", async () => {
       await page.click("[data-openiti-crumbs] button:nth-of-type(2)");
+      await ensureGoto(page);
       await page.waitForSelector("[data-openiti-goto-input]");
+      await ensureGoto(page);
       await page.fill("[data-openiti-goto-input]", "99999");
       await page.click("[data-openiti-goto-btn]");
       const m = await page.$eval("[data-openiti-goto-msg]", (n) => n.textContent);
@@ -256,6 +269,7 @@ if (!process.argv.includes("--data")) {
 
     await page.click("[data-openiti-crumbs] button");
     await page.click('[data-openiti-book="0676Nawawi.RiyadSalihin.Shamela0012014-ara1"]');
+    await ensureGoto(page);
     await page.waitForSelector("[data-openiti-goto-input]");
     await acheck("Riyad as-Salihin (no concordance) keeps its own numbers and no choice", async () => {
       if (await page.$("[data-openiti-goto-mode]")) throw new Error("a choice was offered");

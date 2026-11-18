@@ -7,7 +7,7 @@
 //   --mutate=<name> serves one deliberate break; --prove runs them all.
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
-import { chromium, newContext, openPage } from "./harness.mjs";
+import { chromium, newContext, openPage, ensureGoto } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -87,7 +87,9 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280], ["bn", 360]
   await P.click('[data-hadith-tab="books"]');
   await P.waitForSelector(`[data-openiti-book="${RIY}"]`, { timeout: 25000 });
   await P.click(`[data-openiti-book="${RIY}"]`);
+  await ensureGoto(P);
   await P.waitForSelector("[data-openiti-goto-input]", { timeout: 15000 });
+  await ensureGoto(P);
   await P.fill("[data-openiti-goto-input]", "1"); await P.click("[data-openiti-goto-btn]"); // hadith 1 = record n 3
   const BTN = `[data-book-page-button="${N}"]`;
   await P.waitForSelector('[data-book-page-button]', { timeout: 15000 }).catch(() => {});
