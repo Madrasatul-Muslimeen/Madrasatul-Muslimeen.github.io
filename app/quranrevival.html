@@ -4570,7 +4570,7 @@
   #learnNextSheet .ln-head .ln-review { margin: 0; flex: 0 1 auto; min-width: 0; flex-wrap: nowrap; gap: 0.5rem; }
   #learnNextSheet .ln-head .ln-review:has(.ln-review-msg:not(.ln-due)) { order: 9; flex: 1 0 100%; flex-wrap: wrap; }
   #learnNextSheet .ln-head .ln-due { flex: 0 1 auto; font-size: 0.86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #learnNextSheet .ln-head .ln-review-go { flex: 0 0 auto; min-height: 40px; padding: 0 0.8rem; }
+  #learnNextSheet .ln-head .ln-review-go { flex: 0 0 auto; min-height: 44px; padding: 0 0.8rem; }
   @container (max-width: 640px) {
     #learnNextSheet .ln-back-w { display: none; }
     #learnNextSheet .ln-head .ln-review-go { font-size: 0; }
@@ -21181,7 +21181,7 @@
       return { ...ti, main: knownTitleFor(knownSettings(), k, getAppLang(), ti.main), mine: knownTitleIsMine(knownSettings(), k, getAppLang()), original: ti.main };
     }
     /** The heading "Already known" itself (the tile, the panel, the Word card's group): the owner's wording if they typed one. */
-    function knownHeadingText() { return knownTitleFor(knownSettings(), KNOWN_HEADING_KEY, getAppLang(), t("Already known")); }
+    function knownHeadingText(original = t("Already known")) { return knownTitleFor(knownSettings(), KNOWN_HEADING_KEY, getAppLang(), original); }
     const KNOWN_COLOURS = { allah: "#b8860b", prophets: "#2e7d6b", people: "#7a4fb5", ibadah: "#1f6fb2", daily: "#c0563b", [KNOWN_LANGUAGE_GROUP]: "#5c8a1e", bnnames: "#8a4f1e" };
     function knownWordHtml(w, { meaningOverride, nameLine, lang = false } = {}) {
       const r = w.row, own = knownOwn(w.lemma), via = w.known && !own && !lang;
@@ -25115,7 +25115,7 @@
       }
       const base = knownGroupsBase();
       const marks = knownGroupMarks({ groups: base.lists, state: banglaState, lemma }).map((m) => ({ ...m, title: knownGroupTitle(m.k).main }));
-      return knownMarksRowHtml({ lemma, heading: knownHeadingText(), marks, state: banglaState, canAdmin: canAdminCatalogueClientSide(), readOnly: t("These marks go in the Admin's list, which only an admin can change. Choose Mine in the ☰ menu to mark for yourself.") });
+      return knownMarksRowHtml({ lemma, heading: knownHeadingText(getAppLang() === "bn" ? "আগে থেকেই জানা" : "Already Known"), marks, state: banglaState, canAdmin: canAdminCatalogueClientSide(), readOnly: t("These marks go in the Admin's list, which only an admin can change. Choose Mine in the ☰ menu to mark for yourself.") });
     }
     /** A Bangla word counts as known, so a mark here changes "You already know N words" and may change the next word: the bar is read again. */
     async function refreshLearnNextBar() {

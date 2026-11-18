@@ -31,10 +31,15 @@ const WIDTHS = arg("width") ? [Number(arg("width"))] : [320, 390, 1280];
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const L = { en: { title: "Quranic/ Arabic word in Bangla Language:", chips: ["In Bangla Names", "In Rituals", "In Daily Use"], bar: /Learn the Next Word/i, known: /You already know\s+([\d,]+)\s+words/ },
             bn: { title: "কুরআনি/ আরবি শব্দ বাংলা ভাষায়:", chips: ["বাংলা নামে", "ইবাদত-অনুষ্ঠানে", "দৈনন্দিন ব্যবহারে"], bar: /পরবর্তী শব্দ শিখুন/, known: /ইতোমধ্যে\s+([\d,০-৯]+)\s*টি শব্দ জানেন/ } };
+// UPDATED IN PLACE (18 Nov 2026, the Owner: "Place this as a group in Word Card titled 'Already Known' ... sync the categories whatever is in the Vocab List"):
+// the three Bangla chips are now the Vocab List's own categories under the group "Already Known". The tappable ones keep the stored kinds
+// (rituals / bangla / names) and the handler; their titles are the groups' titles (read from the data file, not retyped) and their order is the Vocab List's.
+const KG = JSON.parse(fs.readFileSync("tools/quran-data-pull/output/learn-known-groups.json", "utf8")).groups;
+const kgTitle = (k, lang) => { const g = KG.find((x) => x.k === k); return lang === "bn" ? g.bn : g.en; };
 const bnDigits = (s) => String(s).replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/,/g, "");
 
 for (const lang of LANGS) for (const width of WIDTHS) {
-  const tag = `[${lang} ${width}]`, W = L[lang];
+  const tag = `[${lang} ${width}]`, W = { ...L[lang], title: lang === "bn" ? "আগে থেকেই জানা" : "Already Known", chips: ["ibadah", "daily", "bnnames"].map((k) => kgTitle(k, lang)) };
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, banner: false, viewport: { width, height: width >= 768 ? 1000 : 1100 }, extraSeedJs: "window.__stubApplyBatches = true;" });
   // UPDATED IN PLACE 16 Nov 2026 (Architect 114L, v15.13): the banglaWords gate is ON as shipped, so a signed-in reader's marks now go to the
   // account (proved by bangla-words-account-browser.mjs). This suite proves the DEVICE path, which stays the way back, so it closes the
@@ -69,10 +74,12 @@ for (const lang of LANGS) for (const width of WIDTHS) {
   check(`${tag} MUTATION TARGET (nobnk): the card has the Bangla marking`, lay.bn !== null, JSON.stringify(lay));
   check(`${tag} MUTATION TARGET (oldorder): Word Progress, then Mark the Word, then the Bangla marking, then the Learn next bar, top to bottom`, [lay.states, lay.marks, lay.bn, lay.next].every((v) => v !== null) && lay.states < lay.marks && lay.marks < lay.bn && lay.bn < lay.next, JSON.stringify(lay));
   const mk = await ev(() => { const r = document.querySelector("[data-bangla-marks]"); if (!r) return null; const c = document.querySelector(".quran-word-card").getBoundingClientRect(); return { title: r.querySelector("[data-bangla-marks-title]")?.textContent.trim(), chips: [...r.querySelectorAll("[data-bangla-kind]")].map((b) => { const q = b.getBoundingClientRect(); return { text: b.textContent.trim(), kind: b.dataset.banglaKind, h: Math.round(q.height), top: Math.round(q.top), left: Math.round(q.left), right: Math.round(q.right), on: b.getAttribute("aria-pressed") === "true", off: b.disabled, cut: b.scrollWidth > b.clientWidth + 1 }; }), cardL: Math.round(c.left), cardR: Math.round(c.right) }; });
-  check(`${tag} the title reads "${W.title}"`, mk?.title === W.title, JSON.stringify(mk?.title));
-  check(`${tag} three chips in the Owner's order: ${W.chips.join(" · ")}`, !!mk && mk.chips.map((c) => c.text).join("|") === W.chips.join("|") && mk.chips.map((c) => c.kind).join() === "names,rituals,bangla", JSON.stringify(mk?.chips.map((c) => c.text)));
-  check(`${tag} the chips are at least 40px tall, on ONE line, inside the card, nothing cut`, !!mk && mk.chips.every((c) => c.h >= 40 && c.left >= mk.cardL - 1 && c.right <= mk.cardR + 1 && !c.cut) && new Set(mk.chips.map((c) => c.top)).size === 1, JSON.stringify(mk?.chips));
+  check(`${tag} the group is titled "${W.title}"`, mk?.title === W.title, JSON.stringify(mk?.title));
+  check(`${tag} the tappable chips are the Vocab List's Ebadah, Daily Life and Names in My Language groups, in its order: ${W.chips.join(" · ")}`, !!mk && mk.chips.map((c) => c.text).join("|") === W.chips.join("|") && mk.chips.map((c) => c.kind).join() === "rituals,bangla,names", JSON.stringify(mk?.chips.map((c) => c.text)));
+  check(`${tag} the chips are at least 40px tall, inside the card, nothing cut (they wrap: the Vocab List titles are long)`, !!mk && mk.chips.every((c) => c.h >= 40 && c.left >= mk.cardL - 1 && c.right <= mk.cardR + 1 && !c.cut), JSON.stringify(mk?.chips));
   check(`${tag} none is pressed for a word nobody marked`, !!mk && mk.chips.every((c) => !c.on), JSON.stringify(mk?.chips));
+  const all = await ev(() => [...document.querySelectorAll("[data-known-marks] [data-known-group]")].map((b) => ({ k: b.dataset.knownGroup, on: b.getAttribute("aria-pressed") === "true", tap: b.hasAttribute("data-bangla-kind") })));
+  check(`${tag} the group holds the Vocab List's seven categories in its order; Allah's Names is lit for this word; only Ebadah, Daily Life and Names in My Language can be tapped`, all.map((c) => c.k).join() === "allah,prophets,people,ibadah,daily,language,bnnames" && all.find((c) => c.k === "allah")?.on === true && all.filter((c) => c.tap).map((c) => c.k).join() === "ibadah,daily,bnnames", JSON.stringify(all));
 
   // ---- the Learn the Next Word bar
   const bar = await ev(() => { const b = document.querySelector(".word-card-learnnext"); return b ? { text: b.innerText, title: b.querySelector(".word-card-learnnext-title")?.textContent, known: b.querySelector("[data-learn-next-known]")?.textContent ?? "" } : null; });
@@ -98,7 +105,7 @@ for (const lang of LANGS) for (const width of WIDTHS) {
     check(`${tag} In Rituals saves the word with the kind "rituals" and shows it pressed`, !!lemma && s.kinds.admin[lemma].join() === "rituals" && (await pressed()) === "rituals", JSON.stringify(s));
     await tap("names"); await tap("bangla");
     s = await saved();
-    check(`${tag} all three can be on at once (names, rituals, bangla)`, !!lemma && s.kinds.admin[lemma].join() === "names,rituals,bangla" && (await pressed()) === "names,rituals,bangla", JSON.stringify(s?.kinds));
+    check(`${tag} all three can be on at once (names, rituals, bangla)`, !!lemma && s.kinds.admin[lemma].join() === "names,rituals,bangla" && (await pressed()) === "rituals,bangla,names", JSON.stringify(s?.kinds));
     const bar2 = await ev(() => document.querySelector("[data-learn-next-known]")?.textContent ?? "");
     const k1 = W.known.exec(bar2);
     check(`${tag} the known count follows the vocabulary list: a Bangla word counts, ${wasKnown} -> ${k1 ? bnDigits(k1[1]) : "?"}`, !!k1 && Number(bnDigits(k1[1])) === wasKnown + 1, JSON.stringify(bar2));
