@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "15.22",
+    "version": "15.23",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -7469,7 +7469,7 @@
     {
       "version": "15.22",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "v15.22 allocated to the QR Lead's Read bar tidy (#1807).",
       "integration": {
         "authorizedOn": "2026-11-17",
@@ -7477,10 +7477,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "15.23",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "v15.23 allocated to the Hadith Lead's Books bar (#1808, MSA J106).",
+      "integration": {
+        "authorizedOn": "2026-11-18",
+        "integratedOn": "2026-11-18",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "15.23",
+  "nextUnallocated": "15.24",
   "nextUnallocatedNote": [
+    "v15.23 was allocated to the Hadith Books one bar (#1808), 2026-11-18.",
     "v15.22 was allocated to the Read bar tidy (#1807), 2026-11-17.",
     "v15.21 was allocated to Play card Whole Unit note (#1804), 2026-11-17.",
     "v15.20 was allocated to four QR Lead rounds (#1797 bookmark captions, #1799 Already-known categories, #1801 Play card, #1802 whole-Quran offline + MP3), 2026-11-17.",
