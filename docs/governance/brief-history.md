@@ -14,6 +14,8 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v15.24 on `main`** (18 Nov 2026 Sydney, shown as "v15.24 - 18.Nov.2026"). **The Vocab List is tidied and its Already Known groups are the Owner's.** #1812 (QR Lead 47L, from the Owner's 17–18 Nov asks): "Due today" and "Review now" sit in Learn next's title row with the ✕ never leaving it; the owner or a prime can edit a group's title, restore it, or hide it (nothing deleted) on every device, saved in ONE additive field `learnNextKnownGroups` on the tenant document; the Word Card's "Already Known" group follows the Vocab List's categories. Checks: see the CHANGELOG entry.
+
 **Previous milestone: v15.23 on `main`** (18 Nov 2026 Sydney, shown as "v15.23 - 18.Nov.2026"). **Hadith Books has one bar and three icons.** #1808 (Hadith Lead 16L, MSA J106, the Owner's 17 Nov asks): tighter gaps; one bar (Chapters | Hadith | Text) with ⚙ Settings, ⓘ Info and ⚡ Actions, each opening a panel with ← Back, ⛶ and ✕; English chapter names beside the Arabic (Bukhari from MyIndex; any book through an English box in Edit names); ← Back on the original-page pop-up and popped-out pane. Checks: see the CHANGELOG entry.
 
 **Previous milestone: v15.22 on `main`** (18 Nov 2026 Sydney, shown as "v15.22 - 18.Nov.2026"). **The Read bar is tidied.** #1807 (QR Lead 47L, from the Owner's 17 Nov "Fix all three views"): the page number sits inside the 📍 button (400–899px, when the unit is a page); the Show items (English, Bangla, Word by Word) move into the ⋮ sheet below 900px; ← ✕ sits on the bar's second line; the start of a sūrah is a gold double-framed banner. Checks: see the CHANGELOG entry.
