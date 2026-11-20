@@ -453,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v15.25 on `main`** (20 Nov 2026 Sydney, shown as "v15.25 - 20.Nov.2026"). **Quran Study can show the Bewley English translation.** #1814 (QR Lead 47L, from the Owner's 20 Nov asks): a Study options ▸ Reading view ▸ English translation picker (Saheeh International, the default, or Bewley). Bewley is shown in the translators' own layout (verse numbers, indent steps, stanza breaks) for the verses published so far (Hizb 38, 26:105–27:55); every other verse keeps Saheeh. `pull-bewley.mjs` adds one hizb a month to `tools/quran-data-pull/output/bewley/`. The text is the translators' own, shown credited on the Owner's instruction with no stated reuse terms, to be replaced by the licensed PDF the Owner is buying (`docs/governance/bewley-translation.md`). Checks: see the CHANGELOG entry.
+**Current milestone: v15.26 on `main`** (20 Nov 2026 Sydney, shown as "v15.26 - 20.Nov.2026"). **Bewley: a failed file is reported, and each pull refreshes the offline list.** #1817 (QR Lead 47L, three Codex findings on #1814): a published sūrah whose Bewley file cannot be fetched (offline, 5xx, or a 404 on a file the index names) is reported in the picker's note while Saheeh shows, and choosing again retries; `pull-bewley.mjs` re-runs the offline-list build after a real write so each new sūrah file can be read offline. Checks: see the CHANGELOG entry.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
