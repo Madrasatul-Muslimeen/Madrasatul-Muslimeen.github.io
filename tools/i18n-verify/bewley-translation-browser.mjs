@@ -8,6 +8,8 @@
 //   --mutate=eager      Bewley's index is fetched even when Saheeh is chosen   -> "nothing of Bewley is fetched unless it is chosen" FAILS
 //   --mutate=race       a late Bewley answer overwrites a choice made since        -> "a quick Bewley then Saheeh ends on Saheeh" FAILS
 //   --mutate=nomem      the choice is not kept when storage refuses it            -> "where storage is blocked the choice still holds" FAILS
+//   --mutate=gapbadge   the stanza space is put on the words, after the number     -> "a line of space BEFORE the verse number" FAILS
+//   --mutate=cachenull  a failed index request is remembered for the session      -> "a failed Bewley request is asked again" FAILS
 //   --mutate=nogap      the stanza break is not drawn                          -> "a stanza break leaves a line of space" FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -20,6 +22,8 @@ const MUT = {
   eager: ["app/js/quran-data.js", 'const want = getEnglishTranslator() === "bewley" ? await bewleyFor(surah.surahNumber) : null;', 'const want = await bewleyFor(surah.surahNumber); if (getEnglishTranslator() !== "bewley") { /* fetched, then not used */ }'],
   race: ["app/js/quran-data.js", "do { choice = getEnglishTranslator(); want = choice === \"bewley\" ? await bewleyFor(surah.surahNumber) : null; } while (getEnglishTranslator() !== choice);", "choice = getEnglishTranslator(); want = choice === \"bewley\" ? await bewleyFor(surah.surahNumber) : null;"],
   nomem: ["app/js/quran-data.js", "  if (chosenEnglish) return chosenEnglish;\n", ""],
+  gapbadge: ["app/js/ayah-renderer.js", "${gap && !badge ? \" ayah-rhythm-gap\" : \"\"}", "${gap ? \" ayah-rhythm-gap\" : \"\"}"],
+  cachenull: ["app/js/quran-data.js", ".catch(() => { forget(); return null; });", ".catch(() => { return null; });"],
   nogap: ["app/quranrevival.html", "  .ayah-rhythm.ayah-rhythm-gap { margin-top: 0.9em; }", "  .ayah-rhythm.ayah-rhythm-gap { margin-top: 0; }"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -44,7 +48,8 @@ for (const [lang, width] of [["en", 390], ["en", 1280], ["bn", 390]]) {
   if (!(await page.evaluate(() => (document.getElementById("tabReadBtn")?.getBoundingClientRect().width ?? 0) > 0))) { await page.click("#tabStudyBtn"); await sleep(page, 150); }
   await page.click("#tabReadBtn"); await sleep(page, 500);
   const show = async (surah, ayah) => { await setSel(page, "surahSelect", String(surah)); await sleep(page, 1200); await setSel(page, "unitTypeSelect", "ayah"); await sleep(page, 600); await setSel(page, "ayahSelect", String(ayah)); await sleep(page, 900); };
-  const en = () => page.evaluate(() => { const e = document.querySelector("#readView .ayah-translation:not(.ayah-translation-bn), #ayahPanels .ayah-translation:not(.ayah-translation-bn)"); if (!e) return null; const lines = [...e.querySelectorAll(".ayah-rhythm-line")].map((l) => ({ t: l.textContent.trim(), pad: Math.round(parseFloat(getComputedStyle(l).paddingInlineStart)) })); return { text: e.textContent.trim(), rhythm: e.classList.contains("ayah-rhythm"), gap: e.classList.contains("ayah-rhythm-gap"), mt: Math.round(parseFloat(getComputedStyle(e).marginTop)), lines, tr: e.dataset.translator ?? null }; });
+  const en = () => page.evaluate(() => { const e = document.querySelector("#readView .ayah-translation:not(.ayah-translation-bn), #ayahPanels .ayah-translation:not(.ayah-translation-bn)"); if (!e) return null; const lines = [...e.querySelectorAll(".ayah-rhythm-line")].map((l) => ({ t: l.textContent.trim(), pad: Math.round(parseFloat(getComputedStyle(l).paddingInlineStart)) })); const prev = e.previousElementSibling, gapEl = prev?.classList?.contains("ayah-num-row") ? prev : e; // the stanza space belongs on the verse number when there is one (Codex P2 on #1814)
+    return { text: e.textContent.trim(), rhythm: e.classList.contains("ayah-rhythm"), gap: gapEl.classList.contains("ayah-rhythm-gap"), mt: Math.round(parseFloat(getComputedStyle(gapEl).marginTop)), textMt: Math.round(parseFloat(getComputedStyle(e).marginTop)), onBadge: gapEl !== e, lines, tr: e.dataset.translator ?? null }; });
 
   await show(26, 109);
   const d = await en();
@@ -64,7 +69,7 @@ for (const [lang, width] of [["en", 390], ["en", 1280], ["bn", 390]]) {
 
   await show(26, 107);
   const g = await en();
-  check(`${tag} a stanza break leaves a line of space: 26:107 starts a new stanza in the book`, !!g && g.gap === true && g.mt >= 8, JSON.stringify(g));
+  check(`${tag} a stanza break leaves a line of space BEFORE the verse number (not between the number and its words): 26:107 starts a new stanza in the book`, !!g && g.gap === true && g.mt >= 8 && g.textMt < 1, JSON.stringify(g));
   await show(26, 104);
   const f = await en();
   check(`${tag} a verse not published keeps Saheeh (26:104 is in the hizb before)`, !!f && !f.rhythm && f.text === saheeh(104), JSON.stringify(f));
@@ -121,6 +126,27 @@ for (const [lang, width] of [["en", 390], ["en", 1280], ["bn", 390]]) {
     return { choice: m.getEnglishTranslator(), rhythm: !!a.rhythm, stored: localStorage.getItem("qr.englishTranslator") };
   });
   check("where storage is blocked the choice still holds for this visit: Bewley is chosen and shown", mem.choice === "bewley" && mem.rhythm === true && mem.stored === null, JSON.stringify(mem));
+  await ctx.close();
+}
+{
+  // Codex P2 on #1814: a failed request is not remembered. The first request for Bewley's index fails; choosing Bewley again later works.
+  const ctx = await newContext(browser, { banner: false, viewport: { width: 390, height: 900 } });
+  await ctx.route("**/archive.org/**", (r) => r.abort());
+  if (MUTATE) { const [file, a, b] = MUT[MUTATE]; await ctx.route(`**/${file}*`, async (r) => { const src = fs.readFileSync(file, "utf8"); if (src.split(a).length !== 2) throw new Error(`mutation anchor missing or not unique: ${MUTATE}`); await r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: src.split(a).join(b) }); }); }
+  let tries = 0;
+  await ctx.route("**/output/bewley/index.json", async (r) => { tries++; if (tries === 1) await r.abort("failed"); else await r.continue(); });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await sleep(page, 500);
+  const retry = await page.evaluate(async () => {
+    const m = await import("/app/js/quran-data.js");
+    await m.getSurah(26);
+    await m.setEnglishTranslator("bewley"); // the index request fails here
+    const first = (await m.getSurah(26)).ayahs.find((x) => x.ayah === 109);
+    await m.setEnglishTranslator("bewley"); // chosen again: asked again
+    const second = (await m.getSurah(26)).ayahs.find((x) => x.ayah === 109);
+    return { firstRhythm: !!first.rhythm, secondRhythm: !!second.rhythm };
+  });
+  check("a failed Bewley request is asked again: the first try fails (Saheeh shown), choosing Bewley again works", retry.firstRhythm === false && retry.secondRhythm === true && tries >= 2, JSON.stringify({ ...retry, tries }));
   await ctx.close();
 }
 await browser.close();

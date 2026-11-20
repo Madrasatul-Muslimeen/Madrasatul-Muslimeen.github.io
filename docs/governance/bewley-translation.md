@@ -19,6 +19,11 @@ Hizb 38 (26:105–27:55) was the first, read on 20 Nov 2026.
 `app/js/quran-data.js` puts Bewley on a verse only when the reader chooses it (Study options → Reading view → English translation) and the verse is published.
 Everything else keeps Saheeh International, which stays the default. **Search** (`searchQuran`, the prebuilt `search-en.json`) still looks through Saheeh's wording only; the picker's note says so. Nothing of Bewley is fetched unless it is chosen. The picker's note credits the translators and names aishabewley.org.
 
+## Typos on the translators' page are kept as published
+The page has a few obvious slips (26:109 reads `it.,`; 26:155 reads `she-camel. .`). The pull keeps the translators' words exactly: we do not correct a translation's text, and a guess at the
+intended punctuation is the translators' to make. The Owner can tell them; if they fix their page the correction reaches us only while that hizb is still up (the pull re-reads it weekly), and
+the licensed edition replaces all of this anyway.
+
 ## The way out (what replaces this)
 The Owner is buying the licensed edition (PDF). When it is uploaded: convert it to the same `bewley/surah_NNN.json` shape (the layout rule above), set the credit to the licensed
 edition, **delete the monthly scheduled task**, and remove this note's "Where it comes from" section. To stop sooner: delete the scheduled task and `tools/quran-data-pull/output/bewley/`;

@@ -42,8 +42,12 @@ export function getEnglishTranslator() {
   if (chosenEnglish) return chosenEnglish;
   try { return localStorage.getItem(ENGLISH_KEY) === "bewley" ? "bewley" : "saheeh"; } catch { return "saheeh"; }
 }
+// A missing file (404) is a real answer and is remembered; a failed request (offline, a 5xx) is NOT, so the next try asks again (Codex P2 on #1814).
+function bewleyJson(url, forget) {
+  return fetch(url).then((r) => { if (r.status === 404) return null; if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).catch(() => { forget(); return null; });
+}
 function bewleyIndex() {
-  bewleyIndexPromise ??= fetch(`${BASE_URL}/bewley/index.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  bewleyIndexPromise ??= bewleyJson(`${BASE_URL}/bewley/index.json`, () => { bewleyIndexPromise = null; });
   return bewleyIndexPromise;
 }
 async function bewleyFor(surahNumber) {
@@ -51,7 +55,7 @@ async function bewleyFor(surahNumber) {
   if (!idx?.surahs?.[surahNumber]) return null; // no verse of this sūrah published yet: nothing is fetched
   if (!bewleySurahs.has(surahNumber)) {
     const padded = String(surahNumber).padStart(3, "0");
-    bewleySurahs.set(surahNumber, fetch(`${BASE_URL}/bewley/surah_${padded}.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null));
+    bewleySurahs.set(surahNumber, bewleyJson(`${BASE_URL}/bewley/surah_${padded}.json`, () => bewleySurahs.delete(surahNumber)));
   }
   return bewleySurahs.get(surahNumber);
 }
