@@ -139,7 +139,7 @@ function toolButton(def, opts) {
   b.setAttribute("aria-label", def.label);
   b.setAttribute("aria-expanded", String(on));
   b.addEventListener("click", () => {
-    if (on) { oi.tool = null; oi.toolFull = false; if (oi.toolFrom) oi.phone = oi.toolFrom; oi.toolFrom = null; localRefresh(); return; }
+    if (on) { oi.tool = null; oi.toolFull = false; if (oi.toolFrom) oi.phone = oi.toolFrom; oi.toolFrom = null; oi.toolFocus = def.id; localRefresh(); return; }
     oi.toolFrom = oi.phone !== "chapters" ? oi.phone : (oi.toolFrom ?? null); // the way back: Back returns to the tab it was opened from
     oi.tool = def.id; oi.toolFull = false; oi.toolEnter = true; // focus moves into the panel once it is drawn
     oi.phone = "chapters"; // the panel lives at the top of the Chapters pane

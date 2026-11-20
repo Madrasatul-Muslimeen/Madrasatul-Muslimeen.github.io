@@ -4771,6 +4771,8 @@ export const BN = {
   "Give the Subject a name.": "পাঠ্য বিষয়ের একটি নাম দিন।", // ? (J106 S3)
   "At least one Subject has to stay.": "অন্তত একটি পাঠ্য বিষয় থাকতে হবে।", // ? (J106 S3)
   "English name": "ইংরেজি নাম", // ? (J106 S3)
+  "draft": "খসড়া", // ? (the Owner, 18 Nov 2026)
+  "Draft English name, to be checked": "ইংরেজি নামের খসড়া, যাচাই করতে হবে", // ?
   "Bangla name (optional)": "বাংলা নাম (ঐচ্ছিক)", // ? (J106 S3)
   "Save name": "নাম সংরক্ষণ", // ? (J106 S3)
   "Show this Subject again": "এই পাঠ্য বিষয়টি আবার দেখান", // ? (J106 S3)

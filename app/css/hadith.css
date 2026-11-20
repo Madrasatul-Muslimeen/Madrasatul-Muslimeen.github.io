@@ -827,3 +827,7 @@ body.book-page-open { overflow: hidden; }
   .hadith-reader-grid > [data-reader-pane="chapters"] .hadith-pane-title { display: none; }
   .hadith-reader-grid > [data-reader-pane="chapters"] .hadith-pane-tools { margin-inline-start: auto; }
 }
+
+/* A draft English chapter name (the Owner, 18 Nov 2026): the same line as an own name, in italics, with a small "draft" tag so it is never taken for checked. */
+.hadith-row-draft { font-style: italic; }
+.hadith-draft-mark { margin-inline-start: 0.4em; font-size: 0.7rem; font-style: normal; letter-spacing: 0.02em; text-transform: uppercase; padding: 0 0.3em; border: 1px solid currentColor; border-radius: 0.25rem; opacity: 0.85; }

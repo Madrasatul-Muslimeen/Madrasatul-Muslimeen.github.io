@@ -7,6 +7,7 @@
  * in the Hadith Books view; one document read, flagged in the PR) and patched in memory after each write.
  * The pure half is hadith-names-model.js; the read and the write live in hadith-study-actions.js (loaded on first use, I9).
  */
+import { draftNameOf, loadDraftNames } from "./hadith-draft-names.js";
 import { t } from "./i18n.js";
 import { getAppLang } from "./prefs.js";
 import { el, readFailedNote, loadHadithStudyActions } from "./hadith-shared-ui.js";
@@ -88,6 +89,7 @@ export function renderNamesEditor(box, { versionUri, titleAr, chapters, onChange
     panel.appendChild(el("p", "hadith-note", t("Loading…")));
     let shared;
     try { shared = await loadShared(); } catch (err) { panel.textContent = ""; panel.appendChild(readFailedNote(err, draw)); return; }
+    await loadDraftNames(versionUri).catch(() => {}); // the boxes start from the draft, so it must be read before they are drawn
     panel.textContent = "";
     const { session, actions, data } = shared;
     if (!session || !session.canManage) {
@@ -112,7 +114,7 @@ export function renderNamesEditor(box, { versionUri, titleAr, chapters, onChange
       data.names = res.names; data.docExists = true; known = res.names;
       if (onChange) { pendingNote = { text: doneText }; onChange(); } else await draw({ text: doneText });
     };
-    const rows = [{ key: bookKey(versionUri), ar: titleAr }, ...chapters.filter((c) => String(c.title ?? "").trim()).map((c) => ({ key: groupKey(versionUri, c.id), ar: c.title }))];
+    const rows = [{ key: bookKey(versionUri), ar: titleAr }, ...chapters.filter((c) => String(c.title ?? "").trim()).map((c) => ({ key: groupKey(versionUri, c.id), ar: c.title, id: c.id }))];
     for (const r of rows) {
       const row = el("div", "hadith-names-row");
       row.dataset.hadithNamesRow = r.key;
@@ -127,13 +129,16 @@ export function renderNamesEditor(box, { versionUri, titleAr, chapters, onChange
       input.setAttribute("aria-label", t("Bangla name"));
       const inputEn = el("input", "hadith-subject-edit-name");
       inputEn.type = "text"; inputEn.maxLength = 160; inputEn.lang = "en";
-      inputEn.value = cur ? cur.en : ""; // a retired name keeps its English words, so saving a new Bangla one cannot wipe them
+      const draft = r.id ? draftNameOf(versionUri, r.id) : null;
+      inputEn.value = cur?.en || draft || ""; // a retired name keeps its English words; with none, the draft starts the box (correct it, Save = your own name)
+      if (!cur?.en && draft) inputEn.dataset.hadithNamesDraft = "";
+      inputEn.addEventListener("input", () => { delete inputEn.dataset.hadithNamesDraft; }); // typing in the box, even the same words, makes the name the owner's own
       inputEn.dataset.hadithNamesEn = r.key;
       inputEn.placeholder = t("English name");
       inputEn.setAttribute("aria-label", t("English name"));
       const save = button("hadith-subject-btn", t("Save name"));
       save.dataset.hadithNamesSave = r.key;
-      save.addEventListener("click", () => { save.disabled = true; apply(() => setName(data.names, r.key, { bn: input.value, en: inputEn.value }, ctx()), t("Name saved."), t("The name could not be saved. Check the connection and try again.")); });
+      save.addEventListener("click", () => { save.disabled = true; apply(() => setName(data.names, r.key, { bn: input.value, en: (inputEn.dataset.hadithNamesDraft != null && inputEn.value === draft && input.value.trim()) ? "" : inputEn.value }, ctx()), t("Name saved."), t("The name could not be saved. Check the connection and try again.")); });
       const actions2 = el("div", "hadith-subject-edit-actions hadith-names-actions");
       actions2.appendChild(save);
       if (cur && cur.status !== "retired") {
