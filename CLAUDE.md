@@ -453,7 +453,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v15.24 on `main`** (18 Nov 2026 Sydney, shown as "v15.24 - 18.Nov.2026"). **The Vocab List is tidied and its Already Known groups are the Owner's.** #1812 (QR Lead 47L, from the Owner's 17–18 Nov asks): "Due today" and "Review now" sit in Learn next's title row with the ✕ never leaving it; the owner or a prime can edit a group's title, restore it, or hide it (nothing deleted) on every device, saved in ONE additive field `learnNextKnownGroups` on the tenant document; the Word Card's "Already Known" group follows the Vocab List's categories. Checks: see the CHANGELOG entry.
+**Current milestone: v15.25 on `main`** (20 Nov 2026 Sydney, shown as "v15.25 - 20.Nov.2026"). **Quran Study can show the Bewley English translation.** #1814 (QR Lead 47L, from the Owner's 20 Nov asks): a Study options ▸ Reading view ▸ English translation picker (Saheeh International, the default, or Bewley). Bewley is shown in the translators' own layout (verse numbers, indent steps, stanza breaks) for the verses published so far (Hizb 38, 26:105–27:55); every other verse keeps Saheeh. `pull-bewley.mjs` adds one hizb a month to `tools/quran-data-pull/output/bewley/`. The text is the translators' own, shown credited on the Owner's instruction with no stated reuse terms, to be replaced by the licensed PDF the Owner is buying (`docs/governance/bewley-translation.md`). Checks: see the CHANGELOG entry.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
