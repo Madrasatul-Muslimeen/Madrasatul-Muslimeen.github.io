@@ -18,15 +18,15 @@ const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice
 const MUT = {
   norhythm: ["app/js/ayah-renderer.js", 'if (lang === "en" && ayah.rhythm?.lines?.length) {', 'if (false) {'],
   noindent: ["app/quranrevival.html", "padding-inline-start: calc(var(--i, 0) * 1.4em); }", "padding-inline-start: 0; }"],
-  leak: ["app/js/quran-data.js", 'const want = getEnglishTranslator() === "bewley" ? await bewleyFor(surah.surahNumber) : null;', "const want = await bewleyFor(surah.surahNumber);"],
+  leak: ["app/js/quran-data.js", "choice = getEnglishTranslator(); want = choice === \"bewley\" ? await bewleyFor(surah.surahNumber) : null;", "choice = getEnglishTranslator(); want = await bewleyFor(surah.surahNumber);"],
   nofallback: ["app/js/quran-data.js", "else { delete a.rhythm; t.en = t.enSaheeh; }", 'else { delete a.rhythm; t.en = ""; }'],
-  eager: ["app/js/quran-data.js", 'const want = getEnglishTranslator() === "bewley" ? await bewleyFor(surah.surahNumber) : null;', 'const want = await bewleyFor(surah.surahNumber); if (getEnglishTranslator() !== "bewley") { /* fetched, then not used */ }'],
+  eager: ["app/js/quran-data.js", "choice = getEnglishTranslator(); want = choice === \"bewley\" ? await bewleyFor(surah.surahNumber) : null;", "choice = getEnglishTranslator(); want = await bewleyFor(surah.surahNumber); if (choice !== \"bewley\") want = null;"],
   race: ["app/js/quran-data.js", "do { choice = getEnglishTranslator(); want = choice === \"bewley\" ? await bewleyFor(surah.surahNumber) : null; } while (getEnglishTranslator() !== choice);", "choice = getEnglishTranslator(); want = choice === \"bewley\" ? await bewleyFor(surah.surahNumber) : null;"],
   nomem: ["app/js/quran-data.js", "  if (chosenEnglish) return chosenEnglish;\n", ""],
   gapbadge: ["app/js/ayah-renderer.js", "${gap && !badge ? \" ayah-rhythm-gap\" : \"\"}", "${gap ? \" ayah-rhythm-gap\" : \"\"}"],
   covempty: ["app/js/quran-data.js", "return idx ?? (bewleyIndexFailed ? { unavailable: true } : null);", "return idx;"],
   cachenull: ["app/js/quran-data.js", ".catch(() => { forget(); return null; });", ".catch(() => { return null; });"],
-  nogap: ["app/quranrevival.html", "  .ayah-rhythm.ayah-rhythm-gap { margin-top: 0.9em; }", "  .ayah-rhythm.ayah-rhythm-gap { margin-top: 0; }"],
+  nogap: ["app/quranrevival.html", ".ayah-num-row.ayah-rhythm-gap { margin-top: 0.9em; }", ".ayah-num-row.ayah-rhythm-gap { margin-top: 0; }"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 let pass = 0, fail = 0;
