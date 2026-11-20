@@ -3372,3 +3372,4 @@ This session's own MMSA-only PCF check was deleted, with the first PCF, on the O
 - **v15.23** (2026-11-18): the Hadith Books one bar (#1808).
 - **v15.24** (2026-11-18): the Vocab List tidy (#1812).
 - **v15.25** (2026-11-20): the Bewley translation (#1814).
+- **v15.26** (2026-11-20): the Bewley follow-up (#1817).

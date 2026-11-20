@@ -1171,3 +1171,4 @@ total). Allocated by the MMSA Architect.
 15.23: the Hadith Books one bar (#1808). Allocated by the MMSA Architect.
 15.24: the Vocab List tidy (#1812). Allocated by the MMSA Architect.
 15.25: the Bewley translation (#1814). Allocated by the MMSA Architect.
+15.26: the Bewley follow-up (#1817). Allocated by the MMSA Architect.
