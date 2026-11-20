@@ -117,16 +117,20 @@ for (const [lang, width] of [["en", 390], ["bn", 390], ["en", 1280]]) {
   const topBefore = (await flow(page)).topKey;
   // PCF MSA J110 A (the Owner ticked A, 2 Nov 2026): below 600px the switches are behind "Show ▾"; open it first.
   // Updated in place, reason recorded: what a switch does is unchanged.
-  const openShow = () => page.evaluate(() => { const b = document.querySelector("#readMeaningLayersSlot [data-ml-menu]"); if (b && b.getBoundingClientRect().width > 0 && b.getAttribute("aria-expanded") !== "true") b.click(); });
-  await openShow();
-  await page.click('[data-meaning-layer="bn"]');
-  await page.waitForTimeout(1200);
+  // UPDATED IN PLACE (20 Nov 2026): since v15.22 (the Owner, "Show items should be inside the 3 dots") the switches are NOT on the bar below 900px: they are the
+  // "Show" group of the bar's ⋮ sheet, and a tick there presses the real switch. So below 900px open ⋮ and tick Bangla there; from 900px the real switch is on the bar.
+  const toggleBangla = async () => {
+    if (width < 900) {
+      await page.click("#readQuickMenuSlot .ayah-quick-btn"); await page.waitForTimeout(400);
+      await page.evaluate(() => document.querySelector('#readQuickMenuSlot [data-qm-layer="bn"]').click());
+      await page.waitForTimeout(1200);
+      await page.keyboard.press("Escape"); await page.waitForTimeout(300);
+    } else { await page.click('[data-meaning-layer="bn"]'); await page.waitForTimeout(1200); }
+  };
+  await toggleBangla();
   const g = await flow(page);
   check(`${tag} unticking Bangla takes the Bangla meaning away and keeps the place (${topBefore})`, !!g.a571 && !g.a571.bn && g.a571.en && g.topKey === topBefore, JSON.stringify({ a571: g.a571, top: g.topKey }));
-  await openShow();
-  await page.click('[data-meaning-layer="bn"]');
-  await page.waitForTimeout(1200);
-  await page.keyboard.press("Escape");
+  await toggleBangla();
 
   // "and continue"
   const before = (await flow(page)).pages;
