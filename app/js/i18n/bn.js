@@ -5293,6 +5293,7 @@ export const BN = {
   "Saheeh International": "সহীহ ইন্টারন্যাশনাল", // ?
   "Bewley (the hizbs published so far)": "বিউলি (এ পর্যন্ত প্রকাশিত হিযব)", // ?
   "Could not reach the Bewley text just now (offline?); every verse shows Saheeh International. Choose it again to retry.": "এই মুহূর্তে বিউলির পাঠ পাওয়া যায়নি (অফলাইন?); সব আয়াতে সহীহ ইন্টারন্যাশনাল দেখানো হচ্ছে। আবার চেষ্টা করতে ফের বেছে নিন।", // ?
+  "Some Bewley verses could not be loaded just now (offline?) and show Saheeh International; choose it again to retry.": "কিছু বিউলির আয়াত এই মুহূর্তে লোড করা যায়নি (অফলাইন?), তাই সহীহ ইন্টারন্যাশনাল দেখানো হচ্ছে; আবার চেষ্টা করতে ফের বেছে নিন।", // ?
   "Nothing published yet; every verse shows Saheeh International.": "এখনও কিছু প্রকাশিত হয়নি; সব আয়াতে সহীহ ইন্টারন্যাশনাল দেখানো হয়।", // ?
   "{n} of 6,236 verses so far; the rest show Saheeh International. The Noble Qur'an: A New Rendering of its Meaning in English, by Abdalhaqq and Aisha Bewley (aishabewley.org); one hizb is added each month. Search still looks through Saheeh International's wording.": "এ পর্যন্ত ৬,২৩৬টির মধ্যে {n}টি আয়াত; বাকিগুলোতে সহীহ ইন্টারন্যাশনাল দেখানো হয়। দ্য নোবল কুরআন: এ নিউ রেন্ডারিং অব ইটস মিনিং ইন ইংলিশ, আবদুলহাক ও আয়েশা বিউলি (aishabewley.org); প্রতি মাসে একটি হিযব যোগ হয়। অনুসন্ধান এখনও সহীহ ইন্টারন্যাশনালের শব্দে খোঁজে।", // ?
 };

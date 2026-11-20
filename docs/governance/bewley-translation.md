@@ -11,7 +11,7 @@ Set in lines, one per breath, with indents that follow the sense and a blank lin
 ## Where it comes from
 `https://aishabewley.org/quran` puts up **one hizb a month and only one at a time** ("There will only be one hizb up at a time"). `tools/quran-data-pull/pull-bewley.mjs`
 reads the hizb named there, keeps its layout (verse numbers, indent steps from `margin-left`, stanza breaks) and **adds** it to `tools/quran-data-pull/output/bewley/`
-(`index.json` + `surah_NNN.json`, only the sūrahs that have verses). Earlier months stay; a month only adds.
+(`index.json` + `surah_NNN.json`, only the sūrahs that have verses). Earlier months stay; a month only adds. After a real write the script also re-runs `tools/offline/build-offline-files.mjs`, so a new sūrah file reaches `app/offline-files.json` (readers who prepared offline can read it); commit that file with the data.
 **Who runs it:** a weekly Claude scheduled task (in the Owner's account, NOT a workflow in this repository; the Architect may move it into one) runs the script and opens a pull request only when a new hizb has appeared. Until that task exists (it is created after the first merge), run the script by hand.
 Hizb 38 (26:105–27:55) was the first, read on 20 Nov 2026.
 

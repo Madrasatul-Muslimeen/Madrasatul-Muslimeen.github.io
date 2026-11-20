@@ -29318,12 +29318,14 @@
       const idx = await getBewleyCoverage().catch(() => null);
       if (idx?.unavailable) { trEnChoiceNote.textContent = t("Could not reach the Bewley text just now (offline?); every verse shows Saheeh International. Choose it again to retry."); return; }
       const held = idx ? Object.values(idx.surahs ?? {}).reduce((n, x) => n + (x.ayahs?.length ?? 0), 0) : 0;
+      const lost = idx?.failedSurahs?.length ? " " + t("Some Bewley verses could not be loaded just now (offline?) and show Saheeh International; choose it again to retry.") : "";
       trEnChoiceNote.textContent = held
-        ? t("{n} of 6,236 verses so far; the rest show Saheeh International. The Noble Qur'an: A New Rendering of its Meaning in English, by Abdalhaqq and Aisha Bewley (aishabewley.org); one hizb is added each month. Search still looks through Saheeh International's wording.", { n: num(held.toLocaleString("en-US")) })
+        ? t("{n} of 6,236 verses so far; the rest show Saheeh International. The Noble Qur'an: A New Rendering of its Meaning in English, by Abdalhaqq and Aisha Bewley (aishabewley.org); one hizb is added each month. Search still looks through Saheeh International's wording.", { n: num(held.toLocaleString("en-US")) }) + lost
         : t("Nothing published yet; every verse shows Saheeh International.");
     }
     trEnChoiceSelect.value = getEnglishTranslator();
     paintEnglishChoiceNote();
+    window.addEventListener("qr:bewley-failed", paintEnglishChoiceNote);
     trEnChoiceSelect.addEventListener("change", async () => {
       await setEnglishTranslator(trEnChoiceSelect.value);
       trEnChoiceSelect.value = getEnglishTranslator();

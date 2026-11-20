@@ -10,6 +10,7 @@
 //   --mutate=nomem      the choice is not kept when storage refuses it            -> "where storage is blocked the choice still holds" FAILS
 //   --mutate=gapbadge   the stanza space is put on the words, after the number     -> "a line of space BEFORE the verse number" FAILS
 //   --mutate=covempty   a failed index looks like "nothing published"                 -> "coverage tells 'could not reach'" FAILS
+//   --mutate=failsilent a failed sūrah file is not reported                         -> "a published sūrah whose file fails is reported" FAILS
 //   --mutate=cachenull  a failed index request is remembered for the session      -> "a failed Bewley request is asked again" FAILS
 //   --mutate=nogap      the stanza break is not drawn                          -> "a stanza break leaves a line of space" FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -24,7 +25,8 @@ const MUT = {
   race: ["app/js/quran-data.js", "do { choice = getEnglishTranslator(); want = choice === \"bewley\" ? await bewleyFor(surah.surahNumber) : null; } while (getEnglishTranslator() !== choice);", "choice = getEnglishTranslator(); want = choice === \"bewley\" ? await bewleyFor(surah.surahNumber) : null;"],
   nomem: ["app/js/quran-data.js", "  if (chosenEnglish) return chosenEnglish;\n", ""],
   gapbadge: ["app/js/ayah-renderer.js", "${gap && !badge ? \" ayah-rhythm-gap\" : \"\"}", "${gap ? \" ayah-rhythm-gap\" : \"\"}"],
-  covempty: ["app/js/quran-data.js", "return idx ?? (bewleyIndexFailed ? { unavailable: true } : null);", "return idx;"],
+  covempty: ["app/js/quran-data.js", "if (!idx) return bewleyIndexFailed ? { unavailable: true } : null;", "if (!idx) return null;"],
+  failsilent: ["app/js/quran-data.js", "bewleySurahs.delete(surahNumber); bewleyFailedSurahs.add(surahNumber);", "bewleySurahs.delete(surahNumber);"],
   cachenull: ["app/js/quran-data.js", ".catch(() => { forget(); return null; });", ".catch(() => { return null; });"],
   nogap: ["app/quranrevival.html", ".ayah-num-row.ayah-rhythm-gap { margin-top: 0.9em; }", ".ayah-num-row.ayah-rhythm-gap { margin-top: 0; }"],
 };
@@ -149,6 +151,22 @@ for (const [lang, width] of [["en", 390], ["en", 1280], ["bn", 390]]) {
   const retry = { firstRhythm: first, secondRhythm: second };
   check("a failed Bewley request is asked again: the first try fails (Saheeh shown), choosing Bewley again works", retry.firstRhythm === false && retry.secondRhythm === true && tries > triesAfterFirst, JSON.stringify({ ...retry, tries, triesAfterFirst }));
   check("coverage tells 'could not reach' (unavailable) apart from 'nothing published' while the request fails, and reads the index once it works", covFailed === true && covOk === true, JSON.stringify({ covFailed, covOk }));
+  await ctx.close();
+}
+{
+  // Codex P2 on #1814: the index loads but a published sūrah's file fails -> the note must be able to say so (and the next choice retries)
+  const ctx = await newContext(browser, { banner: false, viewport: { width: 390, height: 900 } });
+  await ctx.route("**/archive.org/**", (r) => r.abort());
+  if (MUTATE) { const [file, a, b] = MUT[MUTATE]; await ctx.route(`**/${file}*`, async (r) => { const src = fs.readFileSync(file, "utf8"); if (src.split(a).length !== 2) throw new Error(`mutation anchor missing or not unique: ${MUTATE}`); await r.fulfill({ status: 200, contentType: "application/javascript", body: src.split(a).join(b) }); }); }
+  let failSurah = true;
+  await ctx.route("**/output/bewley/surah_026.json", async (r) => { if (failSurah) await r.abort("failed"); else await r.continue(); });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await sleep(page, 500);
+  await page.evaluate(async () => { const m = await import("/app/js/quran-data.js"); await m.getSurah(26); window.__bw = 0; window.addEventListener("qr:bewley-failed", () => { window.__bw++; }); });
+  const first = await page.evaluate(async () => { const m = await import("/app/js/quran-data.js"); await m.setEnglishTranslator("bewley"); const r = !!(await m.getSurah(26)).ayahs.find((x) => x.ayah === 109).rhythm; const c = await m.getBewleyCoverage(); return { rhythm: r, failed: c?.failedSurahs ?? null, signalled: window.__bw }; });
+  failSurah = false;
+  const second = await page.evaluate(async () => { const m = await import("/app/js/quran-data.js"); await m.setEnglishTranslator("bewley"); const r = !!(await m.getSurah(26)).ayahs.find((x) => x.ayah === 109).rhythm; const c = await m.getBewleyCoverage(); return { rhythm: r, failed: c?.failedSurahs ?? null }; });
+  check("a published sūrah whose file fails is reported (coverage names it, the page is told) while Saheeh shows; choosing again works and clears it", first.rhythm === false && JSON.stringify(first.failed) === "[26]" && first.signalled >= 1 && second.rhythm === true && second.failed === null, JSON.stringify({ first, second }));
   await ctx.close();
 }
 await browser.close();
