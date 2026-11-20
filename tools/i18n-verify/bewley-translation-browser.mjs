@@ -69,7 +69,7 @@ for (const [lang, width] of [["en", 390], ["en", 1280], ["bn", 390]]) {
 
   await show(26, 107);
   const g = await en();
-  check(`${tag} a stanza break leaves a line of space BEFORE the verse number (not between the number and its words): 26:107 starts a new stanza in the book`, !!g && g.gap === true && g.mt >= 8 && g.textMt < 1, JSON.stringify(g));
+  check(`${tag} a stanza break leaves a line of space BEFORE the verse number (not between the number and its words): 26:107 starts a new stanza in the book`, !!g && g.gap === true && g.mt >= 8 && g.onBadge === true && g.textMt <= 6, JSON.stringify(g));
   await show(26, 104);
   const f = await en();
   check(`${tag} a verse not published keeps Saheeh (26:104 is in the hizb before)`, !!f && !f.rhythm && f.text === saheeh(104), JSON.stringify(f));
@@ -133,20 +133,17 @@ for (const [lang, width] of [["en", 390], ["en", 1280], ["bn", 390]]) {
   const ctx = await newContext(browser, { banner: false, viewport: { width: 390, height: 900 } });
   await ctx.route("**/archive.org/**", (r) => r.abort());
   if (MUTATE) { const [file, a, b] = MUT[MUTATE]; await ctx.route(`**/${file}*`, async (r) => { const src = fs.readFileSync(file, "utf8"); if (src.split(a).length !== 2) throw new Error(`mutation anchor missing or not unique: ${MUTATE}`); await r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: src.split(a).join(b) }); }); }
-  let tries = 0;
-  await ctx.route("**/output/bewley/index.json", async (r) => { tries++; if (tries === 1) await r.abort("failed"); else await r.continue(); });
+  let tries = 0, failIndex = true;
+  await ctx.route("**/output/bewley/index.json", async (r) => { tries++; if (failIndex) await r.abort("failed"); else await r.continue(); });
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await sleep(page, 500);
-  const retry = await page.evaluate(async () => {
-    const m = await import("/app/js/quran-data.js");
-    await m.getSurah(26);
-    await m.setEnglishTranslator("bewley"); // the index request fails here
-    const first = (await m.getSurah(26)).ayahs.find((x) => x.ayah === 109);
-    await m.setEnglishTranslator("bewley"); // chosen again: asked again
-    const second = (await m.getSurah(26)).ayahs.find((x) => x.ayah === 109);
-    return { firstRhythm: !!first.rhythm, secondRhythm: !!second.rhythm };
-  });
-  check("a failed Bewley request is asked again: the first try fails (Saheeh shown), choosing Bewley again works", retry.firstRhythm === false && retry.secondRhythm === true && tries >= 2, JSON.stringify({ ...retry, tries }));
+  await page.evaluate(async () => { const m = await import("/app/js/quran-data.js"); await m.getSurah(26); });
+  const first = await page.evaluate(async () => { const m = await import("/app/js/quran-data.js"); await m.setEnglishTranslator("bewley"); return !!(await m.getSurah(26)).ayahs.find((x) => x.ayah === 109).rhythm; }); // every index request fails
+  const triesAfterFirst = tries;
+  failIndex = false; // the network is back
+  const second = await page.evaluate(async () => { const m = await import("/app/js/quran-data.js"); await m.setEnglishTranslator("bewley"); return !!(await m.getSurah(26)).ayahs.find((x) => x.ayah === 109).rhythm; });
+  const retry = { firstRhythm: first, secondRhythm: second };
+  check("a failed Bewley request is asked again: the first try fails (Saheeh shown), choosing Bewley again works", retry.firstRhythm === false && retry.secondRhythm === true && tries > triesAfterFirst, JSON.stringify({ ...retry, tries, triesAfterFirst }));
   await ctx.close();
 }
 await browser.close();
