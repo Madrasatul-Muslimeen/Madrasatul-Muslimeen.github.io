@@ -29,7 +29,62 @@ function surahFileUrl(surahNumber) {
   return `${BASE_URL}/surahs/surah_${padded}.json`;
 }
 
-/** One surah's full data (all ayahs, text/tajweed/translations/words). Fetched once, cached in memory for the rest of the session — the browser's own HTTP cache makes repeat page loads free too. */
+// ---- The English translation the reader chose (the Owner, 20 Nov 2026) --------------------------------------------------------------
+// "saheeh" (default): the English the surah files carry. "bewley": The Noble Qur'an by Abdalhaqq and Aisha Bewley, in the layout the translators
+// publish (tools/quran-data-pull/pull-bewley.mjs adds one hizb a month to output/bewley/), for the āyāt that are there; every other āyah keeps Saheeh.
+// A Bewley āyah gets `rhythm: { lines: [{ i, t }], gap }` (the book's lines, indent steps and stanza break), and `translations.en` becomes its lines
+// joined, so every reader of `translations.en` (notes, sharing, search of this surah) gets Bewley's words; `translations.enSaheeh` keeps the original.
+const ENGLISH_KEY = "qr.englishTranslator";
+const bewleySurahs = new Map(); // surah -> Promise<{ ayahs } | null>
+let bewleyIndexPromise = null;
+let chosenEnglish = null; // the choice kept in memory too: where storage is blocked or full it still holds for this visit (Codex P2 on #1814)
+export function getEnglishTranslator() {
+  if (chosenEnglish) return chosenEnglish;
+  try { return localStorage.getItem(ENGLISH_KEY) === "bewley" ? "bewley" : "saheeh"; } catch { return "saheeh"; }
+}
+// A missing file (404) is a real answer and is remembered; a failed request (offline, a 5xx) is NOT, so the next try asks again (Codex P2 on #1814).
+function bewleyJson(url, forget) {
+  return fetch(url).then((r) => { if (r.status === 404) return null; if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).catch(() => { forget(); return null; });
+}
+let bewleyIndexFailed = false; // the last index request FAILED (offline, a 5xx): not the same as "nothing published" (Codex P2 on #1814)
+function bewleyIndex() {
+  bewleyIndexFailed = false;
+  bewleyIndexPromise ??= bewleyJson(`${BASE_URL}/bewley/index.json`, () => { bewleyIndexPromise = null; bewleyIndexFailed = true; });
+  return bewleyIndexPromise;
+}
+async function bewleyFor(surahNumber) {
+  const idx = await bewleyIndex();
+  if (!idx?.surahs?.[surahNumber]) return null; // no verse of this sūrah published yet: nothing is fetched
+  if (!bewleySurahs.has(surahNumber)) {
+    const padded = String(surahNumber).padStart(3, "0");
+    bewleySurahs.set(surahNumber, bewleyJson(`${BASE_URL}/bewley/surah_${padded}.json`, () => bewleySurahs.delete(surahNumber)));
+  }
+  return bewleySurahs.get(surahNumber);
+}
+/** Put the chosen English on one loaded surah (idempotent, and the way back to Saheeh is the same call). */
+async function applyEnglish(surah) {
+  // The reader may change the choice while Bewley's files are on their way: ask again after each wait, and use the choice that is in force NOW (Codex P2 on #1814).
+  let choice, want;
+  do { choice = getEnglishTranslator(); want = choice === "bewley" ? await bewleyFor(surah.surahNumber) : null; } while (getEnglishTranslator() !== choice);
+  for (const a of surah.ayahs ?? []) {
+    const t = (a.translations ??= {});
+    if (t.enSaheeh === undefined) t.enSaheeh = t.en ?? "";
+    const b = want?.ayahs?.[a.ayah];
+    if (b?.lines?.length) { a.rhythm = { lines: b.lines, gap: !!b.gap }; t.en = b.lines.map((l) => l.t).join(" "); }
+    else { delete a.rhythm; t.en = t.enSaheeh; }
+  }
+  return surah;
+}
+/** The reader's choice, then every surah already loaded is redrawn with it. */
+export async function setEnglishTranslator(choice) {
+  chosenEnglish = choice === "bewley" ? "bewley" : "saheeh";
+  try { localStorage.setItem(ENGLISH_KEY, choice === "bewley" ? "bewley" : "saheeh"); } catch { /* the choice lasts for this visit only */ }
+  await Promise.all([...surahCache.values()].map((p) => p.then(applyEnglish).catch(() => null)));
+}
+/** Which āyāt of a sūrah have Bewley, for the page's own note ("n of N published"). */
+export async function getBewleyCoverage() { const idx = await bewleyIndex(); return idx ?? (bewleyIndexFailed ? { unavailable: true } : null); }
+
+/** One surah's full data (all ayahs, text/tajweed/translations/words). Fetched once, cached in memory for the rest of the session. */
 export async function getSurah(surahNumber) {
   if (!surahCache.has(surahNumber)) {
     surahCache.set(
@@ -37,7 +92,7 @@ export async function getSurah(surahNumber) {
       fetch(surahFileUrl(surahNumber)).then((res) => {
         if (!res.ok) throw new Error(`Couldn't load surah ${surahNumber} (HTTP ${res.status}).`);
         return res.json();
-      }).catch((err) => {
+      }).then(applyEnglish).catch((err) => {
         surahCache.delete(surahNumber); // don't cache a failed load — let the next call retry
         throw err;
       })

@@ -4471,6 +4471,10 @@
   .quran-word-card .kg-row .we-buttons { display: flex; flex-wrap: wrap; gap: 0.3rem; grid-template-columns: none; }
   .quran-word-card .kg-row .we-btn { flex: 0 1 auto; width: auto; min-width: 0; min-height: 40px; padding: 0.25rem 0.65rem; font-size: 0.78rem; line-height: 1.2; overflow-wrap: normal; text-align: center; }
   .quran-word-card .kg-row .kg-show { border-style: dashed; cursor: default; }
+  /* The Owner, 20 Nov 2026 (Bewley): an āyah set as the book sets it. Each line is a breath; each nested line steps in; a stanza break leaves one line of space. */
+  .ayah-translation.ayah-rhythm { white-space: normal; }
+  .ayah-rhythm .ayah-rhythm-line { display: block; padding-inline-start: calc(var(--i, 0) * 1.4em); }
+  .ayah-rhythm.ayah-rhythm-gap, .ayah-num-row.ayah-rhythm-gap { margin-top: 0.9em; }
   .lnk-heading { display: flex; align-items: center; gap: 0.4rem; font-size: 1rem; color: #4b2a85; }
   .lnk-heading b { flex: 1 1 auto; min-width: 0; }
   .lnk-own { display: inline-flex; gap: 0.1rem; flex: 0 0 auto; }
@@ -7831,6 +7835,16 @@
             </select>
             <p class="translit-script-note" id="translitScriptNote">Bangla transliteration is made by rules from the Arabic and is being checked.</p>
           </div>
+          <!-- The Owner, 20 Nov 2026: Bewley as an English translation, in the layout its translators publish, one hizb a month as they put it up. Its OWN row
+               (not .reading-ticks: that class is counted by checks and greyed by Mushaf). -->
+          <div class="translit-script-row" id="trEnChoiceRow">
+            <label for="trEnChoiceSelect">English translation</label>
+            <select id="trEnChoiceSelect">
+              <option value="saheeh">Saheeh International</option>
+              <option value="bewley">Bewley (the hizbs published so far)</option>
+            </select>
+            <p class="translit-script-note" id="trEnChoiceNote" hidden></p>
+          </div>
           <div class="unit-prompt-ticks">
             <label id="fatihaCountControl"><input type="checkbox" id="fatihaCountToggle" checked /> Al-Fātiḥah: Bismillah unnumbered (<span lang="ar" dir="rtl" data-i18n-skip>ٱلْحَمْدُ</span> is āyah 1)</label>
           </div>
@@ -8265,7 +8279,7 @@
     import { wireDragReorder } from "./js/drag-reorder.js";
     import { parseAsmaRef } from "./js/asma-ref-parser.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
-    import { getSurah, getAyah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getRukuIndex, getJuzWordTotalsIndex, getSurahWordTotalsIndex } from "./js/quran-data.js";
+    import { getSurah, getAyah, getEnglishTranslator, setEnglishTranslator, getBewleyCoverage, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getRukuIndex, getJuzWordTotalsIndex, getSurahWordTotalsIndex } from "./js/quran-data.js";
     import { nameRootsInAyat, renderCitedAyatHtml } from "./js/asma-cited-ayat.js";
     import { loadCitedHadith, renderCitedHadithHtml } from "./js/asma-cited-hadith.js";
     // Shell round 14 -- word/phrase search. Importing the module costs
@@ -29292,6 +29306,29 @@
     translitScriptSelect.addEventListener("change", () => {
       setTransliterationScript(translitScriptSelect.value);
       translitScriptSelect.value = getTransliterationScript();
+      renderStudyScreen();
+      renderPersistentWordCard();
+    });
+    // The English translation: Saheeh International, or Bewley for the hizbs its translators have published so far (quran-data.js). A change redraws at once.
+    const trEnChoiceSelect = document.getElementById("trEnChoiceSelect"), trEnChoiceNote = document.getElementById("trEnChoiceNote");
+    async function paintEnglishChoiceNote() {
+      const bewley = getEnglishTranslator() === "bewley";
+      trEnChoiceNote.hidden = !bewley;
+      if (!bewley) return;
+      const idx = await getBewleyCoverage().catch(() => null);
+      if (idx?.unavailable) { trEnChoiceNote.textContent = t("Could not reach the Bewley text just now (offline?); every verse shows Saheeh International. Choose it again to retry."); return; }
+      const held = idx ? Object.values(idx.surahs ?? {}).reduce((n, x) => n + (x.ayahs?.length ?? 0), 0) : 0;
+      trEnChoiceNote.textContent = held
+        ? t("{n} of 6,236 verses so far; the rest show Saheeh International. The Noble Qur'an: A New Rendering of its Meaning in English, by Abdalhaqq and Aisha Bewley (aishabewley.org); one hizb is added each month. Search still looks through Saheeh International's wording.", { n: num(held.toLocaleString("en-US")) })
+        : t("Nothing published yet; every verse shows Saheeh International.");
+    }
+    trEnChoiceSelect.value = getEnglishTranslator();
+    paintEnglishChoiceNote();
+    trEnChoiceSelect.addEventListener("change", async () => {
+      await setEnglishTranslator(trEnChoiceSelect.value);
+      trEnChoiceSelect.value = getEnglishTranslator();
+      paintEnglishChoiceNote();
+      try { currentSurahData = await getSurah(currentSurahNum); } catch { /* the page keeps what it has */ }
       renderStudyScreen();
       renderPersistentWordCard();
     });

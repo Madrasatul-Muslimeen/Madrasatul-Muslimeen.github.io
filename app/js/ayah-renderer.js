@@ -331,6 +331,14 @@ export function renderTranslationPanel(ayah, langs = ["en"]) {
       const cls = lang === "bn" ? "ayah-translation ayah-translation-bn" : "ayah-translation";
       const shown = badgeNumber(ayah);
       const badge = shown == null ? "" : `<div class="ayah-num-row"><span class="ayah-num-badge">${lang === "bn" ? digitsForLang(shown, lang) : num(shown)}</span></div>`; // audit J29 fix 9: the English block follows the app's digits (Bangla app -> ২৫৫); the Bangla block is always Bengali
+      // The Owner, 20 Nov 2026 (Bewley): an āyah the translators publish is set as their book sets it -- one line per breath, one indent step per
+      // nested line, a blank line before a new stanza (quran-data.js puts `rhythm` on it; the joined words stay in translations.en).
+      if (lang === "en" && ayah.rhythm?.lines?.length) {
+        const lines = ayah.rhythm.lines.map((l) => `<span class="ayah-rhythm-line" style="--i:${Number(l.i) || 0}">${escapeHtml(l.t)}</span>`).join("");
+        // The space before a new stanza goes on the FIRST thing of the verse: its number badge when there is one (else the text), so the number stays with its words (Codex P2 on #1814).
+        const gap = !!ayah.rhythm.gap, badgeGap = gap && badge ? badge.replace('class="ayah-num-row"', 'class="ayah-num-row ayah-rhythm-gap"') : badge;
+        return `${badgeGap}<div class="${cls} ayah-rhythm${gap && !badge ? " ayah-rhythm-gap" : ""}" data-translator="bewley">${lines}</div>`;
+      }
       return `${badge}<div class="${cls}" ${lang === "bn" ? 'lang="bn"' : ""}>${escapeHtml(text)}</div>`;
     })
     .join("");
