@@ -104,6 +104,13 @@ export function mergeIntoOutput(parsed, { dry = false, out = OUT, surahIndexPath
   return summary;
 }
 
+/** A new sūrah file must reach the offline list, or readers who prepared offline cannot read it (Codex P2 on #1814). `run` is injectable for tests. */
+export function refreshOfflineList({ dry = false, run = () => execFileSync("node", [path.join(HERE, "..", "offline", "build-offline-files.mjs")], { stdio: "inherit" }) } = {}) {
+  if (dry) return false;
+  run();
+  return true;
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const arg = (n) => { const i = process.argv.indexOf(`--${n}`); return i > 0 ? process.argv[i + 1] : null; };
   const dry = process.argv.includes("--dry");
@@ -119,5 +126,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   }
   const parsed = parseHizbPage(html, hizb);
   const summary = mergeIntoOutput(parsed, { dry });
+  refreshOfflineList({ dry });
   console.log(`Hizb ${parsed.hizb ?? "?"}: ${summary.map((s) => `sūrah ${s.surah}: ${s.verses} verses read (${s.changed} new or changed; ${s.now} of ${s.of} held)`).join("; ")}${dry ? " [dry run, nothing written]" : ""}`);
 }
