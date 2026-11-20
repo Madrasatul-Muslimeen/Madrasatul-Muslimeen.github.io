@@ -6,6 +6,8 @@
 //   --mutate=leak       Bewley is applied even when Saheeh is chosen           -> "Saheeh is the default" FAILS
 //   --mutate=nofallback a verse not published loses its English                -> "a verse not published keeps Saheeh" FAILS
 //   --mutate=eager      Bewley's index is fetched even when Saheeh is chosen   -> "nothing of Bewley is fetched unless it is chosen" FAILS
+//   --mutate=race       a late Bewley answer overwrites a choice made since        -> "a quick Bewley then Saheeh ends on Saheeh" FAILS
+//   --mutate=nomem      the choice is not kept when storage refuses it            -> "where storage is blocked the choice still holds" FAILS
 //   --mutate=nogap      the stanza break is not drawn                          -> "a stanza break leaves a line of space" FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -16,6 +18,8 @@ const MUT = {
   leak: ["app/js/quran-data.js", 'const want = getEnglishTranslator() === "bewley" ? await bewleyFor(surah.surahNumber) : null;', "const want = await bewleyFor(surah.surahNumber);"],
   nofallback: ["app/js/quran-data.js", "else { delete a.rhythm; t.en = t.enSaheeh; }", 'else { delete a.rhythm; t.en = ""; }'],
   eager: ["app/js/quran-data.js", 'const want = getEnglishTranslator() === "bewley" ? await bewleyFor(surah.surahNumber) : null;', 'const want = await bewleyFor(surah.surahNumber); if (getEnglishTranslator() !== "bewley") { /* fetched, then not used */ }'],
+  race: ["app/js/quran-data.js", "do { choice = getEnglishTranslator(); want = choice === \"bewley\" ? await bewleyFor(surah.surahNumber) : null; } while (getEnglishTranslator() !== choice);", "choice = getEnglishTranslator(); want = choice === \"bewley\" ? await bewleyFor(surah.surahNumber) : null;"],
+  nomem: ["app/js/quran-data.js", "  if (chosenEnglish) return chosenEnglish;\n", ""],
   nogap: ["app/quranrevival.html", "  .ayah-rhythm.ayah-rhythm-gap { margin-top: 0.9em; }", "  .ayah-rhythm.ayah-rhythm-gap { margin-top: 0; }"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -55,7 +59,7 @@ for (const [lang, width] of [["en", 390], ["en", 1280], ["bn", 390]]) {
   check(`${tag} 26:109 is set as the book sets it: ${want109.length} lines, the translators' words`, !!b && b.rhythm && b.tr === "bewley" && b.lines.length === want109.length && b.lines.every((l, i) => l.t === want109[i].t), JSON.stringify(b));
   check(`${tag} each nested line steps in further than the one above (the book's 0, 1, 2)`, !!b && b.lines.length === 3 && b.lines[0].pad < b.lines[1].pad && b.lines[1].pad < b.lines[2].pad, JSON.stringify(b?.lines));
   const note = await page.evaluate(() => ({ hidden: document.getElementById("trEnChoiceNote")?.hidden, text: document.getElementById("trEnChoiceNote")?.textContent ?? "" }));
-  check(`${tag} the note says how many verses are published and credits the translators`, note.hidden === false && /Bewley|বিউলি/.test(note.text) && /aishabewley\.org/.test(note.text) && /[\d\u09E6-\u09EF]/.test(note.text), JSON.stringify(note));
+  check(`${tag} the note says how many verses are published and credits the translators`, note.hidden === false && /Bewley|বিউলি/.test(note.text) && /aishabewley\.org/.test(note.text) && /search|অনুসন্ধান/i.test(note.text) && /[\d\u09E6-\u09EF]/.test(note.text), JSON.stringify(note));
   check(`${tag} only sūrah 26's file was fetched, with the index (not any other sūrah)`, bewleyRequests.length > 0 && bewleyRequests.every((u) => /bewley\/(index|surah_026)\.json/.test(u)), bewleyRequests.join(" "));
 
   await show(26, 107);
@@ -79,6 +83,44 @@ for (const [lang, width] of [["en", 390], ["en", 1280], ["bn", 390]]) {
   await setSel(page, "trEnChoiceSelect", "saheeh"); await sleep(page, 1200);
   const back = await en();
   check(`${tag} choosing Saheeh again gives back its plain English and hides the note`, !!back && !back.rhythm && back.text === saheeh(109) && (await page.evaluate(() => document.getElementById("trEnChoiceNote")?.hidden === true)), JSON.stringify(back));
+  await ctx.close();
+}
+
+// ---- Codex P2s on #1814: a quick Bewley-then-Saheeh while Bewley's files are on their way, and storage that refuses the choice ----------------------------
+{
+  const ctx = await newContext(browser, { banner: false, viewport: { width: 390, height: 900 } });
+  await ctx.route("**/archive.org/**", (r) => r.abort());
+  if (MUTATE) { const [file, a, b] = MUT[MUTATE]; await ctx.route(`**/${file}*`, async (r) => { const src = fs.readFileSync(file, "utf8"); if (src.split(a).length !== 2) throw new Error(`mutation anchor missing or not unique: ${MUTATE}`); await r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: src.split(a).join(b) }); }); }
+  await ctx.route("**/output/bewley/**", async (r) => { await new Promise((x) => setTimeout(x, 700)); await r.continue(); }); // Bewley's files are slow
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await sleep(page, 500);
+  const race = await page.evaluate(async () => {
+    const m = await import("/app/js/quran-data.js");
+    await m.getSurah(26); // loaded first, so both choices below have a surah to redraw
+    const p1 = m.setEnglishTranslator("bewley");
+    await new Promise((r) => setTimeout(r, 150));
+    const p2 = m.setEnglishTranslator("saheeh");
+    await Promise.all([p1, p2]);
+    const a = (await m.getSurah(26)).ayahs.find((x) => x.ayah === 109);
+    return { choice: m.getEnglishTranslator(), rhythm: !!a.rhythm, en: a.translations.en, saheeh: a.translations.enSaheeh };
+  });
+  check("a quick Bewley then Saheeh, with Bewley's files still on their way, ends on Saheeh: the choice and the text agree", race.choice === "saheeh" && !race.rhythm && race.en === race.saheeh && race.en === saheeh(109), JSON.stringify(race));
+  await ctx.close();
+}
+{
+  const ctx = await newContext(browser, { banner: false, viewport: { width: 390, height: 900 } });
+  await ctx.route("**/archive.org/**", (r) => r.abort());
+  if (MUTATE) { const [file, a, b] = MUT[MUTATE]; await ctx.route(`**/${file}*`, async (r) => { const src = fs.readFileSync(file, "utf8"); if (src.split(a).length !== 2) throw new Error(`mutation anchor missing or not unique: ${MUTATE}`); await r.fulfill({ status: 200, contentType: file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", body: src.split(a).join(b) }); }); }
+  await ctx.addInitScript(() => { const o = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === "qr.englishTranslator") throw new Error("blocked"); return o.call(this, k, v); }; });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await sleep(page, 500);
+  const mem = await page.evaluate(async () => {
+    const m = await import("/app/js/quran-data.js");
+    await m.setEnglishTranslator("bewley");
+    const a = (await m.getSurah(26)).ayahs.find((x) => x.ayah === 109);
+    return { choice: m.getEnglishTranslator(), rhythm: !!a.rhythm, stored: localStorage.getItem("qr.englishTranslator") };
+  });
+  check("where storage is blocked the choice still holds for this visit: Bewley is chosen and shown", mem.choice === "bewley" && mem.rhythm === true && mem.stored === null, JSON.stringify(mem));
   await ctx.close();
 }
 await browser.close();

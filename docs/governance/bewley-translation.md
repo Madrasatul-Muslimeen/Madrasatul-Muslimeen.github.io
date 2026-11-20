@@ -11,12 +11,13 @@ Set in lines, one per breath, with indents that follow the sense and a blank lin
 ## Where it comes from
 `https://aishabewley.org/quran` puts up **one hizb a month and only one at a time** ("There will only be one hizb up at a time"). `tools/quran-data-pull/pull-bewley.mjs`
 reads the hizb named there, keeps its layout (verse numbers, indent steps from `margin-left`, stanza breaks) and **adds** it to `tools/quran-data-pull/output/bewley/`
-(`index.json` + `surah_NNN.json`, only the sūrahs that have verses). Earlier months stay; a month only adds. A monthly scheduled task runs it and opens a pull request.
+(`index.json` + `surah_NNN.json`, only the sūrahs that have verses). Earlier months stay; a month only adds.
+**Who runs it:** a weekly Claude scheduled task (in the Owner's account, NOT a workflow in this repository; the Architect may move it into one) runs the script and opens a pull request only when a new hizb has appeared. Until that task exists (it is created after the first merge), run the script by hand.
 Hizb 38 (26:105–27:55) was the first, read on 20 Nov 2026.
 
 ## How the app uses it
 `app/js/quran-data.js` puts Bewley on a verse only when the reader chooses it (Study options → Reading view → English translation) and the verse is published.
-Everything else keeps Saheeh International, which stays the default. Nothing of Bewley is fetched unless it is chosen. The picker's note credits the translators and names aishabewley.org.
+Everything else keeps Saheeh International, which stays the default. **Search** (`searchQuran`, the prebuilt `search-en.json`) still looks through Saheeh's wording only; the picker's note says so. Nothing of Bewley is fetched unless it is chosen. The picker's note credits the translators and names aishabewley.org.
 
 ## The way out (what replaces this)
 The Owner is buying the licensed edition (PDF). When it is uploaded: convert it to the same `bewley/surah_NNN.json` shape (the layout rule above), set the credit to the licensed

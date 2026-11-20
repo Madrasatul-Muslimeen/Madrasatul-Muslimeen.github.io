@@ -29318,7 +29318,7 @@
       const idx = await getBewleyCoverage().catch(() => null);
       const held = idx ? Object.values(idx.surahs ?? {}).reduce((n, x) => n + (x.ayahs?.length ?? 0), 0) : 0;
       trEnChoiceNote.textContent = held
-        ? t("{n} of 6,236 verses so far; the rest show Saheeh International. The Noble Qur'an: A New Rendering of its Meaning in English, by Abdalhaqq and Aisha Bewley (aishabewley.org); one hizb is added each month.", { n: num(held.toLocaleString("en-US")) })
+        ? t("{n} of 6,236 verses so far; the rest show Saheeh International. The Noble Qur'an: A New Rendering of its Meaning in English, by Abdalhaqq and Aisha Bewley (aishabewley.org); one hizb is added each month. Search still looks through Saheeh International's wording.", { n: num(held.toLocaleString("en-US")) })
         : t("Nothing published yet; every verse shows Saheeh International.");
     }
     trEnChoiceSelect.value = getEnglishTranslator();

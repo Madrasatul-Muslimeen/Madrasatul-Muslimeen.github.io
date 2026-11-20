@@ -37,7 +37,9 @@ function surahFileUrl(surahNumber) {
 const ENGLISH_KEY = "qr.englishTranslator";
 const bewleySurahs = new Map(); // surah -> Promise<{ ayahs } | null>
 let bewleyIndexPromise = null;
+let chosenEnglish = null; // the choice kept in memory too: where storage is blocked or full it still holds for this visit (Codex P2 on #1814)
 export function getEnglishTranslator() {
+  if (chosenEnglish) return chosenEnglish;
   try { return localStorage.getItem(ENGLISH_KEY) === "bewley" ? "bewley" : "saheeh"; } catch { return "saheeh"; }
 }
 function bewleyIndex() {
@@ -55,7 +57,9 @@ async function bewleyFor(surahNumber) {
 }
 /** Put the chosen English on one loaded surah (idempotent, and the way back to Saheeh is the same call). */
 async function applyEnglish(surah) {
-  const want = getEnglishTranslator() === "bewley" ? await bewleyFor(surah.surahNumber) : null;
+  // The reader may change the choice while Bewley's files are on their way: ask again after each wait, and use the choice that is in force NOW (Codex P2 on #1814).
+  let choice, want;
+  do { choice = getEnglishTranslator(); want = choice === "bewley" ? await bewleyFor(surah.surahNumber) : null; } while (getEnglishTranslator() !== choice);
   for (const a of surah.ayahs ?? []) {
     const t = (a.translations ??= {});
     if (t.enSaheeh === undefined) t.enSaheeh = t.en ?? "";
@@ -67,6 +71,7 @@ async function applyEnglish(surah) {
 }
 /** The reader's choice, then every surah already loaded is redrawn with it. */
 export async function setEnglishTranslator(choice) {
+  chosenEnglish = choice === "bewley" ? "bewley" : "saheeh";
   try { localStorage.setItem(ENGLISH_KEY, choice === "bewley" ? "bewley" : "saheeh"); } catch { /* the choice lasts for this visit only */ }
   await Promise.all([...surahCache.values()].map((p) => p.then(applyEnglish).catch(() => null)));
 }
