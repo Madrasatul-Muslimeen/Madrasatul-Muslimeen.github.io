@@ -16,6 +16,7 @@ const MUT = {
   number: ["surahs[cur].ayahs[v] = { lines: [{ i: 0, t: m[2].trim() }] };", "surahs[cur].ayahs[v] = { lines: [{ i: 0, t: text }] };"],
   heading: ["if (head) { cur = Number(head[1]); surahs[cur] ??= { ayahs: {} }; last = null; pendingGap = false; continue; }", "if (head) { continue; }"],
   bounds: ["if (Number(v) < 1 || Number(v) > total) throw", "if (false) throw"],
+  offline: ["  run();\n  return true;", "  return true;"],
   keep: ["const have = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, \"utf8\")) : { surah: Number(n), ayahs: {} };", "const have = { surah: Number(n), ayahs: {} };"],
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
@@ -75,8 +76,16 @@ check("index.json names the hizbs read and the verses held, with the credit", sa
 let bounded = false; try { M.mergeIntoOutput({ hizb: 9, surahs: { 114: { ayahs: { 99: { lines: [{ i: 0, t: "x" }] } } } } }, { out: `${dir}/out2`, surahIndexPath: idx }); } catch { bounded = true; }
 check("a verse outside its sūrah stops the merge (sūrah 114 has 6 verses)", bounded);
 
+// Codex P2 on #1814: a new sūrah file must reach the offline list, so the pull refreshes it after a real write and never on a dry run
+{ let ran = 0; const r1 = M.refreshOfflineList({ dry: false, run: () => { ran++; } }); const r2 = M.refreshOfflineList({ dry: true, run: () => { ran++; } });
+  check("the offline file list is refreshed after a real write, and not on a dry run", r1 === true && r2 === false && ran === 1, JSON.stringify({ r1, r2, ran }));
+  check("the pull command calls the refresh after merging", /mergeIntoOutput\(parsed, \{ dry \}\);\s*refreshOfflineList\(\{ dry \}\)/.test(fs.readFileSync("tools/quran-data-pull/pull-bewley.mjs", "utf8"))); }
+
 // the files the real pull wrote (the hizb up on 20 Nov 2026)
 const real = JSON.parse(fs.readFileSync("tools/quran-data-pull/output/bewley/index.json", "utf8"));
 check("the held files cover sūrah 26 from verse 105 and sūrah 27 from verse 1, with no gap in either", (() => { const c = (n) => { const a = real.surahs[n].ayahs; return a.every((v, i) => i === 0 || v === a[i - 1] + 1); }; return real.surahs["26"].ayahs[0] === 105 && real.surahs["27"].ayahs[0] === 1 && c("26") && c("27"); })(), JSON.stringify(Object.fromEntries(Object.entries(real.surahs).map(([k, v]) => [k, [v.ayahs[0], v.ayahs.at(-1), v.ayahs.length]]))));
+{ const man = JSON.parse(fs.readFileSync("app/offline-files.json", "utf8")); const held = fs.readdirSync("tools/quran-data-pull/output/bewley");
+  const listed = (man.parts?.quran?.dirs ?? []).filter((d) => d.base === "/tools/quran-data-pull/output/bewley/").flatMap((d) => d.files.map((f) => (typeof f === "string" ? f : f.name ?? f.n ?? JSON.stringify(f))));
+  check("every Bewley file held is in the offline file list (so it can be read offline)", held.length > 1 && held.every((f) => listed.some((l) => l.includes(f))), JSON.stringify({ held, listed })); }
 console.log(`\n==== Bewley monthly pull${MUTATE ? ` [MUTATE=${MUTATE}]` : ""}: ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
