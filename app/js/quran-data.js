@@ -46,8 +46,10 @@ export function getEnglishTranslator() {
 function bewleyJson(url, forget) {
   return fetch(url).then((r) => { if (r.status === 404) return null; if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).catch(() => { forget(); return null; });
 }
+let bewleyIndexFailed = false; // the last index request FAILED (offline, a 5xx): not the same as "nothing published" (Codex P2 on #1814)
 function bewleyIndex() {
-  bewleyIndexPromise ??= bewleyJson(`${BASE_URL}/bewley/index.json`, () => { bewleyIndexPromise = null; });
+  bewleyIndexFailed = false;
+  bewleyIndexPromise ??= bewleyJson(`${BASE_URL}/bewley/index.json`, () => { bewleyIndexPromise = null; bewleyIndexFailed = true; });
   return bewleyIndexPromise;
 }
 async function bewleyFor(surahNumber) {
@@ -80,7 +82,7 @@ export async function setEnglishTranslator(choice) {
   await Promise.all([...surahCache.values()].map((p) => p.then(applyEnglish).catch(() => null)));
 }
 /** Which āyāt of a sūrah have Bewley, for the page's own note ("n of N published"). */
-export async function getBewleyCoverage() { return bewleyIndex(); }
+export async function getBewleyCoverage() { const idx = await bewleyIndex(); return idx ?? (bewleyIndexFailed ? { unavailable: true } : null); }
 
 /** One surah's full data (all ayahs, text/tajweed/translations/words). Fetched once, cached in memory for the rest of the session. */
 export async function getSurah(surahNumber) {

@@ -9,6 +9,7 @@
 //   --mutate=race       a late Bewley answer overwrites a choice made since        -> "a quick Bewley then Saheeh ends on Saheeh" FAILS
 //   --mutate=nomem      the choice is not kept when storage refuses it            -> "where storage is blocked the choice still holds" FAILS
 //   --mutate=gapbadge   the stanza space is put on the words, after the number     -> "a line of space BEFORE the verse number" FAILS
+//   --mutate=covempty   a failed index looks like "nothing published"                 -> "coverage tells 'could not reach'" FAILS
 //   --mutate=cachenull  a failed index request is remembered for the session      -> "a failed Bewley request is asked again" FAILS
 //   --mutate=nogap      the stanza break is not drawn                          -> "a stanza break leaves a line of space" FAILS
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -23,6 +24,7 @@ const MUT = {
   race: ["app/js/quran-data.js", "do { choice = getEnglishTranslator(); want = choice === \"bewley\" ? await bewleyFor(surah.surahNumber) : null; } while (getEnglishTranslator() !== choice);", "choice = getEnglishTranslator(); want = choice === \"bewley\" ? await bewleyFor(surah.surahNumber) : null;"],
   nomem: ["app/js/quran-data.js", "  if (chosenEnglish) return chosenEnglish;\n", ""],
   gapbadge: ["app/js/ayah-renderer.js", "${gap && !badge ? \" ayah-rhythm-gap\" : \"\"}", "${gap ? \" ayah-rhythm-gap\" : \"\"}"],
+  covempty: ["app/js/quran-data.js", "return idx ?? (bewleyIndexFailed ? { unavailable: true } : null);", "return idx;"],
   cachenull: ["app/js/quran-data.js", ".catch(() => { forget(); return null; });", ".catch(() => { return null; });"],
   nogap: ["app/quranrevival.html", "  .ayah-rhythm.ayah-rhythm-gap { margin-top: 0.9em; }", "  .ayah-rhythm.ayah-rhythm-gap { margin-top: 0; }"],
 };
@@ -139,11 +141,14 @@ for (const [lang, width] of [["en", 390], ["en", 1280], ["bn", 390]]) {
   await sleep(page, 500);
   await page.evaluate(async () => { const m = await import("/app/js/quran-data.js"); await m.getSurah(26); });
   const first = await page.evaluate(async () => { const m = await import("/app/js/quran-data.js"); await m.setEnglishTranslator("bewley"); return !!(await m.getSurah(26)).ayahs.find((x) => x.ayah === 109).rhythm; }); // every index request fails
+  const covFailed = await page.evaluate(async () => { const m = await import("/app/js/quran-data.js"); const c = await m.getBewleyCoverage(); return c?.unavailable === true; });
   const triesAfterFirst = tries;
   failIndex = false; // the network is back
   const second = await page.evaluate(async () => { const m = await import("/app/js/quran-data.js"); await m.setEnglishTranslator("bewley"); return !!(await m.getSurah(26)).ayahs.find((x) => x.ayah === 109).rhythm; });
+  const covOk = await page.evaluate(async () => { const m = await import("/app/js/quran-data.js"); const c = await m.getBewleyCoverage(); return !c?.unavailable && !!c?.surahs?.[26]; });
   const retry = { firstRhythm: first, secondRhythm: second };
   check("a failed Bewley request is asked again: the first try fails (Saheeh shown), choosing Bewley again works", retry.firstRhythm === false && retry.secondRhythm === true && tries > triesAfterFirst, JSON.stringify({ ...retry, tries, triesAfterFirst }));
+  check("coverage tells 'could not reach' (unavailable) apart from 'nothing published' while the request fails, and reads the index once it works", covFailed === true && covOk === true, JSON.stringify({ covFailed, covOk }));
   await ctx.close();
 }
 await browser.close();
