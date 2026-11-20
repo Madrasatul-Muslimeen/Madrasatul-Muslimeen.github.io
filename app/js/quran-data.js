@@ -44,8 +44,9 @@ export function getEnglishTranslator() {
   try { return localStorage.getItem(ENGLISH_KEY) === "bewley" ? "bewley" : "saheeh"; } catch { return "saheeh"; }
 }
 // A missing file (404) is a real answer and is remembered; a failed request (offline, a 5xx) is NOT, so the next try asks again (Codex P2 on #1814).
-function bewleyJson(url, forget) {
-  return fetch(url).then((r) => { if (r.status === 404) return null; if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).catch(() => { forget(); return null; });
+// `listed`: the index already names this file, so a 404 is a failure (e.g. a deploy still arriving), not an answer (Codex P2 on #1817).
+function bewleyJson(url, forget, listed = false) {
+  return fetch(url).then((r) => { if (r.status === 404 && !listed) return null; if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).catch(() => { forget(); return null; });
 }
 let bewleyIndexFailed = false; // the last index request FAILED (offline, a 5xx): not the same as "nothing published" (Codex P2 on #1814)
 function bewleyIndex() {
@@ -61,7 +62,7 @@ async function bewleyFor(surahNumber) {
     bewleySurahs.set(surahNumber, bewleyJson(`${BASE_URL}/bewley/surah_${padded}.json`, () => {
       bewleySurahs.delete(surahNumber); bewleyFailedSurahs.add(surahNumber);
       try { globalThis.dispatchEvent?.(new Event("qr:bewley-failed")); } catch { /* the note simply is not repainted */ }
-    }).then((d) => { if (d) bewleyFailedSurahs.delete(surahNumber); return d; }));
+    }, true).then((d) => { if (d) bewleyFailedSurahs.delete(surahNumber); return d; }));
   }
   return bewleySurahs.get(surahNumber);
 }
